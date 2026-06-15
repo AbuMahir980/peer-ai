@@ -33,9 +33,11 @@ Peer AI is a structured engineering playbook packaged as markdown files. Each fi
 
 ## Quick start — new project
 
+> **Note:** The steps below are for a *new app that wants to use* Peer AI — not for this repo itself. You clone `peer-ai` from GitHub and install it as a `.workflow/` subfolder inside your own project. The repo is named `peer-ai`; it lives at `.workflow/` inside each project that adopts it.
+
 ### 1. Add the workflow to your project
 
-Clone peer-ai into a `.workflow/` folder inside your project, then remove its `.git/` so it doesn't conflict with your project's own git history:
+Clone `peer-ai` into a `.workflow/` subfolder inside your app, then remove its `.git/` so it doesn't conflict with your project's own git history:
 
 ```bash
 mkdir my-app && cd my-app
