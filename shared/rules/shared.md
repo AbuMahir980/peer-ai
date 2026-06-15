@@ -103,7 +103,7 @@ Do NOT over-trigger. One or two mid-phase entries per workflow step is enough. S
 
 When the AI finishes implementing a ticket (page, endpoint group, feature, or any scoped issue), it must do all three of the following before moving on:
 
-1. **Tick acceptance criteria** — if the ticket description has checkboxes (acceptance criteria), check off every item that was completed. Use Linear MCP if available; otherwise tell the user which items to tick manually in their issue tracker.
+1. **Tick acceptance criteria** — if the ticket description has checkboxes (acceptance criteria), check off every item that was completed. Use your issue tracker's MCP if available; otherwise tell the user which items to tick manually.
 2. **Add a completion comment** — post a comment on the issue summarizing what was done, any deviations from the spec, and any follow-up items. Keep it concise (3–5 bullet points). Example format:
    > Completed: [short summary]
    > - Built [component/endpoint] per spec
