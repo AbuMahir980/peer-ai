@@ -182,7 +182,7 @@ Replace mock services with **real** API calls **one group at a time** (e.g. by d
 
 After all groups are switched to live APIs, suggest a contract verification:
 
-> "Now that we're on real APIs, it's a good time to verify everything matches the contract. Want to run a contract check? Type: `Follow .workflow/agents/contract-check-prompt.md`"
+> "Now that we're on real APIs, it's a good time to verify everything matches the contract. Want to run a contract check? Type: `Follow peer-ai/agents/contract-check-prompt.md`"
 
 **Wait for the user's input.** If they say yes, pause the build workflow — they'll come back after the contract check. If they say no or want to do it later, continue to step 9.
 
@@ -201,7 +201,7 @@ Once a page works, run a structured design-quality pass before calling it done. 
 
 > "I've done the design-quality pass (layout, typography, responsive, edge cases, motion, a11y/perf). Any areas you want extra attention before we call the build done?"
 
-**Wait for the user's input.** Fix anything that breaks the visual hierarchy or the responsive layout before moving on. When a design mockup and the API contract disagree, follow `.workflow/shared/design-data-contract.md`.
+**Wait for the user's input.** Fix anything that breaks the visual hierarchy or the responsive layout before moving on. When a design mockup and the API contract disagree, follow `peer-ai/shared/design-data-contract.md`.
 
 ---
 
@@ -224,9 +224,9 @@ Tell the user:
 > 1. **Code review agent** — produces a structured findings report
 > 2. **Contract check agent** — verifies your implementation matches the API contract
 >
-> Want me to run both now? I'll launch them as parallel background agents and summarise the results when they're done. Then we move to the full interactive review: `Follow .workflow/frontend/04-review.md`."
+> Want me to run both now? I'll launch them as parallel background agents and summarise the results when they're done. Then we move to the full interactive review: `Follow peer-ai/frontend/04-review.md`."
 
-**If the user says yes:** launch both agents as parallel background tasks using `.workflow/agents/review-prompt.md` and `.workflow/agents/contract-check-prompt.md`. Summarise combined results when both complete.
+**If the user says yes:** launch both agents as parallel background tasks using `peer-ai/agents/review-prompt.md` and `peer-ai/agents/contract-check-prompt.md`. Summarise combined results when both complete.
 **If they prefer sequential:** run code review first, then contract check.
 **If they decline:** proceed directly to the review phase.
 
@@ -234,7 +234,7 @@ Tell the user:
 
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 
 ### Journal entry
 
@@ -242,7 +242,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > “Before we move on, I can capture what we did in this phase as a journal entry — decisions, trade-offs, and lessons learned. Want me to draft one?”
 
-**Wait for the user’s input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
+**Wait for the user’s input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 
 ## Tone
 

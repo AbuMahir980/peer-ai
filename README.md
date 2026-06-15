@@ -33,23 +33,21 @@ Peer AI is a structured engineering playbook packaged as markdown files. Each fi
 
 ## Quick start — new project
 
-> **Note:** The steps below are for a *new app that wants to use* Peer AI — not for this repo itself. You clone `peer-ai` from GitHub and install it as a `.workflow/` subfolder inside your own project. The repo is named `peer-ai`; it lives at `.workflow/` inside each project that adopts it.
+### 1. Add Peer AI to your project
 
-### 1. Add the workflow to your project
-
-Clone `peer-ai` into a `.workflow/` subfolder inside your app, then remove its `.git/` so it doesn't conflict with your project's own git history:
+Clone it into a `peer-ai/` folder inside your project, then remove its `.git/` so it doesn't conflict with your project's own git history:
 
 ```bash
 mkdir my-app && cd my-app
 git init
-git clone https://github.com/YOUR_USERNAME/peer-ai.git .workflow
-rm -rf .workflow/.git
+git clone https://github.com/AbuMahir980/peer-ai.git peer-ai
+rm -rf peer-ai/.git
 ```
 
 Or copy locally:
 
 ```bash
-cp -r /path/to/peer-ai .workflow
+cp -r /path/to/peer-ai ./peer-ai
 ```
 
 ### 2. Run the one-time setup
@@ -57,7 +55,7 @@ cp -r /path/to/peer-ai .workflow
 Open the project in your AI tool and run:
 
 ```
-Follow .workflow/shared/00-setup.md
+Follow peer-ai/shared/00-setup.md
 ```
 
 The setup phase will:
@@ -69,15 +67,15 @@ The setup phase will:
 2. **Bootstrap session context** — copy and fill in `CONTEXT.md` and `.workflow-state.json` at your project root with you.
 3. Offer optional extras (dev journal, PDF export).
 
-**Manual alternative (Cursor only):** copy rule files from `.workflow/shared/rules/` and rename each from `.md` to `.mdc` so Cursor auto-loads them:
+**Manual alternative (Cursor only):** copy rule files from `peer-ai/shared/rules/` and rename each from `.md` to `.mdc` so Cursor auto-loads them:
 
 ```bash
 mkdir -p .cursor/rules
-cp .workflow/shared/rules/shared.md        .cursor/rules/shared.mdc
-cp .workflow/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc
-cp .workflow/frontend/rules/frontend.md    .cursor/rules/frontend.mdc
-cp .workflow/templates/CONTEXT.md          ./CONTEXT.md
-cp .workflow/templates/.workflow-state.json ./.workflow-state.json
+cp peer-ai/shared/rules/shared.md          .cursor/rules/shared.mdc
+cp peer-ai/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc
+cp peer-ai/frontend/rules/frontend.md      .cursor/rules/frontend.mdc
+cp peer-ai/templates/CONTEXT.md            ./CONTEXT.md
+cp peer-ai/templates/.workflow-state.json  ./.workflow-state.json
 ```
 
 ### 3. Start building
@@ -88,7 +86,7 @@ After setup, your project will look like this:
 my-app/
   AGENTS.md (or CLAUDE.md)   ← your tool's auto-loaded rules
   .cursor/rules/              ← Cursor only: .mdc copies of the rule files
-  .workflow/                  ← the full playbook (this repo)
+  peer-ai/                    ← the full playbook (this repo)
     AGENTS.md
     shared/
     frontend/
@@ -105,27 +103,27 @@ my-app/
 
 ## The workflow — one line per phase
 
-With the **workflow driver** installed, you don't need to type "Follow .workflow/..." — the agent picks up from `.workflow-state.json` automatically. You can still invoke any phase manually:
+With the **workflow driver** installed, you don't need to type "Follow peer-ai/..." — the agent picks up from `.workflow-state.json` automatically. You can still invoke any phase manually:
 
 | # | Phase | Manual command |
 |:-:|-------|----------------|
-| 0 | Setup *(run once)* | `Follow .workflow/shared/00-setup.md` |
-| 1 | Understand | `Follow .workflow/shared/01-understand.md` |
-| 2 | Architect | `Follow .workflow/shared/02-architect.md` |
-| 3 | System Spec | `Follow .workflow/shared/03-spec-system.md` |
-| 4 | API Contract | `Follow .workflow/shared/04-spec-api-contract.md` |
-| 5 | Shared Rules | `Follow .workflow/shared/05-rules-shared.md` |
-| 6 | Page / Endpoint Specs | `Follow .workflow/frontend/01-spec-pages.md` or `.workflow/backend/01-spec-endpoints.md` |
-| 6b | Track Rules | `Follow .workflow/frontend/02-rules.md` or `.workflow/backend/02-rules.md` |
-| 7 | Issues | `Follow .workflow/shared/06-issues.md` |
-| 8 | Build | `Follow .workflow/frontend/03-build.md` or `.workflow/backend/03-build.md` |
-| 9 | Review | `Follow .workflow/frontend/04-review.md` or `.workflow/backend/04-review.md` |
-| 10 | Test | `Follow .workflow/frontend/05-test.md` or `.workflow/backend/05-test.md` |
-| 11 | Document | `Follow .workflow/shared/07-document.md` |
-| 11b | PR Automation | `Follow .workflow/shared/09-pr-automation.md` |
-| 12 | Dev Journal | `Follow .workflow/shared/08-dev-journal.md` |
+| 0 | Setup *(run once)* | `Follow peer-ai/shared/00-setup.md` |
+| 1 | Understand | `Follow peer-ai/shared/01-understand.md` |
+| 2 | Architect | `Follow peer-ai/shared/02-architect.md` |
+| 3 | System Spec | `Follow peer-ai/shared/03-spec-system.md` |
+| 4 | API Contract | `Follow peer-ai/shared/04-spec-api-contract.md` |
+| 5 | Shared Rules | `Follow peer-ai/shared/05-rules-shared.md` |
+| 6 | Page / Endpoint Specs | `Follow peer-ai/frontend/01-spec-pages.md` or `peer-ai/backend/01-spec-endpoints.md` |
+| 6b | Track Rules | `Follow peer-ai/frontend/02-rules.md` or `peer-ai/backend/02-rules.md` |
+| 7 | Issues | `Follow peer-ai/shared/06-issues.md` |
+| 8 | Build | `Follow peer-ai/frontend/03-build.md` or `peer-ai/backend/03-build.md` |
+| 9 | Review | `Follow peer-ai/frontend/04-review.md` or `peer-ai/backend/04-review.md` |
+| 10 | Test | `Follow peer-ai/frontend/05-test.md` or `peer-ai/backend/05-test.md` |
+| 11 | Document | `Follow peer-ai/shared/07-document.md` |
+| 11b | PR Automation | `Follow peer-ai/shared/09-pr-automation.md` |
+| 12 | Dev Journal | `Follow peer-ai/shared/08-dev-journal.md` |
 
-Agents (code review, contract check, security audit, QA) are suggested automatically at handoff points. Run them manually anytime: `Follow .workflow/agents/<name>.md`.
+Agents (code review, contract check, security audit, QA) are suggested automatically at handoff points. Run them manually anytime: `Follow peer-ai/agents/<name>.md`.
 
 ---
 
@@ -154,19 +152,19 @@ The `notes` field in the state file is a one-liner pointer — not a narrative d
 "notes": "Stakeholder emailed Monday. We decided to go greenfield. Read all 15 handoff files. Branch is feature/..."
 ```
 
-Full documentation: `shared/workflow-state.md`
+Full documentation: `peer-ai/shared/workflow-state.md`
 
 ---
 
 ## Design vs data contract
 
-When mockups and API contracts disagree: **contract wins on data** (field names, types, shapes); **design wins on visuals** (layout, spacing, hierarchy). See `shared/design-data-contract.md`.
+When mockups and API contracts disagree: **contract wins on data** (field names, types, shapes); **design wins on visuals** (layout, spacing, hierarchy). See `peer-ai/shared/design-data-contract.md`.
 
 ---
 
 ## Design quality
 
-After each UI page works, the build phase runs a structured **design-quality pass** — layout & spacing, typography, responsive breakpoints, edge cases, motion, and accessibility — as plain workflow steps, no special tooling required. The review phase adds matching audit categories: design audit, UX critique, and design-system consistency. See `frontend/03-build.md` (step 9) and `frontend/04-review.md` (categories 2m–2o).
+After each UI page works, the build phase runs a structured **design-quality pass** — layout & spacing, typography, responsive breakpoints, edge cases, motion, and accessibility — as plain workflow steps, no special tooling required. The review phase adds matching audit categories: design audit, UX critique, and design-system consistency. See `peer-ai/frontend/03-build.md` (step 9) and `peer-ai/frontend/04-review.md` (categories 2m–2o).
 
 ---
 
@@ -177,9 +175,9 @@ The setup phase creates whichever config your tool auto-loads:
 - **Cursor** → `.cursor/rules/*.mdc`
 - **Claude Code** → `CLAUDE.md` at the project root
 - **Codex / others** → `AGENTS.md` at the project root (this repo ships one as the reference model)
-- **Any chat tool** → open a phase file, paste it as instructions, and paste `shared/rules/shared.md` as additional context
+- **Any chat tool** → open a phase file, paste it as instructions, and paste `peer-ai/shared/rules/shared.md` as additional context
 
-The rule *content* is identical across all tools — only the filename and location change. Source files live in `shared/rules/`, `frontend/rules/`, and `backend/rules/` as plain `.md` with no tool-specific extension.
+The rule content is identical across all tools — only the filename and location change. Source files live in `peer-ai/shared/rules/`, `peer-ai/frontend/rules/`, and `peer-ai/backend/rules/` as plain `.md` with no tool-specific extension.
 
 ---
 
@@ -190,8 +188,8 @@ Not every phase needs the most capable model. Each workflow file includes a mode
 | Phase type | Recommended tier | Why |
 |------------|-----------------|-----|
 | Specs & architecture (01–05) | Most capable (e.g. Opus, o3) | Deep reasoning and trade-off analysis |
-| Issues (06) | Mid-tier (e.g. Sonnet) | Structured extraction from a spec |
-| Build (03) | Fast coding model (e.g. Composer, GPT-4o) | Best coding benchmarks, lowest cost |
+| Issues (06) | Mid-tier (e.g. Sonnet, GPT-4o) | Structured extraction from a spec |
+| Build (03) | Fast coding model | Best coding benchmarks, lowest cost |
 | Review (04) | Mid-tier | Checklist-driven, systematic |
 | Test (05) | Fast coding model | Test writing is implementation work |
 | Agents (review, QA, security) | Fast / auto | Structured output from a prompt |
@@ -215,16 +213,16 @@ Read `CONTRIBUTING.md` before editing workflow files — it explains required st
 ## Troubleshooting
 
 **"The AI doesn't follow the workflow"**
-→ Check that your tool's rules config exists and is loaded (`.cursor/rules/` for Cursor, `CLAUDE.md` or `AGENTS.md` for others) and that `.workflow/` is at the project root. Re-run `Follow .workflow/shared/00-setup.md` if unsure, then restart your tool.
+→ Check that your tool's rules config exists and is loaded (`.cursor/rules/` for Cursor, `CLAUDE.md` or `AGENTS.md` for others) and that `peer-ai/` is at the project root. Re-run `Follow peer-ai/shared/00-setup.md` if unsure, then restart your tool.
 
 **"The AI can't find a workflow file"**
-→ `.workflow/` must be at the project root, not nested inside `src/` or any subfolder.
+→ `peer-ai/` must be at the project root, not nested inside `src/` or any subfolder.
 
 **"I lost context between chats"**
 → Say "update the context" or "wrap up" before ending a session. Make sure `CONTEXT.md` and `.workflow-state.json` exist at the project root.
 
 **"Mock data doesn't match the real backend"**
-→ The API contract (`docs/04-api-contract.md`) is the source of truth. Run `Follow .workflow/agents/contract-check-prompt.md`.
+→ The API contract (`docs/04-api-contract.md`) is the source of truth. Run `Follow peer-ai/agents/contract-check-prompt.md`.
 
 ---
 

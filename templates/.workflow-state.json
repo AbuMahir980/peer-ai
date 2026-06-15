@@ -1,7 +1,7 @@
 {
   "currentPhase": "understand",
   "currentStep": 1,
-  "phaseFile": ".workflow/shared/01-understand.md",
+  "phaseFile": "peer-ai/shared/01-understand.md",
   "cycle": "M1 — Project kickoff",
   "milestoneBranch": "",
   "ticket": "",

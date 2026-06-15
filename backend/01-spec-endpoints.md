@@ -243,13 +243,13 @@ Confirm with the user that the path is correct for their repo (some projects use
 
 Tell the user clearly:
 
-> "Endpoint specs are done. Next, establish backend rules with **`.workflow/backend/02-rules.md`**."
+> "Endpoint specs are done. Next, establish backend rules with **`peer-ai/backend/02-rules.md`**."
 
 ---
 
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 
 ### Journal entry
 
@@ -257,7 +257,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > “Before we move on, I can capture what we did in this phase as a journal entry — decisions, trade-offs, and lessons learned. Want me to draft one?”
 
-**Wait for the user’s input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
+**Wait for the user’s input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 
 ## Tone
 

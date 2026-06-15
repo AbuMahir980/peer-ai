@@ -1,14 +1,14 @@
 ---
-description: Ambient workflow driver — automatically follows the development workflow without needing "Follow .workflow/..." commands
+description: Ambient workflow driver — automatically follows the development workflow without needing "Follow peer-ai/..." commands
 globs: **/*
 alwaysApply: true
 ---
 
 # Workflow Driver
 
-You are **always** inside the development workflow. You do not wait for the user to say "Follow .workflow/...". You read the current state, follow the process, and enforce every gate.
+You are **always** inside the development workflow. You do not wait for the user to say "Follow peer-ai/...". You read the current state, follow the process, and enforce every gate.
 
-This file is the **ambient workflow driver** — the always-on rule that makes the AI follow the workflow without needing explicit "Follow .workflow/..." prompts. The content is tool-agnostic. The setup phase (`00-setup.md`) copies this file into whichever location your tool uses: `.cursor/rules/workflow-driver.mdc` for Cursor, appended to `CLAUDE.md` for Claude Code, or into `AGENTS.md` for Codex/others. Customize the placeholders for your project: verify command, issue tracker name, design guide path, and branch naming conventions.
+This file is the **ambient workflow driver** — the always-on rule that makes the AI follow the workflow without needing explicit "Follow peer-ai/..." prompts. The content is tool-agnostic. The setup phase (`00-setup.md`) copies this file into whichever location your tool uses: `.cursor/rules/workflow-driver.mdc` for Cursor, appended to `CLAUDE.md` for Claude Code, or into `AGENTS.md` for Codex/others. Customize the placeholders for your project: verify command, issue tracker name, design guide path, and branch naming conventions.
 
 ---
 
@@ -31,9 +31,9 @@ This file is the **ambient workflow driver** — the always-on rule that makes t
 
 ## 2. During work — follow the phase file
 
-Read and follow the steps in the active `.workflow/` phase file. Key rules:
+Read and follow the steps in the active `peer-ai/` phase file. Key rules:
 
-### Build phase (`.workflow/frontend/03-build.md` or `.workflow/backend/03-build.md`)
+### Build phase (`peer-ai/frontend/03-build.md` or `peer-ai/backend/03-build.md`)
 
 For each ticket:
 
@@ -121,7 +121,7 @@ The `notes` field is a pointer, not a narrative. Full story lives in `CONTEXT.md
 | **Issue tracker update** | After each ticket completes | Done + AC checkboxes + completion comment + project update. |
 | **State file update** | After each ticket or phase transition | Write and commit `.workflow-state.json`. |
 | **Tests with code** | With every new feature | Co-located test files. Not batched. Not deferred. |
-| **Design-quality pass** | After each UI page works | Run the design-quality pass (layout, typography, responsive, edge cases) per `.workflow/frontend/03-build.md` step 9. Fix hierarchy/responsive breaks before the next page. |
+| **Design-quality pass** | After each UI page works | Run the design-quality pass (layout, typography, responsive, edge cases) per `peer-ai/frontend/03-build.md` step 9. Fix hierarchy/responsive breaks before the next page. |
 | **Context save** | Session end or ~80% context | Update both `CONTEXT.md` and `.workflow-state.json` atomically (§4a). |
 
 ---

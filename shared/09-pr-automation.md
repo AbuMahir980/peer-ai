@@ -113,7 +113,7 @@ Two approaches:
 If A: Generate a `.github/workflows/ai-review.yml` workflow that:
 1. Triggers on `pull_request` (opened, synchronize)
 2. Fetches the PR diff
-3. Reads `.workflow/agents/review-prompt.md` for the review checklist
+3. Reads `peer-ai/agents/review-prompt.md` for the review checklist
 4. Calls the AI API with the diff + prompt
 5. Posts findings as a PR review comment
 6. Uses repository secrets for the API key
@@ -166,15 +166,15 @@ Tell the user:
 > "PR automation is configured. Your CI will now:
 > - [List what was set up]
 >
-> If you haven't set up your dev journal yet, follow **`.workflow/shared/08-dev-journal.md`** to configure it (Notion, local markdown, or skip). If it's already set up, you can run a retrospective from that same file at the end of a cycle.
+> If you haven't set up your dev journal yet, follow **`peer-ai/shared/08-dev-journal.md`** to configure it (Notion, local markdown, or skip). If it's already set up, you can run a retrospective from that same file at the end of a cycle.
 >
-> To start building (or continue building), follow **`.workflow/frontend/03-build.md`** (frontend) or **`.workflow/backend/03-build.md`** (backend)."
+> To start building (or continue building), follow **`peer-ai/frontend/03-build.md`** (frontend) or **`peer-ai/backend/03-build.md`** (backend)."
 
 ---
 
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 
 ### Journal entry
 
@@ -182,7 +182,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > "Before we move on, I can capture what we did in this phase as a journal entry — decisions, trade-offs, and lessons learned. Want me to draft one?"
 
-**Wait for the user's input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the next step.
+**Wait for the user's input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the next step.
 
 ## Tone
 

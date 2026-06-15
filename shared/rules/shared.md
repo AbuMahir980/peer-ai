@@ -10,9 +10,9 @@ You are working on this project. Follow these standards in every interaction.
 
 ## Session context (CONTEXT.md + state file)
 
-If `.workflow-state.json` and `CONTEXT.md` exist at the app root, the workflow driver is active. At session start, read **both** files before doing anything else. Narrative context (decisions, emails, daily log) belongs in `CONTEXT.md`; the `notes` field in `.workflow-state.json` is a one-liner pointer only — see `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` and `CONTEXT.md` exist at the app root, the workflow driver is active. At session start, read **both** files before doing anything else. Narrative context (decisions, emails, daily log) belongs in `CONTEXT.md`; the `notes` field in `.workflow-state.json` is a one-liner pointer only — see `peer-ai/shared/workflow-state.md`.
 
-When design mockups and API contracts disagree, follow `.workflow/shared/design-data-contract.md`: contract wins on data shape and field names; design wins on layout and visual hierarchy.
+When design mockups and API contracts disagree, follow `peer-ai/shared/design-data-contract.md`: contract wins on data shape and field names; design wins on layout and visual hierarchy.
 
 ## Git and PR conventions
 - Branch names: `feature/<linear-ticket-id>-<short-description>` (e.g., `feature/PROJ-12-auth-login-screen`)
@@ -95,7 +95,7 @@ During any workflow phase, **recognize key decision moments** and offer to journ
 When you recognize one, offer briefly:
 > "That was a significant decision. Want me to add a journal entry capturing the reasoning?"
 
-**Wait for the user's input.** If yes, draft the entry using the key moment template from `.workflow/shared/08-dev-journal.md` (Part B) and write it to the configured tool. If no, continue without interruption.
+**Wait for the user's input.** If yes, draft the entry using the key moment template from `peer-ai/shared/08-dev-journal.md` (Part B) and write it to the configured tool. If no, continue without interruption.
 
 Do NOT over-trigger. One or two mid-phase entries per workflow step is enough. Save the phase summary for the handoff nudge.
 
@@ -117,34 +117,34 @@ If Linear MCP is not connected, draft all three (checkbox list, comment, project
 
 ## PDF-ready doc export
 
-When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `.workflow/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to Composer 2 before generating** — HTML export is pure templating and doesn't need a premium model.
+When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to Composer 2 before generating** — HTML export is pure templating and doesn't need a premium model.
 
 ## Workflow reference
-This project includes the Peer AI Development Workflow in the `.workflow/` folder. When asked about process, or when following a workflow step, read the relevant file directly:
-- Requirements: `.workflow/shared/01-understand.md`
-- Architecture: `.workflow/shared/02-architect.md`
-- System spec: `.workflow/shared/03-spec-system.md`
-- API contract: `.workflow/shared/04-spec-api-contract.md` (includes optional OpenAPI spec generation)
-- Rules: `.workflow/shared/05-rules-shared.md`
-- Issues: `.workflow/shared/06-issues.md`
-- Documentation: `.workflow/shared/07-document.md`
-- PR automation: `.workflow/shared/09-pr-automation.md` (GitHub Actions, branch protection, automated review comments)
-- Dev journal: `.workflow/shared/08-dev-journal.md`
-- Frontend guides: `.workflow/frontend/` (page specs with forms/validation, rules with testing/i18n/a11y/analytics/feature-flags/CI, build, review covering forms/i18n/analytics/flags, test covering forms/a11y/i18n)
-- Backend guides: `.workflow/backend/` (endpoint specs with jobs/cron/webhooks/files/email/caching/real-time, rules with jobs/caching/files/versioning/testing/deployment/observability, build, review covering all concerns, test covering all concerns)
-- Agent prompts: `.workflow/agents/`
-- Templates: `.workflow/shared/templates/`, `.workflow/frontend/templates/`, `.workflow/backend/templates/`
-- Contributing guide: `.workflow/CONTRIBUTING.md` (how to safely edit workflow files)
-- Workflow state guide: `.workflow/shared/workflow-state.md` (state file + `notes` field rules)
-- Design vs contract: `.workflow/shared/design-data-contract.md`
-- Workflow driver: `.workflow/shared/rules/workflow-driver.md` (ambient driver — copy to project `.cursor/rules/`)
+This project includes the Peer AI Development Workflow in the `peer-ai/` folder. When asked about process, or when following a workflow step, read the relevant file directly:
+- Requirements: `peer-ai/shared/01-understand.md`
+- Architecture: `peer-ai/shared/02-architect.md`
+- System spec: `peer-ai/shared/03-spec-system.md`
+- API contract: `peer-ai/shared/04-spec-api-contract.md` (includes optional OpenAPI spec generation)
+- Rules: `peer-ai/shared/05-rules-shared.md`
+- Issues: `peer-ai/shared/06-issues.md`
+- Documentation: `peer-ai/shared/07-document.md`
+- PR automation: `peer-ai/shared/09-pr-automation.md` (GitHub Actions, branch protection, automated review comments)
+- Dev journal: `peer-ai/shared/08-dev-journal.md`
+- Frontend guides: `peer-ai/frontend/` (page specs with forms/validation, rules with testing/i18n/a11y/analytics/feature-flags/CI, build, review covering forms/i18n/analytics/flags, test covering forms/a11y/i18n)
+- Backend guides: `peer-ai/backend/` (endpoint specs with jobs/cron/webhooks/files/email/caching/real-time, rules with jobs/caching/files/versioning/testing/deployment/observability, build, review covering all concerns, test covering all concerns)
+- Agent prompts: `peer-ai/agents/`
+- Templates: `peer-ai/shared/templates/`, `peer-ai/frontend/templates/`, `peer-ai/backend/templates/`
+- Contributing guide: `peer-ai/CONTRIBUTING.md` (how to safely edit workflow files)
+- Workflow state guide: `peer-ai/shared/workflow-state.md` (state file + `notes` field rules)
+- Design vs contract: `peer-ai/shared/design-data-contract.md`
+- Workflow driver: `peer-ai/shared/rules/workflow-driver.md` (ambient driver — copy to project `.cursor/rules/`)
 
-When a user says "follow .workflow/...", READ that file and follow its instructions step by step.
+When a user says "follow peer-ai/...", READ that file and follow its instructions step by step.
 
 ## Monorepo structure (if applicable)
 If the project uses a monorepo with `apps/` and `packages/`:
 - Each app deploys independently
 - npm workspaces at the root links apps together
 - Shared code lives in `packages/` (shared types, UI components, config)
-- All apps share the same `.cursor/rules/` and `.workflow/` at the root
+- All apps share the same `.cursor/rules/` and `peer-ai/` at the root
 - CI runs lint + type check + build on PRs via GitHub Actions

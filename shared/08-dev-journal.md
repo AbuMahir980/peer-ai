@@ -122,7 +122,7 @@ Each entry captures decisions, trade-offs, problems, and lessons learned.
 ```
 - Tell the user:
 
-> "No problem. If you change your mind later, just run: `Follow .workflow/shared/08-dev-journal.md` to set it up."
+> "No problem. If you change your mind later, just run: `Follow peer-ai/shared/08-dev-journal.md` to set it up."
 
 ---
 
@@ -300,7 +300,7 @@ Present and confirm:
 
 Tell the user:
 
-> "Retrospective saved. Your journal now has a complete record of this cycle — decisions, trade-offs, problems, lessons, and reflections. If starting a new cycle, go to `.workflow/shared/01-understand.md`."
+> "Retrospective saved. Your journal now has a complete record of this cycle — decisions, trade-offs, problems, lessons, and reflections. If starting a new cycle, go to `peer-ai/shared/01-understand.md`."
 
 ---
 

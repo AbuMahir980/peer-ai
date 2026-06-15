@@ -63,9 +63,9 @@ src/ (or app/ depending on framework)
 - Test at all three breakpoints before marking a page complete
 
 ## Design quality
-- After a page works, run a design-quality pass before calling it done: layout & spacing (consistent scale, clear hierarchy), typography (consistent type scale/weights), responsive (all breakpoints), edge cases (long strings, empty/slow/failed data), and motion (intentional, not janky). See `.workflow/frontend/03-build.md` step 9.
+- After a page works, run a design-quality pass before calling it done: layout & spacing (consistent scale, clear hierarchy), typography (consistent type scale/weights), responsive (all breakpoints), edge cases (long strings, empty/slow/failed data), and motion (intentional, not janky). See `peer-ai/frontend/03-build.md` step 9.
 - Prefer shared components and design tokens over copy-pasted variants and hardcoded values.
-- When a mockup and the API contract disagree, follow `.workflow/shared/design-data-contract.md`.
+- When a mockup and the API contract disagree, follow `peer-ai/shared/design-data-contract.md`.
 
 ## Error/loading/empty states
 - Every page that fetches data must have:

@@ -10,9 +10,9 @@
 
 ## 1. Confirm the workflow location
 
-Check that the `.workflow/` folder exists at the project root (or confirm the repo *is* Peer AI). If it's missing, tell the user to clone or copy it in first (see the README), then stop.
+Check that the `peer-ai/` folder exists at the project root (or confirm the repo *is* Peer AI). If it's missing, tell the user to clone or copy it in first (see the README), then stop.
 
-> "I can see the `.workflow/` folder at the project root. Ready to set up the workflow for this project?"
+> "I can see the `peer-ai/` folder at the project root. Ready to set up the workflow for this project?"
 
 **Wait for the user's input.**
 
@@ -39,19 +39,19 @@ Then create the matching config from the workflow's source rules. The content is
 
 **If A (Cursor):**
 - Create `.cursor/rules/` in the project root.
-- Copy from `.workflow/shared/rules/` and **rename** each file from `.md` to `.mdc` — Cursor only auto-loads files with the `.mdc` extension:
-  - `.workflow/shared/rules/shared.md` → `.cursor/rules/shared.mdc`
-  - `.workflow/shared/rules/workflow-driver.md` → `.cursor/rules/workflow-driver.mdc` (ambient driver — recommended)
-  - `.workflow/frontend/rules/frontend.md` → `.cursor/rules/frontend.mdc` (frontend projects)
-  - `.workflow/backend/rules/backend.md` → `.cursor/rules/backend.mdc` (backend projects)
-  - `.workflow/shared/rules/docs-pdf-export.md` → `.cursor/rules/docs-pdf-export.mdc` (optional)
+- Copy from `peer-ai/shared/rules/` and **rename** each file from `.md` to `.mdc` — Cursor only auto-loads files with the `.mdc` extension:
+  - `peer-ai/shared/rules/shared.md` → `.cursor/rules/shared.mdc`
+  - `peer-ai/shared/rules/workflow-driver.md` → `.cursor/rules/workflow-driver.mdc` (ambient driver — recommended)
+  - `peer-ai/frontend/rules/frontend.md` → `.cursor/rules/frontend.mdc` (frontend projects)
+  - `peer-ai/backend/rules/backend.md` → `.cursor/rules/backend.mdc` (backend projects)
+  - `peer-ai/shared/rules/docs-pdf-export.md` → `.cursor/rules/docs-pdf-export.mdc` (optional)
 - The content is identical — only the extension changes so Cursor recognises the file as a rule.
 
 **If B (Claude Code):**
-- Create `CLAUDE.md` at the repo root that: states the project uses the Peer AI workflow, summarizes the shared standards (from `shared.md`), instructs reading `.workflow-state.json` + `CONTEXT.md` at session start, and lists the phase files in `.workflow/`. Use `.workflow/AGENTS.md` as the structural model.
+- Create `CLAUDE.md` at the repo root that: states the project uses the Peer AI workflow, summarizes the shared standards (from `shared.md`), instructs reading `.workflow-state.json` + `CONTEXT.md` at session start, and lists the phase files in `peer-ai/`. Use `peer-ai/AGENTS.md` as the structural model.
 
 **If C (Codex / AGENTS.md):**
-- Create an `AGENTS.md` at the repo root modeled on `.workflow/AGENTS.md`, scoped to this project.
+- Create an `AGENTS.md` at the repo root modeled on `peer-ai/AGENTS.md`, scoped to this project.
 
 **If D (other):**
 - Ask what file/format the tool uses for persistent instructions, then create the equivalent with the same content.
@@ -66,10 +66,10 @@ After creating the config, confirm:
 
 ## 3. Bootstrap session-continuity files
 
-These two files live at the **app root** (not inside `.workflow/`). They are how the AI resumes work across chats.
+These two files live at the **app root** (not inside `peer-ai/`). They are how the AI resumes work across chats.
 
-- Copy `.workflow/templates/.workflow-state.json` → app root as `.workflow-state.json`
-- Copy `.workflow/templates/CONTEXT.md` → app root as `CONTEXT.md`
+- Copy `peer-ai/templates/.workflow-state.json` → app root as `.workflow-state.json`
+- Copy `peer-ai/templates/CONTEXT.md` → app root as `CONTEXT.md`
 
 Then fill in the basics with the user:
 
@@ -84,7 +84,7 @@ Fill `CONTEXT.md`'s "Current State", "Open Questions", and "Package / Asset Loca
 
 Explain the split briefly:
 
-> "Two files, two jobs: `.workflow-state.json` is the structured pointer (phase, ticket, branch); `CONTEXT.md` is the narrative (decisions, daily log, what's next). The `notes` field stays a one-liner — the story lives in `CONTEXT.md`. Full rules: `.workflow/shared/workflow-state.md`."
+> "Two files, two jobs: `.workflow-state.json` is the structured pointer (phase, ticket, branch); `CONTEXT.md` is the narrative (decisions, daily log, what's next). The `notes` field stays a one-liner — the story lives in `CONTEXT.md`. Full rules: `peer-ai/shared/workflow-state.md`."
 
 ---
 
@@ -107,7 +107,7 @@ Tell the user how these files stay current so they know what to expect:
 Briefly offer the optional add-ons:
 
 > "Two optional extras we can set up now or later:
-> - **Dev journal** (decisions/lessons log — Notion or local markdown): `Follow .workflow/shared/08-dev-journal.md`
+> - **Dev journal** (decisions/lessons log — Notion or local markdown): `Follow peer-ai/shared/08-dev-journal.md`
 > - **PDF-ready doc export** (styled HTML from your `docs/`): copy `docs-pdf-export.md` into your tool's rules
 >
 > Want either now, or skip and move on?"
@@ -120,13 +120,13 @@ Briefly offer the optional add-ons:
 
 Tell the user:
 
-> "Setup is done — rules config, `CONTEXT.md`, and `.workflow-state.json` are all in place. Next, start the real work: **`.workflow/shared/01-understand.md`** to break down requirements."
+> "Setup is done — rules config, `CONTEXT.md`, and `.workflow-state.json` are all in place. Next, start the real work: **`peer-ai/shared/01-understand.md`** to break down requirements."
 
 ---
 
 ### Update workflow state
 
-You just created `.workflow-state.json` and `CONTEXT.md` in this phase. Make sure they reflect the starting point: `currentPhase` set, `lastUpdated` stamped, and a one-line `notes` pointer. Keep narrative in `CONTEXT.md`, not in `notes`. See `.workflow/shared/workflow-state.md`.
+You just created `.workflow-state.json` and `CONTEXT.md` in this phase. Make sure they reflect the starting point: `currentPhase` set, `lastUpdated` stamped, and a one-line `notes` pointer. Keep narrative in `CONTEXT.md`, not in `notes`. See `peer-ai/shared/workflow-state.md`.
 
 ---
 
@@ -136,7 +136,7 @@ If journaling is active (check docs/journal-config.json), offer a kickoff entry 
 
 > "Before we move on, I can capture this project's kickoff as a journal entry — why it exists, key constraints, initial expectations. Want me to draft one?"
 
-**Wait for the user's input.** If yes, draft using the kickoff template from .workflow/shared/08-dev-journal.md (Part A) and write to the configured tool. If no, proceed to the handoff above.
+**Wait for the user's input.** If yes, draft using the kickoff template from peer-ai/shared/08-dev-journal.md (Part A) and write to the configured tool. If no, proceed to the handoff above.
 
 ## Tone
 

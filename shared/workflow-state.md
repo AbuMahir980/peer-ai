@@ -1,6 +1,6 @@
 # Workflow State File — Companion Guide
 
-This document explains how `.workflow-state.json` works alongside `CONTEXT.md`. Both live at the **app root** (not inside `.workflow/`).
+This document explains how `.workflow-state.json` works alongside `CONTEXT.md`. Both live at the **app root** (not inside `peer-ai/`).
 
 ---
 
@@ -63,7 +63,7 @@ Never update one without the other at session end.
 |-------|------|-------------|
 | `currentPhase` | string | Active phase name (`understand`, `build`, `review`, `test`, `document`, etc.) |
 | `currentStep` | number | Step number within the active phase file |
-| `phaseFile` | string | Path to the active `.workflow/` phase file |
+| `phaseFile` | string | Path to the active `peer-ai/` phase file |
 | `cycle` | string | Human-readable cycle or milestone label |
 | `milestoneBranch` | string | Long-lived branch for the current cycle |
 | `ticket` | string | Active issue tracker ID (e.g. `PROJ-42`) |

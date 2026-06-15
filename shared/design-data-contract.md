@@ -27,4 +27,4 @@ When a design spec (mockup, Figma, HTML preview) and an API/data contract disagr
 
 During build, record discrepancies in your project's findings log (e.g. `FINDINGS.md`) with the category: `contract`, `design`, `spec`, or `package-handoff`.
 
-See also: `.workflow/agents/contract-check-prompt.md` for automated verification after API integration.
+See also: `peer-ai/agents/contract-check-prompt.md` for automated verification after API integration.

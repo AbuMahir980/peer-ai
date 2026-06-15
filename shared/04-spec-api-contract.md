@@ -269,11 +269,11 @@ Then tell the user:
 >
 > **If you're the frontend developer:**
 > Send this contract to the backend developer for review. They need to confirm they can provide these endpoints in these shapes. If they have concerns, you'll negotiate and update this document together.
-> Then continue to `.workflow/shared/05-rules-shared.md` to establish coding standards.
+> Then continue to `peer-ai/shared/05-rules-shared.md` to establish coding standards.
 >
 > **If you're the backend developer:**
 > Send this to the frontend developer for review. They need to confirm these shapes give them what the UI needs.
-> Then continue to `.workflow/shared/05-rules-shared.md` to establish coding standards.
+> Then continue to `peer-ai/shared/05-rules-shared.md` to establish coding standards.
 >
 > **Important:** Neither side should start building until both have agreed on this contract. It's much cheaper to fix a disagreement here than after code is written."
 
@@ -283,13 +283,13 @@ After saving the markdown, offer:
 
 > "Want me to generate a PDF-ready HTML version of the API contract in `docs-pdf/`? You can open it in a browser and print/save as PDF — useful for sharing with the other developer or stakeholders."
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/04-api-contract.html` following the styling rules in `.workflow/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/04-api-contract.html` following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 
 ### Journal entry
 
@@ -297,7 +297,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > “Before we move on, I can capture what we did in this phase as a journal entry — decisions, trade-offs, and lessons learned. Want me to draft one?”
 
-**Wait for the user’s input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
+**Wait for the user’s input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 
 ## Tone
 

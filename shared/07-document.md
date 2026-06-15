@@ -58,7 +58,7 @@ Context: a cycle or milestone is complete. Update living docs, record what shipp
 
 ### 4. Architecture decisions (ADRs)
 
-**Produce:** Ask whether any decisions this cycle warrant an ADR (cross-cutting choice, trade-offs, alternatives rejected). Use the template at **`.workflow/shared/templates/architecture-decision-record.md`** (or `docs/adr/` naming convention `001-title.md`).
+**Produce:** Ask whether any decisions this cycle warrant an ADR (cross-cutting choice, trade-offs, alternatives rejected). Use the template at **`peer-ai/shared/templates/architecture-decision-record.md`** (or `docs/adr/` naming convention `001-title.md`).
 
 **Ask:**
 
@@ -98,7 +98,7 @@ Context: a cycle or milestone is complete. Update living docs, record what shipp
 
 ### 6. Stakeholder update
 
-**Produce:** Draft a stakeholder summary using **`.workflow/shared/templates/stakeholder-review.md`** as the structural guide: outcomes in plain language, what's next, risks, demo/screenshot placeholders.
+**Produce:** Draft a stakeholder summary using **`peer-ai/shared/templates/stakeholder-review.md`** as the structural guide: outcomes in plain language, what's next, risks, demo/screenshot placeholders.
 
 **Ask:**
 
@@ -158,7 +158,7 @@ After confirming all docs are finalized, offer:
 
 > "Want me to generate PDF-ready HTML versions for any docs we created or updated this cycle? I'll put them in `docs-pdf/` — you can open them in a browser and print/save as PDF to share with stakeholders. Which ones should I export?"
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate the requested HTML files following the styling rules in `.workflow/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate the requested HTML files following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 
@@ -168,15 +168,15 @@ Tell the user:
 
 > "Documentation is done. Next:
 >
-> - If you haven't set up PR automation yet, follow **`.workflow/shared/09-pr-automation.md`** to configure GitHub Actions, branch protection, and automated review comments.
-> - If PR automation is already set up, and you want to run a retrospective or set up your dev journal, follow **`.workflow/shared/08-dev-journal.md`**.
-> - If there's another cycle, go back to **`.workflow/shared/01-understand.md`** for new features or **`.workflow/shared/06-issues.md`** to plan the next batch of work."
+> - If you haven't set up PR automation yet, follow **`peer-ai/shared/09-pr-automation.md`** to configure GitHub Actions, branch protection, and automated review comments.
+> - If PR automation is already set up, and you want to run a retrospective or set up your dev journal, follow **`peer-ai/shared/08-dev-journal.md`**.
+> - If there's another cycle, go back to **`peer-ai/shared/01-understand.md`** for new features or **`peer-ai/shared/06-issues.md`** to plan the next batch of work."
 
 ---
 
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 
 ### Journal entry
 
@@ -184,7 +184,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > “Before we move on, I can capture what we did in this phase as a journal entry — decisions, trade-offs, and lessons learned. Want me to draft one?”
 
-**Wait for the user’s input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
+**Wait for the user’s input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 
 ## Tone
 

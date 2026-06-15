@@ -83,7 +83,7 @@ The second-to-last section always points the user to the next file:
 
 Tell the user:
 
-> "[Phase] is done. Next, follow **`.workflow/[path/to/next-file.md]`**."
+> "[Phase] is done. Next, follow **`peer-ai/[path/to/next-file.md]`**."
 ```
 
 ### 5. Linear issue completion (in build phases)
@@ -97,7 +97,7 @@ After the handoff, before the journal entry, every phase file includes a state-u
 ```markdown
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 ```
 
 ### 7. Journal entry section
@@ -111,7 +111,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > "Before we move on, I can capture what we did in this phase as a journal entry -- decisions, trade-offs, and lessons learned. Want me to draft one?"
 
-**Wait for the user's input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
+**Wait for the user's input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 ```
 
 ### 8. Tone section (always last)
@@ -190,7 +190,7 @@ The best way to make changes is through Cursor itself:
 
 1. Open a new Cursor chat
 2. Tell the AI exactly what you want changed and in which file
-3. Be specific: "In `.workflow/backend/02-rules.md`, add a new section after section 10 about [topic]. Follow the same ask-then-wait pattern as the other sections."
+3. Be specific: "In `peer-ai/backend/02-rules.md`, add a new section after section 10 about [topic]. Follow the same ask-then-wait pattern as the other sections."
 4. Review the AI's changes before accepting
 
 **Do not** ask the AI to "rewrite the whole workflow" or "improve everything" -- this leads to unintended changes. Be surgical.
@@ -200,7 +200,7 @@ The best way to make changes is through Cursor itself:
 ## How to test your changes
 
 1. Open a **new** Cursor chat (fresh context)
-2. Type: `Follow .workflow/[path/to/file-you-changed.md]`
+2. Type: `Follow peer-ai/[path/to/file-you-changed.md]`
 3. Walk through the entire flow, answering the AI's questions
 4. Verify:
    - The AI follows each step in order
@@ -217,16 +217,16 @@ After editing files in `peer-ai`, sync them to any project that uses the workflo
 
 ```bash
 # From the project root (e.g. inside your project monorepo)
-cp -r /path/to/peer-ai/* .workflow/
+cp -r /path/to/peer-ai/* peer-ai/
 ```
 
 Then re-run the tool-specific sync for whichever tool the project uses.
 
 **Cursor** — copy and rename `.md` → `.mdc`:
 ```bash
-cp .workflow/shared/rules/shared.md .cursor/rules/shared.mdc
-cp .workflow/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc
-cp .workflow/frontend/rules/frontend.md .cursor/rules/frontend.mdc
+cp peer-ai/shared/rules/shared.md .cursor/rules/shared.mdc
+cp peer-ai/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc
+cp peer-ai/frontend/rules/frontend.md .cursor/rules/frontend.mdc
 ```
 
 **Claude Code** — update `CLAUDE.md` with the same content.

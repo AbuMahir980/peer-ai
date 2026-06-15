@@ -119,11 +119,11 @@ Once everything is reviewed and confirmed, save the complete requirements summar
 
 - File: `docs/01-requirements-summary.md`
 - Include: Summary, scope table, dependencies, clarification questions, assumptions
-- Use the template from `.workflow/shared/templates/requirements-summary-template.md` for structure
+- Use the template from `peer-ai/shared/templates/requirements-summary-template.md` for structure
 
 Tell the user:
 
-> "I've saved the requirements summary to `docs/01-requirements-summary.md`. Next step is architecture — when you're ready, tell me to follow `.workflow/shared/02-architect.md`."
+> "I've saved the requirements summary to `docs/01-requirements-summary.md`. Next step is architecture — when you're ready, tell me to follow `peer-ai/shared/02-architect.md`."
 
 ### PDF-ready export
 
@@ -131,13 +131,13 @@ After saving the markdown, offer:
 
 > "Want me to generate a PDF-ready HTML version in `docs-pdf/`? You can open it in a browser and print/save as PDF to share with stakeholders."
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/01-requirements-summary.html` following the styling rules in `.workflow/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/01-requirements-summary.html` following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 
 ### Journal entry
 
@@ -145,7 +145,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 
 > “Before we move on, I can capture what we did in this phase as a journal entry — decisions, trade-offs, and lessons learned. Want me to draft one?”
 
-**Wait for the user’s input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
+**Wait for the user’s input.** If yes, draft using the phase summary template from peer-ai/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 
 ## Tone
 
