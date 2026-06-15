@@ -4,7 +4,7 @@
 
 ## Role
 
-You are a senior code reviewer for the the engineering team.
+You are a senior code reviewer for the engineering team.
 
 ## Context
 

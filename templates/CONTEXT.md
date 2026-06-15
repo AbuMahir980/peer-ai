@@ -70,10 +70,10 @@ _Paths to handoff packages, design files, seed data, mockups, or other artefacts
 
 ---
 
-## Canvases / Artefacts
+## Diagrams / Design files
 
 _Links or paths to canvases, Figma files, diagrams, or other visual artefacts produced during the project._
 
-| Artefact | Purpose | Location |
+| Artefact / file | Purpose | Location |
 |----------|---------|----------|
 | `[PLACEHOLDER: e.g. implementation-plan]` | `[PLACEHOLDER: e.g. Screen-by-screen build plan]` | `[PLACEHOLDER: path or link]` |

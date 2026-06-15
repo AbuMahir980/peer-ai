@@ -1,6 +1,6 @@
 <!-- 
   API Contract Template
-  Recommended location: docs/api-contracts-v1.md (version-controlled in the repo)
+  Recommended location: docs/04-api-contract.md (version-controlled in the repo)
   Suggested endpoint priority: Auth → Customers → Cases → Notes → remaining
 -->
 

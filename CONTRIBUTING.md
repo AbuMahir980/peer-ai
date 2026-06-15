@@ -88,7 +88,7 @@ Tell the user:
 
 ### 5. Issue tracker update (in build phases)
 
-Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must include an "Issue tracker update" block after each unit of work (page, endpoint group). This block instructs the AI to: (1) tick acceptance criteria checkboxes, (2) add a completion comment, and (3) post a project-level update. See `shared/rules/shared.md` for the full rule.
+Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must include an "Issue tracker update" block after each unit of work (page, endpoint group). This block instructs the AI to: (1) tick acceptance criteria checkboxes, (2) add a completion comment, and (3) post a project-level update. See `peer-ai/shared/rules/shared.md` for the full rule.
 
 ### 6. Update workflow state section
 
@@ -186,9 +186,9 @@ Branch creation with ticket ID in name → ticket auto-moves to In Progress. PR 
 
 ## How to edit workflow files using the AI
 
-The best way to make changes is through Cursor itself:
+The best way to make changes is through your AI coding tool (Cursor, Claude Code, Codex, etc.):
 
-1. Open a new Cursor chat
+1. Open a new AI tool chat (fresh context)
 2. Tell the AI exactly what you want changed and in which file
 3. Be specific: "In `peer-ai/backend/02-rules.md`, add a new section after section 10 about [topic]. Follow the same ask-then-wait pattern as the other sections."
 4. Review the AI's changes before accepting
@@ -199,7 +199,7 @@ The best way to make changes is through Cursor itself:
 
 ## How to test your changes
 
-1. Open a **new** Cursor chat (fresh context)
+1. Open a **new** chat (fresh context — same principle in any AI tool)
 2. Type: `Follow peer-ai/[path/to/file-you-changed.md]`
 3. Walk through the entire flow, answering the AI's questions
 4. Verify:

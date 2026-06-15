@@ -61,7 +61,7 @@ When design mockups and API contracts disagree, follow `peer-ai/shared/design-da
 
 ## Model recommendations
 
-When starting a workflow phase, remind the user which model to select in Cursor for cost efficiency:
+When starting a workflow phase, remind the user which model to select in their AI tool's model selector for cost efficiency:
 
 | Phase | Recommended model | Why |
 |-------|------------------|-----|
@@ -137,7 +137,7 @@ This project includes the Peer AI Development Workflow in the `peer-ai/` folder.
 - Contributing guide: `peer-ai/CONTRIBUTING.md` (how to safely edit workflow files)
 - Workflow state guide: `peer-ai/shared/workflow-state.md` (state file + `notes` field rules)
 - Design vs contract: `peer-ai/shared/design-data-contract.md`
-- Workflow driver: `peer-ai/shared/rules/workflow-driver.md` (ambient driver — copy to project `.cursor/rules/`)
+- Workflow driver: `peer-ai/shared/rules/workflow-driver.md` (ambient driver — copy to your tool's rules config during setup)
 
 When a user says "follow peer-ai/...", READ that file and follow its instructions step by step.
 
@@ -146,5 +146,5 @@ If the project uses a monorepo with `apps/` and `packages/`:
 - Each app deploys independently
 - npm workspaces at the root links apps together
 - Shared code lives in `packages/` (shared types, UI components, config)
-- All apps share the same `.cursor/rules/` and `peer-ai/` at the root
+- All apps share the same rules config (`.cursor/rules/` for Cursor, `CLAUDE.md` for Claude Code, `AGENTS.md` for others) and `peer-ai/` at the root
 - CI runs lint + type check + build on PRs via GitHub Actions

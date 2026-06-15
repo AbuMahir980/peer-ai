@@ -83,6 +83,6 @@ Never update one without the other at session end.
 
 1. Copy `templates/.peer-ai-state.json` → your app root as `.peer-ai-state.json`
 2. Copy `templates/CONTEXT.md` → your app root as `CONTEXT.md`
-3. Copy `shared/rules/workflow-driver.md` → your app `.cursor/rules/`
+3. Copy `peer-ai/shared/rules/workflow-driver.md` → your tool's rules config (`.cursor/rules/workflow-driver.mdc` for Cursor, or equivalent)
 4. Fill in both files on day one with project name, cycle, and initial phase
 5. Commit both files to git so the team shares the same pointer

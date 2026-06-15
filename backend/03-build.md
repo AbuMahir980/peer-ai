@@ -241,7 +241,7 @@ Tell the user:
 > 1. **Code review agent** — produces a structured findings report
 > 2. **Contract check agent** — verifies your endpoints match the API contract
 >
-> Want me to run both now? I'll launch them as parallel background agents and summarise the results when they're done. Then we move to the full interactive review: `Follow peer-ai/backend/04-review.md`."
+> Want me to run both now? I can run them in parallel (separate chats, subagents, or CI jobs — depending on your tool) and summarise the results when they're done. Then we move to the full interactive review: `Follow peer-ai/backend/04-review.md`."
 
 **If the user says yes:** launch both agents as parallel background tasks using `peer-ai/agents/review-prompt.md` and `peer-ai/agents/contract-check-prompt.md`. Summarise combined results when both complete.
 **If they prefer sequential:** run code review first, then contract check.

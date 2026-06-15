@@ -12,7 +12,7 @@ Context: a cycle or milestone is complete. Update living docs, record what shipp
 
 ### 1. Establish what shipped
 
-**Produce:** Offer two paths: (A) the user summarizes what completed this cycle, or (B) you infer from `git log` and/or Linear (or issue list) if they grant access to those sources.
+**Produce:** Offer two paths: (A) the user summarizes what completed this cycle, or (B) you infer from `git log` and/or your **issue tracker** (Linear, Jira, GitHub Issues, etc.) if they grant access to those sources.
 
 **Ask:**
 

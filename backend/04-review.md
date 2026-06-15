@@ -168,7 +168,7 @@ Tell the user:
 > 1. **Security audit agent** — catches auth, XSS, CORS, and secrets issues the general review missed
 > 2. **Code review agent** — produces a structured findings report for the record
 >
-> Want me to run both now? I’ll launch them as parallel background agents and summarise the results when they’re done. Then we move to tests: Follow peer-ai/backend/05-test.md.”
+> Want me to run both now? I can run them in parallel (separate chats, subagents, or CI jobs — depending on your tool) and summarise the results when they're done. Then we move to tests: Follow peer-ai/backend/05-test.md.”
 
 **If the user says yes:** launch both agents as parallel background tasks using peer-ai/agents/security-audit-prompt.md and peer-ai/agents/review-prompt.md. Summarise combined results when both complete.
 **If they prefer sequential:** run security audit first, then code review.

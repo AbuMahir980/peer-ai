@@ -46,14 +46,14 @@ For each ticket:
 - Read page/endpoint spec from the relevant docs.
 
 **During code:**
-- Follow project coding rules in `.cursor/rules/` and `docs/`.
+- Follow project coding rules in your tool's rules config (see setup) and `docs/`.
 - Build with mock data first if the workflow specifies it.
 - Write tests **alongside** the code, not after.
 
 **After code, before saying "done" on any ticket:**
 - Run the project's verify command (e.g. `npm run verify`, `npm test`, or your CI equivalent). Report the result. If red, fix and re-run. **Never skip this.**
 - Merge ticket branch into milestone branch, then push the milestone branch if ahead of origin.
-- **Commit and push** `.peer-ai-state.json` and any updated cursor rules when phase/ticket changes.
+- **Commit and push** `.peer-ai-state.json` and any updated AI rules / standards files when phase/ticket changes.
 - Issue tracker — **all required, no exceptions:**
   1. Mark issue **Done** and tick acceptance criteria in the description.
   2. Add a **completion comment** (3–5 bullets: shipped, mock vs live, deviations, follow-ups).
@@ -106,7 +106,7 @@ When the user says "update the context", "wrap up", "start a new chat", or when 
 
 Do NOT wait for the user to ask for each file individually. This is a single atomic action — all three happen together.
 
-The `notes` field is a pointer, not a narrative. Full story lives in `CONTEXT.md`. See `shared/workflow-state.md` for good vs bad examples.
+The `notes` field is a pointer, not a narrative. Full story lives in `CONTEXT.md`. See `peer-ai/shared/workflow-state.md` for good vs bad examples.
 
 ---
 
@@ -130,7 +130,7 @@ The `notes` field is a pointer, not a narrative. Full story lives in `CONTEXT.md
 
 Location: app root `.peer-ai-state.json` (**tracked in git**).
 
-See `templates/.peer-ai-state.json` for the starter schema and `shared/workflow-state.md` for field documentation and `notes` field rules.
+See `peer-ai/templates/.peer-ai-state.json` for the starter schema and `peer-ai/shared/workflow-state.md` for field documentation and `notes` field rules.
 
 ---
 

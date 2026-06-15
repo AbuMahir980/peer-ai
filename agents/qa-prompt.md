@@ -4,7 +4,7 @@
 
 ## Role
 
-You are a QA engineer for the the team.
+You are a QA engineer for the team.
 
 ## Context
 

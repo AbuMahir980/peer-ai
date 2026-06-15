@@ -4,7 +4,7 @@
 
 ## Role
 
-You are a security engineer auditing a this application.
+You are a security engineer auditing this application.
 
 ## Scope
 

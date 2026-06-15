@@ -18,7 +18,7 @@ Ask:
 >
 > Which tool do you want to use for your journal?
 >
-> **A) Notion (MCP)** — I'll create a Notion database and write entries directly to it. Requires the Notion MCP server configured in Cursor.
+> **A) Notion (MCP)** — I'll create a Notion database and write entries directly to it. Requires the Notion MCP server configured in your AI tool (if it supports MCP).
 >
 > **B) Local markdown (Obsidian-compatible)** — I'll create a `docs/journal/` folder in your repo with dated markdown files. Works with Obsidian, any markdown viewer, or just your editor.
 >
@@ -36,10 +36,10 @@ Ask:
 
 **If A (Notion MCP):**
 
-- Check if the Notion MCP server is already configured in Cursor. If not, guide setup:
-  1. Open Cursor Settings → MCP → Add new global MCP server
+- Check if the Notion MCP server is already configured in your AI tool. If not, guide setup:
+  1. Open your tool's MCP settings (e.g. Cursor Settings → MCP, or your tool's equivalent)
   2. Add: `{ "mcpServers": { "notion": { "url": "https://mcp.notion.com/mcp" } } }`
-  3. Save and restart Cursor
+  3. Save and restart your AI tool
   4. Complete the OAuth flow when prompted
 - Ask the user which Notion workspace and parent page to use:
 
