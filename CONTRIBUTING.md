@@ -14,7 +14,7 @@ peer-ai/
   frontend/         # Frontend-specific tracks (page specs, rules, build, review, test)
   backend/          # Backend-specific tracks (endpoint specs, rules, build, review, test)
   agents/           # Automated agent prompts (code review, contract check, QA, security audit)
-  templates/        # CONTEXT.md and .workflow-state.json starters for new projects
+  templates/        # CONTEXT.md and .peer-ai-state.json starters for new projects
   README.md         # Entry point and quick reference
   CONTRIBUTING.md   # This file
 ```
@@ -30,7 +30,7 @@ peer-ai/
 | **Numbered phase files** | `shared/01-understand.md`, `frontend/03-build.md` | Yes | Follow "Required sections in every workflow file" below |
 | **Companion guides** | `shared/workflow-state.md`, `shared/design-data-contract.md` | No | Plain reference docs. Keep them short and decision-oriented; no AI header / model directive / wait-for-input. Cross-reference from the phases that need them. |
 | **Rule configs** | `shared/rules/*.md`, root `AGENTS.md` | No | Source rules in plain `.md`. When a project sets up (phase 0), the AI copies these into the tool-specific location (`.cursor/rules/*.mdc` for Cursor, `CLAUDE.md` for Claude, etc.). Keep `shared.md`, `workflow-driver.md`, and `AGENTS.md` in sync when standards change. |
-| **Templates** | `templates/CONTEXT.md`, `templates/.workflow-state.json` | No | Starters a project copies to its app root on day one. Use `[PLACEHOLDER: …]` markers and a top copy comment. `00-setup.md` is what instructs the AI to copy them. |
+| **Templates** | `templates/CONTEXT.md`, `templates/.peer-ai-state.json` | No | Starters a project copies to its app root on day one. Use `[PLACEHOLDER: …]` markers and a top copy comment. `00-setup.md` is what instructs the AI to copy them. |
 
 **Agent-agnostic rule:** the workflow must not assume a specific AI tool. When a file needs to reference where rules live, list the options (`.cursor/rules/` for Cursor, `CLAUDE.md` for Claude Code, `AGENTS.md` for Codex/others) rather than hardcoding Cursor. The `00-setup.md` phase is responsible for creating the config that matches the user's tool.
 
@@ -92,12 +92,12 @@ Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must includ
 
 ### 6. Update workflow state section
 
-After the handoff, before the journal entry, every phase file includes a state-update block. This is what keeps the session-continuity files (`CONTEXT.md` + `.workflow-state.json`) current as the project moves through phases:
+After the handoff, before the journal entry, every phase file includes a state-update block. This is what keeps the session-continuity files (`CONTEXT.md` + `.peer-ai-state.json`) current as the project moves through phases:
 
 ```markdown
 ### Update workflow state
 
-If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
+If `.peer-ai-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `peer-ai/shared/workflow-state.md`.
 ```
 
 ### 7. Journal entry section

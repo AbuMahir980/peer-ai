@@ -13,7 +13,7 @@ Peer AI is a structured engineering playbook packaged as markdown files. Each fi
 - **Conversational** — the AI asks questions and waits; it never dumps everything at once
 - **Phase-gated** — each step produces output the next step depends on
 - **Agent-integrated** — code review, contract check, security audit, and QA agents slot into the flow at the right moments
-- **Context-persistent** — `CONTEXT.md` + `.workflow-state.json` let you start a fresh chat without losing your place
+- **Context-persistent** — `CONTEXT.md` + `.peer-ai-state.json` let you start a fresh chat without losing your place
 
 ---
 
@@ -26,7 +26,7 @@ Peer AI is a structured engineering playbook packaged as markdown files. Each fi
 | `frontend/` | Frontend devs | Page specs, coding standards, build, review, test |
 | `backend/` | Backend devs | Endpoint specs, coding standards, build, review, test |
 | `agents/` | CI/CD & reviewers | Automated code review, QA, security audit, contract check prompts |
-| `templates/` | Project setup | `CONTEXT.md` and `.workflow-state.json` starters |
+| `templates/` | Project setup | `CONTEXT.md` and `.peer-ai-state.json` starters |
 | `CONTRIBUTING.md` | Maintainers | How to safely edit workflow files |
 
 ---
@@ -64,7 +64,7 @@ The setup phase will:
    - Cursor → `.cursor/rules/` (`.mdc` files)
    - Claude Code → `CLAUDE.md` at the project root
    - Codex / others → `AGENTS.md` at the project root
-2. **Bootstrap session context** — copy and fill in `CONTEXT.md` and `.workflow-state.json` at your project root with you.
+2. **Bootstrap session context** — copy and fill in `CONTEXT.md` and `.peer-ai-state.json` at your project root with you.
 3. Offer optional extras (dev journal, PDF export).
 
 **Manual alternative (Cursor only):** copy rule files from `peer-ai/shared/rules/` and rename each from `.md` to `.mdc` so Cursor auto-loads them:
@@ -75,7 +75,7 @@ cp peer-ai/shared/rules/shared.md          .cursor/rules/shared.mdc
 cp peer-ai/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc
 cp peer-ai/frontend/rules/frontend.md      .cursor/rules/frontend.mdc
 cp peer-ai/templates/CONTEXT.md            ./CONTEXT.md
-cp peer-ai/templates/.workflow-state.json  ./.workflow-state.json
+cp peer-ai/templates/.peer-ai-state.json  ./.peer-ai-state.json
 ```
 
 ### 3. Start building
@@ -94,7 +94,7 @@ my-app/
     agents/
     templates/
   CONTEXT.md                  ← narrative session log (you and the AI maintain this)
-  .workflow-state.json        ← structured workflow pointer (the AI maintains this)
+  .peer-ai-state.json        ← structured workflow pointer (the AI maintains this)
   docs/                       ← phase outputs land here
   src/                        ← your code (created during Build)
 ```
@@ -103,7 +103,7 @@ my-app/
 
 ## The workflow — one line per phase
 
-With the **workflow driver** installed, you don't need to type "Follow peer-ai/..." — the agent picks up from `.workflow-state.json` automatically. You can still invoke any phase manually:
+With the **workflow driver** installed, you don't need to type "Follow peer-ai/..." — the agent picks up from `.peer-ai-state.json` automatically. You can still invoke any phase manually:
 
 | # | Phase | Manual command |
 |:-:|-------|----------------|
@@ -137,7 +137,7 @@ This is the session continuity system — the main innovation beyond a static pl
 
 | File | Role |
 |------|------|
-| `.workflow-state.json` | Structured pointer — current phase, step, ticket, branch. Updated after every ticket and phase transition. |
+| `.peer-ai-state.json` | Structured pointer — current phase, step, ticket, branch. Updated after every ticket and phase transition. |
 | `CONTEXT.md` | Narrative log — decisions, daily progress, open questions, asset paths. Updated at session end. |
 
 **Atomic save rule:** When you say "wrap up" or "start a new chat", the agent updates **both** files together, then confirms: *"Context saved. Safe to start a new chat."*
@@ -219,7 +219,7 @@ Read `CONTRIBUTING.md` before editing workflow files — it explains required st
 → `peer-ai/` must be at the project root, not nested inside `src/` or any subfolder.
 
 **"I lost context between chats"**
-→ Say "update the context" or "wrap up" before ending a session. Make sure `CONTEXT.md` and `.workflow-state.json` exist at the project root.
+→ Say "update the context" or "wrap up" before ending a session. Make sure `CONTEXT.md` and `.peer-ai-state.json` exist at the project root.
 
 **"Mock data doesn't match the real backend"**
 → The API contract (`docs/04-api-contract.md`) is the source of truth. Run `Follow peer-ai/agents/contract-check-prompt.md`.

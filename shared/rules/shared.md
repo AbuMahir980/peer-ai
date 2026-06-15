@@ -10,7 +10,7 @@ You are working on this project. Follow these standards in every interaction.
 
 ## Session context (CONTEXT.md + state file)
 
-If `.workflow-state.json` and `CONTEXT.md` exist at the app root, the workflow driver is active. At session start, read **both** files before doing anything else. Narrative context (decisions, emails, daily log) belongs in `CONTEXT.md`; the `notes` field in `.workflow-state.json` is a one-liner pointer only — see `peer-ai/shared/workflow-state.md`.
+If `.peer-ai-state.json` and `CONTEXT.md` exist at the app root, the workflow driver is active. At session start, read **both** files before doing anything else. Narrative context (decisions, emails, daily log) belongs in `CONTEXT.md`; the `notes` field in `.peer-ai-state.json` is a one-liner pointer only — see `peer-ai/shared/workflow-state.md`.
 
 When design mockups and API contracts disagree, follow `peer-ai/shared/design-data-contract.md`: contract wins on data shape and field names; design wins on layout and visual hierarchy.
 

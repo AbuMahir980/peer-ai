@@ -1,6 +1,6 @@
 # Workflow State File — Companion Guide
 
-This document explains how `.workflow-state.json` works alongside `CONTEXT.md`. Both live at the **app root** (not inside `peer-ai/`).
+This document explains how `.peer-ai-state.json` works alongside `CONTEXT.md`. Both live at the **app root** (not inside `peer-ai/`).
 
 ---
 
@@ -8,7 +8,7 @@ This document explains how `.workflow-state.json` works alongside `CONTEXT.md`. 
 
 | File | Purpose | What goes in it |
 |------|---------|-----------------|
-| `.workflow-state.json` | **Structured pointer** — where the agent is in the workflow | Phase, step, ticket ID, branch, ticket lists, timestamps |
+| `.peer-ai-state.json` | **Structured pointer** — where the agent is in the workflow | Phase, step, ticket ID, branch, ticket lists, timestamps |
 | `CONTEXT.md` | **Narrative log** — the story behind the pointer | Decisions, emails, daily summaries, open questions, asset paths |
 
 The workflow driver reads **both** at session start. Never put narrative content in the state file.
@@ -17,7 +17,7 @@ The workflow driver reads **both** at session start. Never put narrative content
 
 ## The `notes` field — pointer only
 
-The `notes` field in `.workflow-state.json` is a **one-liner pointer**, not a narrative dump. It tells the next session *where to look* and *what to do first* — nothing more.
+The `notes` field in `.peer-ai-state.json` is a **one-liner pointer**, not a narrative dump. It tells the next session *where to look* and *what to do first* — nothing more.
 
 ### Good `notes` value
 
@@ -46,7 +46,7 @@ Why this fails:
 
 ## When to update both files
 
-Update **both** `.workflow-state.json` and `CONTEXT.md` together as a **single atomic action** when:
+Update **both** `.peer-ai-state.json` and `CONTEXT.md` together as a **single atomic action** when:
 
 - The user says "update the context", "wrap up", or "start a new chat"
 - Context usage is visibly near ~80%
@@ -81,7 +81,7 @@ Never update one without the other at session end.
 
 ## Setup in a new project
 
-1. Copy `templates/.workflow-state.json` → your app root as `.workflow-state.json`
+1. Copy `templates/.peer-ai-state.json` → your app root as `.peer-ai-state.json`
 2. Copy `templates/CONTEXT.md` → your app root as `CONTEXT.md`
 3. Copy `shared/rules/workflow-driver.md` → your app `.cursor/rules/`
 4. Fill in both files on day one with project name, cycle, and initial phase

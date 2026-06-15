@@ -8,9 +8,9 @@ You are an AI assistant working inside a project that uses the **Peer AI develop
 
 ## On every session start
 
-If `.workflow-state.json` and `CONTEXT.md` exist at the app root, **read both before doing anything else**:
+If `.peer-ai-state.json` and `CONTEXT.md` exist at the app root, **read both before doing anything else**:
 
-1. `.workflow-state.json` — the structured pointer (current phase, step, ticket, branch).
+1. `.peer-ai-state.json` — the structured pointer (current phase, step, ticket, branch).
 2. `CONTEXT.md` — the narrative log (decisions, daily progress, what's next, open questions).
 
 Then tell the user where things stand and continue from `currentStep` in the active phase file. The state file holds the data; `CONTEXT.md` holds the story. See `peer-ai/shared/workflow-state.md`.
@@ -49,7 +49,7 @@ Agent prompts (code review, contract check, security audit, QA) are in `peer-ai/
 
 The full standards are in `peer-ai/shared/rules/shared.md`. Key rules:
 
-- **Session context:** maintain `CONTEXT.md` (narrative) and `.workflow-state.json` (pointer). The `notes` field is a one-liner pointer only — narrative belongs in `CONTEXT.md`.
+- **Session context:** maintain `CONTEXT.md` (narrative) and `.peer-ai-state.json` (pointer). The `notes` field is a one-liner pointer only — narrative belongs in `CONTEXT.md`.
 - **Design vs data contract:** when a mockup and an API contract disagree, the contract wins on data shape and field names; the design wins on layout and visual hierarchy. See `peer-ai/shared/design-data-contract.md`.
 - **Type safety, naming, security, error handling, dependencies** — see the shared standards file.
 - **Model recommendations** — each phase suggests a cost-appropriate model; tell the user which to select in their tool before starting a phase.

@@ -2,7 +2,7 @@
 
 # Session Context Log
 
-This file is the **narrative companion** to `.workflow-state.json`. The workflow driver (or any AI following the workflow) reads **both files** at every session start. The state file holds structured pointers (phase, ticket, step); this file holds the story (decisions, daily progress, what's next).
+This file is the **narrative companion** to `.peer-ai-state.json`. The workflow driver (or any AI following the workflow) reads **both files** at every session start. The state file holds structured pointers (phase, ticket, step); this file holds the story (decisions, daily progress, what's next).
 
 **Update this file** when the user says "update the context", "wrap up", or "start a new chat", or when context usage is visibly high (~80%).
 

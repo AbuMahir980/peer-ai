@@ -16,7 +16,7 @@ This file is the **ambient workflow driver** — the always-on rule that makes t
 
 **First action — before doing anything else:**
 
-1. Read `.workflow-state.json` in the app root.
+1. Read `.peer-ai-state.json` in the app root.
 2. Read `CONTEXT.md` in the app root — this is the narrative companion. It carries email threads, daily session summaries, decisions made, open questions, and what comes next. The state file has the structured data; CONTEXT.md has the story. **Read both before doing anything.**
 3. Tell the user where we are:
 
@@ -38,7 +38,7 @@ Read and follow the steps in the active `peer-ai/` phase file. Key rules:
 For each ticket:
 
 **Before code:**
-- **Correct branch (mandatory):** `git branch --show-current` must match this ticket's issue branch or the milestone branch from `.workflow-state.json`. If wrong, checkout or create the correct branch before editing.
+- **Correct branch (mandatory):** `git branch --show-current` must match this ticket's issue branch or the milestone branch from `.peer-ai-state.json`. If wrong, checkout or create the correct branch before editing.
 - Issue tracker: move ticket **Backlog → In Progress** (mandatory first step).
 - Create ticket branch off the milestone branch, then **`git push -u origin <ticket-branch>`** so the branch appears on the remote before merge.
 - **Design guide first (UI work):** open the project's design reference (e.g. `docs/mockup/`, Figma, or agreed HTML preview) and locate the screen being built. Visual/layout hierarchy should match the design unless the spec explicitly overrides it — then read the page spec for behaviour, states, and data. When design and contract conflict, follow `shared/design-data-contract.md`.
@@ -53,12 +53,12 @@ For each ticket:
 **After code, before saying "done" on any ticket:**
 - Run the project's verify command (e.g. `npm run verify`, `npm test`, or your CI equivalent). Report the result. If red, fix and re-run. **Never skip this.**
 - Merge ticket branch into milestone branch, then push the milestone branch if ahead of origin.
-- **Commit and push** `.workflow-state.json` and any updated cursor rules when phase/ticket changes.
+- **Commit and push** `.peer-ai-state.json` and any updated cursor rules when phase/ticket changes.
 - Issue tracker — **all required, no exceptions:**
   1. Mark issue **Done** and tick acceptance criteria in the description.
   2. Add a **completion comment** (3–5 bullets: shipped, mock vs live, deviations, follow-ups).
   3. Post a **project-level update** — one sentence of progress.
-- Update `.workflow-state.json`: move ticket from remaining/in-progress → completed, set next ticket, update `lastVerifyResult` and `lastUpdated`.
+- Update `.peer-ai-state.json`: move ticket from remaining/in-progress → completed, set next ticket, update `lastVerifyResult` and `lastUpdated`.
 - Delete the merged ticket branch on origin and locally.
 
 ### Review / Test / Document phases
@@ -78,7 +78,7 @@ test → offer QA agent → advance to document
 document → open PR, advance to done, post project update
 ```
 
-Update `.workflow-state.json` at every transition: set `currentPhase`, `phaseFile`, `currentStep` to 1, update `notes` with a one-liner pointer (not narrative).
+Update `.peer-ai-state.json` at every transition: set `currentPhase`, `phaseFile`, `currentStep` to 1, update `notes` with a one-liner pointer (not narrative).
 
 ---
 
@@ -86,7 +86,7 @@ Update `.workflow-state.json` at every transition: set `currentPhase`, `phaseFil
 
 If the user brings something unrelated mid-workflow (email, bug report, question, doc update):
 
-1. **Before switching:** update `.workflow-state.json` `notes` with where you were:
+1. **Before switching:** update `.peer-ai-state.json` `notes` with where you were:
    `"notes": "Was building PROJ-35, step 5 (form validation). Interrupted for stakeholder email about timeline."`
 2. **Handle the interruption fully** — don't half-do it. Use the correct branch for the interruption topic.
 3. **After:** tell the user:
@@ -101,7 +101,7 @@ If the user brings something unrelated mid-workflow (email, bug report, question
 When the user says "update the context", "wrap up", "start a new chat", or when context usage is visibly high (~80%+), do all of the following before the session ends:
 
 1. **Update `CONTEXT.md`** at the app root — add a new dated entry under "What Was Done — By Day" covering what was done this session. Update "Current State", "What's Next", and "Open Questions" to reflect where things stand right now.
-2. **Update `.workflow-state.json`** — set `lastUpdated`, update `currentPhase`, `currentStep`, `notes` (one-liner pointer only — see `shared/workflow-state.md`), and any other fields that changed this session.
+2. **Update `.peer-ai-state.json`** — set `lastUpdated`, update `currentPhase`, `currentStep`, `notes` (one-liner pointer only — see `shared/workflow-state.md`), and any other fields that changed this session.
 3. **Confirm to the user:** "Context saved. Safe to start a new chat — the next session will read both files and pick up from here."
 
 Do NOT wait for the user to ask for each file individually. This is a single atomic action — all three happen together.
@@ -119,18 +119,18 @@ The `notes` field is a pointer, not a narrative. Full story lives in `CONTEXT.md
 | **Push ticket branch** | After creating a ticket branch | `git push -u origin <ticket-branch>` before merge. |
 | **Push milestone branch** | After merging ticket → milestone | `git push origin <milestone-branch>`. |
 | **Issue tracker update** | After each ticket completes | Done + AC checkboxes + completion comment + project update. |
-| **State file update** | After each ticket or phase transition | Write and commit `.workflow-state.json`. |
+| **State file update** | After each ticket or phase transition | Write and commit `.peer-ai-state.json`. |
 | **Tests with code** | With every new feature | Co-located test files. Not batched. Not deferred. |
 | **Design-quality pass** | After each UI page works | Run the design-quality pass (layout, typography, responsive, edge cases) per `peer-ai/frontend/03-build.md` step 9. Fix hierarchy/responsive breaks before the next page. |
-| **Context save** | Session end or ~80% context | Update both `CONTEXT.md` and `.workflow-state.json` atomically (§4a). |
+| **Context save** | Session end or ~80% context | Update both `CONTEXT.md` and `.peer-ai-state.json` atomically (§4a). |
 
 ---
 
 ## 6. What the state file looks like
 
-Location: app root `.workflow-state.json` (**tracked in git**).
+Location: app root `.peer-ai-state.json` (**tracked in git**).
 
-See `templates/.workflow-state.json` for the starter schema and `shared/workflow-state.md` for field documentation and `notes` field rules.
+See `templates/.peer-ai-state.json` for the starter schema and `shared/workflow-state.md` for field documentation and `notes` field rules.
 
 ---
 

@@ -4,7 +4,7 @@
 
 > **Model: Auto or Gemini Flash** — setup is mostly file scaffolding and configuration. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in your AI tool's model selector. Setup is scaffolding work — no need for a premium model. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
-**Context:** This file runs **once** at the start of a project that uses the Peer AI workflow. It wires up the two things every later phase depends on: (1) the **tool-specific rules config** so standards load automatically, and (2) the **session-continuity files** (`CONTEXT.md` + `.workflow-state.json`). After this, the AI can resume any session by reading those two files.
+**Context:** This file runs **once** at the start of a project that uses the Peer AI workflow. It wires up the two things every later phase depends on: (1) the **tool-specific rules config** so standards load automatically, and (2) the **session-continuity files** (`CONTEXT.md` + `.peer-ai-state.json`). After this, the AI can resume any session by reading those two files.
 
 ---
 
@@ -48,7 +48,7 @@ Then create the matching config from the workflow's source rules. The content is
 - The content is identical — only the extension changes so Cursor recognises the file as a rule.
 
 **If B (Claude Code):**
-- Create `CLAUDE.md` at the repo root that: states the project uses the Peer AI workflow, summarizes the shared standards (from `shared.md`), instructs reading `.workflow-state.json` + `CONTEXT.md` at session start, and lists the phase files in `peer-ai/`. Use `peer-ai/AGENTS.md` as the structural model.
+- Create `CLAUDE.md` at the repo root that: states the project uses the Peer AI workflow, summarizes the shared standards (from `shared.md`), instructs reading `.peer-ai-state.json` + `CONTEXT.md` at session start, and lists the phase files in `peer-ai/`. Use `peer-ai/AGENTS.md` as the structural model.
 
 **If C (Codex / AGENTS.md):**
 - Create an `AGENTS.md` at the repo root modeled on `peer-ai/AGENTS.md`, scoped to this project.
@@ -68,7 +68,7 @@ After creating the config, confirm:
 
 These two files live at the **app root** (not inside `peer-ai/`). They are how the AI resumes work across chats.
 
-- Copy `peer-ai/templates/.workflow-state.json` → app root as `.workflow-state.json`
+- Copy `peer-ai/templates/.peer-ai-state.json` → app root as `.peer-ai-state.json`
 - Copy `peer-ai/templates/CONTEXT.md` → app root as `CONTEXT.md`
 
 Then fill in the basics with the user:
@@ -80,11 +80,11 @@ Then fill in the basics with the user:
 
 **Wait for the user's input.**
 
-Fill `CONTEXT.md`'s "Current State", "Open Questions", and "Package / Asset Locations" with what they gave you. Set `.workflow-state.json` `currentPhase` to `understand` (or wherever they're starting), `cycle`, and a one-line `notes` pointer.
+Fill `CONTEXT.md`'s "Current State", "Open Questions", and "Package / Asset Locations" with what they gave you. Set `.peer-ai-state.json` `currentPhase` to `understand` (or wherever they're starting), `cycle`, and a one-line `notes` pointer.
 
 Explain the split briefly:
 
-> "Two files, two jobs: `.workflow-state.json` is the structured pointer (phase, ticket, branch); `CONTEXT.md` is the narrative (decisions, daily log, what's next). The `notes` field stays a one-liner — the story lives in `CONTEXT.md`. Full rules: `peer-ai/shared/workflow-state.md`."
+> "Two files, two jobs: `.peer-ai-state.json` is the structured pointer (phase, ticket, branch); `CONTEXT.md` is the narrative (decisions, daily log, what's next). The `notes` field stays a one-liner — the story lives in `CONTEXT.md`. Full rules: `peer-ai/shared/workflow-state.md`."
 
 ---
 
@@ -120,13 +120,13 @@ Briefly offer the optional add-ons:
 
 Tell the user:
 
-> "Setup is done — rules config, `CONTEXT.md`, and `.workflow-state.json` are all in place. Next, start the real work: **`peer-ai/shared/01-understand.md`** to break down requirements."
+> "Setup is done — rules config, `CONTEXT.md`, and `.peer-ai-state.json` are all in place. Next, start the real work: **`peer-ai/shared/01-understand.md`** to break down requirements."
 
 ---
 
 ### Update workflow state
 
-You just created `.workflow-state.json` and `CONTEXT.md` in this phase. Make sure they reflect the starting point: `currentPhase` set, `lastUpdated` stamped, and a one-line `notes` pointer. Keep narrative in `CONTEXT.md`, not in `notes`. See `peer-ai/shared/workflow-state.md`.
+You just created `.peer-ai-state.json` and `CONTEXT.md` in this phase. Make sure they reflect the starting point: `currentPhase` set, `lastUpdated` stamped, and a one-line `notes` pointer. Keep narrative in `CONTEXT.md`, not in `notes`. See `peer-ai/shared/workflow-state.md`.
 
 ---
 
