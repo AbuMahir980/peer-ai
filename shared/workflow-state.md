@@ -33,7 +33,7 @@ Why this works:
 ### Bad `notes` value
 
 ```json
-"notes": "Jacob sent the green light email on Monday. We decided greenfield only. Thread 4 supersedes thread 2. OW branch is feature/greenfield-ow-m2.4. Seed accounts use OTP 000000. Aliu said don't ping him about contract fixes. We read all 15 handoff files. Canvas updated to v1.46. Next: send reply email, create branch, copy docs..."
+"notes": "Stakeholder sent the green light email on Monday. We decided to go greenfield only. The v2 spec supersedes the v1 draft. Branch is feature/auth-shell. Seed accounts use a bypass code. Backend team said don't file individual contract tickets mid-build. We read all the handoff files. Plan updated to the latest spec version. Next: reply to stakeholder, create branch, copy docs..."
 ```
 
 Why this fails:
@@ -83,6 +83,6 @@ Never update one without the other at session end.
 
 1. Copy `templates/.workflow-state.json` → your app root as `.workflow-state.json`
 2. Copy `templates/CONTEXT.md` → your app root as `CONTEXT.md`
-3. Copy `shared/cursor-rules/workflow-driver.mdc` → your app `.cursor/rules/`
+3. Copy `shared/rules/workflow-driver.md` → your app `.cursor/rules/`
 4. Fill in both files on day one with project name, cycle, and initial phase
 5. Commit both files to git so the team shares the same pointer

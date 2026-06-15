@@ -79,7 +79,7 @@ When starting a workflow phase, remind the user which model to select in Cursor 
 | PDF-ready HTML export | **Composer 2** | Pure templating — convert markdown to styled HTML |
 | UI mockups, dashboard visuals | **Gemini 3 Pro** | Multimodal, best for visual/layout work |
 
-When the user starts a workflow file, **tell them to switch models before you begin** and wait for confirmation: "Before we start, switch to **[model]** in the model picker (bottom-left of the chat panel). [Brief reason]. Let me know when you've switched and I'll begin." Do NOT proceed until the user confirms the switch.
+When the user starts a workflow file, **tell them to switch models before you begin** and wait for confirmation: "Before we start, switch to **[model]** in your AI tool's model selector. [Brief reason]. Let me know when you've switched and I'll begin." Do NOT proceed until the user confirms the switch.
 
 ## Dev journal
 
@@ -117,7 +117,7 @@ If Linear MCP is not connected, draft all three (checkbox list, comment, project
 
 ## PDF-ready doc export
 
-When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `.workflow/shared/cursor-rules/docs-pdf-export.mdc`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to Composer 2 before generating** — HTML export is pure templating and doesn't need a premium model.
+When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `.workflow/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to Composer 2 before generating** — HTML export is pure templating and doesn't need a premium model.
 
 ## Workflow reference
 This project includes the Peer AI Development Workflow in the `.workflow/` folder. When asked about process, or when following a workflow step, read the relevant file directly:
@@ -137,7 +137,7 @@ This project includes the Peer AI Development Workflow in the `.workflow/` folde
 - Contributing guide: `.workflow/CONTRIBUTING.md` (how to safely edit workflow files)
 - Workflow state guide: `.workflow/shared/workflow-state.md` (state file + `notes` field rules)
 - Design vs contract: `.workflow/shared/design-data-contract.md`
-- Workflow driver: `.workflow/shared/cursor-rules/workflow-driver.mdc` (ambient driver — copy to project `.cursor/rules/`)
+- Workflow driver: `.workflow/shared/rules/workflow-driver.md` (ambient driver — copy to project `.cursor/rules/`)
 
 When a user says "follow .workflow/...", READ that file and follow its instructions step by step.
 

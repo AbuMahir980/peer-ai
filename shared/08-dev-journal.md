@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Auto or Gemini Flash** — journal entries are templated writing. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in the model picker (bottom-left of the chat panel). Journal writing is templated work — no need for a premium model. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Auto or Gemini Flash** — journal entries are templated writing. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in your AI tool's model selector. Journal writing is templated work — no need for a premium model. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** This file serves two purposes: (1) **initial setup** of your dev journal at the start of a project, and (2) **end-of-cycle retrospective** to review all journal entries and synthesize lessons learned. During normal workflow phases, journal entries are triggered automatically by the AI at key decision moments and phase handoffs — you don't need to come back to this file for individual entries.
 

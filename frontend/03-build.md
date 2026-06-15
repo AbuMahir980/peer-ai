@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Composer 2** — code generation is where Composer 2 excels (beats Opus on coding benchmarks, 86% cheaper). Before starting, tell the user: "Before we begin, switch to **Composer 2** in the model picker (bottom-left of the chat panel). It's built for coding and much more cost-efficient for building. For UI-heavy work (dashboards, charts, layouts), switch to **Gemini 3 Pro** instead. If we hit a complex architectural decision mid-build, I'll tell you to switch to Opus 4.6 temporarily. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Composer 2** — code generation is where Composer 2 excels (beats Opus on coding benchmarks, 86% cheaper). Before starting, tell the user: "Before we begin, switch to **Composer 2** in your AI tool's model selector. It's built for coding and much more cost-efficient for building. For UI-heavy work (dashboards, charts, layouts), switch to **Gemini 3 Pro** instead. If we hit a complex architectural decision mid-build, I'll tell you to switch to Opus 4.6 temporarily. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** Page specs and frontend rules should be in place (`docs/06-page-specs.md`, `docs/07-frontend-coding-rules.md`). This workflow is about **writing and integrating code**.
 
@@ -58,7 +58,7 @@ Ask:
 **If A (Figma MCP):**
 - Ask the user for their Figma file URL
 - Confirm the Figma MCP server is configured in Cursor (if not, guide them: they need a Figma personal access token and the MCP server added in Cursor settings)
-- Tell the user: "Switch to **Gemini 3 Pro** in the model picker — it's the best model for visual/layout work. Let me know when you've switched."
+- Tell the user: "Switch to **Gemini 3 Pro** in your model selector — it's the best model for visual/layout work. Let me know when you've switched."
 - **Wait for confirmation**, then create page mockups one at a time in Figma, following `docs/06-page-specs.md` — frames, component layouts, responsive variants, key states (loading, error, empty)
 - After each page mockup, ask the user to review it in Figma and confirm or request changes
 - When all mockups are approved, tell the user to switch back to **Composer 2** for coding
@@ -66,7 +66,7 @@ Ask:
 **If B (Penpot MCP):**
 - Ask the user for their Penpot instance URL and project/file link
 - Confirm the Penpot MCP server is configured in Cursor (if not, guide them: they need the Penpot MCP server from the penpot/penpot repo and their API credentials)
-- Tell the user: "Switch to **Gemini 3 Pro** in the model picker — it's the best model for visual/layout work. Let me know when you've switched."
+- Tell the user: "Switch to **Gemini 3 Pro** in your model selector — it's the best model for visual/layout work. Let me know when you've switched."
 - **Wait for confirmation**, then create page mockups one at a time in Penpot, following `docs/06-page-specs.md`
 - After each page mockup, ask the user to review and confirm or request changes
 - When all mockups are approved, tell the user to switch back to **Composer 2** for coding
@@ -74,7 +74,7 @@ Ask:
 **If C (Paper.design MCP):**
 - Ask the user to confirm they have the Paper desktop app installed (paper.design/downloads) and a file open
 - Confirm the Paper MCP server is configured in Cursor (if not, guide them: the Paper MCP server runs automatically when the desktop app is open with a file — no separate setup needed)
-- Tell the user: "Switch to **Gemini 3 Pro** in the model picker — it's the best model for visual/layout work. Let me know when you've switched."
+- Tell the user: "Switch to **Gemini 3 Pro** in your model selector — it's the best model for visual/layout work. Let me know when you've switched."
 - **Wait for confirmation**, then create page mockups one at a time in Paper, following `docs/06-page-specs.md` — since Paper renders real HTML/CSS/Tailwind, the mockups are production-ready code, not just visual specs
 - After each page mockup, ask the user to review it in Paper and confirm or request changes
 - When all mockups are approved, the code from Paper can be pulled directly into the project. Tell the user to switch back to **Composer 2** for integrating the generated code into the app structure
@@ -188,13 +188,20 @@ After all groups are switched to live APIs, suggest a contract verification:
 
 ---
 
-### 9. Polish pass
+### 9. Design-quality pass
 
-Apply **animations** (if spec'd), **final responsive** checks, **accessibility** pass (focus, labels, contrast), and **performance** sanity (lazy routes, large lists).
+Once a page works, run a structured design-quality pass before calling it done. Go through these sub-passes in order — they are plain steps, no special tooling required:
 
-> "I've done a polish pass. Any areas you want extra attention before we call the build done?"
+1. **Layout & spacing** — consistent spacing scale, alignment, visual grouping, and hierarchy. Nothing cramped or floating; related things sit together.
+2. **Typography** — consistent type scale, weights, and line-heights; readable measure; clear heading vs body distinction.
+3. **Responsive** — verify the page at mobile, tablet, and desktop widths. No overflow, no broken grids, touch targets large enough.
+4. **Edge cases (harden)** — long strings, empty data, slow/failed loads, missing optional fields, and the smallest/largest realistic datasets all render gracefully.
+5. **Motion** (if spec'd) — transitions and micro-interactions on menus, modals, and data updates feel intentional, not janky.
+6. **Accessibility & performance sanity** — focus order, labels, contrast; lazy routes and large-list handling.
 
-**Wait for the user's input.**
+> "I've done the design-quality pass (layout, typography, responsive, edge cases, motion, a11y/perf). Any areas you want extra attention before we call the build done?"
+
+**Wait for the user's input.** Fix anything that breaks the visual hierarchy or the responsive layout before moving on. When a design mockup and the API contract disagree, follow `.workflow/shared/design-data-contract.md`.
 
 ---
 
@@ -224,6 +231,10 @@ Tell the user:
 **If they decline:** proceed directly to the review phase.
 
 ---
+
+### Update workflow state
+
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
 
 ### Journal entry
 

@@ -1,8 +1,8 @@
 # Peer AI — Development Workflow
 
-A portable, agent-agnostic framework for AI-assisted software development. Type one line in Cursor (or paste a phase file into Claude, ChatGPT, or Copilot), and the AI walks you through the entire process — from a stakeholder's email to a tested, documented application.
+A portable, agent-agnostic framework for AI-assisted software development. Point your AI agent at it and it walks you through the entire process — from a stakeholder's email to a tested, documented application.
 
-Works with **Cursor**, **Claude**, **ChatGPT**, **Copilot**, and **Linear cloud agents**. The workflow files are plain markdown — the AI tool is interchangeable; the process is not.
+Works with **Cursor**, **Claude Code**, **Codex**, **ChatGPT**, **Copilot**, and cloud agents. The workflow files are plain markdown and the entry point (`AGENTS.md`) is the cross-tool standard most agents auto-read — the AI tool is interchangeable; the process is not.
 
 ---
 
@@ -21,7 +21,8 @@ Peer AI is a structured engineering playbook packaged as markdown instructions. 
 
 | Folder | Who uses it | What's in it |
 |--------|------------|--------------|
-| `shared/` | Everyone | Requirements, architecture, API contracts, issues, documentation, dev journal, workflow state guide, design-data-contract |
+| `AGENTS.md` | Any AI agent | Agent-agnostic entry point — most tools auto-read it |
+| `shared/` | Everyone | Setup, requirements, architecture, API contracts, issues, documentation, dev journal, workflow state guide, design-data-contract |
 | `frontend/` | Frontend devs | Page specs, coding standards, build, review, test |
 | `backend/` | Backend devs | Endpoint specs, coding standards, build, review, test |
 | `agents/` | CI/CD & reviewers | Automated code review, QA, security audit, contract check prompts |
@@ -49,63 +50,61 @@ Or copy locally:
 cp -r /path/to/peer-ai .workflow
 ```
 
-### 2. Copy cursor rules
+### 2. Let the AI set it up (recommended)
+
+Open the project in your AI tool and run the one-time setup phase:
+
+```
+Follow .workflow/shared/00-setup.md
+```
+
+The setup phase will:
+
+1. **Detect your AI tool** and create the matching always-on rules config — `.cursor/rules/` for Cursor, `CLAUDE.md` for Claude Code, `AGENTS.md` for Codex/others. (It won't assume Cursor.)
+2. **Bootstrap session context** — copy `CONTEXT.md` and `.workflow-state.json` to your app root and fill in the basics with you.
+3. Offer optional extras (dev journal, PDF export).
+
+**Manual alternative (Cursor):** copy from `shared/rules/` and rename each file from `.md` → `.mdc` (Cursor only auto-loads `.mdc`):
 
 ```bash
 mkdir -p .cursor/rules
-
-# Shared (every project)
-cp .workflow/shared/cursor-rules/shared.mdc .cursor/rules/
-cp .workflow/shared/cursor-rules/workflow-driver.mdc .cursor/rules/   # recommended
-cp .workflow/shared/cursor-rules/docs-pdf-export.mdc .cursor/rules/    # optional
-
-# Frontend project:
-cp .workflow/frontend/cursor-rules/frontend.mdc .cursor/rules/
-
-# Backend project (instead of frontend):
-# cp .workflow/backend/cursor-rules/backend.mdc .cursor/rules/
-```
-
-### 3. Bootstrap session context (day one)
-
-```bash
+cp .workflow/shared/rules/shared.md .cursor/rules/shared.mdc
+cp .workflow/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc   # recommended
+cp .workflow/frontend/rules/frontend.md .cursor/rules/frontend.mdc               # or backend.mdc
 cp .workflow/templates/CONTEXT.md ./CONTEXT.md
 cp .workflow/templates/.workflow-state.json ./.workflow-state.json
 ```
 
-Fill in `CONTEXT.md` with your project name, stakeholders, and initial state. Update `.workflow-state.json` with your starting phase.
-
-**Why both files?**
+**Why two session files?**
 
 | File | Role |
 |------|------|
 | `.workflow-state.json` | Structured pointer — current phase, step, ticket, branch. The `notes` field is a **one-liner** only. |
 | `CONTEXT.md` | Narrative log — decisions, emails, what was done each day, what's next, open questions. |
 
-The workflow driver reads both at every session start. See `shared/workflow-state.md` for the full pattern and good vs bad `notes` examples.
+Every AI following this workflow reads both at session start. See `shared/workflow-state.md` for the full pattern and good vs bad `notes` examples.
 
-### 4. Open in Cursor and start
+### 3. Start building
 
-```bash
-cursor .
-```
-
-Your project structure:
+Your project structure after setup (Cursor shown; other tools use their own rules file):
 
 ```
 my-app/
-  .cursor/rules/           ← AI loads these silently every chat
+  AGENTS.md (or CLAUDE.md) ← your tool's auto-loaded rules (created by 00-setup.md)
+  .cursor/rules/           ← if using Cursor: copies of shared/rules/*.md renamed to *.mdc
     shared.mdc
-    workflow-driver.mdc    ← ambient driver (no "Follow .workflow/..." needed)
+    workflow-driver.mdc
     frontend.mdc
   .workflow/               ← Full playbook
+    AGENTS.md              ← agent-agnostic entry point
     shared/
+      rules/               ← source rule files (tool-agnostic .md — no tool-specific extension)
     frontend/
     backend/
     agents/
     templates/
-  CONTEXT.md               ← Narrative session log (you maintain this)
-  .workflow-state.json     ← Structured workflow pointer (agent maintains this)
+  CONTEXT.md               ← Narrative session log
+  .workflow-state.json     ← Structured workflow pointer
   docs/                    ← Phase outputs land here
   src/                     ← Your code (created during Build)
 ```
@@ -118,6 +117,7 @@ With the **workflow driver** installed, you don't need to type "Follow .workflow
 
 | # | Phase | Manual command |
 |:-:|-------|----------------|
+| 0 | Setup *(run once)* | `Follow .workflow/shared/00-setup.md` |
 | 1 | Understand | `Follow .workflow/shared/01-understand.md` |
 | 2 | Architect | `Follow .workflow/shared/02-architect.md` |
 | 3 | System Spec | `Follow .workflow/shared/03-spec-system.md` |
@@ -170,13 +170,22 @@ When mockups and API contracts disagree: **contract wins on data** (field names,
 
 ---
 
-## Using without Cursor
+## Design quality
 
-1. Open the workflow file (e.g. `shared/01-understand.md`)
-2. Paste its contents into your AI chat as instructions
-3. Follow the process the same way
+The build phase includes a structured **design-quality pass** after each UI page works — layout & spacing, typography, responsive, edge cases, motion, and accessibility/performance — as plain workflow steps (no tool-specific skills required). The review phase adds matching audit categories: design audit, UX critique, and design-system consistency. See `frontend/03-build.md` (step 9) and `frontend/04-review.md` (categories 2m–2o).
 
-Cursor rules won't auto-load — paste `shared/cursor-rules/shared.mdc` as additional context.
+---
+
+## Using with other AI tools
+
+The framework is agent-agnostic. The setup phase creates whatever config your tool auto-loads:
+
+- **Cursor** → `.cursor/rules/*.mdc`
+- **Claude Code** → `CLAUDE.md` at the repo root
+- **Codex / others** → `AGENTS.md` at the repo root (this repo ships one as the model)
+- **Any chat tool** → open a phase file (e.g. `shared/01-understand.md`), paste it as instructions, and paste `shared/rules/shared.md` as additional context
+
+The rule *content* is identical everywhere — only the filename/format changes to match the tool. The source files live in `shared/rules/`, `frontend/rules/`, and `backend/rules/` as plain `.md` files with no tool-specific extension.
 
 ---
 
@@ -212,7 +221,7 @@ Read `CONTRIBUTING.md` before editing workflow files — it explains required st
 ## Troubleshooting
 
 **"The AI doesn't follow the workflow"**
-→ Check `.mdc` files are in `.cursor/rules/` and `.workflow/` exists. Restart Cursor.
+→ Check your tool's rules config exists and is loaded (`.cursor/rules/` for Cursor, `CLAUDE.md` / `AGENTS.md` for others) and that `.workflow/` exists. Re-run `Follow .workflow/shared/00-setup.md` if unsure, and restart your tool.
 
 **"The AI can't find a workflow file"**
 → `.workflow/` must be at project root.

@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Auto or Gemini Flash** — documentation is mostly templated and straightforward. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in the model picker (bottom-left of the chat panel). Documentation is templated work — no need for a premium model (85-90% cheaper). Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Auto or Gemini Flash** — documentation is mostly templated and straightforward. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in your AI tool's model selector. Documentation is templated work — no need for a premium model (85-90% cheaper). Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 Context: a cycle or milestone is complete. Update living docs, record what shipped, and communicate with stakeholders or handoff recipients.
 
@@ -158,7 +158,7 @@ After confirming all docs are finalized, offer:
 
 > "Want me to generate PDF-ready HTML versions for any docs we created or updated this cycle? I'll put them in `docs-pdf/` — you can open them in a browser and print/save as PDF to share with stakeholders. Which ones should I export?"
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate the requested HTML files following the styling rules in `.workflow/shared/cursor-rules/docs-pdf-export.mdc`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate the requested HTML files following the styling rules in `.workflow/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 
@@ -173,6 +173,10 @@ Tell the user:
 > - If there's another cycle, go back to **`.workflow/shared/01-understand.md`** for new features or **`.workflow/shared/06-issues.md`** to plan the next batch of work."
 
 ---
+
+### Update workflow state
+
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
 
 ### Journal entry
 

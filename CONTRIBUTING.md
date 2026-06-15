@@ -8,7 +8,9 @@ This guide explains how to propose and make changes to the workflow files withou
 
 ```
 peer-ai/
-  shared/           # Tracks used by everyone (requirements, architecture, API, issues, docs, journal, workflow-state guide)
+  AGENTS.md         # Agent-agnostic entry point (most tools auto-read this)
+  shared/           # Tracks used by everyone (setup, requirements, architecture, API, issues, docs, journal, companion guides)
+  shared/rules/  # Always-on rule files (plain .md — no tool-specific extension)
   frontend/         # Frontend-specific tracks (page specs, rules, build, review, test)
   backend/          # Backend-specific tracks (endpoint specs, rules, build, review, test)
   agents/           # Automated agent prompts (code review, contract check, QA, security audit)
@@ -17,9 +19,20 @@ peer-ai/
   CONTRIBUTING.md   # This file
 ```
 
-**Numbering convention:** Files are numbered in execution order (e.g. `01-spec-endpoints.md`, `02-rules.md`, `03-build.md`). The number determines the sequence the user follows.
+**Numbering convention:** Phase files are numbered in execution order (e.g. `00-setup.md`, `01-spec-endpoints.md`, `02-rules.md`, `03-build.md`). The number determines the sequence the user follows.
 
 **Shared vs track-specific:** Files in `shared/` are used by both frontend and backend developers. Files in `frontend/` and `backend/` are track-specific.
+
+### File types (not everything is a numbered phase)
+
+| Type | Examples | Has phase structure? | How to edit |
+|------|----------|:--:|-------------|
+| **Numbered phase files** | `shared/01-understand.md`, `frontend/03-build.md` | Yes | Follow "Required sections in every workflow file" below |
+| **Companion guides** | `shared/workflow-state.md`, `shared/design-data-contract.md` | No | Plain reference docs. Keep them short and decision-oriented; no AI header / model directive / wait-for-input. Cross-reference from the phases that need them. |
+| **Rule configs** | `shared/rules/*.md`, root `AGENTS.md` | No | Source rules in plain `.md`. When a project sets up (phase 0), the AI copies these into the tool-specific location (`.cursor/rules/*.mdc` for Cursor, `CLAUDE.md` for Claude, etc.). Keep `shared.md`, `workflow-driver.md`, and `AGENTS.md` in sync when standards change. |
+| **Templates** | `templates/CONTEXT.md`, `templates/.workflow-state.json` | No | Starters a project copies to its app root on day one. Use `[PLACEHOLDER: …]` markers and a top copy comment. `00-setup.md` is what instructs the AI to copy them. |
+
+**Agent-agnostic rule:** the workflow must not assume a specific AI tool. When a file needs to reference where rules live, list the options (`.cursor/rules/` for Cursor, `CLAUDE.md` for Claude Code, `AGENTS.md` for Codex/others) rather than hardcoding Cursor. The `00-setup.md` phase is responsible for creating the config that matches the user's tool.
 
 ---
 
@@ -38,7 +51,7 @@ This tells the AI how to behave. **Never remove or reword this.**
 ### 2. Model directive (second blockquote)
 
 ```markdown
-> **Model: [Model Name]** -- [reason]. Before starting, tell the user: "Before we begin, switch to **[Model Name]** in the model picker..." **Wait for the user to confirm before proceeding.**
+> **Model: [Model Name]** -- [reason]. Before starting, tell the user: "Before we begin, switch to **[Model Name]** in your model selector..." **Wait for the user to confirm before proceeding.**
 ```
 
 This controls which AI model is recommended for the phase. Refer to the model lineup in the README to choose the right model.
@@ -75,11 +88,21 @@ Tell the user:
 
 ### 5. Linear issue completion (in build phases)
 
-Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must include a "Linear issue update" block after each unit of work (page, endpoint group). This block instructs the AI to: (1) tick acceptance criteria checkboxes, (2) add a completion comment, and (3) post a project-level update. See `shared.mdc` for the full rule.
+Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must include a "Linear issue update" block after each unit of work (page, endpoint group). This block instructs the AI to: (1) tick acceptance criteria checkboxes, (2) add a completion comment, and (3) post a project-level update. See `shared.md` for the full rule.
 
-### 6. Journal entry section
+### 6. Update workflow state section
 
-Immediately after the handoff, before the Tone section:
+After the handoff, before the journal entry, every phase file includes a state-update block. This is what keeps the session-continuity files (`CONTEXT.md` + `.workflow-state.json`) current as the project moves through phases:
+
+```markdown
+### Update workflow state
+
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
+```
+
+### 7. Journal entry section
+
+Immediately after the state-update block, before the Tone section:
 
 ```markdown
 ### Journal entry
@@ -91,7 +114,7 @@ If journaling is active (check docs/journal-config.json), offer a phase summary 
 **Wait for the user's input.** If yes, draft using the phase summary template from .workflow/shared/08-dev-journal.md (Part B) and write to the configured tool. If no, proceed to the handoff below.
 ```
 
-### 7. Tone section (always last)
+### 8. Tone section (always last)
 
 ```markdown
 ## Tone
@@ -115,16 +138,16 @@ Be collaborative, not robotic. You're a senior colleague.
 
 1. **Choose the right folder** -- `shared/` for cross-track, `frontend/` or `backend/` for track-specific, `agents/` for automated review prompts.
 2. **Pick the right number** -- it should slot into the execution sequence. If it goes between existing files, you'll need to renumber the ones that follow.
-3. **Include all required sections** -- AI header, model directive, numbered steps with wait-for-input, handoff, journal entry, tone.
+3. **Include all required sections** -- AI header, model directive, numbered steps with wait-for-input, handoff, update-workflow-state block, journal entry, tone.
 4. **Update the README** -- add the new file to the Quick Reference Card, the narrative description, and the workflow diagram.
-5. **Update `shared.mdc`** -- if the new file needs to be referenced by the AI in every chat.
+5. **Update `shared.md`** -- if the new file needs to be referenced by the AI in every chat.
 6. **Update the previous file's handoff** -- so the previous phase points to your new file instead of skipping it.
 
 ---
 
 ## PR and commit conventions
 
-When working on any this project that uses this workflow, follow these conventions:
+When working on any project that uses this workflow, follow these conventions:
 
 **Branch naming:**
 ```
@@ -155,8 +178,8 @@ Branch creation with ticket ID in name → ticket auto-moves to In Progress. PR 
 - **The AI instruction header** wording -- this is battle-tested to produce the right AI behavior
 - **The `**Wait for the user's input.**` lines** -- removing these causes the AI to dump all steps at once
 - **The Tone section** -- it must always be the last section in the file
-- **The journal entry section** -- it must always appear between the handoff and tone sections
-- **Model directive format** -- must include "switch to **[Model]** in the model picker" and "Wait for the user to confirm"
+- **The update-workflow-state and journal entry sections** -- they must appear between the handoff and tone sections, in that order (state update, then journal)
+- **Model directive format** -- must include "switch to **[Model]** in your AI tool's model selector" and "Wait for the user to confirm"
 - **Handoff file paths** -- if you change these, the workflow chain breaks
 
 ---
@@ -195,12 +218,20 @@ After editing files in `peer-ai`, sync them to any project that uses the workflo
 ```bash
 # From the project root (e.g. inside your project monorepo)
 cp -r /path/to/peer-ai/* .workflow/
-
-# Also sync Cursor rules if you changed them
-cp .workflow/shared/cursor-rules/shared.mdc .cursor/rules/
-cp .workflow/shared/cursor-rules/workflow-driver.mdc .cursor/rules/
-cp .workflow/frontend/cursor-rules/frontend.mdc .cursor/rules/
 ```
+
+Then re-run the tool-specific sync for whichever tool the project uses.
+
+**Cursor** — copy and rename `.md` → `.mdc`:
+```bash
+cp .workflow/shared/rules/shared.md .cursor/rules/shared.mdc
+cp .workflow/shared/rules/workflow-driver.md .cursor/rules/workflow-driver.mdc
+cp .workflow/frontend/rules/frontend.md .cursor/rules/frontend.mdc
+```
+
+**Claude Code** — update `CLAUDE.md` with the same content.
+
+**Codex / others** — update `AGENTS.md` with the same content.
 
 Then commit and push both repos.
 

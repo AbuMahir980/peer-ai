@@ -1,6 +1,6 @@
 # QA Agent Prompt
 
-> **Model: Auto or Gemini Flash** — test matrix generation is structured output. Before running, tell the user: "Before I run this agent, switch to **Auto** or **Gemini Flash** in the model picker — this is structured output work that doesn't need a premium model (85-90% cheaper). Let me know when you've switched." **Wait for confirmation before proceeding.**
+> **Model: Auto or Gemini Flash** — test matrix generation is structured output. Before running, tell the user: "Before I run this agent, switch to **Auto** or **Gemini Flash** in your model selector — this is structured output work that doesn't need a premium model (85-90% cheaper). Let me know when you've switched." **Wait for confirmation before proceeding.**
 
 ## Role
 

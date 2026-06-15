@@ -1,6 +1,6 @@
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Composer 2 or Sonnet 4.6** — test writing is well-scoped implementation work. Before starting, tell the user: "Before we begin, switch to **Composer 2** in the model picker (bottom-left of the chat panel) — it's fastest and cheapest for generating tests. If your tests need nuanced edge-case reasoning, use **Sonnet 4.6** instead. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Composer 2 or Sonnet 4.6** — test writing is well-scoped implementation work. Before starting, tell the user: "Before we begin, switch to **Composer 2** in your AI tool's model selector — it's fastest and cheapest for generating tests. If your tests need nuanced edge-case reasoning, use **Sonnet 4.6** instead. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 # 05 — Testing (Backend)
 
@@ -199,6 +199,10 @@ Tell the user:
 > After that, document the API and runbooks: `Follow .workflow/shared/07-document.md`."
 
 ---
+
+### Update workflow state
+
+If `.workflow-state.json` exists at the app root, update it before handing off: set `currentPhase`/`currentStep` (or advance to the next phase), stamp `lastUpdated`, and write a one-line `notes` pointer. If `CONTEXT.md` exists, add what changed this phase under "What Was Done — By Day" and refresh "What's Next" and "Open Questions". Keep narrative in `CONTEXT.md`; keep `notes` a one-liner. See `.workflow/shared/workflow-state.md`.
 
 ### Journal entry
 
