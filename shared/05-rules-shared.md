@@ -32,7 +32,7 @@ fix/PROJ-34-login-redirect
 chore/PROJ-56-update-dependencies
 ```
 
-Format: `<type>/<linear-ticket-id>-<short-description>` — the Linear ticket ID at the start creates an automatic link between code and task.
+Format: `<type>/<ticket-id>-<short-description>` — the ticket ID at the start creates an automatic link between code and task.
 
 **Default — commit messages:**
 
@@ -43,7 +43,7 @@ Implements the customer search bar with debounced input.
 Search works across name, email, and phone fields.
 ```
 
-Format: `PROJ-XX: <short description>`. Reference the Linear ticket ID in every commit. This enables automatic GitHub-Linear status updates.
+Format: `PROJ-XX: <short description>`. Reference the ticket ID in every commit. This enables automatic status updates when your issue tracker is integrated with GitHub.
 
 **Default — pull requests:**
 

@@ -22,7 +22,7 @@ The `notes` field in `.peer-ai-state.json` is a **one-liner pointer**, not a nar
 ### Good `notes` value
 
 ```json
-"notes": "READ CONTEXT.md at app root for the full narrative. Next action: create milestone branch, copy handoff docs to docs/handoff/, create Linear tickets per screen, begin Auth shell."
+"notes": "READ CONTEXT.md at app root for the full narrative. Next action: create milestone branch, copy handoff docs to docs/handoff/, create tickets per screen, begin Auth shell."
 ```
 
 Why this works:

@@ -82,15 +82,15 @@ Then ask:
 
 **Wait for the user's input.**
 
-### Linear issue update
+### Issue tracker update
 
-Once the user confirms the endpoint group works, update the Linear ticket for this work:
+Once the user confirms the endpoint group works, update the issue tracker ticket for this work:
 
-1. **Tick acceptance criteria** — check off every completed checkbox in the ticket description. Use Linear MCP if available; otherwise list the items for the user to tick manually.
+1. **Tick acceptance criteria** — check off every completed checkbox in the ticket description. Use your issue tracker's MCP or API if available; otherwise list the items for the user to tick manually.
 2. **Add a completion comment** — post a concise comment (3–5 bullets) on the issue: what was built, endpoints implemented, any deviations from the contract, any follow-ups.
-3. **Add a project update** — post a one-sentence progress update to the Linear project (e.g. "Customer CRUD endpoints complete — all 5 endpoints validated against contract.").
+3. **Add a project update** — post a one-sentence progress update to the issue tracker project (e.g. "Customer CRUD endpoints complete — all 5 endpoints validated against contract.").
 
-If Linear MCP is not connected, draft all three as text and tell the user to paste them into Linear.
+If the issue tracker MCP is not connected, draft all three as text and tell the user to paste them in manually.
 
 Repeat this step for **each** remaining endpoint group until the contract is covered (or the user explicitly scopes down).
 
@@ -222,13 +222,13 @@ Ask:
 
 ---
 
-## 15. Final Linear project update
+## 15. Final issue tracker project update
 
-Before handing off, post a project-level update to the Linear project summarizing the full build phase:
+Before handing off, post a project-level update to the issue tracker project summarizing the full build phase:
 
 > "[App name] backend build phase complete. [N] endpoint groups implemented, [migrations/jobs/webhooks/caching/real-time] set up as specified. Hardening checklist applied. Moving to code review and contract check."
 
-If Linear MCP is not connected, draft the update for the user to paste.
+If the issue tracker MCP is not connected, draft the update for the user to paste in manually.
 
 ---
 

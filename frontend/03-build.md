@@ -138,15 +138,15 @@ Then ask the user to test.
 
 **Wait for the user's input.**
 
-### Linear issue update
+### Issue tracker update
 
-Once the user confirms the page is done, update the Linear ticket for this work:
+Once the user confirms the page is done, update the issue tracker ticket for this work:
 
-1. **Tick acceptance criteria** — check off every completed checkbox in the ticket description. Use Linear MCP if available; otherwise list the items for the user to tick manually.
+1. **Tick acceptance criteria** — check off every completed checkbox in the ticket description. Use your issue tracker's MCP or API if available; otherwise list the items for the user to tick manually.
 2. **Add a completion comment** — post a concise comment (3–5 bullets) on the issue: what was built, what data source (mock/real), any deviations, any follow-ups.
-3. **Add a project update** — post a one-sentence progress update to the Linear project (e.g. "Fleet Status page complete — KPI ribbon, table, drawer, responsive layout all working against mock data.").
+3. **Add a project update** — post a one-sentence progress update to the issue tracker project (e.g. "[Feature name] page complete — all sections, table, drawer, and responsive layout working against mock data.").
 
-If Linear MCP is not connected, draft all three as text and tell the user to paste them into Linear.
+If the issue tracker MCP is not connected, draft all three as text and tell the user to paste them in manually.
 
 ---
 
@@ -205,13 +205,13 @@ Once a page works, run a structured design-quality pass before calling it done. 
 
 ---
 
-### 10. Final Linear project update
+### 10. Final issue tracker project update
 
-Before handing off, post a project-level update to the Linear project summarizing the full build phase:
+Before handing off, post a project-level update to the issue tracker project summarizing the full build phase:
 
 > "[App name] build phase complete. [N] pages implemented against [mock/real] data. Shell, auth guard, routing, and responsive layout all in place. Moving to code review and contract check."
 
-If Linear MCP is not connected, draft the update for the user to paste.
+If the issue tracker MCP is not connected, draft the update for the user to paste in manually.
 
 ---
 

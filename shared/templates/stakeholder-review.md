@@ -19,7 +19,7 @@ _[PLACEHOLDER: 2–3 sentences — overall progress, whether dates/scope are on 
 
 ## What Was Delivered
 
-| Feature | Description | Status | Linear Issue |
+| Feature | Description | Status | Issue / Ticket |
 |---------|-------------|--------|--------------|
 | `[PLACEHOLDER]` | `[PLACEHOLDER: brief]` | `[PLACEHOLDER: Done / In progress / Blocked]` | `[PLACEHOLDER: URL or ID]` |
 | `[PLACEHOLDER]` | `[PLACEHOLDER]` | `[PLACEHOLDER]` | `[PLACEHOLDER]` |
@@ -55,7 +55,7 @@ _Record links, Loom, or embedded images. Note environment (staging vs prod)._
 
 ## What's Next
 
-_Upcoming cycle goals — align with roadmap and Linear._
+_Upcoming cycle goals — align with roadmap and issue tracker._
 
 1. `[PLACEHOLDER]`
 2. `[PLACEHOLDER]`

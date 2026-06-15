@@ -254,7 +254,7 @@ Compile the full contract: conventions, auth flow, error codes, every endpoint w
 
 Save as `docs/04-api-contract.md` (and `docs/openapi.yaml` if the user opted for OpenAPI in the previous step).
 
-**API Contracts v1 placement:** The recommended location for the canonical API contract is `docs/api-contracts-v1.md` in the GitHub repository — version-controlled alongside the code and visible to everyone in Cursor. If the team uses a shared Linear document instead, ensure the markdown version stays in sync.
+**API Contracts v1 placement:** The recommended location for the canonical API contract is `docs/api-contracts-v1.md` in the GitHub repository — version-controlled alongside the code and visible to everyone in Cursor. If the team uses a shared document in their issue tracker instead, ensure the markdown version stays in sync.
 
 **Suggested endpoint priority order** (unblock frontend development in parallel):
 1. Auth + sessions (login, token refresh, role in token payload)

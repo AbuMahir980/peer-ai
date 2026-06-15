@@ -63,7 +63,7 @@ Before reviewing any code:
 ### PR and commit conventions
 
 - Branch name follows `feature/<ticket-id>-<description>` pattern
-- Commit messages reference Linear ticket ID (e.g. `PROJ-XX: description`)
+- Commit messages reference the ticket ID (e.g. `PROJ-XX: description`)
 - PR title follows `[PROJ-XX] Short description` format
 - PR description explains what changed and why
 - No unresolved merge conflicts
@@ -107,7 +107,7 @@ Return a **JSON array** of findings. Each object MUST have these keys:
 
 ## How to Run
 
-Provide the **diff or full file contents** to review **together with this prompt** (paste into Cursor, attach to a Linear issue for a cloud agent, or pass as the user/system message content in a GitHub Action that calls an AI API).
+Provide the **diff or full file contents** to review **together with this prompt** (paste into Cursor, attach to an issue for a cloud agent, or pass as the user/system message content in a GitHub Action that calls an AI API).
 
 ---
 

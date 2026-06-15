@@ -15,13 +15,13 @@ If `.peer-ai-state.json` and `CONTEXT.md` exist at the app root, the workflow dr
 When design mockups and API contracts disagree, follow `peer-ai/shared/design-data-contract.md`: contract wins on data shape and field names; design wins on layout and visual hierarchy.
 
 ## Git and PR conventions
-- Branch names: `feature/<linear-ticket-id>-<short-description>` (e.g., `feature/PROJ-12-auth-login-screen`)
-- Commit messages: `PROJ-XX: <short description>` — reference the Linear ticket ID in every commit
+- Branch names: `feature/<ticket-id>-<short-description>` (e.g., `feature/PROJ-12-auth-login-screen`)
+- Commit messages: `PROJ-XX: <short description>` — reference the ticket ID in every commit
 - PR title: `[PROJ-XX] Short description of what this does`
 - PR checks before review: lint, type check, build must all pass
 - One peer review required before merge; squash and merge preferred
 - Delete feature branches after merging
-- GitHub-Linear auto-sync: branch creation → ticket In Progress; PR merged → ticket Done
+- Issue tracker auto-sync (if integrated with GitHub): branch creation → ticket In Progress; PR merged → ticket Done
 
 ## Type safety
 - Use the project's type system strictly (TypeScript `strict: true`, Python type hints, Go's static types, etc.)
@@ -99,11 +99,11 @@ When you recognize one, offer briefly:
 
 Do NOT over-trigger. One or two mid-phase entries per workflow step is enough. Save the phase summary for the handoff nudge.
 
-## Linear issue completion
+## Issue tracker completion
 
-When the AI finishes implementing a Linear ticket (page, endpoint group, feature, or any scoped issue), it must do all three of the following before moving on:
+When the AI finishes implementing a ticket (page, endpoint group, feature, or any scoped issue), it must do all three of the following before moving on:
 
-1. **Tick acceptance criteria** — if the Linear ticket description has checkboxes (acceptance criteria), check off every item that was completed. Use Linear MCP if available; otherwise tell the user which items to tick manually.
+1. **Tick acceptance criteria** — if the ticket description has checkboxes (acceptance criteria), check off every item that was completed. Use Linear MCP if available; otherwise tell the user which items to tick manually in their issue tracker.
 2. **Add a completion comment** — post a comment on the issue summarizing what was done, any deviations from the spec, and any follow-up items. Keep it concise (3–5 bullet points). Example format:
    > Completed: [short summary]
    > - Built [component/endpoint] per spec
@@ -111,9 +111,9 @@ When the AI finishes implementing a Linear ticket (page, endpoint group, feature
    > - Responsive/tested on [contexts]
    > - Deviation: [if any, otherwise omit]
    > - Follow-up: [if any, otherwise omit]
-3. **Add a project update** — post a project-level update to the Linear project (your Linear project) noting the progress. One sentence is enough, e.g. "Status page complete — all KPIs, table, and drawer working against mock data."
+3. **Add a project update** — post a project-level update to the issue tracker project noting the progress. One sentence is enough, e.g. "Status page complete — all KPIs, table, and drawer working against mock data."
 
-If Linear MCP is not connected, draft all three (checkbox list, comment, project update) as text and tell the user to paste them into Linear manually.
+If the issue tracker MCP is not connected, draft all three (checkbox list, comment, project update) as text and tell the user to paste them into their issue tracker manually.
 
 ## PDF-ready doc export
 

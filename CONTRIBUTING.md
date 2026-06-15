@@ -86,9 +86,9 @@ Tell the user:
 > "[Phase] is done. Next, follow **`peer-ai/[path/to/next-file.md]`**."
 ```
 
-### 5. Linear issue completion (in build phases)
+### 5. Issue tracker update (in build phases)
 
-Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must include a "Linear issue update" block after each unit of work (page, endpoint group). This block instructs the AI to: (1) tick acceptance criteria checkboxes, (2) add a completion comment, and (3) post a project-level update. See `shared.md` for the full rule.
+Build workflow files (`frontend/03-build.md`, `backend/03-build.md`) must include an "Issue tracker update" block after each unit of work (page, endpoint group). This block instructs the AI to: (1) tick acceptance criteria checkboxes, (2) add a completion comment, and (3) post a project-level update. See `shared/rules/shared.md` for the full rule.
 
 ### 6. Update workflow state section
 
@@ -167,7 +167,7 @@ PROJ-XX: short description of the change
 - Squash and merge preferred
 - Delete feature branch after merging
 
-**GitHub-Linear integration:**
+**GitHub + issue tracker integration** (when active):
 Branch creation with ticket ID in name → ticket auto-moves to In Progress. PR merged → ticket auto-moves to Done.
 
 ---

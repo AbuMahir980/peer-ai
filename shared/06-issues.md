@@ -1,4 +1,4 @@
-# 06 — Linear Issues
+# 06 — Issues
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
@@ -115,13 +115,13 @@ For each candidate issue, draft:
 
 ---
 
-### 6. Linear export format
+### 6. Issue export format
 
 **Produce:** Final issue list formatted for execution — each issue with full description template, labels, priority, size, dependencies.
 
 **Ask:**
 
-> "Do you want the issues as **markdown** you can paste into Linear (or attach to issues), or do you want **API-ready** structured data (e.g. JSON) for Linear's API? If API, confirm you have token/access details handled outside this chat."
+> "Do you want the issues as **markdown** (ready to paste into Linear, Jira, GitHub Issues, or similar), or as **API-ready** structured data (e.g. JSON)? If API, confirm you have token/access details handled outside this chat."
 
 **Wait for the user's input.**
 
@@ -137,7 +137,7 @@ For each candidate issue, draft:
 - Full descriptions, priorities, labels, sizes
 - Dependency map and critical path
 - Cycle plan
-- Linear export section (markdown or API-oriented appendix as chosen)
+- Issue export section (markdown or API-oriented appendix as chosen)
 
 **Save:** Write to **`docs/08-issue-plan.md`** in the user's project.
 
@@ -159,9 +159,9 @@ After saving the issue plan, offer:
 
 ---
 
-### 8. GitHub + Linear integration and PR conventions
+### 8. Issue tracker + GitHub integration and PR conventions
 
-**Produce:** Before the user starts building, confirm that the GitHub repository and Linear workspace are connected and the team follows these conventions. Present them clearly:
+**Produce:** Before the user starts building, confirm whether GitHub is integrated with the issue tracker (e.g. Linear, Jira, GitHub Issues) and the team follows these conventions. Present them clearly:
 
 **Branch naming (required):**
 
@@ -169,7 +169,7 @@ After saving the issue plan, offer:
 feature/PROJ-XX-short-description
 ```
 
-Format: `feature/<linear-ticket-id>-<short-description>`. The Linear ticket ID at the start creates an automatic link between the code and the task.
+Format: `feature/<ticket-id>-<short-description>`. The ticket ID at the start creates an automatic link between the code and the task.
 
 **Commit messages (required):**
 
@@ -177,7 +177,7 @@ Format: `feature/<linear-ticket-id>-<short-description>`. The Linear ticket ID a
 PROJ-XX: short description of the change
 ```
 
-Reference the Linear ticket ID in every commit message. This enables automatic ticket status updates.
+Reference the ticket ID in every commit message. This enables automatic status updates when issue trackers are integrated with GitHub.
 
 **Pull request conventions:**
 
@@ -192,12 +192,12 @@ Reference the Linear ticket ID in every commit message. This enables automatic t
 | After merge | Delete the feature branch |
 | Nitpicks | Mark nitpick comments clearly so they are not treated as blocking |
 
-**GitHub-Linear auto-sync:**
+**GitHub issue tracker auto-sync** (when integration is active):
 
-| GitHub action | Linear effect |
+| GitHub action | Issue tracker effect |
 |---------------|---------------|
 | Branch created with ticket ID in name | Ticket moves to In Progress |
-| PR opened referencing the ticket | PR appears linked inside the Linear ticket |
+| PR opened referencing the ticket | PR appears linked inside the ticket (if integration is active) |
 | PR merged into main | Ticket moves to Done |
 
 **CI checks (minimum):**
@@ -206,7 +206,7 @@ A basic GitHub Actions workflow should run on every PR: lint, type check, build.
 
 **Ask:**
 
-> "Does your project have these GitHub + Linear conventions set up? If not, should we add the branch protection rules and GitHub Actions config as issues in the plan?"
+> "Does your project have these GitHub conventions set up? If the issue tracker has a GitHub integration, is it connected? Should we add branch protection and GitHub Actions config as issues in the plan?"
 
 **Wait for the user's input.**
 

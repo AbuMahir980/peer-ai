@@ -125,7 +125,7 @@ If C: Move to next step.
 
 ### 5. Commit message validation (optional)
 
-**Produce:** A simple check that commit messages reference a Linear ticket ID.
+**Produce:** A simple check that commit messages reference a ticket ID.
 
 Option A: GitHub Action that checks PR title matches `[PROJ-XX]` format.
 Option B: A commit-msg git hook (using Husky) that validates `PROJ-XX:` prefix locally.
