@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Sonnet 4.6** — code review is systematic and checklist-driven; Sonnet handles it well at 40% less cost. Before starting, tell the user: "Before we begin, switch to **Sonnet 4.6** in your AI tool's model selector. It's near-Opus quality for review work at lower cost. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Mid-tier** — code review is systematic and checklist-driven — a mid-tier model handles it well at lower cost. Before starting, tell the user: "Before we begin, switch to your **mid-tier model** (e.g. Sonnet, GPT-4o) in your AI tool's model selector. It's near-top quality for review work at lower cost. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** Implementation exists. This workflow runs a **full review** against specs and quality bars before merge.
 

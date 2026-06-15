@@ -1,6 +1,6 @@
 # Security Audit Agent Prompt
 
-> **Model: Sonnet 4.6** — security auditing requires deeper reasoning about attack vectors and auth logic. Before running, tell the user: "Before I run this agent, switch to **Sonnet 4.6** in your model selector — security auditing needs deeper reasoning than the lightweight models, but Sonnet handles it well at 40% less cost than Opus. Let me know when you've switched." **Wait for confirmation before proceeding.**
+> **Model: Mid-tier** — security auditing requires deeper reasoning about attack vectors and auth logic. Before running, tell the user: "Before I run this agent, switch to your **mid-tier model** (e.g. Sonnet, GPT-4o) in your model selector — security auditing needs deeper reasoning than lightweight models. Let me know when you've switched." **Wait for confirmation before proceeding.**
 
 ## Role
 

@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Auto or Gemini Flash** — setup is mostly file scaffolding and configuration. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in your AI tool's model selector. Setup is scaffolding work — no need for a premium model. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Auto / fast** — setup is mostly file scaffolding and configuration. Before starting, tell the user: "Before we begin, switch to your **fastest model** (e.g. Auto, Gemini Flash, GPT-4.1 mini) in your AI tool's model selector. Setup is scaffolding work — no need for a premium model. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** This file runs **once** at the start of a project that uses the Peer AI workflow. It wires up the two things every later phase depends on: (1) the **tool-specific rules config** so standards load automatically, and (2) the **session-continuity files** (`CONTEXT.md` + `.peer-ai-state.json`). After this, the AI can resume any session by reading those two files.
 

@@ -140,12 +140,12 @@ When advancing to a new phase, remind the user which model to switch to (see `sh
 
 | Phase | Model | Reason |
 |-------|-------|--------|
-| Build | Composer 2 | Best coding benchmarks, cheapest |
-| Review | Sonnet 4.6 | Systematic, checklist-driven |
-| Test | Composer 2 or Sonnet 4.6 | Test writing is implementation |
-| Document | Auto or Gemini Flash | Templated updates |
-| Agents (review, contract, QA) | Auto or Gemini Flash | Structured output |
-| Security audit agent | Sonnet 4.6 | Security edge cases need deeper reasoning |
+| Build | Fast coding model (e.g. Composer, Codex, GPT-4o) | Best coding benchmarks, lowest cost |
+| Review | Mid-tier (e.g. Sonnet, GPT-4o) | Systematic, checklist-driven |
+| Test | Fast coding or mid-tier | Test writing is implementation |
+| Document | Auto / fast (e.g. Auto, Gemini Flash) | Templated updates |
+| Agents (review, contract, QA) | Auto / fast (e.g. Auto, Gemini Flash) | Structured output |
+| Security audit agent | Mid-tier (e.g. Sonnet, GPT-4o) | Security edge cases need deeper reasoning |
 
 ---
 

@@ -40,7 +40,7 @@ If no brand guide exists, use neutral defaults:
 
 ## Model recommendation
 
-Before generating the HTML file, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and 86% cheaper than Opus. Let me know when you've switched." **Wait for the user to confirm before generating.** Switch back to the previous model after the export is done.
+Before generating the HTML file, tell the user: "Switch to your **fastest model** (e.g. Auto, Gemini Flash) for the HTML export — it's pure templating work and much cheaper than premium models. Let me know when you've switched." **Wait for the user to confirm before generating.** Switch back to the previous model after the export is done.
 
 ## When to trigger
 

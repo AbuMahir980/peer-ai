@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Composer 2** — code generation is where Composer 2 excels (beats Opus on coding benchmarks, 86% cheaper). Before starting, tell the user: "Before we begin, switch to **Composer 2** in your AI tool's model selector. It's built for coding and much more cost-efficient for building. For UI-heavy work (dashboards, charts, layouts), switch to **Gemini 3 Pro** instead. If we hit a complex architectural decision mid-build, I'll tell you to switch to Opus 4.6 temporarily. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Fast coding model** — code generation is best handled by a fast, coding-optimised model — significantly cheaper than the most capable models with strong benchmark scores. Before starting, tell the user: "Before we begin, switch to your **fast coding model** (e.g. Composer, Codex, GPT-4o) in your AI tool's model selector. It's built for coding and much more cost-efficient. For UI-heavy work (dashboards, charts, complex layouts), switch to your **most capable model** instead. If we hit a complex architectural decision mid-build, I'll tell you to switch to your most capable model temporarily. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** Page specs and frontend rules should be in place (`docs/06-page-specs.md`, `docs/07-frontend-coding-rules.md`). This workflow is about **writing and integrating code**.
 
@@ -58,26 +58,26 @@ Ask:
 **If A (Figma MCP):**
 - Ask the user for their Figma file URL
 - Confirm the Figma MCP server is configured in Cursor (if not, guide them: they need a Figma personal access token and the MCP server added in Cursor settings)
-- Tell the user: "Switch to **Gemini 3 Pro** in your model selector — it's the best model for visual/layout work. Let me know when you've switched."
+- Tell the user: "Switch to your **best multimodal model** (e.g. Gemini Pro, Claude, GPT-4o with vision) in your model selector — use the one best suited for visual/layout work. Let me know when you've switched."
 - **Wait for confirmation**, then create page mockups one at a time in Figma, following `docs/06-page-specs.md` — frames, component layouts, responsive variants, key states (loading, error, empty)
 - After each page mockup, ask the user to review it in Figma and confirm or request changes
-- When all mockups are approved, tell the user to switch back to **Composer 2** for coding
+- When all mockups are approved, tell the user to switch back to your **fast coding model** for coding
 
 **If B (Penpot MCP):**
 - Ask the user for their Penpot instance URL and project/file link
 - Confirm the Penpot MCP server is configured in Cursor (if not, guide them: they need the Penpot MCP server from the penpot/penpot repo and their API credentials)
-- Tell the user: "Switch to **Gemini 3 Pro** in your model selector — it's the best model for visual/layout work. Let me know when you've switched."
+- Tell the user: "Switch to your **best multimodal model** (e.g. Gemini Pro, Claude, GPT-4o with vision) in your model selector — use the one best suited for visual/layout work. Let me know when you've switched."
 - **Wait for confirmation**, then create page mockups one at a time in Penpot, following `docs/06-page-specs.md`
 - After each page mockup, ask the user to review and confirm or request changes
-- When all mockups are approved, tell the user to switch back to **Composer 2** for coding
+- When all mockups are approved, tell the user to switch back to your **fast coding model** for coding
 
 **If C (Paper.design MCP):**
 - Ask the user to confirm they have the Paper desktop app installed (paper.design/downloads) and a file open
 - Confirm the Paper MCP server is configured in Cursor (if not, guide them: the Paper MCP server runs automatically when the desktop app is open with a file — no separate setup needed)
-- Tell the user: "Switch to **Gemini 3 Pro** in your model selector — it's the best model for visual/layout work. Let me know when you've switched."
+- Tell the user: "Switch to your **best multimodal model** (e.g. Gemini Pro, Claude, GPT-4o with vision) in your model selector — use the one best suited for visual/layout work. Let me know when you've switched."
 - **Wait for confirmation**, then create page mockups one at a time in Paper, following `docs/06-page-specs.md` — since Paper renders real HTML/CSS/Tailwind, the mockups are production-ready code, not just visual specs
 - After each page mockup, ask the user to review it in Paper and confirm or request changes
-- When all mockups are approved, the code from Paper can be pulled directly into the project. Tell the user to switch back to **Composer 2** for integrating the generated code into the app structure
+- When all mockups are approved, the code from Paper can be pulled directly into the project. Tell the user to switch back to your **fast coding model** for integrating the generated code into the app structure
 
 **If D (another tool):**
 - Ask which tool they use and whether it has an MCP server or API
@@ -87,13 +87,13 @@ Ask:
 
 **If E (skip design tool):**
 - Acknowledge the choice and move on. The UI will be built as live code during the build steps below
-- No model switch needed — stay on **Composer 2**
+- No model switch needed — stay on your **fast coding model**
 
 ---
 
 ### 3. Application shell
 
-Plan and build: **root layout**, **sidebar** (or nav), **React Router**, **auth guard**, **role-based route protection**. Present the plan, get confirmation, then implement.
+Plan and build: **root layout**, **sidebar** (or nav), **routing setup** (e.g. React Router, Vue Router, Next.js App Router), **auth guard**, **role-based route protection**. Present the plan, get confirmation, then implement.
 
 > "Here's the shell I'll build: [routes, guards, layout]. Does this match `docs/06-page-specs.md` and your auth model?"
 

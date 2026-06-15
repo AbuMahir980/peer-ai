@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Opus 4.6** — project-wide coding standards require careful trade-off reasoning. Before starting, tell the user: "Before we begin, switch to **Opus 4.6** in your AI tool's model selector. Standards need precise reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Most capable** — project-wide coding standards require careful trade-off reasoning. Before starting, tell the user: "Before we begin, switch to your **most capable model** (e.g. Opus, o3, Claude) in your AI tool's model selector. Standards need precise reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 Cross-cutting coding standards and conventions for the project. This workflow is **not** a brainstorming session: you are helping the user lock in defaults or customize them, then producing a single project-specific standards document.
 

@@ -1,6 +1,6 @@
 # API Contract Verification Agent Prompt
 
-> **Model: Auto or Gemini Flash** — comparison task producing structured table output. Before running, tell the user: "Before I run this agent, switch to **Auto** or **Gemini Flash** in your model selector — this is structured output work that doesn't need a premium model (85-90% cheaper). Let me know when you've switched." **Wait for confirmation before proceeding.**
+> **Model: Auto / fast** — comparison task producing structured table output. Before running, tell the user: "Before I run this agent, switch to your **fastest model** (e.g. Auto, Gemini Flash) in your model selector — this is structured output work that doesn't need a premium model. Let me know when you've switched." **Wait for confirmation before proceeding.**
 
 ## Role
 

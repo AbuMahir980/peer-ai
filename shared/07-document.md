@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Auto or Gemini Flash** — documentation is mostly templated and straightforward. Before starting, tell the user: "Before we begin, switch to **Auto** or **Gemini Flash** in your AI tool's model selector. Documentation is templated work — no need for a premium model (85-90% cheaper). Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Auto / fast** — documentation is mostly templated and straightforward. Before starting, tell the user: "Before we begin, switch to your **fastest model** (e.g. Auto, Gemini Flash, GPT-4.1 mini) in your AI tool's model selector. Documentation is templated work — no need for a premium model. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 Context: a cycle or milestone is complete. Update living docs, record what shipped, and communicate with stakeholders or handoff recipients.
 
@@ -158,7 +158,7 @@ After confirming all docs are finalized, offer:
 
 > "Want me to generate PDF-ready HTML versions for any docs we created or updated this cycle? I'll put them in `docs-pdf/` — you can open them in a browser and print/save as PDF to share with stakeholders. Which ones should I export?"
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate the requested HTML files following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to your **fastest model** (e.g. Auto, Gemini Flash) for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate the requested HTML files following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Opus 4.6** — page specs need full system context across UI states, data flows, and RBAC. Before starting, tell the user: "Before we begin, switch to **Opus 4.6** in your AI tool's model selector. Page specs need deep reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Most capable** — page specs need full system context across UI states, data flows, and RBAC. Before starting, tell the user: "Before we begin, switch to your **most capable model** (e.g. Opus, o3, Claude) in your AI tool's model selector. Page specs need deep reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** An API contract already exists (`docs/04-api-contract.md`). The goal is to define every page before any implementation work begins.
 

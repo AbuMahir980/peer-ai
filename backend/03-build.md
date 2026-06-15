@@ -1,6 +1,6 @@
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Composer 2** — code generation is where Composer 2 excels (beats Opus on coding benchmarks, 86% cheaper). Before starting, tell the user: "Before we begin, switch to **Composer 2** in your AI tool's model selector. It's built for coding and much more cost-efficient for building. If we hit a complex architectural decision mid-build, I'll tell you to switch to Opus 4.6 temporarily. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Fast coding model** — code generation is best handled by a fast, coding-optimised model — significantly cheaper than the most capable models with strong benchmark scores. Before starting, tell the user: "Before we begin, switch to your **fast coding model** (e.g. Composer, Codex, GPT-4o) in your AI tool's model selector. It's built for coding and much more cost-efficient. If we hit a complex architectural decision mid-build, I'll tell you to switch to your most capable model temporarily. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 # 03 — Build (Backend)
 

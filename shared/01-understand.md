@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Opus 4.6** — this phase requires deep reasoning across ambiguous requirements. Before starting, tell the user: "Before we begin, switch to **Opus 4.6** in your AI tool's model selector. This phase needs deep reasoning and Opus handles it best. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Most capable** — this phase requires deep reasoning across ambiguous requirements. Before starting, tell the user: "Before we begin, switch to your **most capable model** (e.g. Opus, o3, Claude) in your AI tool's model selector. This phase needs the deepest reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 ---
 
@@ -131,7 +131,7 @@ After saving the markdown, offer:
 
 > "Want me to generate a PDF-ready HTML version in `docs-pdf/`? You can open it in a browser and print/save as PDF to share with stakeholders."
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/01-requirements-summary.html` following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to your **fastest model** (e.g. Auto, Gemini Flash) for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/01-requirements-summary.html` following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 

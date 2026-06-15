@@ -65,19 +65,19 @@ When starting a workflow phase, remind the user which model to select in Cursor 
 
 | Phase | Recommended model | Why |
 |-------|------------------|-----|
-| Understand, Architect, System Spec, API Contract | **Opus 4.6** | Deep reasoning, architecture, cross-cutting decisions |
-| Shared Rules, Page Specs, Endpoint Specs, Track Rules | **Opus 4.6** | Needs full system context and precise reasoning |
-| Issues (06) | **Sonnet 4.6** | Structured extraction from existing specs |
-| Build (frontend/backend 03) | **Composer 2** | Best coding benchmark scores, 86% cheaper than Opus |
-| Review (frontend/backend 04) | **Sonnet 4.6** | Systematic checklist-driven review |
-| Test (frontend/backend 05) | **Composer 2** or **Sonnet 4.6** | Test writing is well-scoped implementation work |
-| Code Review agent | **Auto** or **Gemini Flash** | Structured findings report |
-| Contract Check agent | **Auto** or **Gemini Flash** | Comparison table output |
-| QA agent | **Auto** or **Gemini Flash** | Test matrix generation |
-| Security Audit agent | **Sonnet 4.6** | Needs deeper reasoning for security edge cases |
-| Document (07) | **Auto** or **Gemini Flash** | Templated documentation updates |
-| PDF-ready HTML export | **Composer 2** | Pure templating — convert markdown to styled HTML |
-| UI mockups, dashboard visuals | **Gemini 3 Pro** | Multimodal, best for visual/layout work |
+| Understand, Architect, System Spec, API Contract | **Most capable** (e.g. Opus, o3, Claude) | Deep reasoning, architecture, cross-cutting decisions |
+| Shared Rules, Page Specs, Endpoint Specs, Track Rules | **Most capable** (e.g. Opus, o3, Claude) | Needs full system context and precise reasoning |
+| Issues (06) | **Mid-tier** (e.g. Sonnet, GPT-4o) | Structured extraction from existing specs |
+| Build (frontend/backend 03) | **Fast coding model** (e.g. Composer, Codex, GPT-4o) | Best coding benchmark scores, significantly cheaper than most-capable models |
+| Review (frontend/backend 04) | **Mid-tier** (e.g. Sonnet, GPT-4o) | Systematic checklist-driven review |
+| Test (frontend/backend 05) | **Fast coding or mid-tier** | Test writing is well-scoped implementation work |
+| Code Review agent | **Auto / fast** (e.g. Auto, Gemini Flash) | Structured findings report |
+| Contract Check agent | **Auto / fast** (e.g. Auto, Gemini Flash) | Comparison table output |
+| QA agent | **Auto / fast** (e.g. Auto, Gemini Flash) | Test matrix generation |
+| Security Audit agent | **Mid-tier** (e.g. Sonnet, GPT-4o) | Needs deeper reasoning for security edge cases |
+| Document (07) | **Auto / fast** (e.g. Auto, Gemini Flash) | Templated documentation updates |
+| PDF-ready HTML export | **Auto / fast** | Pure templating — convert markdown to styled HTML |
+| UI mockups, dashboard visuals | **Best multimodal** (e.g. Gemini Pro, GPT-4o) | Multimodal reasoning, best for visual/layout work |
 
 When the user starts a workflow file, **tell them to switch models before you begin** and wait for confirmation: "Before we start, switch to **[model]** in your AI tool's model selector. [Brief reason]. Let me know when you've switched and I'll begin." Do NOT proceed until the user confirms the switch.
 
@@ -117,7 +117,7 @@ If the issue tracker MCP is not connected, draft all three (checkbox list, comme
 
 ## PDF-ready doc export
 
-When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to Composer 2 before generating** — HTML export is pure templating and doesn't need a premium model.
+When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to their fastest model (e.g. Auto, Composer) before generating** — HTML export is pure templating and doesn't need a premium model.
 
 ## Workflow reference
 This project includes the Peer AI Development Workflow in the `peer-ai/` folder. When asked about process, or when following a workflow step, read the relevant file directly:

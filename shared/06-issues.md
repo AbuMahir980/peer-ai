@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Sonnet 4.6** — extracting issues from specs is structured work. Before starting, tell the user: "Before we begin, switch to **Sonnet 4.6** in your AI tool's model selector. Issue extraction is structured work — Sonnet handles it efficiently at 40% less cost than Opus. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Mid-tier** — extracting issues from specs is structured work. Before starting, tell the user: "Before we begin, switch to your **mid-tier model** (e.g. Sonnet, GPT-4o) in your AI tool's model selector. Issue extraction is structured work — a mid-tier model handles it efficiently at lower cost. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 Context: requirements and technical specs are written. Your job is to turn them into trackable issues, dependencies, and a cycle plan, then save a single issue plan document.
 
@@ -155,7 +155,7 @@ After saving the issue plan, offer:
 
 > "Want me to generate a PDF-ready HTML version in `docs-pdf/`? You can open it in a browser and print/save as PDF to share with stakeholders or the team."
 
-**Wait for the user's input.** If yes, tell the user: "Switch to **Composer 2** for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/08-issue-plan.html` following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
+**Wait for the user's input.** If yes, tell the user: "Switch to your **fastest model** (e.g. Auto, Gemini Flash) for the HTML export — it's pure templating work and much cheaper. Let me know when you've switched." Wait for confirmation, then generate `docs-pdf/08-issue-plan.html` following the styling rules in `peer-ai/shared/rules/docs-pdf-export.md`. Ensure `docs-pdf/` is gitignored. After the export, remind the user to switch back to the previous model. If no, move on.
 
 ---
 

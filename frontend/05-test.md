@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Composer 2 or Sonnet 4.6** — test writing is well-scoped implementation work. Before starting, tell the user: "Before we begin, switch to **Composer 2** in your AI tool's model selector — it's fastest and cheapest for generating tests. If your tests need nuanced edge-case reasoning, use **Sonnet 4.6** instead. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Fast coding or mid-tier** — test writing is well-scoped implementation work. Before starting, tell the user: "Before we begin, switch to your **fast coding model** (e.g. Composer, Codex, GPT-4o) in your AI tool's model selector — it's fastest and cheapest for generating tests. If your tests need nuanced edge-case reasoning, use your mid-tier model instead. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** Code has been reviewed. This workflow adds **automated tests** and runs them.
 
@@ -14,7 +14,7 @@
 
 Ask:
 
-> "What testing tools are **already** set up? Vitest? Playwright? React Testing Library? Or should I set everything up **from scratch**?"
+> "What testing tools are **already** set up? Vitest? Playwright? React Testing Library? Vue Test Utils? Or should I set everything up **from scratch**?"
 
 **Wait for the user's input.**
 
@@ -46,7 +46,7 @@ Write the tests, then share a short summary of what each file covers.
 
 ### 4. Component tests (shared components)
 
-Pick **key shared** components (from `docs/06-page-specs.md` or the codebase). Use **React Testing Library** — user-visible behavior, not implementation details.
+Pick **key shared** components (from `docs/06-page-specs.md` or the codebase). Use your component testing library (e.g. React Testing Library, Vue Test Utils) — user-visible behavior, not implementation details.
 
 > "I’ll test these shared components: [list]. Good set, or should I include/exclude anything?"
 

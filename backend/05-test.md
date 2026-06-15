@@ -1,6 +1,6 @@
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Composer 2 or Sonnet 4.6** — test writing is well-scoped implementation work. Before starting, tell the user: "Before we begin, switch to **Composer 2** in your AI tool's model selector — it's fastest and cheapest for generating tests. If your tests need nuanced edge-case reasoning, use **Sonnet 4.6** instead. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Fast coding or mid-tier** — test writing is well-scoped implementation work. Before starting, tell the user: "Before we begin, switch to your **fast coding model** (e.g. Composer, Codex, GPT-4o) in your AI tool's model selector — it's fastest and cheapest for generating tests. If your tests need nuanced edge-case reasoning, use your mid-tier model instead. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 # 05 — Testing (Backend)
 

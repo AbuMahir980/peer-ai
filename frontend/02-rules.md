@@ -2,7 +2,7 @@
 
 > **You are an AI assistant.** When a user tells you to follow this file, execute the process below. Do NOT dump all sections at once. Work through each step conversationally — ask the user questions, wait for their answers, then move to the next step.
 
-> **Model: Opus 4.6** — track rules require reasoning about project-wide consistency. Before starting, tell the user: "Before we begin, switch to **Opus 4.6** in your AI tool's model selector. Setting rules needs careful reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
+> **Model: Most capable** — track rules require reasoning about project-wide consistency. Before starting, tell the user: "Before we begin, switch to your **most capable model** (e.g. Opus, o3, Claude) in your AI tool's model selector. Setting rules needs careful reasoning. Let me know when you've switched and I'll start." **Wait for the user to confirm before proceeding.**
 
 **Context:** You are setting up or confirming frontend coding standards for **this specific project** so future work stays consistent.
 
