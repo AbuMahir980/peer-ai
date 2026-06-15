@@ -1,0 +1,113 @@
+---
+description: Frontend coding standards for web application projects
+globs: src/**/*.{ts,tsx,js,jsx,vue,svelte}, app/**/*.{ts,tsx,js,jsx,vue,svelte}
+alwaysApply: true
+---
+
+# Frontend Standards
+
+You are working on a frontend application. Adapt these standards to the project's framework (React, Vue, Svelte, Next.js, Nuxt, SvelteKit, etc.) and toolchain.
+
+## Project structure
+```
+src/ (or app/ depending on framework)
+  pages/          -- Route-level components (one folder per page/view)
+  components/     -- Reusable UI components (shared across pages)
+  hooks/          -- Custom hooks/composables (React hooks, Vue composables, etc.)
+  services/       -- API call functions (all backend communication lives here)
+  utils/          -- Pure utility functions
+  types/          -- Type definitions (TypeScript types, interfaces)
+  styles/         -- Global styles, design tokens
+  assets/         -- Static assets (images, icons, fonts)
+  config/         -- App configuration, environment variables
+  mocks/          -- Mock data for simulation mode
+```
+
+## Component rules
+- Functional components only (or framework-equivalent -- SFCs in Vue, components in Svelte)
+- Destructure props in the function signature
+- Extract business logic into custom hooks/composables
+- Components should be purely presentational where possible
+- One component per file (exception: small, tightly coupled sub-components)
+
+## API integration
+- ALL API calls go through `src/services/` -- never call fetch/axios directly in components
+- Every service function is typed (request params and response)
+- Use a central API client with auth token injection and error handling
+- Build with mock data first, swap for real API later
+
+## Simulation mode
+- Every service has a mock implementation returning typed test data
+- Toggle via environment variable (e.g. `VITE_USE_MOCK_DATA`, `NEXT_PUBLIC_USE_MOCKS`)
+- Mock data matches the exact shape of the API contract
+- This lets frontend development proceed independently of backend
+
+## State management
+- Local state for component-specific UI state
+- Framework context/stores for shared state that doesn't change often (auth, theme, user role)
+- Consider a dedicated state library (Zustand, Pinia, Redux, Svelte stores) only if context becomes unwieldy
+
+## Performance
+- Lazy load routes (React.lazy + Suspense, dynamic imports in Vue/Svelte, etc.)
+- Use framework-appropriate memoization only when profiling shows unnecessary re-renders
+- Don't optimize prematurely -- measure first
+
+## Role-based access
+- Check user role before rendering protected sections
+- Hide navigation items the user's role can't access
+- Never rely on frontend-only access control -- backend must enforce too
+
+## Responsive design
+- Mobile-first approach
+- Breakpoints: mobile (<768px), tablet (768-1199px), desktop (1200px+)
+- Test at all three breakpoints before marking a page complete
+
+## Error/loading/empty states
+- Every page that fetches data must have:
+  - Loading state (skeleton or spinner)
+  - Error state (user-friendly message + retry button)
+  - Empty state (helpful message, not just blank)
+
+## Forms and validation
+- Client-side validation for immediate feedback (required fields, format, length, range)
+- Server-side validation is the source of truth -- always handle API validation errors
+- Show inline field-level errors, not just a single top-level message
+- Handle dirty state (warn before navigating away from unsaved changes)
+
+## Testing
+- Unit tests for utility functions and hooks/composables
+- Component tests for critical UI (Testing Library, Vue Test Utils, etc.)
+- E2E tests for key user flows (Playwright, Cypress)
+- Form tests: validation rules, inline errors, dirty-state warnings, submit behavior
+- Accessibility tests: automated axe-core audits, keyboard navigation, focus management
+- i18n tests: fallback language rendering, locale switching, no raw translation keys in UI (if i18n is set up)
+- Test file naming consistent with project convention (`.test.ts` or `.spec.ts`)
+- Coverage targets enforced in CI
+
+## Accessibility
+- Target WCAG 2.1 AA compliance
+- Use semantic HTML elements (buttons, links, headings, landmarks)
+- Keyboard navigation must work for all interactive elements
+- Focus management on route changes and modal open/close
+- Color contrast meets AA ratio (4.5:1 for normal text, 3:1 for large text)
+- Use ARIA attributes only when native semantics are insufficient
+
+## Internationalization (i18n)
+- If multi-language is required: use a library (react-i18next, vue-i18n, etc.)
+- If not required yet: avoid hardcoding user-facing strings where feasible
+- Translation keys use dot-notation namespacing (e.g. `dashboard.header.title`)
+
+## Analytics and tracking
+- All analytics calls go through a dedicated analytics service, not scattered in components
+- Event naming uses consistent convention (e.g. snake_case: `page_view`, `button_click`)
+- Respect user privacy preferences and cookie consent requirements
+
+## Feature flags
+- If feature flags are in use: wrap conditional UI in a flag check component or utility
+- Flag naming uses consistent convention
+- Remove flags promptly after full rollout
+
+## CI/CD integration
+- Pipeline must pass before merge: lint, type-check, test, build
+- Bundle size monitoring where applicable
+- Automated accessibility checks (axe-core, eslint-plugin-jsx-a11y, or equivalent)

@@ -1,0 +1,18 @@
+{
+  "currentPhase": "understand",
+  "currentStep": 1,
+  "phaseFile": ".workflow/shared/01-understand.md",
+  "cycle": "M1 — Project kickoff",
+  "milestoneBranch": "",
+  "ticket": "",
+  "ticketTitle": "",
+  "ticketsCompleted": [],
+  "ticketsCancelled": [],
+  "ticketsInProgress": [],
+  "ticketsRemaining": [],
+  "pendingAgents": [],
+  "lastVerifyResult": "",
+  "lastVerifyTimestamp": "",
+  "lastUpdated": "",
+  "notes": "READ CONTEXT.md at app root for the full narrative. Next action: [one line only — see workflow-state.md companion doc]."
+}

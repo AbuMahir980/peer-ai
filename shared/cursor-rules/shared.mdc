@@ -1,0 +1,150 @@
+---
+description: Shared coding standards applied to all projects
+globs: **/*
+alwaysApply: true
+---
+
+# Shared Standards
+
+You are working on this project. Follow these standards in every interaction.
+
+## Session context (CONTEXT.md + state file)
+
+If `.workflow-state.json` and `CONTEXT.md` exist at the app root, the workflow driver is active. At session start, read **both** files before doing anything else. Narrative context (decisions, emails, daily log) belongs in `CONTEXT.md`; the `notes` field in `.workflow-state.json` is a one-liner pointer only — see `.workflow/shared/workflow-state.md`.
+
+When design mockups and API contracts disagree, follow `.workflow/shared/design-data-contract.md`: contract wins on data shape and field names; design wins on layout and visual hierarchy.
+
+## Git and PR conventions
+- Branch names: `feature/<linear-ticket-id>-<short-description>` (e.g., `feature/PROJ-12-auth-login-screen`)
+- Commit messages: `PROJ-XX: <short description>` — reference the Linear ticket ID in every commit
+- PR title: `[PROJ-XX] Short description of what this does`
+- PR checks before review: lint, type check, build must all pass
+- One peer review required before merge; squash and merge preferred
+- Delete feature branches after merging
+- GitHub-Linear auto-sync: branch creation → ticket In Progress; PR merged → ticket Done
+
+## Type safety
+- Use the project's type system strictly (TypeScript `strict: true`, Python type hints, Go's static types, etc.)
+- No untyped escape hatches (e.g. `any` in TypeScript, `# type: ignore` in Python) without explicit justification
+- Explicit types for function signatures and API responses
+- Use type inference for obvious cases
+
+## Naming
+- Components: PascalCase files (`CustomerList.tsx`, `CustomerList.vue`)
+- Utilities: camelCase files (`formatDate.ts`) or snake_case for Python/Go projects
+- Variables: camelCase (JS/TS), snake_case (Python/Go/Ruby)
+- Constants: SCREAMING_SNAKE_CASE
+- Types/Interfaces: PascalCase
+- API endpoints: kebab-case (`/customer-units`)
+- Database tables: snake_case (`customer_units`)
+
+## Security
+- Never hardcode secrets, API keys, or credentials
+- Always use environment variables for configuration
+- Never commit `.env` files
+- Maintain `.env.example` with all required variables (values blanked)
+- Disable source maps in production builds
+
+## Code comments
+- Never comment what the code does -- the code shows that
+- Comment WHY when the reason isn't obvious
+- Comment trade-offs and constraints
+
+## Dependencies
+- Pin exact versions where the ecosystem supports it (no ^ or ~ in Node; pinned in requirements.txt, go.mod, Cargo.toml, etc.)
+- Run dependency audits regularly and resolve critical/high vulnerabilities
+
+## Error handling
+- All async operations must handle errors
+- User-facing errors must be safe (no stack traces, no internal details)
+- Log full errors server-side for debugging
+
+## Model recommendations
+
+When starting a workflow phase, remind the user which model to select in Cursor for cost efficiency:
+
+| Phase | Recommended model | Why |
+|-------|------------------|-----|
+| Understand, Architect, System Spec, API Contract | **Opus 4.6** | Deep reasoning, architecture, cross-cutting decisions |
+| Shared Rules, Page Specs, Endpoint Specs, Track Rules | **Opus 4.6** | Needs full system context and precise reasoning |
+| Issues (06) | **Sonnet 4.6** | Structured extraction from existing specs |
+| Build (frontend/backend 03) | **Composer 2** | Best coding benchmark scores, 86% cheaper than Opus |
+| Review (frontend/backend 04) | **Sonnet 4.6** | Systematic checklist-driven review |
+| Test (frontend/backend 05) | **Composer 2** or **Sonnet 4.6** | Test writing is well-scoped implementation work |
+| Code Review agent | **Auto** or **Gemini Flash** | Structured findings report |
+| Contract Check agent | **Auto** or **Gemini Flash** | Comparison table output |
+| QA agent | **Auto** or **Gemini Flash** | Test matrix generation |
+| Security Audit agent | **Sonnet 4.6** | Needs deeper reasoning for security edge cases |
+| Document (07) | **Auto** or **Gemini Flash** | Templated documentation updates |
+| PDF-ready HTML export | **Composer 2** | Pure templating — convert markdown to styled HTML |
+| UI mockups, dashboard visuals | **Gemini 3 Pro** | Multimodal, best for visual/layout work |
+
+When the user starts a workflow file, **tell them to switch models before you begin** and wait for confirmation: "Before we start, switch to **[model]** in the model picker (bottom-left of the chat panel). [Brief reason]. Let me know when you've switched and I'll begin." Do NOT proceed until the user confirms the switch.
+
+## Dev journal
+
+If a `docs/journal-config.json` file exists in the project, journaling is active. Read that file to determine the tool ("notion", "local", "other", or "none").
+
+During any workflow phase, **recognize key decision moments** and offer to journal them. Key moments include:
+- Architecture or technology choices (e.g. "chose Fastify over Express")
+- Trade-offs made (e.g. "sacrificed real-time for simpler polling")
+- Problems resolved (e.g. "auth refresh was failing, fixed by...")
+- Spec deviations (e.g. "deviated from spec because of backend constraint")
+- Dependency choices (e.g. "chose Zustand over Redux")
+
+When you recognize one, offer briefly:
+> "That was a significant decision. Want me to add a journal entry capturing the reasoning?"
+
+**Wait for the user's input.** If yes, draft the entry using the key moment template from `.workflow/shared/08-dev-journal.md` (Part B) and write it to the configured tool. If no, continue without interruption.
+
+Do NOT over-trigger. One or two mid-phase entries per workflow step is enough. Save the phase summary for the handoff nudge.
+
+## Linear issue completion
+
+When the AI finishes implementing a Linear ticket (page, endpoint group, feature, or any scoped issue), it must do all three of the following before moving on:
+
+1. **Tick acceptance criteria** — if the Linear ticket description has checkboxes (acceptance criteria), check off every item that was completed. Use Linear MCP if available; otherwise tell the user which items to tick manually.
+2. **Add a completion comment** — post a comment on the issue summarizing what was done, any deviations from the spec, and any follow-up items. Keep it concise (3–5 bullet points). Example format:
+   > Completed: [short summary]
+   > - Built [component/endpoint] per spec
+   > - Connected to [mock/real] data
+   > - Responsive/tested on [contexts]
+   > - Deviation: [if any, otherwise omit]
+   > - Follow-up: [if any, otherwise omit]
+3. **Add a project update** — post a project-level update to the Linear project (your Linear project) noting the progress. One sentence is enough, e.g. "Status page complete — all KPIs, table, and drawer working against mock data."
+
+If Linear MCP is not connected, draft all three (checkbox list, comment, project update) as text and tell the user to paste them into Linear manually.
+
+## PDF-ready doc export
+
+When any markdown file is saved to `docs/`, offer to generate a PDF-ready HTML version in `docs-pdf/`. This applies at every phase that produces a doc — not just the final documentation step. Follow the styling rules in `.workflow/shared/cursor-rules/docs-pdf-export.mdc`. Ensure `docs-pdf/` is in `.gitignore` (generated artifacts, not source of truth). **Always ask the user to switch to Composer 2 before generating** — HTML export is pure templating and doesn't need a premium model.
+
+## Workflow reference
+This project includes the Peer AI Development Workflow in the `.workflow/` folder. When asked about process, or when following a workflow step, read the relevant file directly:
+- Requirements: `.workflow/shared/01-understand.md`
+- Architecture: `.workflow/shared/02-architect.md`
+- System spec: `.workflow/shared/03-spec-system.md`
+- API contract: `.workflow/shared/04-spec-api-contract.md` (includes optional OpenAPI spec generation)
+- Rules: `.workflow/shared/05-rules-shared.md`
+- Issues: `.workflow/shared/06-issues.md`
+- Documentation: `.workflow/shared/07-document.md`
+- PR automation: `.workflow/shared/09-pr-automation.md` (GitHub Actions, branch protection, automated review comments)
+- Dev journal: `.workflow/shared/08-dev-journal.md`
+- Frontend guides: `.workflow/frontend/` (page specs with forms/validation, rules with testing/i18n/a11y/analytics/feature-flags/CI, build, review covering forms/i18n/analytics/flags, test covering forms/a11y/i18n)
+- Backend guides: `.workflow/backend/` (endpoint specs with jobs/cron/webhooks/files/email/caching/real-time, rules with jobs/caching/files/versioning/testing/deployment/observability, build, review covering all concerns, test covering all concerns)
+- Agent prompts: `.workflow/agents/`
+- Templates: `.workflow/shared/templates/`, `.workflow/frontend/templates/`, `.workflow/backend/templates/`
+- Contributing guide: `.workflow/CONTRIBUTING.md` (how to safely edit workflow files)
+- Workflow state guide: `.workflow/shared/workflow-state.md` (state file + `notes` field rules)
+- Design vs contract: `.workflow/shared/design-data-contract.md`
+- Workflow driver: `.workflow/shared/cursor-rules/workflow-driver.mdc` (ambient driver — copy to project `.cursor/rules/`)
+
+When a user says "follow .workflow/...", READ that file and follow its instructions step by step.
+
+## Monorepo structure (if applicable)
+If the project uses a monorepo with `apps/` and `packages/`:
+- Each app deploys independently
+- npm workspaces at the root links apps together
+- Shared code lives in `packages/` (shared types, UI components, config)
+- All apps share the same `.cursor/rules/` and `.workflow/` at the root
+- CI runs lint + type check + build on PRs via GitHub Actions
