@@ -17,10 +17,16 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 ## How it works
 
 1. **Open a proposal issue** with the problem and a sketch of the change. This is where the idea gets its first reaction.
-2. **Write the RFC.** Copy [`0000-template.md`](0000-template.md) to `rfcs/0000-short-title.md` and open a pull request. Once the PR exists, rename the file to use the PR number.
+2. **Write the RFC.** Copy [`0000-template.md`](0000-template.md) to `rfcs/NNNN-short-title.md`, using the next free number in the index below, and open a pull request.
 3. **Discussion.** Every RFC stays open for at least a week, so people in other timezones and on other stacks can weigh in.
 4. **Decision.** A maintainer merges it as accepted or closes it as declined, with the reasoning in a final comment.
 5. **Implementation** happens in separate pull requests that link back to the RFC.
+
+## Index
+
+| RFC | Title | Status |
+|-----|-------|--------|
+| [0001](0001-configuration-instead-of-patching.md) | Configuration instead of patching | Accepted |
 
 ## What carries weight
 

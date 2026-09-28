@@ -1,75 +1,160 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { validateConfig } from "./index.ts";
+import { resolveConfig, validateConfig, validateConfigLayer } from "./index.ts";
 
 const examplesDir = join(import.meta.dirname, "..", "examples");
 const exampleFiles = readdirSync(examplesDir).filter((file) => file.endsWith(".config.json"));
-const readExample = (file: string): Record<string, unknown> =>
-  JSON.parse(readFileSync(join(examplesDir, file), "utf8")) as Record<string, unknown>;
-const tallyho = () => readExample("web-app-with-api.config.json");
+const readJson = (...path: string[]): Record<string, unknown> =>
+  JSON.parse(readFileSync(join(examplesDir, ...path), "utf8")) as Record<string, unknown>;
 
-function errorsFor(input: unknown): string[] {
+const minimal = () => ({
+  version: 1,
+  project: { name: "Test" },
+  tracks: [
+    { id: "web", kind: "web", status: "active" },
+    { id: "api", kind: "backend", status: "active" },
+  ],
+});
+
+function errorsFor(input: unknown): string {
   const result = validateConfig(input);
-  return result.ok ? [] : result.errors;
+  return result.ok ? "" : result.errors.join("\n");
 }
 
-describe("peer-ai.config.json", () => {
-  it.each(exampleFiles)("accepts the example %s", (file) => {
-    expect(errorsFor(readExample(file))).toEqual([]);
+describe("peer-ai.config.json examples", () => {
+  it.each(exampleFiles)("accepts %s", (file) => {
+    expect(errorsFor(readJson(file))).toBe("");
   });
 
-  it("rejects a misspelt key instead of ignoring it", () => {
-    expect(errorsFor({ ...tallyho(), trakcer: { kind: "none" } }).join("\n")).toContain("trakcer");
+  it("accepts an informal project's config of a few lines", () => {
+    expect(
+      errorsFor({ version: 1, project: { name: "x" }, tracks: [{ id: "app", kind: "web", status: "active" }] }),
+    ).toBe("");
+  });
+});
+
+describe("a shared base config", () => {
+  const base = () => readJson("studio", "base.config.json");
+  const project = () => readJson("studio", "project.config.json");
+
+  it("is valid as a layer on its own", () => {
+    const result = validateConfigLayer(base());
+    expect(result.ok ? "" : result.errors.join("\n")).toBe("");
   });
 
-  it("rejects a capability that is not one of Peer AI's skills", () => {
-    const config = { ...tallyho(), capabilities: { "code-reveiw": { also: ["/code-review"] } } };
-    expect(errorsFor(config).join("\n")).toMatch(/capabilities/);
+  it("resolves with a project into a valid config", () => {
+    expect(errorsFor(resolveConfig([base(), project()]))).toBe("");
   });
 
-  it("rejects an add-on that is neither plugin:skill nor /command", () => {
-    const config = { ...tallyho(), capabilities: { "code-review": { also: ["code review please"] } } };
-    expect(errorsFor(config).join("\n")).toContain("plugin:skill");
+  it("lets the project's values win, merges objects and replaces lists", () => {
+    const resolved = resolveConfig([base(), project()]) as Record<string, Record<string, unknown>>;
+    expect(resolved.standards?.profiles).toEqual(["typescript", "react"]);
+    expect(resolved.repo?.host).toBe("github");
+    expect(resolved.compliance?.packs).toEqual(["ndpa"]);
+    expect(resolved).not.toHaveProperty("extends");
+  });
+});
+
+describe("what peer-ai.config.json rejects", () => {
+  it("a misspelt key, instead of ignoring it", () => {
+    expect(errorsFor({ ...minimal(), trakcer: { kind: "none" } })).toContain("trakcer");
   });
 
-  it("requires a default model when models are pinned", () => {
-    const config = { ...tallyho(), models: { policy: "pinned", byActivity: { build: "some-model" } } };
-    expect(errorsFor(config).join("\n")).toContain("needs a default model");
+  it("a capability that is not one of Peer AI's skills", () => {
+    expect(errorsFor({ ...minimal(), capabilities: { "code-reveiw": { also: ["/code-review"] } } })).toMatch(
+      /capabilities/,
+    );
   });
 
-  it("rejects model names without the pinned policy", () => {
-    const config = { ...tallyho(), models: { policy: "tiers", default: "some-model" } };
-    expect(errorsFor(config).join("\n")).toContain("only used with the pinned policy");
+  it("an add-on that is neither plugin:skill nor /command", () => {
+    const config = { ...minimal(), capabilities: { "code-review": { also: ["code review please"] } } };
+    expect(errorsFor(config)).toContain("plugin:skill");
   });
 
-  it("rejects duplicate track ids", () => {
+  it("an activity that does not exist", () => {
+    expect(errorsFor({ ...minimal(), activities: { review: { notes: ["x"] } } })).toMatch(/activities/);
+  });
+
+  it("pinned models without a default, and model names without the pinned policy", () => {
+    expect(errorsFor({ ...minimal(), models: { policy: "pinned", byActivity: { build: "m" } } })).toContain(
+      "needs a default model",
+    );
+    expect(errorsFor({ ...minimal(), models: { policy: "tiers", default: "m" } })).toContain(
+      "only used with the pinned policy",
+    );
+  });
+
+  it("duplicate track, api or environment ids", () => {
     const track = { id: "web", kind: "web", status: "active" };
-    expect(errorsFor({ ...tallyho(), tracks: [track, track] }).join("\n")).toContain('duplicate track id "web"');
+    expect(errorsFor({ ...minimal(), tracks: [track, track] })).toContain('duplicate track id "web"');
+    const api = { id: "api", kind: "http" };
+    expect(errorsFor({ ...minimal(), apis: [api, api] })).toContain('duplicate api id "api"');
+    expect(errorsFor({ ...minimal(), environments: [{ id: "prod" }, { id: "prod" }] })).toContain(
+      'duplicate environment id "prod"',
+    );
   });
 
-  it("rejects a standards document scoped to a track that does not exist", () => {
+  it("references to tracks, apis and environments that do not exist", () => {
     const config = {
-      ...tallyho(),
-      standards: { documents: [{ path: "docs/standards.md", role: "standard", scope: ["mobile"] }] },
+      ...minimal(),
+      tracks: [
+        {
+          id: "web",
+          kind: "web",
+          status: "active",
+          uses: ["core"],
+          consumes: ["payments"],
+          deploy: { target: "vercel", environments: ["prod"] },
+        },
+      ],
+      apis: [{ id: "orders", kind: "http", providedBy: "orders-service" }],
     };
-    expect(errorsFor(config).join("\n")).toContain('"mobile" is not a track id');
+    const errors = errorsFor(config);
+    expect(errors).toContain('"core" is not a track id');
+    expect(errors).toContain('"payments" is not an api id');
+    expect(errors).toContain('"prod" is not an environment id');
+    expect(errors).toContain('"orders-service" is not a track id');
   });
 
-  it("rejects a contract on an api of kind none", () => {
-    const config = {
-      ...tallyho(),
-      shape: { api: { kind: "none", contract: { source: "handwritten" } }, design: { status: "none" } },
-    };
-    expect(errorsFor(config).join("\n")).toContain("has no contract");
+  it("a standards document scoped to a track that does not exist", () => {
+    const config = { ...minimal(), standards: { documents: [{ path: "s.md", role: "standard", scope: ["mobile"] }] } };
+    expect(errorsFor(config)).toContain('"mobile" is not a track id');
   });
 
-  it("rejects an activity that does not exist", () => {
-    expect(errorsFor({ ...tallyho(), activities: { review: { notes: ["x"] } } }).join("\n")).toMatch(/activities/);
+  it("an external track with no repository, and a repository on a track that is not external", () => {
+    expect(errorsFor({ ...minimal(), tracks: [{ id: "api", kind: "backend", status: "external" }] })).toContain(
+      "names the repository it lives in",
+    );
+    expect(
+      errorsFor({ ...minimal(), tracks: [{ id: "api", kind: "backend", status: "active", repo: "a/b" }] }),
+    ).toContain("only an external track");
   });
 
-  it("reports where each problem is", () => {
-    const config = { ...tallyho(), tracks: [{ id: "Web App", kind: "web", status: "active" }] };
-    expect(errorsFor(config).join("\n")).toContain("tracks.0.id:");
+  it("a retiring track with no replacement, and a replacement on a track that is not retiring", () => {
+    const tracks = (status: string, replacedBy?: string[]) => [
+      { id: "old", kind: "web", status, ...(replacedBy ? { replacedBy } : {}) },
+      { id: "new", kind: "web", status: "active" },
+    ];
+    expect(errorsFor({ ...minimal(), tracks: tracks("retiring") })).toContain("names the tracks replacing it");
+    expect(errorsFor({ ...minimal(), tracks: tracks("active", ["new"]) })).toContain("only a retiring track");
+    expect(errorsFor({ ...minimal(), tracks: tracks("retiring", ["new"]) })).toBe("");
+  });
+
+  it("a track that refers to itself", () => {
+    expect(
+      errorsFor({ ...minimal(), tracks: [{ id: "web", kind: "web", status: "active", uses: ["web"] }] }),
+    ).toContain("cannot refer to itself");
+  });
+
+  it("a jurisdiction that is neither an ISO 3166 code nor a zone id", () => {
+    expect(errorsFor({ ...minimal(), compliance: { jurisdictions: ["Nigeria"] } })).toContain("ISO 3166");
+    expect(errorsFor({ ...minimal(), compliance: { jurisdictions: ["NG", "US-CA", "AE-DU", "eu", "difc"] } })).toBe("");
+  });
+
+  it("says where each problem is", () => {
+    expect(errorsFor({ ...minimal(), tracks: [{ id: "Web App", kind: "web", status: "active" }] })).toContain(
+      "tracks.0.id:",
+    );
   });
 });

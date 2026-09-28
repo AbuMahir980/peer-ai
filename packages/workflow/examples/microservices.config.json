@@ -1,0 +1,98 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Parcelpath",
+    "description": "Parcel delivery; a monolith is being split into services, one piece at a time",
+    "stage": "production",
+    "origin": "existing",
+    "team": "team"
+  },
+  "tools": ["claude-code", "codex", "copilot"],
+  "tracks": [
+    {
+      "id": "dashboard",
+      "kind": "web",
+      "path": "apps/dashboard",
+      "stack": ["typescript", "react"],
+      "consumes": ["orders-api", "order-events"],
+      "deploy": { "target": "vercel", "environments": ["staging", "production"] },
+      "status": "active"
+    },
+    {
+      "id": "orders",
+      "kind": "backend",
+      "path": "services/orders",
+      "stack": ["go"],
+      "architecture": "microservice",
+      "consumes": ["payments-api"],
+      "deploy": { "target": "aws-ecs", "environments": ["staging", "production"] },
+      "status": "active"
+    },
+    {
+      "id": "payments",
+      "kind": "backend",
+      "path": "services/payments",
+      "stack": ["kotlin", "spring"],
+      "architecture": "microservice",
+      "deploy": { "target": "aws-ecs", "environments": ["staging", "production"] },
+      "status": "active"
+    },
+    {
+      "id": "notifications",
+      "kind": "backend",
+      "path": "services/notifications",
+      "stack": ["typescript", "node"],
+      "architecture": "microservice",
+      "consumes": ["order-events"],
+      "deploy": { "target": "aws-lambda", "environments": ["staging", "production"] },
+      "status": "active"
+    },
+    {
+      "id": "monolith",
+      "kind": "backend",
+      "path": "legacy/monolith",
+      "stack": ["php"],
+      "architecture": "layered",
+      "status": "retiring",
+      "replacedBy": ["orders", "payments"]
+    },
+    { "id": "infra", "kind": "infrastructure", "path": "infra", "stack": ["terraform"], "status": "active" }
+  ],
+  "apis": [
+    {
+      "id": "orders-api",
+      "kind": "http",
+      "providedBy": "orders",
+      "contract": { "source": "openapi", "location": "services/orders/openapi.yaml", "checkDrift": true }
+    },
+    {
+      "id": "payments-api",
+      "kind": "http",
+      "providedBy": "payments",
+      "contract": { "source": "openapi", "location": "services/payments/openapi.yaml", "checkDrift": true }
+    },
+    {
+      "id": "order-events",
+      "kind": "events",
+      "providedBy": "orders",
+      "contract": { "source": "asyncapi", "location": "services/orders/asyncapi.yaml", "checkDrift": true }
+    }
+  ],
+  "environments": [
+    { "id": "staging", "url": "https://staging.parcelpath.example" },
+    { "id": "production", "production": true, "url": "https://parcelpath.example" }
+  ],
+  "repo": { "host": "github", "remote": "origin", "commits": "conventional", "mergePolicy": "pull-request" },
+  "tracker": { "kind": "linear", "ticketPrefix": "PP" },
+  "commands": { "verify": "make verify" },
+  "delivery": { "ci": "existing", "pipeline": ".github/workflows/" },
+  "standards": { "profiles": ["go", "kotlin-spring", "typescript", "react", "terraform"] },
+  "compliance": {
+    "jurisdictions": ["GB", "eu"],
+    "industries": ["logistics", "payments"],
+    "packs": ["uk-gdpr", "gdpr", "pci-dss"]
+  },
+  "models": { "policy": "tiers" },
+  "gates": { "blockOn": "high" }
+}
