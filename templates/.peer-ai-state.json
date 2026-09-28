@@ -1,0 +1,20 @@
+{
+  "_comment": "Copy to your app root as .peer-ai-state.json. currentPhase must be one of: setup, understand, architect, spec-system, spec-api-contract, rules-shared, spec-pages, spec-endpoints, rules-track, issues, build, review, test, document, pr-automation, done (see peer-ai/shared/workflow-state.md). Delete this key once the file is filled in.",
+  "currentPhase": "understand",
+  "currentStep": 1,
+  "phaseFile": "peer-ai/shared/01-understand.md",
+  "cycle": "M1 — Project kickoff",
+  "milestoneBranch": "",
+  "ticket": "",
+  "ticketTitle": "",
+  "ticketsCompleted": [],
+  "ticketsCancelled": [],
+  "ticketsInProgress": [],
+  "ticketsRemaining": [],
+  "pendingAgents": [],
+  "lastVerifyResult": "",
+  "lastVerifyTimestamp": "",
+  "pdfExportOffered": "",
+  "lastUpdated": "",
+  "notes": "READ CONTEXT.md at app root for the full narrative. Next action: [one line only — see workflow-state.md companion doc]."
+}

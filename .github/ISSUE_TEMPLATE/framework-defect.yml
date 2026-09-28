@@ -1,0 +1,75 @@
+name: Framework defect
+description: Something in the playbook misled you, contradicted itself, or could not be followed on your project.
+title: "[defect] "
+labels: ["framework-defect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Peer AI is copied into each project, not linked. Nothing you fix in your
+        copy reaches anyone else unless you send it back — this form is that route.
+
+        **The test for an entry:** *would this bite anyone who cloned Peer AI, on any project?*
+        If it is specific to your project, it belongs in your own repo, not here.
+
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The file, and the step or section inside it.
+      placeholder: "frontend/03-build.md, step 4 'Mock data layer'"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened
+      description: >
+        What the file says, and what went wrong when it was followed. Quote the
+        line. Say what an agent following it literally would do.
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix
+    attributes:
+      label: Suggested fix
+      description: Proposed wording, or the shape of the change. A rough fix is fine.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "fix — a user will hit this"
+        - "polish — cosmetic, or a consistency problem between two files"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Playbook version
+      description: "`git -C peer-ai log -1 --format=%h` in your project, or the commit you copied from."
+      placeholder: "13b73f9"
+
+  - type: textarea
+    id: project
+    attributes:
+      label: Project shape
+      description: >
+        The context that made this surface — stack, platform, whether there is a
+        backend, whether the design already existed. Most items so far were
+        invisible until a project with a different shape ran the playbook.
+      placeholder: "Three React Native apps on Expo, existing backend, designs already drawn"
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Confirm
+      options:
+        - label: This is a defect in the playbook, not in my project's customisation of it.
+          required: true

@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor
+.vscode/
+!.cursor/
+*.swp
+*.swo
+*~
+
+# Generated when a Peer AI phase is run inside this repo itself.
+# In a real project these live at the project root and ARE committed;
+# here only the starters in templates/ belong in git.
+/.peer-ai-state.json
+/CONTEXT.md
+docs/journal-config.json
+
+# PDF-ready HTML exports are generated from docs/ and never tracked
+docs-pdf/
+
+# Private list for the forbidden-terms check; never commit it
+.forbidden-terms
