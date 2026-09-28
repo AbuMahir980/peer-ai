@@ -174,3 +174,33 @@ Run it after the project's own checks:
 ### Exit codes
 
 `0` passed (warnings are allowed), `1` failed, `2` a usage error or no valid `peer-ai.config.json`.
+
+## `peer-ai mcp`
+
+Starts the Peer AI MCP server over stdio. Any AI tool that supports MCP servers reaches the same project map, work items and gates through it, so a project behaves the same whichever tool a person uses.
+
+The AI tool starts it, from the project's folder or one inside it. For example, in a project's `.mcp.json` for Claude Code:
+
+```json
+{
+  "mcpServers": {
+    "peer-ai": { "command": "npx", "args": ["peer-ai", "mcp"] }
+  }
+}
+```
+
+`peer-ai render` will write this registration for each tool in the config.
+
+| Tool | What it does |
+|------|--------------|
+| `project_map` | Each item on the project map with its evidence, what the stage still needs, and compliance signals. It assesses afresh on every call, and says whether the committed map has fallen behind. |
+| `next_work` | The open work item for the current git branch, with where it stopped and its next action, and every other open item. When nothing is open, the gaps the stage needs. |
+| `standards_for_file` | The track a file belongs to, the stack profiles, and the project's own standards documents and rules for that track |
+| `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |
+| `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
+| `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
+| `record_review` | Records a review skill's result: pass, fail, or incomplete when it couldn't check every rule |
+| `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. |
+
+Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.
+

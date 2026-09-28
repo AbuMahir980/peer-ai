@@ -38,7 +38,7 @@ function latestReviews(item: WorkItem): Review[] {
   return [...latest.values()];
 }
 
-function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
+export function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
   const checks: Check[] = [];
   const claim = `${item.id} is at ${item.stage}`;
   const backToBuild = "or move the item back to build.";
