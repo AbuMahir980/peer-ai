@@ -1,6 +1,6 @@
 import { basename } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { detect, slugify } from "./detect.ts";
+import { classifyHost, detect, remoteHostname, slugify } from "./detect.ts";
 import { cleanUp, project } from "./test-helpers.ts";
 
 afterEach(cleanUp);
@@ -179,6 +179,25 @@ describe("detect", () => {
 
   it("notices an existing config", () => {
     expect(detect(project({ "peer-ai.config.json": "{}" })).hasConfig).toBe(true);
+  });
+});
+
+describe("reading the git host", () => {
+  it.each([
+    ["git@github.com:acme/app.git", "github"],
+    ["https://github.com/acme/app.git", "github"],
+    ["ssh://git@ssh.github.com:443/acme/app.git", "github"],
+    ["https://gitlab.com/acme/app.git", "gitlab"],
+    ["git@gitlab.acme.io:team/app.git", "other"],
+    ["git@bitbucket.org:acme/app.git", "bitbucket"],
+    ["https://acme@dev.azure.com/acme/project/_git/app", "azure-devops"],
+    ["git@ssh.dev.azure.com:v3/acme/project/app", "azure-devops"],
+    ["https://acme.visualstudio.com/project/_git/app", "azure-devops"],
+    ["https://evil.example/github.com/acme/app.git", "other"],
+    ["https://github.com.evil.example/acme/app.git", "other"],
+    ["not a url", "other"],
+  ])("classifies %s as %s", (url, host) => {
+    expect(classifyHost(remoteHostname(url))).toBe(host);
   });
 });
 

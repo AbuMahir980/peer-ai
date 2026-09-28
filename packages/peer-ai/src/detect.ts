@@ -347,6 +347,30 @@ export function detectTools(root: string): ToolId[] {
   return tools;
 }
 
+/** The host name of a git remote, from an https, ssh:// or scp-style (git@host:path) URL. */
+export function remoteHostname(url: string): string | undefined {
+  const scp = /^[^@/\s]+@([^:/\s]+):/.exec(url);
+  if (scp?.[1] !== undefined) return scp[1].toLowerCase();
+  try {
+    return new URL(url).hostname.toLowerCase() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// Matched on the parsed host name against each service's real domain, never on the whole URL,
+// so a URL that merely contains "github.com" is not mistaken for GitHub. A self-hosted server
+// cannot be recognised reliably from its name, so it is recorded as "other" for the user to set.
+export function classifyHost(hostname: string | undefined): RepoHost {
+  if (hostname === undefined) return "other";
+  const is = (domain: string) => hostname === domain || hostname.endsWith(`.${domain}`);
+  if (is("github.com")) return "github";
+  if (is("gitlab.com")) return "gitlab";
+  if (is("bitbucket.org")) return "bitbucket";
+  if (is("dev.azure.com") || is("visualstudio.com")) return "azure-devops";
+  return "other";
+}
+
 export function detectRepo(root: string): Detected["repo"] {
   let url: string;
   try {
@@ -354,16 +378,7 @@ export function detectRepo(root: string): Detected["repo"] {
   } catch {
     return { remote: null };
   }
-  const host: RepoHost = url.includes("github.com")
-    ? "github"
-    : url.includes("gitlab.com")
-      ? "gitlab"
-      : url.includes("bitbucket.org")
-        ? "bitbucket"
-        : url.includes("dev.azure.com") || url.includes("visualstudio.com")
-          ? "azure-devops"
-          : "other";
-  return { host, remote: "origin" };
+  return { host: classifyHost(remoteHostname(url)), remote: "origin" };
 }
 
 export function detect(root: string): Detected {
