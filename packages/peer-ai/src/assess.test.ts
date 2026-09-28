@@ -69,6 +69,16 @@ describe("assess", () => {
     expect(signals.paymentProviders).toEqual(["stripe"]);
   });
 
+  it("finds personal data in prefixed column names, but not inside other words", () => {
+    const root = project({
+      "db/migrations/0001.sql":
+        "CREATE TABLE parcels (recipient_phone TEXT, recipient_address TEXT, iphone_model TEXT, company TEXT, card_pan TEXT);",
+    });
+    const { signals } = assess(root, undefined, "mvp");
+    expect(signals.personalData.map((finding) => finding.name)).toEqual(["phone", "address"]);
+    expect(signals.cardData.map((finding) => finding.name)).toEqual(["pan"]);
+  });
+
   it("infers the architecture from the code when there is no document, and says so", () => {
     const root = project({
       "apps/web/package.json": json({ dependencies: { react: "19.0.0" } }),

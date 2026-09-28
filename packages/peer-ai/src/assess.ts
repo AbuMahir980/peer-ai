@@ -98,9 +98,11 @@ const MANIFEST =
   /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|pubspec\.yaml|Gemfile|go\.mod|composer\.json|build\.gradle(\.kts)?|pom\.xml)$/;
 const SCHEMA_FILE =
   /(^|\/)(migrations?|alembic|prisma|drizzle|supabase|db|database)\/.*\.(sql|py|ts|js|rb|prisma)$|\.sql$|schema\.prisma$|(^|\/)models?\.py$|(^|\/)models\/[^/]+\.py$|\.entity\.ts$/i;
+// Field names are matched as whole words, where an underscore also separates words, so a prefixed
+// name such as recipient_phone counts but iphone doesn't.
 const PERSONAL_FIELD =
-  /\b(email|phone(?:_number)?|mobile_number|date_of_birth|dob|birth_?date|home_address|address(?:_line_?\d)?|post_?code|zip_?code|bvn|nin|ssn|national_id|passport(?:_number)?|ip_address|latitude|longitude)\b/gi;
-const CARD_FIELD = /\b(card_?number|card_no|pan|cvv2?|cvc|card_expiry)\b/gi;
+  /(?<![a-z0-9])(email|phone(?:_number)?|mobile_number|date_of_birth|dob|birth_?date|home_address|address(?:_line_?\d)?|post_?code|zip_?code|bvn|nin|ssn|national_id|passport(?:_number)?|ip_address|latitude|longitude)(?![a-z0-9])/gi;
+const CARD_FIELD = /(?<![a-z0-9])(card_?number|card_no|pan|cvv2?|cvc|card_expiry)(?![a-z0-9])/gi;
 const PAYMENT_PROVIDER =
   /\b(stripe|paystack|flutterwave|braintree|adyen|razorpay|paypal|squareup|mollie|monnify|interswitch)\b/gi;
 const OBSERVABILITY =

@@ -5,6 +5,7 @@ Small, made-up projects that Peer AI is tested on end to end. Each one is set up
 | Fixture | What it is | Stage |
 |---------|------------|-------|
 | [`split-bill`](split-bill/) | A dependency-free TypeScript library that splits a bill between people, to the cent | MVP |
+| [`courier`](courier/) | A parcel pickup service: a React web app and a Python API on PostgreSQL, with 18 problems planted on purpose for the [evals](../evals/) | MVP |
 
 ## Running an AI tool on a fixture
 

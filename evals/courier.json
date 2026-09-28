@@ -1,0 +1,210 @@
+{
+  "fixture": "courier",
+  "prompts": {
+    "security-review": "Review Courier's web app and API for security problems.",
+    "code-review": "Review Courier's code for bugs and problems.",
+    "compliance-review": "Review Courier for data protection and card payment compliance problems. It operates in the United Kingdom.",
+    "contract-check": "Check that Courier's API does what its OpenAPI contract says.",
+    "accessibility-review": "Review Courier's web app for accessibility problems.",
+    "data-migration-review": "Review Courier's database migrations.",
+    "performance-review": "Review Courier's API and database for performance problems.",
+    "reliability-review": "Review Courier's API for reliability problems."
+  },
+  "defects": [
+    {
+      "id": "D1",
+      "title": "The session signing key is written in the code",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [{ "file": "services/api/app/auth.py", "match": "SECRET_KEY = \"courier-signing-key-2026\"" }]
+    },
+    {
+      "id": "D2",
+      "title": "Any website may call the API with a signed-in customer's credentials",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [{ "file": "services/api/app/main.py", "match": "allow_origins=[\"*\"],", "lines": 2 }]
+    },
+    {
+      "id": "D3",
+      "title": "The status filter is pasted into SQL, so it can be used for SQL injection",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [{ "file": "services/api/app/routes/parcels.py", "match": "query += f\" AND status = '{status}'\"" }]
+    },
+    {
+      "id": "D4",
+      "title": "Any signed-in customer can read another customer's parcel",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"SELECT id, status, weight_kg, recipient_name, recipient_address, notes FROM parcels WHERE id = %s\",",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "D5",
+      "title": "Booking writes the recipient's name, phone and address to the logs",
+      "severity": "high",
+      "skills": ["security-review", "compliance-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ]
+    },
+    {
+      "id": "D6",
+      "title": "Booking returns recipientName, where the contract promises recipient_name",
+      "severity": "high",
+      "skills": ["contract-check", "code-review"],
+      "locations": [
+        { "file": "services/api/app/routes/parcels.py", "match": "\"recipientName\": parcel[\"recipient_name\"]}" }
+      ]
+    },
+    {
+      "id": "D7",
+      "title": "Listing parcels returns every one a customer ever booked, with no limit or paging",
+      "severity": "medium",
+      "skills": ["performance-review", "contract-check", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "return db.execute(query + \" ORDER BY created_at DESC\").fetchall()"
+        }
+      ]
+    },
+    {
+      "id": "D8",
+      "title": "Public tracking shows the recipient's name and address to anyone with the link",
+      "severity": "high",
+      "skills": ["security-review", "compliance-review", "contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"SELECT status, recipient_name, recipient_address FROM parcels WHERE tracking_code = %s\","
+        }
+      ]
+    },
+    {
+      "id": "D9",
+      "title": "Full card numbers and CVVs are received and stored",
+      "severity": "critical",
+      "skills": ["security-review", "compliance-review", "contract-check", "data-modelling"],
+      "locations": [
+        { "file": "services/api/app/routes/payments.py", "match": "    card_number: str", "lines": 3 },
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "\"INSERT INTO payments (parcel_id, customer_id, card_number, expiry, cvv, amount_pence) VALUES (%s, %s, %s, %s, %s, %s)\","
+        },
+        { "file": "services/api/migrations/0001_init.sql", "match": "  card_number TEXT NOT NULL,", "lines": 3 }
+      ]
+    },
+    {
+      "id": "D10",
+      "title": "The customer's browser decides how much to pay",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [{ "file": "services/api/app/routes/payments.py", "match": "    amount_pence: int" }]
+    },
+    {
+      "id": "D11",
+      "title": "The geocoding call has no timeout, so a slow provider hangs bookings",
+      "severity": "medium",
+      "skills": ["reliability-review", "performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/geocode.py",
+          "match": "response = requests.get(GEOCODER_URL, params={\"q\": address})"
+        }
+      ]
+    },
+    {
+      "id": "D12",
+      "title": "Parcels are looked up by customer with no index on customer_id",
+      "severity": "medium",
+      "skills": ["performance-review", "data-modelling"],
+      "locations": [
+        {
+          "file": "services/api/migrations/0001_init.sql",
+          "match": "  customer_id INTEGER NOT NULL REFERENCES customers (id),\n  tracking_code"
+        }
+      ]
+    },
+    {
+      "id": "D13",
+      "title": "A migration drops customers' parcel notes, which the API still reads and writes",
+      "severity": "critical",
+      "skills": ["data-migration-review", "code-review"],
+      "locations": [
+        { "file": "services/api/migrations/0002_delivery_notes.sql", "match": "ALTER TABLE parcels DROP COLUMN notes;" }
+      ]
+    },
+    {
+      "id": "D14",
+      "title": "Prices are worked out in pounds as decimals, while the API charges whole pence",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [{ "file": "apps/web/src/lib/price.ts", "match": "return 3.5 + weightKg * 0.85;" }]
+    },
+    {
+      "id": "D15",
+      "title": "Parcel notes are put into the page as HTML, so they can run a script",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "<div dangerouslySetInnerHTML={{ __html: parcel.notes }} />"
+        }
+      ]
+    },
+    {
+      "id": "D16",
+      "title": "A parcel's status is shown only as a colour",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/components/StatusBadge.tsx",
+          "match": "return <span className=\"badge\" style={{ background: COLOURS[status] }} />;"
+        }
+      ]
+    },
+    {
+      "id": "D17",
+      "title": "The booking form's fields have no labels, only placeholders",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        { "file": "apps/web/src/pages/BookPickup.tsx", "match": "<input placeholder=\"Weight (kg)\"", "lines": 9 }
+      ]
+    },
+    {
+      "id": "D19",
+      "title": "Session tokens never expire and can't be revoked",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        { "file": "services/api/app/auth.py", "match": "serializer = URLSafeSerializer(SECRET_KEY, salt=\"session\")" }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
+    },
+    {
+      "id": "D18",
+      "title": "The Book button is a div, so a keyboard can't reach or press it",
+      "severity": "high",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/BookPickup.tsx",
+          "match": "<div className=\"button\" onClick={() => void submit()}>"
+        }
+      ]
+    }
+  ]
+}
