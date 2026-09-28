@@ -9,6 +9,7 @@ import { TOOL_IDS, type ToolId } from "@peer-ai/workflow";
 import { runAssess } from "./assess.ts";
 import { runCheck } from "./check.ts";
 import { runDoctor } from "./doctor.ts";
+import { serveStdio } from "./mcp.ts";
 import { runInit, type Output, type Stage, type Team } from "./init.ts";
 import { VERSION } from "./package-info.ts";
 import { createTerminalPrompter, type Prompter } from "./prompter.ts";
@@ -23,6 +24,7 @@ Usage:
   peer-ai assess [options]    Map what the project has and what its stage still needs
   peer-ai doctor [options]    Check that Peer AI is set up correctly, and how to fix it
   peer-ai check [options]     The CI gate: fail when work claims more than its record shows
+  peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
 
 Options for init:
   -y, --yes                   Accept what init detects instead of asking
@@ -122,11 +124,18 @@ function check(args: string[], io: Io): number {
   return runCheck({ cwd: io.cwd, json: values.json === true }, io.out);
 }
 
+async function mcp(args: string[], io: Io): Promise<number> {
+  parseArgs({ args, strict: true, options: {} });
+  await serveStdio(io.cwd);
+  return 0;
+}
+
 const COMMANDS: Record<string, (args: string[], io: Io) => number | Promise<number>> = {
   init,
   assess,
   doctor,
   check,
+  mcp,
 };
 
 export async function main(argv: string[], io: Io): Promise<number> {
