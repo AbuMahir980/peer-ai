@@ -94,3 +94,37 @@ It writes the result to `.peer-ai/map.json`, which agents read to know where the
 ### Exit codes
 
 `0` success, `2` a usage error or an invalid `peer-ai.config.json`. Gaps are not errors: `assess` maps, and `peer-ai check` will be the command that fails a build.
+
+## `peer-ai doctor`
+
+Checks that Peer AI is set up correctly in a repository, and says how to fix what isn't. It only reads; it never changes a file.
+
+```bash
+pnpm peer-ai doctor
+```
+
+| It checks | A problem looks like |
+|-----------|----------------------|
+| Node.js | A version older than the one Peer AI needs |
+| `peer-ai.config.json` | Missing, or not valid, with each error |
+| Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |
+| Files the config names | A contract, design, standards document, data inventory, checklist or input that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
+| AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
+| The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
+| Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
+| Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
+| The v0 playbook | A copy left in `peer-ai/`, with how to remove it |
+
+Every check reports, including the ones it had to skip (for example, the tracks can't be checked without a valid config), so a clean report means everything was looked at.
+
+A failure (✗) means Peer AI can't work as intended until it's fixed. A warning (!) is something to tidy up.
+
+### Options
+
+| Option | What it does |
+|--------|--------------|
+| `--json` | Print the checks as JSON |
+
+### Exit codes
+
+`0` nothing failed (warnings are allowed), `1` at least one check failed, `2` a usage error.
