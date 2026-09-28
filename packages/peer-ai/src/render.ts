@@ -64,12 +64,12 @@ export function instructions(config: PeerAiConfig): string {
     "",
     `This project uses Peer AI${project.stage === undefined ? "" : ` at the ${project.stage} stage`}. Its MCP server, \`${SERVER}\`, holds the project map, the work items, and the gates work must pass before it ships.`,
     "",
-    "- Start each session with `next_work`. It returns the work item for the current branch and where it stopped.",
+    "- Start each session with `next_work`. It returns the work item for the current branch and where it stopped. For new work, create one with `create_work_item`.",
+    "- Keep the item's stage current with `advance_work_item`: `build` before you change code, `verify` once the change is complete, `ship` when it is verified, reviewed and ready to merge, and `done` once it is merged or released. When it refuses, fix what it lists.",
     "- Before editing a file, call `standards_for_file` and follow what it returns.",
     "- Record progress with `update_work_item`, so the next session resumes where this one stopped.",
     "- Verify with `run_verify`. Never report a verify result yourself.",
     "- Record every review with `record_review`, including failed and incomplete ones.",
-    "- Move work with `advance_work_item`. When it refuses, fix what it lists.",
     "- Don't edit the files in `.peer-ai/` by hand. The tools keep them valid.",
   ];
   const ownTracks = config.tracks.filter((track) => track.status !== "external");
@@ -168,9 +168,15 @@ function cursorRule(body: string): string {
   ].join("\n");
 }
 
-/** A tool's own instructions file: its block, unless the file imports AGENTS.md, which has it. */
-function toolFile(root: string, path: string, body: string): Planned {
+/**
+ * A tool's own instructions file. When AGENTS.md carries the block, a new file just imports it, so
+ * the tool doesn't read the instructions twice; an existing file that imports it is left alone.
+ */
+function toolFile(root: string, path: string, body: string, agentsRendered: boolean): Planned {
   const existing = readText(root, path);
+  if (existing === undefined && agentsRendered) {
+    return { path, action: "create", content: "@AGENTS.md\n", note: "It imports AGENTS.md." };
+  }
   if (existing !== undefined && IMPORTS_AGENTS.test(existing) && !existing.includes(START)) {
     return { path, action: "unchanged", note: "It imports AGENTS.md, which carries the instructions." };
   }
@@ -196,7 +202,7 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   if (agents) files.push(withBlock("AGENTS.md", readText(root, "AGENTS.md"), body));
 
   if (uses("claude-code")) {
-    files.push(toolFile(root, "CLAUDE.md", body));
+    files.push(toolFile(root, "CLAUDE.md", body, agents));
     files.push(withServer(root, ".mcp.json", "mcpServers", server));
   }
   if (uses("cursor")) {
@@ -215,7 +221,7 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
     files.push(withServer(root, ".vscode/mcp.json", "servers", { type: "stdio", ...server }));
   }
   if (uses("gemini-cli")) {
-    files.push(toolFile(root, "GEMINI.md", body));
+    files.push(toolFile(root, "GEMINI.md", body, agents));
     files.push(withServer(root, ".gemini/settings.json", "mcpServers", server));
   }
   if (uses("codex")) {
@@ -247,7 +253,10 @@ function toCheck(planned: Planned, checking: boolean): Check {
     default:
       return checking
         ? fail("render", `${planned.path} is out of date.`, "Run peer-ai render.")
-        : ok("render", `${planned.path} ${planned.action === "create" ? "created" : "updated"}.`);
+        : ok(
+            "render",
+            `${planned.path} ${planned.action === "create" ? "created" : "updated"}.${planned.note === undefined ? "" : ` ${planned.note}`}`,
+          );
   }
 }
 
