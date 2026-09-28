@@ -124,6 +124,7 @@ describe("the forbidden-terms check", () => {
     ]);
     expect(code).toBe(2);
     expect(output).toContain("could not complete");
+    expect(output).toContain("Invalid revision range");
   });
 
   it("rejects unknown arguments", () => {
