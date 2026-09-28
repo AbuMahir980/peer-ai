@@ -11,7 +11,8 @@ The vocabulary Peer AI is built on, and the schemas for the files a project keep
 | `src/ids.ts` | The fixed lists: 14 activities, 29 skills, supported tools, and the items on the project map |
 | `src/config.ts` | The schema for `peer-ai.config.json` and for shared base configs, plus `mergeConfigs` and `resolveConfig` |
 | `src/state.ts` | The schemas for `.peer-ai/map.json` and `.peer-ai/work/<id>.json` |
-| `src/index.ts` | `validateConfig`, `validateConfigLayer`, `validateMap` and `validateWorkItem`, which return every problem with its location |
+| `src/report.ts` | The schema for review reports, the four severity levels, and `deriveResult`, which works out a review's result from its report |
+| `src/index.ts` | `validateConfig`, `validateConfigLayer`, `validateMap`, `validateWorkItem` and `validateReport`, which return every problem with its location |
 | `schemas/` | The same schemas as JSON Schema, generated, for editors and non-TypeScript tools |
 | `examples/` | Fictional projects, one per shape (see below) |
 
@@ -89,6 +90,8 @@ State is split across files so that parallel sessions never edit the same one:
 - **`.peer-ai/map.json`** records what `peer-ai assess` found: each item on the map as present, partial, missing or not applicable, with the evidence behind it. An item found by reading the code rather than a document is marked `inferred` until someone confirms it.
 - **`.peer-ai/work/<id>.json`** holds one file per work item: its kind, stage, the activities it has called, where work stopped, its last verify and reviews, and a one-line `next`.
 
+- **`.peer-ai/reports/<work item>/<skill>-<time>.json`** holds a review's report: what it looked at, what it read first, every rule it checked and how each went, and every problem it found, with file, line and evidence. See [RFC 0002](../../rfcs/0002-review-reports-and-evals.md).
+
 A session finds its work item from the git branch it is on, so there is no shared "current phase" for two sessions to fight over. `next` is capped at 200 characters: the story belongs in `CONTEXT.md`.
 
 ## Changing the schemas
@@ -100,3 +103,23 @@ pnpm --filter @peer-ai/workflow generate
 ```
 
 A test fails if the committed files fall behind. Changing either schema needs an RFC; see [rfcs/README.md](../../rfcs/README.md).
+
+## Review reports
+
+A review's result is worked out from its report, not taken on the agent's word. `deriveResult` decides it:
+
+1. **fail** when an open problem is at or above the project's blocking level, `gates.blockOn` (critical unless the project sets it lower)
+2. **incomplete** when a rule wasn't checked
+3. **pass** otherwise
+
+Fixed problems, and risks a person has accepted with a reason, never block.
+
+A report can't stay silent about a rule: a pass must say what was checked, a fail must name the problem it found, and "doesn't apply" or "not checked" must give a reason. Every problem must belong to a failed check on the same rule.
+
+| Level | Means |
+|-------|-------|
+| critical | It causes harm now: a security hole, data lost or exposed, a law broken, or the service going down |
+| high | It is likely to hurt users or the business soon |
+| medium | A real problem with limited reach |
+| low | It makes the code harder to change safely |
+

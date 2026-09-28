@@ -24,13 +24,14 @@ import {
   updateWorkItem,
   type CommandRunner,
   type Result,
+  type ReviewInput,
 } from "./work.ts";
 
 const INSTRUCTIONS = `Peer AI keeps this project's map, its work items and the gates work must pass.
 Start a session with next_work: it returns the work item for the current git branch and where it stopped.
 Before editing a file, call standards_for_file and follow what it returns.
 Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself.
-Record each review with record_review, including failed and incomplete ones.
+Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
 Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.`;
 
@@ -208,16 +209,20 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Record a review",
       description:
-        "Record the result of a review skill on a work item: pass, fail, or incomplete when it couldn't check every rule. Record failures too. The latest result from each skill is the one the gates read.",
+        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format) and pass its path: Peer AI checks the report and works out pass, fail or incomplete from it. A review recorded without a report is marked unproven. Record failed and incomplete reviews too.",
       inputSchema: {
         id: itemId,
         skill: z.enum(SKILL_IDS),
-        result: z.enum(["pass", "fail", "incomplete"]),
-        report: z.string().min(1).optional().describe("Where the review's report was written."),
+        report: z.string().min(1).optional().describe("The review report's path, relative to the project root."),
+        result: z
+          .enum(["pass", "fail", "incomplete"])
+          .optional()
+          .describe("Needed only without a report. With one, it must match the result the report supports."),
+        summary: z.string().min(1).max(500).optional().describe("A short summary for people."),
       },
       annotations: WRITES,
     },
-    withProject((root, config, { id, ...review }: { id: string } & Parameters<typeof recordReview>[3]) =>
+    withProject((root, config, { id, ...review }: { id: string } & ReviewInput) =>
       fromResult(recordReview(root, config, id, review, now())),
     ),
   );

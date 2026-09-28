@@ -10,7 +10,7 @@ This project uses Peer AI at the mvp stage. Its MCP server, `peer-ai`, holds the
 - Before editing a file, call `standards_for_file` and follow what it returns.
 - Record progress with `update_work_item`, so the next session resumes where this one stopped.
 - Verify with `run_verify`. Never report a verify result yourself.
-- Record every review with `record_review`, including failed and incomplete ones.
+- For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.
 - Don't edit the files in `.peer-ai/` by hand. The tools keep them valid.
 
 The project is one library part, `core`.

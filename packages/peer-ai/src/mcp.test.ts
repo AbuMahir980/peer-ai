@@ -1,6 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { evaluate } from "./check.ts";
@@ -11,6 +13,23 @@ import { cleanUp, project } from "./test-helpers.ts";
 const NOW = new Date("2026-10-02T09:15:00Z");
 const json = (value: unknown) => JSON.stringify(value);
 const clients: Client[] = [];
+
+/** A report for a clean review: every rule checked, nothing found. */
+const passingReport = (workItem: string) => ({
+  version: 1,
+  skill: "code-review",
+  workItem,
+  at: NOW.toISOString(),
+  scope: { tracks: ["web"] },
+  inputs: ["docs/standards/web.md"],
+  inventory: [{ id: "file:apps/web/src/cart.ts", kind: "file" }],
+  coverage: [
+    { rule: "CODE-TEST-01", item: "file:apps/web/src/cart.ts", status: "pass", evidence: "cart.test.ts covers totals" },
+  ],
+  findings: [],
+  result: "pass",
+  summary: "Clean: every rule checked, nothing found.",
+});
 
 afterEach(async () => {
   await Promise.all(clients.splice(0).map((client) => client.close()));
@@ -101,7 +120,11 @@ describe("the MCP server", () => {
 
     const verified = await call(client, "run_verify", { id: "ITEM-1" });
     expect(verified.value()).toMatchObject({ result: "pass", output: "all checks passed\n" });
-    await call(client, "record_review", { id: "ITEM-1", skill: "code-review", result: "pass" });
+    const reportPath = ".peer-ai/reports/ITEM-1/code-review.json";
+    mkdirSync(join(root, ".peer-ai/reports/ITEM-1"), { recursive: true });
+    writeFileSync(join(root, reportPath), json(passingReport("ITEM-1")));
+    const reviewed = await call(client, "record_review", { id: "ITEM-1", skill: "code-review", report: reportPath });
+    expect(reviewed.value()).toMatchObject({ reviews: [{ skill: "code-review", result: "pass", report: reportPath }] });
     expect((await call(client, "advance_work_item", { id: "ITEM-1", to: "ship" })).value()).toMatchObject({
       stage: "ship",
     });

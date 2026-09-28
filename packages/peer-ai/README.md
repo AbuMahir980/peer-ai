@@ -183,6 +183,7 @@ pnpm peer-ai check
 | `.peer-ai/map.json` or a work item isn't valid, or a work item names a track the config doesn't have | State that agents read has to be trustworthy |
 | A work item at `ship` or `done` has no recorded verify, or its last verify failed | `commands.verify` runs before any work is called done. Without a verify command, only a recorded failure counts. |
 | A work item at `ship` or `done` has a review whose latest result failed, or is incomplete | A review that didn't check every rule hasn't passed. A later passing review from the same skill replaces an earlier failure. At the `prototype` stage, an incomplete review is allowed; a failed one never is. |
+| A production project's work item at `ship` or `done` has a review with no report | Without a report, the result is only the agent's word. For an MVP this is a warning; for a prototype it's allowed. |
 | A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
 
 It warns, and still passes, when:
@@ -193,7 +194,7 @@ It warns, and still passes, when:
 
 Gaps are never failures. They become work items, so a project can adopt Peer AI at any point without its build going red.
 
-Blocking on open findings by severity (`gates.blockOn`) comes with the review report format.
+A review's result is worked out from its report when it is recorded, so an open problem at or above the project's blocking level (`gates.blockOn`) makes the review fail, and the work item can't ship until the problem is fixed or a person accepts the risk.
 
 ### In CI
 
@@ -237,7 +238,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
 | `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
-| `record_review` | Records a review skill's result: pass, fail, or incomplete when it couldn't check every rule |
+| `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support. A review recorded without a report is marked unproven. |
 | `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. |
 
 Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.

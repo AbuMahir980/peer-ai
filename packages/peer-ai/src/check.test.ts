@@ -13,6 +13,7 @@ afterEach(cleanUp);
 const NOW = new Date("2026-10-02T09:15:00Z");
 const json = (value: unknown) => JSON.stringify(value);
 const at = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000).toISOString();
+const REPORT = ".peer-ai/reports/SHOP-1/code-review.json";
 
 const config = (extra: Record<string, unknown> = {}, stage = "mvp") =>
   json({
@@ -68,7 +69,10 @@ const find = (root: string, id: string): Check[] => verdict(root).checks.filter(
 describe("check on work items", () => {
   it("passes done work that was verified and reviewed", () => {
     const root = shop();
-    addWorkItems(root, item("SHOP-1", { reviews: [{ skill: "code-review", result: "pass", at: at(1) }] }));
+    addWorkItems(
+      root,
+      item("SHOP-1", { reviews: [{ skill: "code-review", result: "pass", report: REPORT, at: at(1) }] }),
+    );
     const result = verdict(root);
     expect(result.ok).toBe(true);
     expect(find(root, "gates")).toEqual([
@@ -124,6 +128,21 @@ describe("check on work items", () => {
       item("SHOP-2", { reviews: [{ skill: "code-review", result: "fail", at: at(1) }] }),
     );
     expect(failures(root)).toEqual(["SHOP-2 is at done, but its latest code-review failed."]);
+  });
+
+  it("treats a review with no report as unproven: fine for a prototype, a warning for an MVP, a failure in production", () => {
+    const unproven = item("SHOP-1", { reviews: [{ skill: "code-review", result: "pass", at: at(1) }] });
+    const message = "SHOP-1 is at done, but its latest code-review has no report, so its result is unproven.";
+    const byStage = (stage: string) => {
+      const root = shop({}, stage);
+      addWorkItems(root, unproven);
+      return find(root, "gates")
+        .filter((check) => check.message === message)
+        .map((check) => check.status);
+    };
+    expect(byStage("prototype")).toEqual([]);
+    expect(byStage("mvp")).toEqual(["warn"]);
+    expect(byStage("production")).toEqual(["fail"]);
   });
 
   it("fails a gap marked done that a fresh assessment still finds", () => {

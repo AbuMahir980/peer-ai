@@ -4,13 +4,17 @@
 // agent records is what CI will accept.
 
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import {
+  deriveResult,
+  validateReport,
   validateWorkItem,
   type ActivityId,
   type KnownMapItemId,
   type PeerAiConfig,
+  type ReviewReport,
+  type ReviewResult,
   type SkillId,
   type WorkItem,
 } from "@peer-ai/workflow";
@@ -138,20 +142,82 @@ export function updateWorkItem(
   return save(root, config, { ...loaded.value, ...defined(changes), updatedAt: now.toISOString() });
 }
 
+export interface ReviewInput {
+  skill: SkillId;
+  /** Needed without a report. With one, it must match the result the report supports. */
+  result?: ReviewResult | undefined;
+  /** The review report, relative to the project root. */
+  report?: string | undefined;
+  summary?: string | undefined;
+}
+
+/** Reads a review report inside the project and checks it is valid. */
+function readReport(root: string, path: string): Result<ReviewReport> {
+  const full = resolve(root, path);
+  const inside = relative(root, full);
+  if (inside === "" || inside.startsWith("..") || isAbsolute(inside)) {
+    return failed(`${path} is outside the project. Save the report under .peer-ai/reports/.`);
+  }
+  if (!existsSync(full)) return failed(`There is no report at ${path}.`);
+  let json: unknown;
+  try {
+    json = JSON.parse(readFileSync(full, "utf8"));
+  } catch (error) {
+    return failed(`${path} is not valid JSON: ${(error as Error).message}`);
+  }
+  const report = validateReport(json);
+  return report.ok ? report : failed(`${path} is not a valid review report:\n- ${report.errors.join("\n- ")}`);
+}
+
+/**
+ * Records a review. With a report, Peer AI works the result out from it and refuses a result the
+ * report doesn't support (RFC 0002). Without one, the agent's result is recorded as unproven.
+ */
 export function recordReview(
   root: string,
   config: PeerAiConfig,
   id: string,
-  review: { skill: SkillId; result: "pass" | "fail" | "incomplete"; report?: string | undefined },
+  review: ReviewInput,
   now: Date,
 ): Result<WorkItem> {
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
   const at = now.toISOString();
-  const reviews = [
-    ...(loaded.value.reviews ?? []),
-    { ...defined(review), skill: review.skill, result: review.result, at },
-  ];
+  const summary = review.summary === undefined ? {} : { summary: review.summary };
+  let entry: NonNullable<WorkItem["reviews"]>[number];
+
+  if (review.report === undefined) {
+    if (review.result === undefined) return failed("Give the review's result, or the report to work it out from.");
+    entry = { skill: review.skill, result: review.result, ...summary, unproven: true, at };
+  } else {
+    const read = readReport(root, review.report);
+    if (!read.ok) return read;
+    const report = read.value;
+    if (report.skill !== review.skill) {
+      return failed(`The report is for ${report.skill}, not ${review.skill}.`);
+    }
+    if (report.workItem !== undefined && report.workItem !== id) {
+      return failed(`The report is for work item ${report.workItem}, not ${id}.`);
+    }
+    const blockOn = config.gates?.blockOn ?? "critical";
+    const worked = deriveResult(report, blockOn);
+    if (report.result !== worked) {
+      return failed(
+        `The report says ${report.result}, but its findings and coverage make it ${worked} (blocking level: ${blockOn}). Correct the report's result.`,
+      );
+    }
+    if (review.result !== undefined && review.result !== worked) {
+      return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
+    }
+    entry = {
+      skill: review.skill,
+      result: worked,
+      report: review.report,
+      summary: review.summary ?? report.summary,
+      at,
+    };
+  }
+  const reviews = [...(loaded.value.reviews ?? []), entry];
   return save(root, config, { ...loaded.value, reviews, updatedAt: at });
 }
 
@@ -190,7 +256,9 @@ export function advanceWorkItem(
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
-    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage));
+    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage)).filter(
+      (check) => check.status === "fail",
+    );
     if (failures.length > 0) {
       const reasons = failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd());
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
