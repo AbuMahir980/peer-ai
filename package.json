@@ -16,6 +16,7 @@
     "test": "vitest run",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "check:terms": "node scripts/check-forbidden-terms.ts",
+    "peer-ai": "node packages/peer-ai/src/cli.ts",
     "changeset": "changeset"
   },
   "devDependencies": {
