@@ -124,4 +124,15 @@ export const money = [
     check: "ai-review",
     severity: "medium",
   },
+  {
+    id: "MONEY-12",
+    domain: "money",
+    title: "Full card numbers and security codes never touch your servers",
+    rule: "Card details go straight from the person to the payment provider, and your servers receive only the provider's token and, at most, the card's last four digits. A full card number or security code is never received, logged or stored.",
+    why: "Storing card data brings the whole system under PCI DSS, which forbids keeping the security code at all, and a leak of card numbers is one of the most damaging breaches a business can have.",
+    ask: "Could a full card number or security code reach your servers, logs or database through this change?",
+    stage: "prototype",
+    check: "ai-review",
+    severity: "critical",
+  },
 ] satisfies RuleInput[];

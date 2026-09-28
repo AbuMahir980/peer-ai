@@ -133,3 +133,15 @@ Money movements emit a metric, so a person can see whether money is moving norma
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | `money` | – |
+
+## MONEY-12 · Full card numbers and security codes never touch your servers
+
+Card details go straight from the person to the payment provider, and your servers receive only the provider's token and, at most, the card's last four digits. A full card number or security code is never received, logged or stored.
+
+**Why:** Storing card data brings the whole system under PCI DSS, which forbids keeping the security code at all, and a leak of card numbers is one of the most damaging breaches a business can have.
+
+**Ask:** Could a full card number or security code reach your servers, logs or database through this change?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Prototype | AI review | Critical | `money` | – |
