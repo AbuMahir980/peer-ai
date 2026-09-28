@@ -3,12 +3,13 @@ import { architecture } from "./core/architecture.ts";
 import { codeQuality } from "./core/code-quality.ts";
 import { money } from "./core/money.ts";
 import { safetyCritical } from "./core/safety-critical.ts";
+import { security } from "./core/security.ts";
 import { RuleSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
 
 export { DOMAIN_INFO } from "./domains.ts";
 export { RuleSchema, SourceSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
 
-const CORE_INPUTS: RuleInput[] = [...codeQuality, ...architecture, ...money, ...safetyCritical];
+const CORE_INPUTS: RuleInput[] = [...codeQuality, ...architecture, ...security, ...money, ...safetyCritical];
 
 /** Checks every rule against the schema and that no id is used twice. */
 export function checkRules(inputs: RuleInput[]): { rules: Rule[]; problems: string[] } {

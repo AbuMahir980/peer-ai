@@ -21,7 +21,7 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | Data | Coming |
 | Performance and caching | Coming |
 | Reliability | Coming |
-| Security | Coming |
+| [Security](security.md) | 22 |
 | Privacy and compliance | Coming |
 | Testing | Coming |
 | Delivery | Coming |
