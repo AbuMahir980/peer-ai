@@ -132,7 +132,7 @@ export function main(argv: string[], env: NodeJS.ProcessEnv, out: Output): numbe
   try {
     args = parseArgs(argv);
   } catch (error) {
-    out.error(`forbidden-terms: ${(error as Error).message}. Usage: --root <dir> [--range <base>..<head>]`);
+    out.error(`forbidden-terms: ${(error as Error).message}. Usage: --root <dir> [--range <revisions>]`);
     return 2;
   }
 
@@ -150,7 +150,15 @@ export function main(argv: string[], env: NodeJS.ProcessEnv, out: Output): numbe
     return 2;
   }
 
-  const findings = scan(args.root, terms, args.range);
+  let findings: Finding[];
+  try {
+    findings = scan(args.root, terms, args.range);
+  } catch (error) {
+    // Exit 2, not 1: an incomplete scan must never be mistaken for either "clean" or "terms found".
+    const reason = (error as Error).message.split("\n")[0] ?? "unknown error";
+    out.error(`forbidden-terms: the scan could not complete, so nothing was confirmed clean. ${reason}`);
+    return 2;
+  }
   if (findings.length === 0) {
     const scope = args.range === undefined ? "tracked files" : `tracked files and commit messages in ${args.range}`;
     out.log(`forbidden-terms: clean. ${String(terms.length)} terms checked against ${scope}.`);

@@ -108,6 +108,24 @@ describe("the forbidden-terms check", () => {
     expect(output).toMatch(/term #1 found in commit [0-9a-f]{12}/);
   });
 
+  it("checks every commit message reachable from a single revision", () => {
+    const root = repo({ "README.md": "neutral" }, "Kick-off for Globex");
+    commit(root, { "README.md": "still neutral" }, "a neutral message");
+    const { code, output } = check(root, { [TERMS_ENV]: "globex" }, ["--range", "HEAD"]);
+    expect(code).toBe(1);
+    expect(output).toMatch(/term #1 found in commit [0-9a-f]{12}/);
+  });
+
+  it("reports an unreadable range as an incomplete scan, not as clean or as a finding", () => {
+    const root = repo({ "README.md": "neutral" });
+    const { code, output } = check(root, { [TERMS_ENV]: "globex" }, [
+      "--range",
+      "0123456789abcdef0123456789abcdef01234567..HEAD",
+    ]);
+    expect(code).toBe(2);
+    expect(output).toContain("could not complete");
+  });
+
   it("rejects unknown arguments", () => {
     const root = repo({ "README.md": "neutral" });
     expect(check(root, { [TERMS_ENV]: "globex" }, ["--bogus"]).code).toBe(2);

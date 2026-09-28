@@ -47,18 +47,14 @@ jobs:
           REPO: ${{ github.repository }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-          PUSH_AFTER: ${{ github.event.after }}
+          PUSH_HEAD: ${{ github.sha }}
         run: |
-          range=""
           if [ "$EVENT" = "pull_request_target" ]; then
             git -C target fetch --quiet --no-tags "https://github.com/$REPO" "$PR_BASE"
             range="$PR_BASE..$PR_HEAD"
-          elif [ -n "$PUSH_BEFORE" ] && [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            range="$PUSH_BEFORE..$PUSH_AFTER"
-          fi
-          if [ -n "$range" ]; then
-            node trusted/scripts/check-forbidden-terms.ts --root target --range "$range"
           else
-            node trusted/scripts/check-forbidden-terms.ts --root target
+            # On a push, every commit message in the branch's history. A range from the previous
+            # head breaks after a force-push, when that commit no longer exists.
+            range="$PUSH_HEAD"
           fi
+          node trusted/scripts/check-forbidden-terms.ts --root target --range "$range"
