@@ -1,14 +1,16 @@
 name: Forbidden terms
 
-# Pull requests from forks never receive secrets under `pull_request`, so the
-# check would fail for every outside contributor. `pull_request_target` runs with
-# the secret, which is safe here only because of one rule: the scanner always
-# comes from the base branch, and the pull request's files are read as data.
-# Nothing from the pull request is installed, built or executed.
+# Scans pull requests from branches in this repository, and every push to main and next,
+# against the private list of forbidden terms.
+#
+# Pull requests from forks don't receive secrets, so they can't be scanned here. GitHub only
+# runs pull_request_target (which would give them the secret safely) from the default branch,
+# and this workflow isn't there until 1.0 launches. Until then, a fork's pull request fails
+# this check with a clear message and a maintainer scans it before merging. At launch, fork
+# pull requests move to pull_request_target.
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  pull_request:
   push:
     branches: [main, next]
 
@@ -20,68 +22,34 @@ jobs:
     name: forbidden-terms
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
-      # Under pull_request_target, GitHub attaches this job's result to the base branch's
-      # commit, not the pull request's. The last step posts it on the pull request's own
-      # commit, which is where branch protection looks for the required check.
-      statuses: write
     steps:
-      - name: Check out the trusted scanner
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: trusted
-          persist-credentials: false
-
-      - name: Check out the code to scan
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          path: target
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: trusted/.nvmrc
+          node-version-file: .nvmrc
 
       - name: Scan files and commit messages
-        id: scan
         env:
           PEER_AI_FORBIDDEN_TERMS: ${{ secrets.PEER_AI_FORBIDDEN_TERMS }}
           EVENT: ${{ github.event_name }}
-          REPO: ${{ github.repository }}
+          FROM_FORK: ${{ github.event.pull_request.head.repo.fork }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PUSH_HEAD: ${{ github.sha }}
         run: |
-          if [ "$EVENT" = "pull_request_target" ]; then
-            git -C target fetch --quiet --no-tags "https://github.com/$REPO" "$PR_BASE"
+          if [ "$EVENT" = "pull_request" ] && [ "$FROM_FORK" = "true" ]; then
+            echo "::error::Pull requests from forks can't be scanned here, because the list of forbidden terms is private. A maintainer will scan this pull request before merging it."
+            exit 1
+          fi
+          if [ "$EVENT" = "pull_request" ]; then
             range="$PR_BASE..$PR_HEAD"
           else
             # On a push, every commit message in the branch's history. A range from the previous
             # head breaks after a force-push, when that commit no longer exists.
             range="$PUSH_HEAD"
           fi
-          node trusted/scripts/check-forbidden-terms.ts --root target --range "$range"
-
-      - name: Report the result on the pull request's commit
-        if: ${{ always() && github.event_name == 'pull_request_target' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_HEAD: ${{ github.event.pull_request.head.sha }}
-          OUTCOME: ${{ steps.scan.outcome }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [ "$OUTCOME" = "success" ]; then
-            state=success
-            description="No forbidden terms found"
-          else
-            state=failure
-            description="Forbidden terms found, or the scan could not complete"
-          fi
-          gh api "repos/$REPO/statuses/$PR_HEAD" \
-            -f state="$state" -f context=forbidden-terms -f description="$description" -f target_url="$RUN_URL" \
-            --silent
+          node scripts/check-forbidden-terms.ts --root . --range "$range"
