@@ -1,0 +1,64 @@
+name: Forbidden terms
+
+# Pull requests from forks never receive secrets under `pull_request`, so the
+# check would fail for every outside contributor. `pull_request_target` runs with
+# the secret, which is safe here only because of one rule: the scanner always
+# comes from the base branch, and the pull request's files are read as data.
+# Nothing from the pull request is installed, built or executed.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, next]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: forbidden-terms
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the trusted scanner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: trusted
+          persist-credentials: false
+
+      - name: Check out the code to scan
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: target
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: trusted/.nvmrc
+
+      - name: Scan files and commit messages
+        env:
+          PEER_AI_FORBIDDEN_TERMS: ${{ secrets.PEER_AI_FORBIDDEN_TERMS }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          range=""
+          if [ "$EVENT" = "pull_request_target" ]; then
+            git -C target fetch --quiet --no-tags "https://github.com/$REPO" "$PR_BASE"
+            range="$PR_BASE..$PR_HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+          if [ -n "$range" ]; then
+            node trusted/scripts/check-forbidden-terms.ts --root target --range "$range"
+          else
+            node trusted/scripts/check-forbidden-terms.ts --root target
+          fi

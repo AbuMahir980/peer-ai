@@ -1,0 +1,31 @@
+name: Proposal (RFC)
+description: Propose a change to the workflow, a skill, a standard, the config or state schema, or the CLI.
+title: "[rfc] "
+labels: ["rfc"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start here to discuss an idea. Once it has support, the detailed write-up goes in a pull request
+        that adds a file to `rfcs/`, as described in [rfcs/README.md](https://github.com/AbuMahir980/peer-ai/blob/next/rfcs/README.md).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What went wrong or is missing, on what kind of project. Evidence from a real run carries the most weight.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: The proposal
+      description: What should change, in a few sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
