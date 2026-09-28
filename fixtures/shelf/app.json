@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Shelf",
+    "slug": "shelf",
+    "scheme": "shelf",
+    "version": "3.4.0",
+    "ios": {
+      "bundleIdentifier": "com.example.shelf",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Shelf finds books near you.",
+        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true }
+      }
+    },
+    "android": {
+      "package": "com.example.shelf",
+      "usesCleartextTraffic": true,
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION"]
+    },
+    "plugins": [["expo-location", { "isAndroidBackgroundLocationEnabled": true }]]
+  }
+}

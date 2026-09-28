@@ -1,8 +1,19 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateReport, type ReviewReport } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
-import { collectReports, evalPrompt, evaluate, formatRun, loadSheet, score, sheets, type Sheet } from "./eval.ts";
+import {
+  appendResult,
+  collectReports,
+  evalPrompt,
+  evaluate,
+  formatRun,
+  loadSheet,
+  score,
+  sheets,
+  type Sheet,
+} from "./eval.ts";
 
 const made: string[] = [];
 afterEach(() => {
@@ -162,6 +173,19 @@ describe("running an eval", () => {
     expect(printed).toContain("Invalid report .peer-ai/reports/project/broken.json:");
     expect(printed).toContain("30 turns · 12 s · $1.50");
     expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 5 high problems/);
+  });
+
+  it("adds a result to the table only when the table is the last thing in the file", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-evals-"));
+    made.push(dir);
+    const readme = join(dir, "README.md");
+    writeFileSync(readme, "# Evals\n\n| Date | Result |\n|------|--------|\n");
+    appendResult(readme, "| 2026-10-05 | Ready |");
+    expect(readFileSync(readme, "utf8").endsWith("|------|--------|\n| 2026-10-05 | Ready |\n")).toBe(true);
+    writeFileSync(readme, "| Date | Result |\n\n## Notes\n");
+    expect(() => {
+      appendResult(readme, "| 2026-10-05 | Ready |");
+    }).toThrow(/must be the last thing/);
   });
 
   it("asks only for reviews the answer sheet has a prompt for", () => {
