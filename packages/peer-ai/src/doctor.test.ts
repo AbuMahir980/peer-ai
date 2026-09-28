@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { runAssess } from "./assess.ts";
 import { main } from "./cli.ts";
-import { diagnose, runDoctor, type Check } from "./doctor.ts";
+import type { Check } from "./checks.ts";
+import { diagnose, runDoctor } from "./doctor.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
 import { formatReport } from "./report.ts";
 import { capture, cleanUp, project } from "./test-helpers.ts";
@@ -185,6 +186,26 @@ describe("doctor on tracks and the files the config names", () => {
   });
 });
 
+describe("doctor on CI", () => {
+  it("warns when the config says there is no CI but the repository has a pipeline", () => {
+    const root = project({
+      "peer-ai.config.json": config({ delivery: { ci: "none" } }),
+      ".github/workflows/checks.yml": "on: push\n",
+    });
+    expect(checksFor(root, "delivery")).toEqual([
+      {
+        id: "delivery",
+        status: "warn",
+        message: "The config says there is no CI, but there is a pipeline in .github/workflows/.",
+        fix: 'Set "delivery": { "ci": "existing", "pipeline": ".github/workflows/" } in peer-ai.config.json, so Peer AI extends it instead of adding another.',
+      },
+    ]);
+    expect(checksFor(project({ "peer-ai.config.json": config() }), "delivery")).toMatchObject([
+      { status: "ok", message: "No CI pipeline yet" },
+    ]);
+  });
+});
+
 describe("doctor on state", () => {
   it("asks for a map when there is none, and rejects a broken one", () => {
     const root = project({ "peer-ai.config.json": config(), "apps/web/package.json": web });
@@ -219,7 +240,7 @@ describe("doctor on state", () => {
     writeWorkItem(root, "SHOP-5.json", { ...workItem, id: "SHOP-5", kind: "gap" });
     writeWorkItem(root, "SHOP-6.json", "{");
     expect(checksFor(root, "work-items").map((check) => [check.status, check.message])).toEqual([
-      ["fail", '.peer-ai/work/SHOP-2.json has the id "SHOP-3", but a work item\'s file is named after its id.'],
+      ["fail", '.peer-ai/work/SHOP-2.json has the id "SHOP-3", but a work item\'s file is named after its id'],
       ["fail", '.peer-ai/work/SHOP-4.json is for the track "mobile", which isn\'t in the config.'],
       ["fail", expect.stringMatching(/^\.peer-ai\/work\/SHOP-5\.json is not valid: .*gap/) as string],
       ["fail", expect.stringMatching(/^\.peer-ai\/work\/SHOP-6\.json is not valid JSON: /) as string],

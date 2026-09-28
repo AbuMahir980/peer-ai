@@ -4,24 +4,15 @@
 // to skip, so a clean report means everything was looked at.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, join } from "node:path";
-import { MAP_ITEM_IDS, validateMap, validateWorkItem, type PeerAiConfig } from "@peer-ai/workflow";
+import { existsSync, statSync } from "node:fs";
+import { join } from "node:path";
+import type { PeerAiConfig } from "@peer-ai/workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
-import { CONFIG_FILE, detectName, detectTools, detectTracks } from "./detect.ts";
+import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
+import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
-
-export const WORK_DIR = ".peer-ai/work";
-
-export type CheckStatus = "ok" | "warn" | "fail" | "skip";
-
-export interface Check {
-  id: string;
-  status: CheckStatus;
-  message: string;
-  fix?: string;
-}
+import { WORK_DIR, mapChanges, readMap, readWorkItems } from "./state.ts";
 
 export interface Diagnosis {
   name: string;
@@ -29,24 +20,10 @@ export interface Diagnosis {
   checks: Check[];
 }
 
-const ok = (id: string, message: string): Check => ({ id, status: "ok", message });
-const skip = (id: string, message: string): Check => ({ id, status: "skip", message });
-const warn = (id: string, message: string, fix: string): Check => ({ id, status: "warn", message, fix });
-const fail = (id: string, message: string, fix: string): Check => ({ id, status: "fail", message, fix });
-
 const NEEDS_CONFIG = `needs a valid ${CONFIG_FILE}`;
 const isDirectory = (path: string) => statSync(path, { throwIfNoEntry: false })?.isDirectory() === true;
 const isUrl = (value: string) => /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
 const normalise = (path: string) => path.replace(/^\.\//, "").replace(/\/+$/, "");
-const plural = (count: number, word: string) => `${String(count)} ${word}${count === 1 ? "" : "s"}`;
-
-function readJson(path: string): { value?: unknown; error?: string } {
-  try {
-    return { value: JSON.parse(readFileSync(path, "utf8")) };
-  } catch (error) {
-    return { error: (error as Error).message };
-  }
-}
 
 function checkNode(version: string): Check {
   const major = Number(version.split(".")[0]);
@@ -58,7 +35,7 @@ function checkNode(version: string): Check {
   );
 }
 
-function checkConfig(root: string): { check: Check; config?: PeerAiConfig } {
+export function checkConfig(root: string): { check: Check; config?: PeerAiConfig } {
   if (!existsSync(join(root, CONFIG_FILE))) {
     return { check: fail("config", `No ${CONFIG_FILE} in this folder.`, "Run peer-ai init.") };
   }
@@ -76,7 +53,7 @@ function checkConfig(root: string): { check: Check; config?: PeerAiConfig } {
 }
 
 /** Each track's folder exists, and every part found in the repository belongs to a track. */
-function checkTracks(root: string, config: PeerAiConfig): Check[] {
+export function checkTracks(root: string, config: PeerAiConfig): Check[] {
   const checks: Check[] = [];
   for (const track of config.tracks) {
     // A dormant track hasn't been started, so its folder may not exist yet.
@@ -185,63 +162,50 @@ function checkTools(root: string, config: PeerAiConfig): Check {
   return ok("tools", `AI tools: ${listed.join(", ")}`);
 }
 
+/** The config's CI setting matches the repository, so Peer AI never adds a second pipeline. */
+function checkDelivery(root: string, config: PeerAiConfig): Check {
+  const found = detectDelivery(root);
+  if (config.delivery?.ci === "none" && found?.pipeline !== undefined) {
+    return warn(
+      "delivery",
+      `The config says there is no CI, but there is a pipeline in ${found.pipeline}.`,
+      `Set "delivery": { "ci": "existing", "pipeline": "${found.pipeline}" } in ${CONFIG_FILE}, so Peer AI extends it instead of adding another.`,
+    );
+  }
+  const pipeline = found?.pipeline ?? (config.delivery?.ci === "existing" ? config.delivery.pipeline : undefined);
+  return ok("delivery", pipeline === undefined ? "No CI pipeline yet" : `CI pipeline: ${pipeline}`);
+}
+
 /** The map is valid, and still says what a fresh assessment would. */
 function checkMap(root: string, config: PeerAiConfig | undefined): Check {
-  const path = join(root, MAP_FILE);
-  if (!existsSync(path)) return warn("map", "There is no project map yet.", "Run peer-ai assess.");
-  const rewrite = "Run peer-ai assess to write it again.";
-  const { value, error } = readJson(path);
-  if (error !== undefined) return fail("map", `${MAP_FILE} is not valid JSON: ${error}`, rewrite);
-  const result = validateMap(value);
-  if (!result.ok) return fail("map", `${MAP_FILE} is not valid: ${result.errors.join("; ")}`, rewrite);
-  const map = result.value;
-  const date = map.assessedAt.slice(0, 10);
+  const read = readMap(root);
+  if (read === undefined) return warn("map", "There is no project map yet.", "Run peer-ai assess.");
+  if (!read.ok) return fail("map", `${MAP_FILE} ${read.error}`, "Run peer-ai assess to write it again.");
+  const date = read.value.assessedAt.slice(0, 10);
   if (config === undefined) return skip("map", `The project map from ${date} is valid; not compared, ${NEEDS_CONFIG}`);
-
-  const fresh = assess(root, config, config.project.stage ?? "mvp");
-  const changed = MAP_ITEM_IDS.filter((id) => map.items[id]?.status !== fresh.items[id].status).map(
-    (id) => `${id} (${map.items[id]?.status ?? "not recorded"} → ${fresh.items[id].status})`,
-  );
+  const changed = mapChanges(read.value, assess(root, config, config.project.stage ?? "mvp"));
   if (changed.length > 0) {
     return warn("map", `The project map from ${date} is out of date: ${changed.join(", ")}.`, "Run peer-ai assess.");
   }
   return ok("map", `The project map from ${date} is up to date`);
 }
 
-function checkWorkItems(root: string, config: PeerAiConfig | undefined): Check[] {
-  const dir = join(root, WORK_DIR);
-  const files = isDirectory(dir) ? readdirSync(dir).filter((file) => file.endsWith(".json")) : [];
+/** Every work item is valid, named after its id, and on a track the config has. */
+export function checkWorkItems(root: string, config: PeerAiConfig | undefined): Check[] {
+  const files = readWorkItems(root);
   if (files.length === 0) return [ok("work-items", "No work items yet")];
   const tracks = config?.tracks.map((track) => track.id);
   const checks: Check[] = [];
-  for (const file of files.sort()) {
-    const where = `${WORK_DIR}/${file}`;
-    const correct = "Correct it. An editor that reads its $schema shows each error.";
-    const { value, error } = readJson(join(dir, file));
-    if (error !== undefined) {
-      checks.push(fail("work-items", `${where} is not valid JSON: ${error}`, correct));
-      continue;
-    }
-    const result = validateWorkItem(value);
-    if (!result.ok) {
-      checks.push(fail("work-items", `${where} is not valid: ${result.errors.join("; ")}`, correct));
-      continue;
-    }
-    const item = result.value;
-    if (item.id !== basename(file, ".json")) {
+  for (const { path, item } of files) {
+    if (!item.ok) {
       checks.push(
-        fail(
-          "work-items",
-          `${where} has the id "${item.id}", but a work item's file is named after its id.`,
-          `Rename the file to ${item.id}.json, or change its id.`,
-        ),
+        fail("work-items", `${path} ${item.error}`, "Correct it. An editor that reads its $schema shows each error."),
       );
-    }
-    if (item.track !== undefined && tracks !== undefined && !tracks.includes(item.track)) {
+    } else if (item.value.track !== undefined && tracks !== undefined && !tracks.includes(item.value.track)) {
       checks.push(
         fail(
           "work-items",
-          `${where} is for the track "${item.track}", which isn't in the config.`,
+          `${path} is for the track "${item.value.track}", which isn't in the config.`,
           `Change its track, or add the track to ${CONFIG_FILE}.`,
         ),
       );
@@ -249,7 +213,7 @@ function checkWorkItems(root: string, config: PeerAiConfig | undefined): Check[]
   }
   if (checks.length > 0) return checks;
   return [
-    ok("work-items", files.length === 1 ? "1 work item, valid" : `${String(files.length)} work items, all valid`),
+    ok("work-items", files.length === 1 ? "1 work item, valid" : `${plural(files.length, "work item")}, all valid`),
   ];
 }
 
@@ -299,6 +263,7 @@ export function diagnose(root: string, nodeVersion: string = process.versions.no
     ...(config === undefined ? needsConfig("tracks", "Tracks") : checkTracks(root, config)),
     ...(config === undefined ? needsConfig("references", "Files the config names") : checkReferences(root, config)),
     ...(config === undefined ? needsConfig("tools", "AI tools") : [checkTools(root, config)]),
+    ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
     checkMap(root, config),
     ...checkWorkItems(root, config),
     checkGit(root),
@@ -311,16 +276,10 @@ export function diagnose(root: string, nodeVersion: string = process.versions.no
   };
 }
 
-const SYMBOL: Record<CheckStatus, string> = { ok: "✓", warn: "!", fail: "✗", skip: "–" };
-
 export function formatDiagnosis(diagnosis: Diagnosis): string[] {
-  const lines = [`Peer AI doctor: ${diagnosis.name}`, ""];
-  for (const check of diagnosis.checks) {
-    lines.push(`  ${SYMBOL[check.status]} ${check.message}`);
-    if (check.fix !== undefined) lines.push(`      ${check.fix}`);
-  }
-  const failures = diagnosis.checks.filter((check) => check.status === "fail").length;
-  const warnings = diagnosis.checks.filter((check) => check.status === "warn").length;
+  const lines = [`Peer AI doctor: ${diagnosis.name}`, "", ...formatChecks(diagnosis.checks)];
+  const failures = count(diagnosis.checks, "fail");
+  const warnings = count(diagnosis.checks, "warn");
   lines.push("");
   if (failures + warnings === 0) lines.push("Everything is set up correctly.");
   else if (failures === 0) lines.push(`No problems, and ${plural(warnings, "warning")}.`);

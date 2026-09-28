@@ -110,6 +110,7 @@ pnpm peer-ai doctor
 | Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |
 | Files the config names | A contract, design, standards document, data inventory, checklist or input that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
 | AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
+| CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
@@ -128,3 +129,48 @@ A failure (✗) means Peer AI can't work as intended until it's fixed. A warning
 ### Exit codes
 
 `0` nothing failed (warnings are allowed), `1` at least one check failed, `2` a usage error.
+
+## `peer-ai check`
+
+The gate CI runs. It fails when the setup is broken, or when a work item claims more than its record shows.
+
+```bash
+pnpm peer-ai check
+```
+
+| It fails when | Why |
+|---------------|-----|
+| The config is missing or not valid | Nothing else can be checked (exit code `2`) |
+| A track's folder doesn't exist | The config no longer describes the repository |
+| `.peer-ai/map.json` or a work item isn't valid, or a work item names a track the config doesn't have | State that agents read has to be trustworthy |
+| A work item at `ship` or `done` has no recorded verify, or its last verify failed | `commands.verify` runs before any work is called done. Without a verify command, only a recorded failure counts. |
+| A work item at `ship` or `done` has a review whose latest result failed, or is incomplete | A review that didn't check every rule hasn't passed. A later passing review from the same skill replaces an earlier failure. At the `prototype` stage, an incomplete review is allowed; a failed one never is. |
+| A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
+
+It warns, and still passes, when:
+
+- the project map is out of date, so it should be assessed again and committed
+- the stage needs something that is missing and no open gap work item covers it
+- an MVP or production project has no verify command
+
+Gaps are never failures. They become work items, so a project can adopt Peer AI at any point without its build going red.
+
+Blocking on open findings by severity (`gates.blockOn`) comes with the review report format.
+
+### In CI
+
+Run it after the project's own checks:
+
+```yaml
+- run: npx peer-ai check
+```
+
+### Options
+
+| Option | What it does |
+|--------|--------------|
+| `--json` | Print the checks as JSON |
+
+### Exit codes
+
+`0` passed (warnings are allowed), `1` failed, `2` a usage error or no valid `peer-ai.config.json`.

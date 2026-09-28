@@ -203,6 +203,22 @@ describe("runAssess", () => {
 });
 
 describe("assess on real-world layouts", () => {
+  it("counts a CI pipeline in the repository even when the config says there is none", () => {
+    const root = project({
+      "peer-ai.config.json": json({
+        version: 1,
+        project: { name: "Shop" },
+        tracks: [{ id: "web", kind: "web", status: "active" }],
+        delivery: { ci: "none" },
+      }),
+      ".github/workflows/checks.yml": "on: push\n",
+    });
+    expect(assess(root, loadConfig(root).config, "mvp").items.ci).toEqual({
+      status: "present",
+      evidence: [".github/workflows/"],
+    });
+  });
+
   it("keeps a peer-ai/ folder that is not the v0 playbook", () => {
     const root = project({ "peer-ai/threat-model.md": "" });
     const result = assess(root, undefined, "mvp");

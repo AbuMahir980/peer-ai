@@ -306,8 +306,11 @@ const RULES: Record<KnownMapItemId, Rule> = {
   },
 
   ci: (ctx) => {
-    const delivery = ctx.config?.delivery ?? detectDelivery(ctx.root);
-    if (delivery?.ci === "existing") return present([delivery.pipeline ?? "CI"]);
+    // A pipeline in the repository counts whatever the config says: the config may predate it.
+    const found = detectDelivery(ctx.root);
+    if (found !== undefined) return present([found.pipeline]);
+    const configured = ctx.config?.delivery;
+    if (configured?.ci === "existing") return present([configured.pipeline ?? CONFIG_FILE]);
     return { status: "missing" };
   },
 
