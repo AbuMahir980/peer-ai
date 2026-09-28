@@ -12,6 +12,7 @@ import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from ".
 import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
+import { planRender } from "./render.ts";
 import { WORK_DIR, mapChanges, readMap, readWorkItems } from "./state.ts";
 
 export interface Diagnosis {
@@ -162,6 +163,17 @@ function checkTools(root: string, config: PeerAiConfig): Check {
   return ok("tools", `AI tools: ${listed.join(", ")}`);
 }
 
+/** What render writes for the AI tools still matches the config. */
+function checkRendered(root: string, config: PeerAiConfig): Check {
+  const stale = planRender(root, config).files.filter((file) => file.action !== "unchanged");
+  if (stale.length === 0) return ok("render", "The AI tools' instructions and MCP registrations are up to date");
+  return warn(
+    "render",
+    `Out of date for the AI tools: ${stale.map((file) => file.path).join(", ")}.`,
+    "Run peer-ai render.",
+  );
+}
+
 /** The config's CI setting matches the repository, so Peer AI never adds a second pipeline. */
 function checkDelivery(root: string, config: PeerAiConfig): Check {
   const found = detectDelivery(root);
@@ -263,6 +275,7 @@ export function diagnose(root: string, nodeVersion: string = process.versions.no
     ...(config === undefined ? needsConfig("tracks", "Tracks") : checkTracks(root, config)),
     ...(config === undefined ? needsConfig("references", "Files the config names") : checkReferences(root, config)),
     ...(config === undefined ? needsConfig("tools", "AI tools") : [checkTools(root, config)]),
+    ...(config === undefined ? needsConfig("render", "What render writes") : [checkRendered(root, config)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
     checkMap(root, config),
     ...checkWorkItems(root, config),

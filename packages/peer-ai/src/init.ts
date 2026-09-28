@@ -202,5 +202,6 @@ export async function runInit(options: InitOptions, prompter: Prompter | undefin
   if (prompter !== undefined && !options.yes) prompter.outro(summary);
   else out.log(summary);
   out.log("Edit it any time. Your editor checks it against the schema as you type.");
+  out.log("Next: peer-ai assess to map the project, then peer-ai render to set up your AI tools.");
   return 0;
 }

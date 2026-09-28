@@ -14,6 +14,7 @@ import { runInit, type Output, type Stage, type Team } from "./init.ts";
 import { VERSION } from "./package-info.ts";
 import { createTerminalPrompter, type Prompter } from "./prompter.ts";
 import { formatReport } from "./report.ts";
+import { runRender } from "./render.ts";
 
 const STAGES: readonly Stage[] = ["prototype", "mvp", "production"];
 
@@ -22,6 +23,7 @@ const HELP = `peer-ai: from a brief to a shipped product, with any AI tool
 Usage:
   peer-ai init [options]      Set up Peer AI in this repository
   peer-ai assess [options]    Map what the project has and what its stage still needs
+  peer-ai render [options]    Set up each AI tool in the config: instructions and the MCP server
   peer-ai doctor [options]    Check that Peer AI is set up correctly, and how to fix it
   peer-ai check [options]     The CI gate: fail when work claims more than its record shows
   peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
@@ -40,6 +42,9 @@ Options for assess:
                               for example production before a launch
       --json                  Print the project map as JSON instead of the report
       --dry-run               Don't write .peer-ai/map.json
+
+Options for render:
+      --check                 Change nothing; fail when a file is out of date (for CI)
 
 Options for doctor and check:
       --json                  Print the checks as JSON
@@ -124,6 +129,11 @@ function check(args: string[], io: Io): number {
   return runCheck({ cwd: io.cwd, json: values.json === true }, io.out);
 }
 
+function render(args: string[], io: Io): number {
+  const { values } = parseArgs({ args, strict: true, options: { check: { type: "boolean" } } });
+  return runRender({ cwd: io.cwd, check: values.check === true }, io.out);
+}
+
 async function mcp(args: string[], io: Io): Promise<number> {
   parseArgs({ args, strict: true, options: {} });
   await serveStdio(io.cwd);
@@ -133,6 +143,7 @@ async function mcp(args: string[], io: Io): Promise<number> {
 const COMMANDS: Record<string, (args: string[], io: Io) => number | Promise<number>> = {
   init,
   assess,
+  render,
   doctor,
   check,
   mcp,

@@ -6,6 +6,7 @@ import { main } from "./cli.ts";
 import type { Check } from "./checks.ts";
 import { diagnose, runDoctor } from "./doctor.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
+import { runRender } from "./render.ts";
 import { formatReport } from "./report.ts";
 import { capture, cleanUp, project } from "./test-helpers.ts";
 
@@ -27,6 +28,7 @@ const config = (extra: Record<string, unknown> = {}) =>
 
 function assessed(files: Record<string, string>, options: { git?: boolean } = { git: true }): string {
   const root = project(files, options);
+  runRender({ cwd: root, check: false }, capture());
   runAssess({ cwd: root, json: false, dryRun: false, now: NOW }, capture(), formatReport);
   return root;
 }
@@ -183,6 +185,22 @@ describe("doctor on tracks and the files the config names", () => {
     const noTools = project({ "peer-ai.config.json": config({ tools: undefined }) });
     expect(checksFor(noTools, "tools")).toMatchObject([{ status: "warn" }]);
     expect(checksFor(noTools, "tools")[0]?.message).toContain("No AI tools are listed");
+  });
+});
+
+describe("doctor on what render writes", () => {
+  it("warns when the AI tools' files no longer match the config", () => {
+    const root = healthy();
+    expect(checksFor(root, "render")).toMatchObject([{ status: "ok" }]);
+    writeFileSync(join(root, "peer-ai.config.json"), config({ tools: ["claude-code", "cursor"] }));
+    expect(checksFor(root, "render")).toEqual([
+      {
+        id: "render",
+        status: "warn",
+        message: "Out of date for the AI tools: AGENTS.md, .cursor/rules/peer-ai.mdc, .cursor/mcp.json.",
+        fix: "Run peer-ai render.",
+      },
+    ]);
   });
 });
 
