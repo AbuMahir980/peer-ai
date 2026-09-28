@@ -49,6 +49,22 @@
             "solo",
             "team"
           ]
+        },
+        "traits": {
+          "description": "What the product is or does that switches on extra rules: money, safety-critical data, several apps or tenants on one backend, offline use, live connections, uploads, AI features.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "money",
+              "safety-critical",
+              "several-audiences",
+              "offline",
+              "real-time",
+              "uploads",
+              "ai-features"
+            ]
+          }
         }
       },
       "required": [
@@ -533,6 +549,76 @@
             "map",
             "revise"
           ]
+        },
+        "overrides": {
+          "description": "A rule's default changed for this project, such as a larger component size limit, with the reason.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*-\\d{2,}$",
+            "description": "A standards rule id, such as SEC-07."
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                ],
+                "description": "The project's value in place of the profile's default."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "value",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "exceptions": {
+          "description": "Rules this project sets aside, each with a reason and who decided. peer-ai doctor lists them all.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rule": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]*-\\d{2,}$",
+                "description": "A standards rule id, such as SEC-07."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "decidedBy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The person who decided to set the rule aside."
+              },
+              "until": {
+                "description": "When the exception ends, if it's temporary.",
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              }
+            },
+            "required": [
+              "rule",
+              "reason",
+              "decidedBy"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

@@ -145,8 +145,10 @@ describe("the MCP server", () => {
     expect(map.storedMap).toMatch(/^There is no \.peer-ai\/map\.json yet/);
     expect((await call(client, "next_work")).value()).toMatchObject({ open: [], gaps: { stage: "mvp" } });
 
-    expect((await call(client, "standards_for_file", { file: "apps/web/src/cart.tsx" })).value()).toEqual({
+    const standards = (await call(client, "standards_for_file", { file: "apps/web/src/cart.tsx" })).value();
+    expect(standards).toMatchObject({
       file: "apps/web/src/cart.tsx",
+      stage: "mvp",
       track: { id: "web", kind: "web", path: "apps/web" },
       core: true,
       profiles: ["react"],
@@ -156,7 +158,12 @@ describe("the MCP server", () => {
       ],
       rules: [],
       precedence: "project",
+      setAside: [],
     });
+    const ids = (standards.peerAiRules as { id: string }[]).map((rule) => rule.id);
+    expect(ids).toContain("ARC-01");
+    expect(ids).toContain("CODE-11");
+    expect(ids.some((id) => id.startsWith("MONEY-"))).toBe(false);
     const outside = await call(client, "standards_for_file", { file: "../elsewhere/x.ts" });
     expect(outside).toMatchObject({ isError: true, text: "../elsewhere/x.ts is outside the project." });
   });

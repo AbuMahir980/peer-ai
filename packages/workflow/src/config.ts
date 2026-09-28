@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACTIVITY_IDS, SKILL_IDS, TOOL_IDS } from "./ids.ts";
+import { ACTIVITY_IDS, SKILL_IDS, TOOL_IDS, TRAITS } from "./ids.ts";
 
 // peer-ai.config.json: everything a project used to get by editing or patching the
 // playbook's files. Objects are strict, so a misspelt key is an error, not a silent no-op.
@@ -9,6 +9,10 @@ import { ACTIVITY_IDS, SKILL_IDS, TOOL_IDS } from "./ids.ts";
 const Path = z.string().min(1).describe("A path relative to the project root, or a URL.");
 const Slug = z.string().regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, "use lowercase letters, digits and hyphens");
 const Note = z.string().min(1);
+const RuleId = z
+  .string()
+  .regex(/^[A-Z][A-Z0-9]*-\d{2,}$/, "use a rule id such as SEC-07 or REACT-03")
+  .describe("A standards rule id, such as SEC-07.");
 
 const AddOn = z
   .string()
@@ -37,6 +41,12 @@ const Project = z.strictObject({
     .enum(["solo", "team"])
     .optional()
     .describe("solo: nobody else reviews, so no second reviewer is asked for. Defaults to solo."),
+  traits: z
+    .array(z.enum(TRAITS))
+    .optional()
+    .describe(
+      "What the product is or does that switches on extra rules: money, safety-critical data, several apps or tenants on one backend, offline use, live connections, uploads, AI features.",
+    ),
 });
 
 const Design = z.strictObject({
@@ -210,6 +220,29 @@ const Standards = z.strictObject({
     .describe(
       "What the Standards activity does with existing documents: map each rule to its enforcer, or revise the documents.",
     ),
+  overrides: z
+    .record(
+      RuleId,
+      z.strictObject({
+        value: z
+          .union([z.number(), z.string().min(1)])
+          .describe("The project's value in place of the profile's default."),
+        reason: Note,
+      }),
+    )
+    .optional()
+    .describe("A rule's default changed for this project, such as a larger component size limit, with the reason."),
+  exceptions: z
+    .array(
+      z.strictObject({
+        rule: RuleId,
+        reason: Note,
+        decidedBy: Note.describe("The person who decided to set the rule aside."),
+        until: z.iso.date().optional().describe("When the exception ends, if it's temporary."),
+      }),
+    )
+    .optional()
+    .describe("Rules this project sets aside, each with a reason and who decided. peer-ai doctor lists them all."),
 });
 
 const Compliance = z.strictObject({

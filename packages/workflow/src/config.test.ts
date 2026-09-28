@@ -152,6 +152,30 @@ describe("what peer-ai.config.json rejects", () => {
     expect(errorsFor({ ...minimal(), compliance: { jurisdictions: ["NG", "US-CA", "AE-DU", "eu", "difc"] } })).toBe("");
   });
 
+  it("an unknown trait, a malformed rule id, and an exception with no one who decided", () => {
+    expect(errorsFor({ ...minimal(), project: { name: "Test", traits: ["money", "crypto"] } })).toContain(
+      "project.traits.1:",
+    );
+    expect(
+      errorsFor({ ...minimal(), standards: { overrides: { "react-size": { value: 200, reason: "Forms" } } } }),
+    ).toContain("standards.overrides.react-size: Invalid key in record");
+    expect(
+      errorsFor({ ...minimal(), standards: { exceptions: [{ rule: "SEC-07", reason: "Public catalogue" }] } }),
+    ).toContain("standards.exceptions.0.decidedBy:");
+    expect(
+      errorsFor({
+        ...minimal(),
+        project: { name: "Test", traits: ["money", "offline"] },
+        standards: {
+          overrides: { "REACT-04": { value: 200, reason: "Form screens hold many fields" } },
+          exceptions: [
+            { rule: "SEC-07", reason: "The catalogue is public", decidedBy: "@maintainer", until: "2027-01-31" },
+          ],
+        },
+      }),
+    ).toBe("");
+  });
+
   it("says where each problem is", () => {
     expect(errorsFor({ ...minimal(), tracks: [{ id: "Web App", kind: "web", status: "active" }] })).toContain(
       "tracks.0.id:",
