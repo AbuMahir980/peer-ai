@@ -112,26 +112,49 @@ export interface Score {
 
 const normalise = (file: string) => file.replace(/^\.\//, "");
 
-function matches(finding: Finding, defect: ResolvedDefect): boolean {
-  const { file, line, endLine } = finding.location;
-  if (line === undefined) return false;
-  const gap = Math.abs(SEVERITIES.indexOf(finding.severity) - SEVERITIES.indexOf(defect.severity));
-  if (gap > 1) return false;
-  return defect.spans.some(
-    (span) =>
-      normalise(file) === span.file &&
-      line <= span.endLine + LINE_TOLERANCE &&
-      (endLine ?? line) >= span.line - LINE_TOLERANCE,
-  );
+/** How many lines separate a finding from a planted problem: 0 when they overlap. */
+function distance(finding: Finding, span: Span): number {
+  const { line, endLine } = finding.location;
+  if (line === undefined) return Number.POSITIVE_INFINITY;
+  const end = endLine ?? line;
+  if (end < span.line) return span.line - end;
+  if (line > span.endLine) return line - span.endLine;
+  return 0;
+}
+
+/**
+ * The planted problem a finding is about: the nearest one in the same file within the line
+ * tolerance, at a severity no more than one level away. Each finding counts for one problem at
+ * most, so a single finding can't score twice when two problems sit close together.
+ */
+function bestMatch(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect | undefined {
+  let best: { defect: ResolvedDefect; lines: number; gap: number } | undefined;
+  for (const defect of defects) {
+    const gap = Math.abs(SEVERITIES.indexOf(finding.severity) - SEVERITIES.indexOf(defect.severity));
+    if (gap > 1) continue;
+    for (const span of defect.spans) {
+      if (normalise(finding.location.file) !== span.file) continue;
+      const lines = distance(finding, span);
+      if (lines > LINE_TOLERANCE) continue;
+      if (best === undefined || lines < best.lines || (lines === best.lines && gap < best.gap)) {
+        best = { defect, lines, gap };
+      }
+    }
+  }
+  return best?.defect;
 }
 
 /** Marks a review's reports against the answer sheet. */
 export function score(sheet: Sheet, skill: SkillId, reports: ReviewReport[]): Score {
   const findings = reports.filter((report) => report.skill === skill).flatMap((report) => report.findings);
+  const matched = new Map(findings.map((finding) => [finding, bestMatch(finding, sheet.defects)]));
   const expected = sheet.defects
     .filter((defect) => defect.skills.includes(skill))
-    .map((defect) => ({ defect, foundBy: findings.filter((finding) => matches(finding, defect)).map((f) => f.id) }));
-  const unmatched = findings.filter((finding) => !sheet.defects.some((defect) => matches(finding, defect)));
+    .map((defect) => ({
+      defect,
+      foundBy: findings.filter((finding) => matched.get(finding) === defect).map((finding) => finding.id),
+    }));
+  const unmatched = findings.filter((finding) => matched.get(finding) === undefined);
   const bySeverity = Object.fromEntries(
     SEVERITIES.map((severity) => {
       const planted = expected.filter(({ defect }) => defect.severity === severity);

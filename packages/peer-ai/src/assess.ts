@@ -107,6 +107,8 @@ const PAYMENT_PROVIDER =
   /\b(stripe|paystack|flutterwave|braintree|adyen|razorpay|paypal|squareup|mollie|monnify|interswitch)\b/gi;
 const OBSERVABILITY =
   /(@sentry\/[\w-]+|\bsentry[\w-]*|@opentelemetry\/[\w-]+|\bopentelemetry[\w-]*|\bdd-trace\b|\bdatadog\b|\bnewrelic\b|\bprom-client\b|\bprometheus[\w-]*|\bstructlog\b|\bpino\b|\bwinston\b|\bloguru\b|\blogfire\b)/gi;
+const LOCAL_SCHEMA_FILE = /(^|\/)(db|database|schema|storage|store|models?)\.(ts|tsx|js|mjs)$/i;
+const LOCAL_SCHEMA = /\.stores\(\s*\{|indexedDB\.open\(|\bopenDB\(|\bappSchema\(|CREATE TABLE/;
 const INFRASTRUCTURE_AS_CODE =
   /\.tf$|\.tf\.json$|\.bicep$|\.cfn\.(ya?ml|json)$|(^|\/)(Pulumi\.ya?ml|cdk\.json|Chart\.yaml|kustomization\.ya?ml|serverless\.ya?ml|samconfig\.toml)$/;
 // A copy of the v0 playbook, which 1.0 replaces, recognised by its setup files. Its templates
@@ -220,11 +222,19 @@ const RULES: Record<KnownMapItemId, Rule> = {
       ctx.tracks.some((track) => track.kind === "backend") ||
       apis.some((api) => api.providedBy !== undefined && own.includes(api.providedBy));
     if (!providesApi) {
-      const elsewhere = apis.filter((api) => api.providedBy !== undefined).map((api) => api.id);
+      const statusOf = new Map((ctx.config?.tracks ?? []).map((track) => [track.id, track.status]));
+      const providedWhile = (status: string) =>
+        apis
+          .filter((api) => api.providedBy !== undefined && statusOf.get(api.providedBy) === status)
+          .map((api) => api.id);
+      const elsewhere = providedWhile("external");
+      const later = providedWhile("dormant");
       const note =
         elsewhere.length > 0
           ? `Provided by another repository, where its contract lives: ${elsewhere.join(", ")}.`
-          : "No API is provided by this repository.";
+          : later.length > 0
+            ? `Provided by a part that hasn't started yet: ${later.join(", ")}.`
+            : "No API is provided by this repository.";
       return { status: "not-applicable", note: clip(note), inferred: true };
     }
     return {
@@ -242,6 +252,12 @@ const RULES: Record<KnownMapItemId, Rule> = {
       return present(
         evidence(files, /^(.*\/)?(migrations?|alembic|drizzle|supabase\/migrations)\/|^.*schema\.(prisma|rb|sql)$/i),
       );
+    }
+    // An offline-first or mobile app keeps its database on the device, defined in code rather than
+    // in migration files: Dexie or idb for IndexedDB, WatermelonDB, or SQLite tables.
+    const onDevice = matching(ctx, LOCAL_SCHEMA_FILE).filter((file) => LOCAL_SCHEMA.test(ctx.read(file)));
+    if (onDevice.length > 0) {
+      return { ...present(evidence(onDevice)), note: "A database on the device, defined in code." };
     }
     if (ctx.tracks.some((track) => track.kind === "backend")) return { status: "missing" };
     return { status: "not-applicable", note: "No database found in this repository.", inferred: true };
@@ -453,8 +469,8 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
   const allFiles = listRepoFiles(root);
   const legacyPlaybook = allFiles.some((file) => LEGACY_MARKERS.includes(file));
   const files = legacyPlaybook ? allFiles.filter((file) => !file.startsWith(LEGACY_PLAYBOOK)) : allFiles;
-  // Parts that live in another repository are listed, but this repository isn't checked for them.
-  const own = tracks.filter((track) => track.status !== "external");
+  // Parts in another repository, and parts not started yet, are listed but create no requirements.
+  const own = tracks.filter((track) => track.status !== "external" && track.status !== "dormant");
   const ctx: Context = { root, files, tracks: own, config, read };
   const signals = collectSignals(ctx);
   const items = Object.fromEntries(MAP_ITEM_IDS.map((id) => [id, RULES[id](ctx, signals)])) as Record<

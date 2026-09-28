@@ -91,6 +91,21 @@ describe("assess", () => {
     expect(result.tracks.map((track) => track.id)).toEqual(["app", "api"]);
   });
 
+  it("finds a database kept on the device, defined in code, and not just any file called db", () => {
+    const dexie = project({ "src/db.ts": 'this.version(1).stores({ plants: "++id, name" });' });
+    expect(assess(dexie, undefined, "mvp").items["data-model"]).toEqual({
+      status: "present",
+      evidence: ["src/db.ts"],
+      note: "A database on the device, defined in code.",
+    });
+    expect(statusOf(project({ "src/storage.js": "const db = await openDB('notes', 1);" }))["data-model"]).toBe(
+      "present",
+    );
+    expect(statusOf(project({ "src/db.ts": "export const db = connect(process.env.URL);" }))["data-model"]).toBe(
+      "not-applicable",
+    );
+  });
+
   it("finds personal data in prefixed column names, but not inside other words", () => {
     const root = project({
       "db/migrations/0001.sql":

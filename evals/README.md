@@ -6,6 +6,7 @@ An eval tests whether a review finds the problems it should. Each practice proje
 |--------------|------------------|------------------|
 | [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 19: 18 planted, and 1 a review found that nobody planted |
 | [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 17: 16 planted, and 1 a review found that nobody planted |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 |
 
 ## Running one
 
@@ -36,6 +37,7 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **2026-09-28, shelf, security-review, Claude Code.** Also a baseline. Of the 4 problems it raised that weren't on the answer sheet:
   - **One was real and nobody had planted it:** usage data goes to an analytics service with no consent or opt-out. It's now S17 on the answer sheet.
   - **The other three were fair, minor points:** API responses aren't checked for shape, the older sign-in doesn't check for a failed request, and there's no certificate pinning.
+- **2026-09-28, sprout, ai-feature-review, Claude Code.** Also a baseline. All 4 problems it raised that weren't on the answer sheet were **fair points about the project's paperwork rather than its code**: no tests for the identification feature, the service's contract isn't written down, there's no threat model, and the photo transfer isn't recorded for the NDPA. None was added to the answer sheet.
 
 ## Results
 
@@ -45,3 +47,4 @@ Newest last.
 |------|---------|--------|------|-------|------------------|--------|------|
 | 2026-09-28 | courier | security-review | Claude Code | 9 of 9 | 6 | Ready | $2.49 |
 | 2026-09-28 | shelf | security-review | Claude Code | 7 of 7 | 4 | Ready | $2.24 |
+| 2026-09-28 | sprout | ai-feature-review | Claude Code | 5 of 5 | 4 | Ready | $1.70 |

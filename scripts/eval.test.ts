@@ -12,6 +12,7 @@ import {
   loadSheet,
   score,
   sheets,
+  type ResolvedDefect,
   type Sheet,
 } from "./eval.ts";
 
@@ -120,6 +121,26 @@ describe("marking a review", () => {
     expect(marked.expected.every(({ foundBy }) => foundBy.length === 0)).toBe(true);
     expect(marked.unmatched.map((f) => f.location.file)).toEqual(["api/parcels.py", "db/0001.sql", "web/app.ts"]);
     expect(marked.reasons).toEqual(["it missed 1 critical problem", "it missed 1 high problem"]);
+  });
+
+  it("counts each finding for one planted problem at most: the nearest", () => {
+    const nearby = (id: string, line: number): ResolvedDefect => ({
+      id,
+      title: "A problem",
+      severity: "high",
+      skills: ["security-review"],
+      locations: [],
+      spans: [{ file: "ai.ts", line, endLine: line }],
+    });
+    const close: Sheet = {
+      ...SHEET,
+      defects: [nearby("A", 10), nearby("B", 13)],
+    };
+    const marked = score(close, "security-review", [report([finding("ai.ts", 12, "high")])]);
+    expect(marked.expected.map(({ defect, foundBy }) => [defect.id, foundBy.length])).toEqual([
+      ["A", 0],
+      ["B", 1],
+    ]);
   });
 
   it("counts a problem found at any of its locations, and only a review's own reports", () => {

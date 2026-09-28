@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Sprout",
+    "description": "A plant-care journal that works offline.",
+    "stage": "mvp",
+    "origin": "existing",
+    "team": "solo"
+  },
+  "tools": ["claude-code", "codex", "cursor"],
+  "design": { "status": "exists", "reference": "src/styles/tokens.css" },
+  "tracks": [
+    { "id": "app", "kind": "web", "status": "active" },
+    { "id": "sync", "kind": "backend", "status": "dormant", "note": "Syncing between devices comes in a later version." }
+  ],
+  "apis": [{ "id": "plant-id", "kind": "http", "note": "A third-party plant identification service." }],
+  "tracker": { "kind": "none", "ticketPrefix": "SP" },
+  "commands": { "verify": "npm test" },
+  "compliance": { "jurisdictions": ["NG"], "packs": ["ndpa"] }
+}
