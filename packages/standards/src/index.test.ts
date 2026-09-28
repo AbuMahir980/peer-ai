@@ -88,9 +88,41 @@ describe("sources", () => {
     }
   });
 
+  it("cite OWASP MASVS 2.1.0 controls that exist", () => {
+    const masvs = JSON.parse(readFileSync(new URL("../sources/masvs-2.1.0.json", import.meta.url), "utf8")) as {
+      controls: string[];
+    };
+    const citations = CORE_RULES.flatMap((r) =>
+      (r.sources ?? []).filter((s) => s.name === "OWASP MASVS 2.1.0").map((s) => ({ rule: r.id, ref: s.ref })),
+    );
+    expect(citations.length).toBeGreaterThan(0);
+    for (const { rule, ref } of citations) expect(masvs.controls, `${rule} cites ${ref}`).toContain(ref);
+  });
+
+  it("cite OWASP Top 10 for LLM Applications 2025 entries by their real id and title", () => {
+    const llm = JSON.parse(readFileSync(new URL("../sources/owasp-llm-top-10-2025.json", import.meta.url), "utf8")) as {
+      entries: Record<string, string>;
+    };
+    const citations = CORE_RULES.flatMap((r) =>
+      (r.sources ?? [])
+        .filter((s) => s.name === "OWASP Top 10 for LLM Applications 2025")
+        .map((s) => ({ rule: r.id, ref: s.ref })),
+    );
+    expect(citations.length).toBeGreaterThan(0);
+    for (const { rule, ref } of citations) {
+      const [id = "", title = ""] = ref.split(", ");
+      expect(llm.entries[id], `${rule} cites ${ref}`).toBe(title);
+    }
+  });
+
   it("name only the sources Peer AI can check", () => {
     const names = new Set(CORE_RULES.flatMap((r) => (r.sources ?? []).map((s) => s.name)));
-    expect([...names].sort()).toEqual(["OWASP ASVS 5.0", "WCAG 2.2"]);
+    expect([...names].sort()).toEqual([
+      "OWASP ASVS 5.0",
+      "OWASP MASVS 2.1.0",
+      "OWASP Top 10 for LLM Applications 2025",
+      "WCAG 2.2",
+    ]);
   });
 
   const asvs = JSON.parse(readFileSync(new URL("../sources/asvs-5.0.json", import.meta.url), "utf8")) as {

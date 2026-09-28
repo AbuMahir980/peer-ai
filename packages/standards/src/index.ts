@@ -1,15 +1,20 @@
 import { DOMAIN_IDS, type DomainId, type Trait } from "@peer-ai/workflow";
+import { aiFeatures } from "./core/ai-features.ts";
 import { apiDesign } from "./core/api-design.ts";
 import { architecture } from "./core/architecture.ts";
 import { backend } from "./core/backend.ts";
 import { codeQuality } from "./core/code-quality.ts";
 import { data } from "./core/data.ts";
+import { delivery } from "./core/delivery.ts";
 import { designAccessibility } from "./core/design-accessibility.ts";
 import { frontend } from "./core/frontend.ts";
+import { mobile } from "./core/mobile.ts";
 import { money } from "./core/money.ts";
+import { operations } from "./core/operations.ts";
 import { performance } from "./core/performance.ts";
 import { privacyCompliance } from "./core/privacy-compliance.ts";
 import { reliability } from "./core/reliability.ts";
+import { requirements } from "./core/requirements.ts";
 import { safetyCritical } from "./core/safety-critical.ts";
 import { security } from "./core/security.ts";
 import { systemDesign } from "./core/system-design.ts";
@@ -20,10 +25,12 @@ export { DOMAIN_INFO } from "./domains.ts";
 export { RuleSchema, SourceSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
 
 const CORE_INPUTS: RuleInput[] = [
+  ...requirements,
   ...architecture,
   ...systemDesign,
   ...apiDesign,
   ...frontend,
+  ...mobile,
   ...designAccessibility,
   ...backend,
   ...data,
@@ -32,6 +39,9 @@ const CORE_INPUTS: RuleInput[] = [
   ...security,
   ...privacyCompliance,
   ...testing,
+  ...delivery,
+  ...operations,
+  ...aiFeatures,
   ...codeQuality,
   ...money,
   ...safetyCritical,

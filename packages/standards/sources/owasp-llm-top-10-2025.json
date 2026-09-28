@@ -1,0 +1,18 @@
+{
+  "source": "OWASP Top 10 for Large Language Model Applications, 2025",
+  "from": "https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/tree/eb87ba80e069/2_0_vulns",
+  "taken": "2026-09-29",
+  "note": "Entry ids and titles only, so citations can be checked. Read each entry at the source.",
+  "entries": {
+    "LLM01": "Prompt Injection",
+    "LLM02": "Sensitive Information Disclosure",
+    "LLM03": "Supply Chain",
+    "LLM04": "Data and Model Poisoning",
+    "LLM05": "Improper Output Handling",
+    "LLM06": "Excessive Agency",
+    "LLM07": "System Prompt Leakage",
+    "LLM08": "Vector and Embedding Weaknesses",
+    "LLM09": "Misinformation",
+    "LLM10": "Unbounded Consumption"
+  }
+}

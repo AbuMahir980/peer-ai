@@ -180,7 +180,7 @@ All traffic between apps and services uses TLS, never falls back to an unencrypt
 
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
-| MVP | AI review | High | Always | [OWASP ASVS 5.0, 12.2.1, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md) |
+| MVP | AI review | High | Always | [OWASP ASVS 5.0, 12.2.1, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md); [OWASP MASVS 2.1.0, MASVS-NETWORK-1](https://github.com/OWASP/masvs/blob/master/controls/MASVS-NETWORK-1.md) |
 
 ## SEC-16 · Which websites may call the API is a fixed list
 

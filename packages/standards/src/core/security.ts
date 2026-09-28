@@ -213,7 +213,14 @@ export const security = [
     stage: "mvp",
     check: "ai-review",
     severity: "high",
-    sources: [{ name: ASVS, ref: "12.2.1, level 1", url: V12 }],
+    sources: [
+      { name: ASVS, ref: "12.2.1, level 1", url: V12 },
+      {
+        name: "OWASP MASVS 2.1.0",
+        ref: "MASVS-NETWORK-1",
+        url: "https://github.com/OWASP/masvs/blob/master/controls/MASVS-NETWORK-1.md",
+      },
+    ],
   },
   {
     id: "SEC-16",

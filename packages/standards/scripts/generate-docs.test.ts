@@ -11,9 +11,9 @@ describe("the standards pages", () => {
     for (const [file, content] of pages) expect(readFileSync(join(DOCS_DIR, file), "utf8"), file).toBe(content);
   });
 
-  it("list every domain in the index, marking the ones still to come", () => {
+  it("list every domain in the index, each with its rules", () => {
     const index = pages.get("README.md") ?? "";
     expect(index).toContain("| [Money](money.md) | 12 |");
-    expect(index).toContain("| Delivery | Coming |");
+    expect(index).not.toContain("Coming");
   });
 });
