@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../schemas/work-item.schema.json",
+  "version": 1,
+  "id": "HBL-7",
+  "title": "Booking summary screen",
+  "kind": "feature",
+  "stage": "verify",
+  "track": "mobile",
+  "branch": "feat/HBL-7-booking-summary",
+  "activities": [
+    { "id": "specify", "status": "done" },
+    { "id": "contract", "status": "skipped", "reason": "Uses existing endpoints; no contract change." },
+    { "id": "build", "status": "done" },
+    { "id": "verify", "status": "in-progress" }
+  ],
+  "position": { "activity": "verify", "step": 2 },
+  "lastVerify": { "result": "pass", "at": "2026-10-03T14:02:00Z" },
+  "reviews": [
+    {
+      "skill": "code-review",
+      "result": "pass",
+      "report": "reviews/HBL-7-code-review.json",
+      "at": "2026-10-03T14:20:00Z"
+    }
+  ],
+  "next": "Run accessibility-review on the summary screen, then open the pull request.",
+  "updatedAt": "2026-10-03T14:21:00Z"
+}

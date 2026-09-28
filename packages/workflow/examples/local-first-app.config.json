@@ -1,0 +1,29 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Pocketbook",
+    "description": "A local-first household budget that never leaves the device",
+    "stage": "mvp",
+    "origin": "new"
+  },
+  "tools": ["codex"],
+  "shape": {
+    "api": {
+      "kind": "in-process",
+      "contract": { "source": "types", "location": "src/core/repository.ts", "checkDrift": true }
+    },
+    "design": { "status": "to-be-produced", "reference": "docs/design/", "stopAfterSpecify": true }
+  },
+  "tracks": [
+    { "id": "web", "kind": "web", "stack": ["typescript", "react"], "status": "active" },
+    { "id": "sync", "kind": "backend", "status": "dormant", "note": "Sync arrives in a later version." }
+  ],
+  "repo": { "remote": "origin", "commits": "conventional", "mergePolicy": "pull-request", "pushEachCommit": true },
+  "tracker": { "kind": "github" },
+  "commands": { "verify": null },
+  "standards": { "profiles": ["typescript", "react"] },
+  "rules": [{ "path": "CONTEXT.md", "description": "Repository rules: no real figures in fixtures, no telemetry." }],
+  "models": { "policy": "none" },
+  "docs": { "backlog": "docs/backlog.md" }
+}

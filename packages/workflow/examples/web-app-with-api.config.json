@@ -1,0 +1,31 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Tallyho",
+    "description": "A shared to-do list for small teams",
+    "stage": "mvp",
+    "origin": "new"
+  },
+  "tools": ["claude-code", "cursor"],
+  "shape": {
+    "api": { "kind": "http", "contract": { "source": "handwritten", "location": "docs/api-contract.md" } },
+    "design": { "status": "to-be-produced" }
+  },
+  "tracks": [
+    { "id": "web", "kind": "web", "path": "apps/web", "stack": ["typescript", "react"], "status": "active" },
+    { "id": "api", "kind": "backend", "path": "apps/api", "stack": ["typescript", "node"], "status": "active" }
+  ],
+  "repo": {
+    "remote": "origin",
+    "defaultBranch": "main",
+    "branchNaming": "feature/{ticket}-{slug}",
+    "commits": "conventional",
+    "mergePolicy": "pull-request"
+  },
+  "tracker": { "kind": "github", "ticketPrefix": "TAL", "project": "tallyho-team/tallyho" },
+  "commands": { "verify": "pnpm verify" },
+  "delivery": { "ci": "none" },
+  "standards": { "profiles": ["typescript", "react", "node"] },
+  "models": { "policy": "tiers" }
+}

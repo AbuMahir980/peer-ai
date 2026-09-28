@@ -1,0 +1,65 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Harbourline",
+    "description": "Ferry bookings; the phone apps are being rebuilt on top of an existing backend",
+    "stage": "production",
+    "origin": "existing"
+  },
+  "tools": ["claude-code"],
+  "shape": {
+    "api": { "kind": "http", "contract": { "source": "openapi", "location": "/openapi.json", "checkDrift": true } },
+    "design": {
+      "status": "exists",
+      "reference": "design/screens/",
+      "tokens": "packages/tokens/tokens.json",
+      "authoritative": true
+    }
+  },
+  "tracks": [
+    {
+      "id": "mobile",
+      "kind": "mobile",
+      "path": "apps/mobile",
+      "stack": ["typescript", "react-native", "expo"],
+      "status": "active"
+    },
+    {
+      "id": "backend",
+      "kind": "backend",
+      "path": "services/api",
+      "stack": ["python", "fastapi"],
+      "status": "frozen",
+      "note": "Not being rewritten. Document what exists; do not redesign it."
+    }
+  ],
+  "repo": { "remote": "origin", "defaultBranch": "main", "commits": "conventional", "mergePolicy": "pull-request" },
+  "tracker": { "kind": "github", "ticketPrefix": "HBL" },
+  "commands": { "verify": "pnpm verify" },
+  "delivery": { "ci": "existing", "pipeline": ".github/workflows/ci.yml" },
+  "standards": {
+    "profiles": ["typescript", "react-native", "python-fastapi"],
+    "documents": [
+      { "path": "docs/standards/mobile.md", "role": "standard", "scope": ["mobile"] },
+      { "path": "docs/standards/backend.md", "role": "standard", "scope": ["backend"] }
+    ],
+    "onExisting": "revise"
+  },
+  "models": {
+    "policy": "pinned",
+    "default": "most-capable-reasoning-model",
+    "byActivity": { "build": "most-capable-coding-model", "delivery-setup": "most-capable-coding-model" },
+    "ifUnavailable": "most-capable"
+  },
+  "gates": { "blockOn": "high" },
+  "capabilities": {
+    "code-review": { "also": ["engineering:code-review", "/code-review"] },
+    "security-review": { "also": ["/security-review"], "checklists": ["docs/security/payments-checklist.md"] }
+  },
+  "activities": {
+    "understand": { "inputs": ["docs/", "PRODUCT.md"] },
+    "test": { "notes": ["The existing end-to-end journeys are the acceptance criteria for the rebuilt apps."] }
+  },
+  "docs": { "preserveStructure": true }
+}
