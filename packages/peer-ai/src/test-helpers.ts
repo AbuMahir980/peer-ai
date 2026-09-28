@@ -8,7 +8,10 @@ import { Cancelled, type Prompter } from "./prompter.ts";
 const created: string[] = [];
 
 /** Creates a temporary project from a map of file paths to contents. A trailing "/" makes a folder. */
-export function project(files: Record<string, string> = {}, options: { gitRemote?: string } = {}): string {
+export function project(
+  files: Record<string, string> = {},
+  options: { gitRemote?: string; git?: boolean } = {},
+): string {
   const root = mkdtempSync(join(tmpdir(), "peer-ai-"));
   created.push(root);
   for (const [path, content] of Object.entries(files)) {
@@ -19,9 +22,10 @@ export function project(files: Record<string, string> = {}, options: { gitRemote
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), content);
   }
-  if (options.gitRemote !== undefined) {
+  if (options.gitRemote !== undefined || options.git === true) {
     execFileSync("git", ["init", "-q"], { cwd: root });
-    execFileSync("git", ["remote", "add", "origin", options.gitRemote], { cwd: root });
+    if (options.gitRemote !== undefined)
+      execFileSync("git", ["remote", "add", "origin", options.gitRemote], { cwd: root });
   }
   return root;
 }

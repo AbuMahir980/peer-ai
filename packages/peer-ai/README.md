@@ -19,7 +19,7 @@ It reads the repository first and works out what it can:
 | The project's name and description | `package.json` or `pyproject.toml`, else the folder name |
 | Whether the project is new or existing | Code and project files at the root |
 | Each part and its stack | The repository root and every folder under `apps/`, `packages/`, `services/` and `libs/`. It recognises JavaScript and TypeScript frameworks, Python, Flutter, Android, JVM, Go, Rust, Ruby and PHP. |
-| Infrastructure as code | Its files, wherever they are: Terraform or OpenTofu, Pulumi, AWS CDK, Helm, Kustomize, Serverless, AWS SAM, CloudFormation, Bicep and Ansible. Folders such as `infra/`, `deploy/`, `k8s/` and `helm/` are searched a level deeper, and there Docker and Kubernetes files count too. A `docker-compose.yml` at the root is local development, not infrastructure. |
+| Infrastructure as code | Its files, wherever they are: Terraform or OpenTofu, Pulumi, AWS CDK, Helm, Kustomize, Serverless, AWS SAM, CloudFormation, Bicep and Ansible. Folders such as `infra/`, `deploy/`, `k8s/` and `helm/` are searched up to five levels deep, and there Docker and Kubernetes files count too. A `docker-compose.yml` at the root is local development, not infrastructure. |
 | Where each part deploys | A platform's config file in that part's folder: Vercel, Netlify, Fly, Render, Railway, Cloudflare Workers, Firebase, AWS Amplify, Expo EAS, Serverless, Heroku, Google App Engine, fastlane, or a Dockerfile for a container |
 | Existing CI | GitHub Actions, GitLab CI, Jenkins, Bitbucket Pipelines, Azure Pipelines, CircleCI, Buildkite, Drone, Travis, Cloud Build, Codemagic and Bitrise. Peer AI then extends that pipeline and never adds a second one. |
 | The AI tools already set up | `CLAUDE.md`, `.cursor/`, `.codex/`, `.github/copilot-instructions.md`, `GEMINI.md` |
@@ -43,3 +43,54 @@ It never overwrites an existing `peer-ai.config.json`, and it never assumes anyt
 ### Exit codes
 
 `0` success, `1` refused (a config already exists) or cancelled, `2` a usage error.
+
+## `peer-ai assess`
+
+Maps what a project already has, and what its stage still needs. Run it on any project, at any point: a brief with no code, a prototype, or a product in production with no documents at all.
+
+```bash
+pnpm peer-ai assess
+```
+
+For each item on the project map it records one of four statuses, with the files that prove it:
+
+| Status | Meaning |
+|--------|---------|
+| ✓ present | Found, with the evidence listed |
+| ◐ partial | Some of it is there, for example tests in two of three parts, or linting with no written standard |
+| ✗ missing | Not found |
+| – not applicable | This project can't have it, for example a design for a project with no user interface |
+
+The items are the requirements, architecture, threat model, specs, API contract, data model, data inventory, DPIA, design, standards, CI, environments, tests, load testing, infrastructure, observability, SLOs, runbooks and docs.
+
+Documents are a by-product, never an entry fee. When there is no architecture document, `assess` works the architecture out from the code and marks it **inferred**, for you to confirm. The same goes for anything it judged not applicable.
+
+Then it ranks the gaps by the project's stage (the `stage` in `peer-ai.config.json`, or `mvp` when there is no config):
+
+- **prototype**: nothing is required.
+- **mvp**: requirements, API contract, CI, tests, threat model, data inventory and docs.
+- **production**: all of those, plus the architecture, specs, data model, DPIA, design, standards, environments, infrastructure, observability, SLOs, runbooks and load testing.
+
+It also reports what the next stage will need, so nothing arrives as a surprise.
+
+### Compliance signals
+
+`assess` reads the schema and migrations for personal data (emails, phone numbers, dates of birth, addresses, national ID numbers and more) and card-related names, and the dependency manifests for payment providers. It reports them as things to check, not as findings, and suggests the rule packs to consider, such as PCI DSS or the data protection law where you operate.
+
+### What it reads
+
+The files git tracks, plus new files git doesn't ignore, so `.gitignore` is respected. Outside a git repository it walks the folder and skips dependency and build folders such as `node_modules/`, `.venv/` and `dist/`. A copy of the v0 playbook in `peer-ai/` is left out, and the report says so.
+
+It writes the result to `.peer-ai/map.json`, which agents read to know where the project stands. Commit it.
+
+### Options
+
+| Option | What it does |
+|--------|--------------|
+| `--target <stage>` | Assess against a stage other than the project's own, for example `--target production` to see what launch needs |
+| `--json` | Print the project map as JSON instead of the report |
+| `--dry-run` | Print the report without writing `.peer-ai/map.json` |
+
+### Exit codes
+
+`0` success, `2` a usage error or an invalid `peer-ai.config.json`. Gaps are not errors: `assess` maps, and `peer-ai check` will be the command that fails a build.

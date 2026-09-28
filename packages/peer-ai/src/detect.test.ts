@@ -119,6 +119,11 @@ describe("detect", () => {
     ]);
   });
 
+  it("finds infrastructure nested several folders down", () => {
+    const root = project({ "infra/terraform/envs/production/main.tf": 'resource "x" "y" {}\n' });
+    expect(detect(root).tracks).toEqual([{ id: "infra", path: "infra", kind: "infrastructure", stack: ["terraform"] }]);
+  });
+
   it("recognises a repository that is itself an infrastructure project", () => {
     const root = project({ "main.tf": 'resource "x" "y" {}\n', "variables.tf": "" });
     expect(detect(root).tracks).toEqual([{ id: slugifiedName(root), kind: "infrastructure", stack: ["terraform"] }]);
