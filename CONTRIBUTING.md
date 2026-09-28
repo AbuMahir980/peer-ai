@@ -12,7 +12,7 @@ Thanks for helping. Peer AI 1.0 is being built on the `next` branch; `main` hold
 
 Peer AI grew out of real client work, and none of that work may appear here. Never commit client names, private project names, or details from a real project, including in commit messages. Examples, fixtures and tests use fictional domains.
 
-CI enforces this with a forbidden-terms check that reads a private list. If it flags your pull request, it tells you the file and position; replace what it found with a neutral or fictional name.
+CI enforces this with a forbidden-terms check that reads a private list. If it flags your pull request, it tells you the file and position; replace what it found with a neutral or fictional name. Until 1.0 launches, the check can't run on pull requests from forks, because they don't receive the list; a maintainer runs it for you before merging.
 
 ## Development setup
 
