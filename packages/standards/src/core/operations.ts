@@ -4,6 +4,9 @@ import type { RuleInput } from "../rule.ts";
 // environments apart and controlling access to production are what audits such as PCI DSS and
 // ISO 27001 check; Peer AI grades them by stage so a prototype isn't held to production's bar.
 
+const ASVS = "OWASP ASVS 5.0";
+const V16 = "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md";
+
 export const operations = [
   {
     id: "OPS-01",
@@ -125,5 +128,32 @@ export const operations = [
     stage: "mvp",
     check: "ai-review",
     severity: "medium",
+  },
+  {
+    id: "OPS-12",
+    domain: "operations",
+    title: "Security logs can't be changed by an attacker",
+    rule: "Security logs are sent to a separate system as they're written, where the app can add to them but can't change or delete them, and only the people who need them can read them.",
+    why: "Someone who breaks in often tries to erase their tracks next. Logs kept only on the server they broke into can't be trusted afterwards.",
+    ask: "Does this change keep security logs anywhere the app, or someone who breaks into it, could change or delete them?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "medium",
+    sources: [
+      { name: ASVS, ref: "16.4.2, level 2", url: V16 },
+      { name: ASVS, ref: "16.4.3, level 2", url: V16 },
+    ],
+  },
+  {
+    id: "OPS-13",
+    domain: "operations",
+    title: "Signs of attack raise an alert",
+    rule: "Security logs are watched for signs of attack, such as a burst of failed sign-ins, many refused permission checks for one account, repeated hits on a rate limit, or an admin action at an unusual time. Each raises an alert that reaches a person and says what to do.",
+    why: "Without anyone watching, an attack is found weeks later, often by someone outside. One caught in minutes does far less harm.",
+    ask: "Does this change add a security event that should raise an alert, and does it?",
+    stage: "production",
+    check: "ai-review",
+    severity: "medium",
+    sources: [{ name: ASVS, ref: "16.4.3, level 2", url: V16 }],
   },
 ] satisfies RuleInput[];

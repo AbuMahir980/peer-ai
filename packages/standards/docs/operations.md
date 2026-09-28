@@ -133,3 +133,27 @@ A short written plan says what happens in a security incident: who leads, how an
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Medium | Always | – |
+
+## OPS-12 · Security logs can't be changed by an attacker
+
+Security logs are sent to a separate system as they're written, where the app can add to them but can't change or delete them, and only the people who need them can read them.
+
+**Why:** Someone who breaks in often tries to erase their tracks next. Logs kept only on the server they broke into can't be trusted afterwards.
+
+**Ask:** Does this change keep security logs anywhere the app, or someone who breaks into it, could change or delete them?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | [OWASP ASVS 5.0, 16.4.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md); [OWASP ASVS 5.0, 16.4.3, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) |
+
+## OPS-13 · Signs of attack raise an alert
+
+Security logs are watched for signs of attack, such as a burst of failed sign-ins, many refused permission checks for one account, repeated hits on a rate limit, or an admin action at an unusual time. Each raises an alert that reaches a person and says what to do.
+
+**Why:** Without anyone watching, an attack is found weeks later, often by someone outside. One caught in minutes does far less harm.
+
+**Ask:** Does this change add a security event that should raise an alert, and does it?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | AI review | Medium | Always | [OWASP ASVS 5.0, 16.4.3, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) |
