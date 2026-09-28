@@ -10,12 +10,12 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 
 | Domain | Rules |
 |--------|-------|
-| Requirements | Coming |
+| [Requirements](requirements.md) | 4 |
 | [Architecture](architecture.md) | 8 |
 | [System design and scalability](system-design.md) | 6 |
 | [API design](api-design.md) | 8 |
 | [Frontend](frontend.md) | 9 |
-| Mobile | Coming |
+| [Mobile](mobile.md) | 6 |
 | [Design and accessibility](design-accessibility.md) | 16 |
 | [Backend](backend.md) | 2 |
 | [Data](data.md) | 5 |
@@ -24,9 +24,9 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Security](security.md) | 22 |
 | [Privacy and compliance](privacy-compliance.md) | 6 |
 | [Testing](testing.md) | 9 |
-| Delivery | Coming |
-| Infrastructure and operations | Coming |
-| AI features | Coming |
+| [Delivery](delivery.md) | 7 |
+| [Infrastructure and operations](operations.md) | 10 |
+| [AI features](ai-features.md) | 8 |
 | [Code quality](code-quality.md) | 14 |
 | [Money](money.md) | 12 |
 | [Safety-critical data](safety-critical.md) | 6 |

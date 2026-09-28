@@ -1,0 +1,32 @@
+{
+  "source": "OWASP Mobile Application Security Verification Standard (MASVS) 2.1.0",
+  "from": "https://github.com/OWASP/masvs/tree/e22ed6614d28/controls",
+  "taken": "2026-09-29",
+  "note": "Control ids only, so citations can be checked. MASVS 2 has no levels. Read each control at the source.",
+  "controls": [
+    "MASVS-AUTH-1",
+    "MASVS-AUTH-2",
+    "MASVS-AUTH-3",
+    "MASVS-CODE-1",
+    "MASVS-CODE-2",
+    "MASVS-CODE-3",
+    "MASVS-CODE-4",
+    "MASVS-CRYPTO-1",
+    "MASVS-CRYPTO-2",
+    "MASVS-NETWORK-1",
+    "MASVS-NETWORK-2",
+    "MASVS-PLATFORM-1",
+    "MASVS-PLATFORM-2",
+    "MASVS-PLATFORM-3",
+    "MASVS-PRIVACY-1",
+    "MASVS-PRIVACY-2",
+    "MASVS-PRIVACY-3",
+    "MASVS-PRIVACY-4",
+    "MASVS-RESILIENCE-1",
+    "MASVS-RESILIENCE-2",
+    "MASVS-RESILIENCE-3",
+    "MASVS-RESILIENCE-4",
+    "MASVS-STORAGE-1",
+    "MASVS-STORAGE-2"
+  ]
+}

@@ -1,0 +1,92 @@
+import type { RuleInput } from "../rule.ts";
+
+// Dependencies, the pipeline every change goes through, and how changes reach people.
+
+const ASVS = "OWASP ASVS 5.0";
+const V15 = "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md";
+const MASVS = "OWASP MASVS 2.1.0";
+
+export const delivery = [
+  {
+    id: "DEL-01",
+    domain: "delivery",
+    title: "Versions are pinned and the lockfile is committed",
+    rule: 'Every dependency names the exact version that was tested, never "latest", and the lockfile is committed.',
+    why: '"Whatever is newest today" isn\'t a version. A build that pulls in different code tomorrow can break, or be compromised, without anyone changing a line.',
+    ask: "Does this change add a dependency without an exact version, or leave the lockfile out?",
+    stage: "prototype",
+    check: "auto",
+    severity: "medium",
+  },
+  {
+    id: "DEL-02",
+    domain: "delivery",
+    title: "A new dependency is justified",
+    rule: "A new dependency comes with a reason in the pull request: what it does, why nothing already there does it, and what it brings with it.",
+    why: "Every dependency is code you didn't write and have to trust, update and secure for as long as you use it.",
+    ask: "Does every new dependency in this change say why it's needed?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "low",
+  },
+  {
+    id: "DEL-03",
+    domain: "delivery",
+    title: "Known vulnerabilities in dependencies are fixed in a set time",
+    rule: "Dependencies are checked for known vulnerabilities on every change, and each is fixed within a set time for its severity.",
+    why: "Most attacks on software use vulnerabilities that were already public, in components nobody updated.",
+    ask: "Does this change leave a dependency with a known vulnerability past its time to fix?",
+    stage: "mvp",
+    check: "auto",
+    severity: "high",
+    sources: [
+      { name: ASVS, ref: "15.2.1, level 1", url: V15 },
+      { name: MASVS, ref: "MASVS-CODE-3", url: "https://github.com/OWASP/masvs/blob/master/controls/MASVS-CODE-3.md" },
+    ],
+  },
+  {
+    id: "DEL-04",
+    domain: "delivery",
+    title: "Every change passes the same required checks before it merges",
+    rule: "Every change passes the same automated checks before it merges: formatting, linting, types, tests, secret scanning, dependency checks and code scanning. The checks are required, not advisory.",
+    why: "A check that can be skipped will be skipped, on the day it would have caught something.",
+    ask: "Does this change merge only after passing every required check?",
+    stage: "mvp",
+    check: "auto",
+    severity: "high",
+  },
+  {
+    id: "DEL-05",
+    domain: "delivery",
+    title: "No check only reports",
+    rule: "Every check in the pipeline fails the build when it finds a problem. None is set to report and carry on.",
+    why: "A check that reports without failing gives the same green as a clean pass, so nobody reads it.",
+    ask: "Is any check in this change set to report without failing the build?",
+    stage: "mvp",
+    check: "auto",
+    severity: "medium",
+  },
+  {
+    id: "DEL-06",
+    domain: "delivery",
+    title: "Changes reach production only through the pipeline",
+    rule: "Changes reach production only through the pipeline, never by hand from someone's computer.",
+    why: "A change made by hand skips every check, and nobody can say afterwards exactly what's running.",
+    ask: "Could any change in this project reach production without going through the pipeline?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "high",
+  },
+  {
+    id: "DEL-07",
+    domain: "delivery",
+    title: "Only what's needed ships to production",
+    rule: "Production gets only what the product needs to run: no test code, sample code, development tools or debug features.",
+    why: "Every extra piece in production is something an attacker can find and use.",
+    ask: "Does this change ship test, sample or development code to production?",
+    stage: "production",
+    check: "ai-review",
+    severity: "medium",
+    sources: [{ name: ASVS, ref: "15.2.3, level 2", url: V15 }],
+  },
+] satisfies RuleInput[];
