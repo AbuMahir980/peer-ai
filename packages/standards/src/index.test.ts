@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { DOMAIN_IDS } from "@peer-ai/workflow";
 import { describe, expect, it } from "vitest";
 import { CORE_RULES, DOMAIN_INFO, checkRules, rulesFor, traitsNeeded, type RuleInput } from "./index.ts";
@@ -66,5 +67,24 @@ describe("choosing the rules that apply", () => {
   it("can narrow to some domains", () => {
     const domains = new Set(rulesFor({ stage: "production", domains: ["architecture"] }).map((r) => r.domain));
     expect(domains).toEqual(new Set(["architecture"]));
+  });
+});
+
+describe("sources", () => {
+  const asvs = JSON.parse(readFileSync(new URL("../sources/asvs-5.0.json", import.meta.url), "utf8")) as {
+    levels: Record<string, number>;
+  };
+
+  it("cite OWASP ASVS 5.0 requirements that exist, at their real level", () => {
+    const citations = CORE_RULES.flatMap((r) =>
+      (r.sources ?? []).filter((s) => s.name === "OWASP ASVS 5.0").map((s) => ({ rule: r.id, ref: s.ref })),
+    );
+    expect(citations.length).toBeGreaterThan(0);
+    for (const { rule, ref } of citations) {
+      const match = /^(\d+\.\d+\.\d+), level (\d)$/.exec(ref);
+      expect(match, `${rule}: "${ref}" reads like "8.2.2, level 1"`).not.toBeNull();
+      const [, requirement = "", level = ""] = match ?? [];
+      expect(asvs.levels[requirement], `${rule} cites ${requirement}`).toBe(Number(level));
+    }
   });
 });
