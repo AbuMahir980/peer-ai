@@ -6,7 +6,7 @@ In short: be respectful and constructive, assume good faith, and give feedback o
 
 ## Reporting
 
-If you experience or witness unacceptable behaviour, report it privately to the maintainer, [@AbuMahir980](https://github.com/AbuMahir980), using the contact details on that GitHub profile. Reports are handled confidentially.
+If you experience or witness unacceptable behaviour, report it privately to the maintainer, [@AbuMahir980](https://github.com/AbuMahir980), at [lawalqudus980@gmail.com](mailto:lawalqudus980@gmail.com). Reports are handled confidentially.
 
 ## Enforcement
 
