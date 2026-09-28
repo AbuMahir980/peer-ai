@@ -1,0 +1,13 @@
+{
+  "name": "split-bill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Splits a bill between people, to the cent.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

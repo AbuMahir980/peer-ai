@@ -31,7 +31,8 @@ Start a session with next_work: it returns the work item for the current git bra
 Before editing a file, call standards_for_file and follow what it returns.
 Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself.
 Record each review with record_review, including failed and incomplete ones.
-Move work with advance_work_item. Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.`;
+Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
+Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.`;
 
 export interface ServerOptions {
   /** Where the AI tool started the server: the project's folder or one inside it. */
