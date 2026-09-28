@@ -121,3 +121,15 @@ Health and readiness checks are cheap to run and tell the truth: ready means abl
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | Always | – |
+
+## OPS-11 · There's a plan for a security incident
+
+A short written plan says what happens in a security incident: who leads, how an attacker's access is cut off, which secrets are replaced, how the system gets back to a known good state, and who tells affected people and regulators within the law's deadline. Afterwards, a review records what happened and what will stop it happening again.
+
+**Why:** Under pressure, people make worse decisions and lose hours working out who does what. Data protection laws such as the GDPR give as little as 72 hours to tell the regulator.
+
+**Ask:** Is there a written incident plan, and does this change add something it should cover, such as a new secret or a new store of personal data?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | – |

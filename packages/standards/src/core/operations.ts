@@ -1,8 +1,8 @@
 import type { RuleInput } from "../rule.ts";
 
-// Environments, access to production, backups, logs, metrics and alerts. Keeping environments
-// apart and controlling access to production are what audits such as PCI DSS and ISO 27001 check;
-// Peer AI grades them by stage so a prototype isn't held to production's bar.
+// Environments, access to production, backups, logs, metrics, alerts and incidents. Keeping
+// environments apart and controlling access to production are what audits such as PCI DSS and
+// ISO 27001 check; Peer AI grades them by stage so a prototype isn't held to production's bar.
 
 export const operations = [
   {
@@ -112,6 +112,17 @@ export const operations = [
     why: "A readiness check that always says yes sends traffic to a server that can't handle it.",
     ask: "Do the health checks in this change say whether the service can really serve requests?",
     stage: "production",
+    check: "ai-review",
+    severity: "medium",
+  },
+  {
+    id: "OPS-11",
+    domain: "operations",
+    title: "There's a plan for a security incident",
+    rule: "A short written plan says what happens in a security incident: who leads, how an attacker's access is cut off, which secrets are replaced, how the system gets back to a known good state, and who tells affected people and regulators within the law's deadline. Afterwards, a review records what happened and what will stop it happening again.",
+    why: "Under pressure, people make worse decisions and lose hours working out who does what. Data protection laws such as the GDPR give as little as 72 hours to tell the regulator.",
+    ask: "Is there a written incident plan, and does this change add something it should cover, such as a new secret or a new store of personal data?",
+    stage: "mvp",
     check: "ai-review",
     severity: "medium",
   },

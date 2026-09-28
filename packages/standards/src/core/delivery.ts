@@ -89,4 +89,15 @@ export const delivery = [
     severity: "medium",
     sources: [{ name: ASVS, ref: "15.2.3, level 2", url: V15 }],
   },
+  {
+    id: "DEL-08",
+    domain: "delivery",
+    title: "The running app is scanned before it's released",
+    rule: "Before a release reaches production, a scanner tests the running app in staging from the outside, the way an attacker would. Every finding is fixed or recorded as an accepted risk. The scan runs only against the project's own staging, never production or anyone else's system.",
+    why: "Code scanning reads the code. It can't see a server that's set up wrongly, a debug page left switched on or a missing security header. Only testing the running app finds those.",
+    ask: "Was the running app scanned in staging before this release, and is every finding fixed or accepted?",
+    stage: "production",
+    check: "auto",
+    severity: "medium",
+  },
 ] satisfies RuleInput[];

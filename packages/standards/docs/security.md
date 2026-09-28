@@ -265,3 +265,51 @@ Tokens, keys and personal data never go in a URL or its query string. They trave
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Prototype | AI review | Medium | Always | [OWASP ASVS 5.0, 14.2.1, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md) |
+
+## SEC-23 · Only modern TLS, with strong ciphers
+
+Only current TLS versions are switched on (TLS 1.2 and 1.3, with 1.3 preferred), only recommended cipher suites are allowed, strongest first, and public services use publicly trusted certificates. On a hosting platform that manages TLS, its settings are checked rather than assumed.
+
+**Why:** Old TLS versions and weak ciphers have known breaks, so traffic that uses them can be read or changed even though it's encrypted.
+
+**Ask:** Does this change switch on an old TLS version, a weak cipher or a certificate that isn't publicly trusted?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | A tool | Medium | Always | [OWASP ASVS 5.0, 12.1.1, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md); [OWASP ASVS 5.0, 12.1.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md); [OWASP ASVS 5.0, 12.2.2, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md) |
+
+## SEC-24 · Security events are logged
+
+Sign-ins, failed sign-ins, refused permission checks and attempts to get past a security control, such as input that fails validation or a hit on a rate limit, are logged with who, what and when, but never the password, token or personal data involved.
+
+**Why:** You can't stop or recover from an attack you can't see. These logs are how an attack gets noticed, and how anyone works out afterwards what it reached.
+
+**Ask:** Does this change add a sign-in, permission check or security control that refuses someone without logging it?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | [OWASP ASVS 5.0, 16.3.1, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md); [OWASP ASVS 5.0, 16.3.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md); [OWASP ASVS 5.0, 16.3.3, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) |
+
+## SEC-25 · The threat model changes when the ways in change
+
+When a change adds a new way into the system, such as an endpoint, an upload, a webhook, a sign-in method or an outside service, the same change updates the threat model: what could go wrong through it, and what stops it.
+
+**Why:** A threat model written once describes the system as it was. Attacks come through the parts added since.
+
+**Ask:** Does this change add a way into the system that the threat model doesn't cover yet?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | – |
+
+## SEC-26 · Every secret can be replaced quickly
+
+A list names each of the project's secrets, where it lives and how to replace it. Each can be replaced without changing code, and each is replaced on a schedule and at once if it may have leaked.
+
+**Why:** A leaked key keeps working until it's replaced. Deleting it from wherever it leaked doesn't stop anyone who already copied it.
+
+**Ask:** Can every secret this change adds be replaced without changing code, and is it on the list?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | AI review | Medium | Always | [OWASP ASVS 5.0, 13.1.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md); [OWASP ASVS 5.0, 13.3.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md) |

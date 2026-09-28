@@ -21,11 +21,11 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Data](data.md) | 5 |
 | [Performance and caching](performance.md) | 7 |
 | [Reliability](reliability.md) | 9 |
-| [Security](security.md) | 22 |
+| [Security](security.md) | 26 |
 | [Privacy and compliance](privacy-compliance.md) | 6 |
 | [Testing](testing.md) | 9 |
-| [Delivery](delivery.md) | 7 |
-| [Infrastructure and operations](operations.md) | 10 |
+| [Delivery](delivery.md) | 8 |
+| [Infrastructure and operations](operations.md) | 11 |
 | [AI features](ai-features.md) | 8 |
 | [Code quality](code-quality.md) | 14 |
 | [Money](money.md) | 12 |

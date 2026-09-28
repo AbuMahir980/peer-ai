@@ -85,3 +85,15 @@ Production gets only what the product needs to run: no test code, sample code, d
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | Always | [OWASP ASVS 5.0, 15.2.3, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md) |
+
+## DEL-08 · The running app is scanned before it's released
+
+Before a release reaches production, a scanner tests the running app in staging from the outside, the way an attacker would. Every finding is fixed or recorded as an accepted risk. The scan runs only against the project's own staging, never production or anyone else's system.
+
+**Why:** Code scanning reads the code. It can't see a server that's set up wrongly, a debug page left switched on or a missing security header. Only testing the running app finds those.
+
+**Ask:** Was the running app scanned in staging before this release, and is every finding fixed or accepted?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | A tool | Medium | Always | – |
