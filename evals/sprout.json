@@ -1,0 +1,193 @@
+{
+  "fixture": "sprout",
+  "prompts": {
+    "security-review": "Review Sprout for security problems.",
+    "code-review": "Review Sprout's code for bugs and problems.",
+    "compliance-review": "Review Sprout for data protection problems. It operates in Nigeria.",
+    "ai-feature-review": "Review Sprout's plant identification feature, which uses an AI service.",
+    "data-migration-review": "Review how Sprout stores data on the device, and what happens to that data when the app updates.",
+    "reliability-review": "Review Sprout for reliability problems.",
+    "performance-review": "Review Sprout for performance problems.",
+    "accessibility-review": "Review Sprout for accessibility problems.",
+    "design-review": "Review Sprout against its design system."
+  },
+  "defects": [
+    {
+      "id": "SP1",
+      "title": "Version 2 deletes the journal's old table without moving its entries across, so every person loses their journal",
+      "severity": "critical",
+      "skills": ["data-migration-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/db.ts",
+          "match": "this.version(2).stores({ plants: \"++id, name, room, position\", entries: null, journal: \"++id, plantId, at\" });"
+        }
+      ]
+    },
+    {
+      "id": "SP2",
+      "title": "The app never asks the browser to keep its data, so the browser may delete the only copy when space runs short",
+      "severity": "high",
+      "skills": ["reliability-review"],
+      "locations": [
+        {
+          "file": "src/main.tsx",
+          "match": "await db.open();"
+        }
+      ]
+    },
+    {
+      "id": "SP3",
+      "title": "The service worker always serves its cached copy of the app, so people never get an update",
+      "severity": "high",
+      "skills": ["reliability-review", "performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "public/sw.js",
+          "match": "event.respondWith(caches.match(event.request).then((cached) => cached ?? fetch(event.request)));"
+        },
+        {
+          "file": "public/sw.js",
+          "match": "const CACHE = \"sprout\";"
+        }
+      ]
+    },
+    {
+      "id": "SP4",
+      "title": "Identifying a plant sends the original photo, with where it was taken, without telling the person",
+      "severity": "high",
+      "skills": ["compliance-review", "ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/identify.ts",
+          "match": "form.append(\"image\", photo);"
+        }
+      ]
+    },
+    {
+      "id": "SP5",
+      "title": "The identification service's key is built into the web app, where anyone can read it",
+      "severity": "critical",
+      "skills": ["security-review", "code-review", "ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/identify.ts",
+          "match": "const PLANT_ID_KEY = import.meta.env.VITE_PLANT_ID_KEY;"
+        },
+        {
+          "file": "src/features/identify/identify.ts",
+          "match": "const headers = { \"X-Api-Key\": PLANT_ID_KEY };"
+        }
+      ]
+    },
+    {
+      "id": "SP6",
+      "title": "The identification call has no timeout and never checks for a failed response",
+      "severity": "medium",
+      "skills": ["reliability-review", "code-review", "ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/identify.ts",
+          "match": "const response = await fetch(url, { method: \"POST\", body, headers });"
+        }
+      ]
+    },
+    {
+      "id": "SP7",
+      "title": "Care instructions from the service are put into the page as HTML, so they can run a script",
+      "severity": "high",
+      "skills": ["security-review", "ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/CareCard.tsx",
+          "match": "<div dangerouslySetInnerHTML={{ __html: identification.careHtml }} />"
+        }
+      ]
+    },
+    {
+      "id": "SP8",
+      "title": "The service's guess is shown as fact, including whether the plant is safe for pets",
+      "severity": "high",
+      "skills": ["ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/CareCard.tsx",
+          "match": "<h2>This is {identification.species}</h2>",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "SP9",
+      "title": "\"Watered today\" uses the date in UTC, so it's wrong for part of every day outside UTC",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/lib/dates.ts",
+          "match": "export const today = () => new Date().toISOString().slice(0, 10);"
+        }
+      ]
+    },
+    {
+      "id": "SP10",
+      "title": "Every render makes a new object URL for every photo and never releases them",
+      "severity": "medium",
+      "skills": ["performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "{plant.photo && <img alt=\"\" src={URL.createObjectURL(plant.photo)} width={96} height={96} />}"
+        }
+      ]
+    },
+    {
+      "id": "SP11",
+      "title": "Plants can be reordered only by dragging, with no way to do it by keyboard",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "<li key={plant.id} draggable onDragStart={() => setDragging(plant.id ?? null)} onDrop={() => void moveTo(plant.position)}>"
+        }
+      ]
+    },
+    {
+      "id": "SP12",
+      "title": "Moving a plant gives it the same position as another, so the order becomes unpredictable",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "await db.plants.update(dragging, { position: target });"
+        }
+      ]
+    },
+    {
+      "id": "SP13",
+      "title": "Photos are stored at full camera size, which fills the device's storage quota fast",
+      "severity": "medium",
+      "skills": ["performance-review", "reliability-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantForm.tsx",
+          "match": "await db.plants.add({ name, room, position, ...(file === null ? {} : { photo: file }) });"
+        }
+      ]
+    },
+    {
+      "id": "SP14",
+      "title": "Muted text is too pale to read, and its colour isn't from the design tokens",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "src/styles/app.css",
+          "match": ".muted { color: #b8b8b8; }"
+        }
+      ]
+    }
+  ]
+}
