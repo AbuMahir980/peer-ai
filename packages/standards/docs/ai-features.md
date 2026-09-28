@@ -86,14 +86,14 @@ Every call to an AI service has a timeout and a size limit, and each person has 
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Medium | `ai-features` | [OWASP Top 10 for LLM Applications 2025, LLM10, Unbounded Consumption](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/main/2_0_vulns/LLM10_UnboundedConsumption.md) |
 
-## AI-08 · An AI feature is tested on fixed examples before every change
+## AI-08 · An AI feature is tested on fixed examples, attacks included
 
-An AI feature has a set of example inputs with the behaviour expected for each, and they're run before every change to its instructions or its model.
+An AI feature has a set of example inputs with the behaviour expected for each, including attacks such as prompt injection and attempts to make it leak data or go beyond its permissions. They're run before every change to its instructions or its model.
 
-**Why:** A small change to a prompt or a model version can quietly break answers that used to be right.
+**Why:** A small change to a prompt or a model version can quietly break answers that used to be right, and a model that resisted an attack last month may not after an update.
 
-**Ask:** Were the AI feature's examples run for this change to its instructions or model?
+**Ask:** Were the AI feature's examples, attacks included, run for this change to its instructions or model?
 
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
-| MVP | AI review | Medium | `ai-features` | – |
+| MVP | AI review | Medium | `ai-features` | [OWASP Top 10 for LLM Applications 2025, LLM01, Prompt Injection](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/main/2_0_vulns/LLM01_PromptInjection.md) |

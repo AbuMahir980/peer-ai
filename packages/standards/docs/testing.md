@@ -86,13 +86,13 @@ Every test sets up what it needs and cleans up after itself. None depends on wha
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Medium | Always | – |
 
-## TEST-08 · Security-sensitive endpoints have abuse tests
+## TEST-08 · Security-sensitive code has abuse tests
 
-Endpoints that handle sign-in, permissions, money or input that reaches a database have tests that send malicious input, such as injection attempts and other people's ids, and check it's rejected. They run against the project's own app, never a live system.
+Code that handles sign-in, permissions, money, uploads or input that reaches a database has tests that attack it: injection attempts, other people's ids, missing, expired or tampered tokens, oversized input and going past rate limits. Each test checks the attack is refused. A fixed vulnerability gets a test that repeats the attack. The tests run against the project's own app, never a live system.
 
-**Why:** Security holes don't show up in tests that only send what a well-behaved client would send.
+**Why:** Security holes don't show up in tests that only send what a well-behaved client would send, and a fixed hole with no test can quietly open again.
 
-**Ask:** Do the security-sensitive endpoints in this change have tests that send malicious input?
+**Ask:** Does the security-sensitive code in this change have tests that attack it and check the attack is refused?
 
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
@@ -109,3 +109,27 @@ A new test, lint rule or gate is made to fail once on purpose, to prove it can, 
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Low | Always | – |
+
+## TEST-10 · A skilled attacker tests the product before launch and every year
+
+Before the product first reaches production, after big changes to who uses it or how it's reached, and at least once a year, someone skilled who didn't build it tests it as an attacker would: a penetration test, within agreed limits and only against the project's own systems. Every finding is fixed or accepted as a risk by a named person.
+
+**Why:** Automated tests and scanners find the known kinds of problem. A skilled person finds the ones particular to your product, such as two small flaws that together open a big one.
+
+**Ask:** When was the last penetration test, and is every finding fixed or accepted?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | A person | Medium | Always | – |
+
+## TEST-11 · A parser you write is fuzz-tested
+
+Code the project writes itself to read files or formats from outside, such as an import, a file format or a message protocol, is fuzz-tested: fed large amounts of random and broken input to check it never crashes, hangs or runs out of memory.
+
+**Why:** Broken files are a classic way in, and nobody writes by hand the millions of strange inputs a fuzzer tries. Well-known parsing libraries are fuzzed by their makers; your own code isn't.
+
+**Ask:** Does this change add code that reads an outside format, and is it fuzz-tested?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | AI review | Medium | Always | – |

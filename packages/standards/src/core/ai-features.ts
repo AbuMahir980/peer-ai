@@ -105,13 +105,14 @@ export const aiFeatures = [
   {
     id: "AI-08",
     domain: "ai-features",
-    title: "An AI feature is tested on fixed examples before every change",
-    rule: "An AI feature has a set of example inputs with the behaviour expected for each, and they're run before every change to its instructions or its model.",
-    why: "A small change to a prompt or a model version can quietly break answers that used to be right.",
-    ask: "Were the AI feature's examples run for this change to its instructions or model?",
+    title: "An AI feature is tested on fixed examples, attacks included",
+    rule: "An AI feature has a set of example inputs with the behaviour expected for each, including attacks such as prompt injection and attempts to make it leak data or go beyond its permissions. They're run before every change to its instructions or its model.",
+    why: "A small change to a prompt or a model version can quietly break answers that used to be right, and a model that resisted an attack last month may not after an update.",
+    ask: "Were the AI feature's examples, attacks included, run for this change to its instructions or model?",
     stage: "mvp",
     check: "ai-review",
     severity: "medium",
     when: ["ai-features"],
+    sources: [{ name: LLM, ref: "LLM01, Prompt Injection", url: entry("LLM01_PromptInjection") }],
   },
 ] satisfies RuleInput[];
