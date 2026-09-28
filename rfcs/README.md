@@ -27,6 +27,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | RFC | Title | Status |
 |-----|-------|--------|
 | [0001](0001-configuration-instead-of-patching.md) | Configuration instead of patching | Accepted |
+| [0002](0002-review-reports-and-evals.md) | Review reports and evals | Draft |
 
 ## What carries weight
 
