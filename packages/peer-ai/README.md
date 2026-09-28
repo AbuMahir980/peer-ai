@@ -95,6 +95,43 @@ It writes the result to `.peer-ai/map.json`, which agents read to know where the
 
 `0` success, `2` a usage error or an invalid `peer-ai.config.json`. Gaps are not errors: `assess` maps, and `peer-ai check` will be the command that fails a build.
 
+## `peer-ai render`
+
+Sets up each AI tool listed in `tools` in `peer-ai.config.json`, so every tool works the project the same way.
+
+```bash
+pnpm peer-ai render
+```
+
+| Tool | Instructions | MCP server registration |
+|------|--------------|-------------------------|
+| Claude Code | A block in `CLAUDE.md`, unless it imports `AGENTS.md` | `.mcp.json` |
+| Codex | A block in `AGENTS.md` | Codex keeps servers in your own config, so render prints the `codex mcp add` command to run once |
+| Cursor | `.cursor/rules/peer-ai.mdc`, a rule that always applies | `.cursor/mcp.json` |
+| GitHub Copilot | A block in `.github/copilot-instructions.md` | `.vscode/mcp.json` |
+| Gemini CLI | A block in `GEMINI.md`, unless it imports `AGENTS.md` | `.gemini/settings.json` |
+
+`AGENTS.md` gets the block whenever a tool other than Claude Code is listed, when it already exists, or when `CLAUDE.md` imports it.
+
+The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules. The server serves the detail when it's needed, rather than every rule on every turn.
+
+What render changes, and what it leaves alone:
+
+- **A block, not the file.** It writes between `<!-- peer-ai:start -->` and `<!-- peer-ai:end -->`, and never touches anything outside them. A file without the block gets it at the end.
+- **One server entry, not the config.** It adds or updates the `peer-ai` entry and keeps every other server and setting. It refuses a file it can't read as plain JSON, such as one with comments, and prints the entry to add by hand.
+- **The pinned version.** When `package.json` has `peer-ai` in its dependencies, tools start that copy; otherwise they start this exact version with `npx`.
+- **Nothing twice.** A second run changes nothing. `peer-ai doctor` warns when these files no longer match the config.
+
+### Options
+
+| Option | What it does |
+|--------|--------------|
+| `--check` | Change nothing, and fail when a file is out of date. For CI. |
+
+### Exit codes
+
+`0` done or up to date, `1` a file was refused, or is out of date with `--check`, `2` a usage error or no valid `peer-ai.config.json`.
+
 ## `peer-ai doctor`
 
 Checks that Peer AI is set up correctly in a repository, and says how to fix what isn't. It only reads; it never changes a file.
@@ -110,6 +147,7 @@ pnpm peer-ai doctor
 | Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |
 | Files the config names | A contract, design, standards document, data inventory, checklist or input that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
 | AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
+| What render writes | Instructions or MCP registrations that no longer match the config |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
@@ -189,7 +227,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 }
 ```
 
-`peer-ai render` will write this registration for each tool in the config.
+`peer-ai render` writes this registration for each tool in the config.
 
 | Tool | What it does |
 |------|--------------|
