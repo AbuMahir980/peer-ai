@@ -109,8 +109,8 @@ const INFRASTRUCTURE_AS_CODE =
   /\.tf$|\.tf\.json$|\.bicep$|\.cfn\.(ya?ml|json)$|(^|\/)(Pulumi\.ya?ml|cdk\.json|Chart\.yaml|kustomization\.ya?ml|serverless\.ya?ml|samconfig\.toml)$/;
 // A copy of the v0 playbook, which 1.0 replaces, recognised by its setup files. Its templates
 // would otherwise read as the project's own requirements, specs and standards.
-const LEGACY_PLAYBOOK = "peer-ai/";
-const LEGACY_MARKERS = ["peer-ai/shared/00-setup.md", "peer-ai/phase-config.json"];
+export const LEGACY_PLAYBOOK = "peer-ai/";
+export const LEGACY_MARKERS = ["peer-ai/shared/00-setup.md", "peer-ai/phase-config.json"];
 const TEST_FILE =
   /(^|\/)(tests?|__tests__|integration_test|spec|e2e)\/|[._-](test|spec)\.[cm]?[jt]sx?$|_test\.(go|dart|py)$|(^|\/)test_[^/]+\.py$|Tests?\.(swift|kt|java)$/;
 

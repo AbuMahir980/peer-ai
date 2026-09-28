@@ -1,13 +1,15 @@
 #!/usr/bin/env node
-// The peer-ai command. Exit codes: 0 success, 1 refused or cancelled, 2 usage or config error.
+// The peer-ai command. Exit codes: 0 success, 1 refused, cancelled or problems found, 2 usage or
+// config error.
 
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { TOOL_IDS, type ToolId } from "@peer-ai/workflow";
 import { runAssess } from "./assess.ts";
+import { runDoctor } from "./doctor.ts";
 import { runInit, type Output, type Stage, type Team } from "./init.ts";
+import { VERSION } from "./package-info.ts";
 import { createTerminalPrompter, type Prompter } from "./prompter.ts";
 import { formatReport } from "./report.ts";
 
@@ -18,6 +20,7 @@ const HELP = `peer-ai: from a brief to a shipped product, with any AI tool
 Usage:
   peer-ai init [options]      Set up Peer AI in this repository
   peer-ai assess [options]    Map what the project has and what its stage still needs
+  peer-ai doctor [options]    Check that Peer AI is set up correctly, and how to fix it
 
 Options for init:
   -y, --yes                   Accept what init detects instead of asking
@@ -34,6 +37,9 @@ Options for assess:
       --json                  Print the project map as JSON instead of the report
       --dry-run               Don't write .peer-ai/map.json
 
+Options for doctor:
+      --json                  Print the checks as JSON
+
 Other:
   -h, --help                  Show this help
   -v, --version               Show the version`;
@@ -43,11 +49,6 @@ export interface Io {
   out: Output;
   /** Present when questions can be asked, which means a terminal is attached. */
   prompter?: Prompter;
-}
-
-function version(): string {
-  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
-  return pkg.version;
 }
 
 function oneOf<T extends string>(value: string, allowed: readonly T[], flag: string): T {
@@ -109,7 +110,12 @@ function assess(args: string[], io: Io): number {
   );
 }
 
-const COMMANDS: Record<string, (args: string[], io: Io) => number | Promise<number>> = { init, assess };
+function doctor(args: string[], io: Io): number {
+  const { values } = parseArgs({ args, strict: true, options: { json: { type: "boolean" } } });
+  return runDoctor({ cwd: io.cwd, json: values.json === true }, io.out);
+}
+
+const COMMANDS: Record<string, (args: string[], io: Io) => number | Promise<number>> = { init, assess, doctor };
 
 export async function main(argv: string[], io: Io): Promise<number> {
   const [command, ...rest] = argv;
@@ -118,7 +124,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
     return 0;
   }
   if (command === "-v" || command === "--version") {
-    io.out.log(version());
+    io.out.log(VERSION);
     return 0;
   }
   const run = COMMANDS[command];
