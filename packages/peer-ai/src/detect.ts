@@ -185,11 +185,15 @@ function hasTypescript(dir: string): boolean {
   );
 }
 
-/** File and folder names in a directory and its immediate subdirectories. */
-function filesTwoLevels(dir: string): string[] {
-  return listDir(dir).flatMap((entry) =>
-    isDir(join(dir, entry)) && !entry.startsWith(".") ? [entry, ...listDir(join(dir, entry))] : [entry],
-  );
+/**
+ * File and folder names in a directory and its subdirectories, down to a depth. Infrastructure
+ * is often nested, such as terraform/envs/production/main.tf.
+ */
+function namesWithin(dir: string, depth: number): string[] {
+  return listDir(dir).flatMap((entry) => {
+    const nested = depth > 1 && !entry.startsWith(".") && entry !== "node_modules" && isDir(join(dir, entry));
+    return nested ? [entry, ...namesWithin(join(dir, entry), depth - 1)] : [entry];
+  });
 }
 
 // In a monorepo, TypeScript is often installed once at the root rather than in each part.
@@ -252,7 +256,7 @@ function detectApp(dir: string, inheritsTypescript: boolean): Found | undefined 
  * docker-compose file used for local development is not mistaken for infrastructure.
  */
 function detectInfrastructure(dir: string, options: { deep: boolean; includeDocker: boolean }): Found | undefined {
-  const files = options.deep ? filesTwoLevels(dir) : listDir(dir);
+  const files = options.deep ? namesWithin(dir, 5) : listDir(dir);
   const stack = IAC_SIGNATURES.filter(([matches]) => files.some(matches)).map(([, tag]) => tag);
   if (["k8s", "kubernetes"].includes(basename(dir)) && files.some((file) => /\.ya?ml$/.test(file))) {
     stack.push("kubernetes");
