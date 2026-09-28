@@ -28,6 +28,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 |-----|-------|--------|
 | [0001](0001-configuration-instead-of-patching.md) | Configuration instead of patching | Accepted |
 | [0002](0002-review-reports-and-evals.md) | Review reports and evals | Accepted |
+| [0003](0003-how-a-standard-is-written.md) | How a standard is written | Draft |
 
 ## What carries weight
 
