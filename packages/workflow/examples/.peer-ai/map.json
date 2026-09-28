@@ -1,0 +1,23 @@
+{
+  "$schema": "../../schemas/map.schema.json",
+  "version": 1,
+  "assessedAt": "2026-10-02T09:15:00Z",
+  "items": {
+    "api-contract": { "status": "present", "evidence": ["/openapi.json"], "checkedAt": "2026-10-02T09:15:00Z" },
+    "ci": { "status": "present", "evidence": [".github/workflows/ci.yml"], "checkedAt": "2026-10-02T09:15:00Z" },
+    "design": {
+      "status": "present",
+      "evidence": ["design/screens/", "packages/tokens/tokens.json"],
+      "checkedAt": "2026-10-02T09:15:00Z"
+    },
+    "standards": {
+      "status": "partial",
+      "evidence": ["docs/standards/mobile.md"],
+      "note": "No backend standard yet.",
+      "checkedAt": "2026-10-02T09:15:00Z"
+    },
+    "threat-model": { "status": "missing", "checkedAt": "2026-10-02T09:15:00Z" },
+    "slos": { "status": "missing", "checkedAt": "2026-10-02T09:15:00Z" },
+    "x-accessibility-audit": { "status": "missing", "checkedAt": "2026-10-02T09:15:00Z" }
+  }
+}

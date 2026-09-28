@@ -44,7 +44,12 @@ export function loadTerms(root: string, env: NodeJS.ProcessEnv): string[] {
 }
 
 function git(root: string, args: string[]): string {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  return execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 }
 
 function positionOf(text: string, index: number): string {
@@ -155,7 +160,9 @@ export function main(argv: string[], env: NodeJS.ProcessEnv, out: Output): numbe
     findings = scan(args.root, terms, args.range);
   } catch (error) {
     // Exit 2, not 1: an incomplete scan must never be mistaken for either "clean" or "terms found".
-    const reason = (error as Error).message.split("\n")[0] ?? "unknown error";
+    const { message, stderr } = error as Error & { stderr?: string };
+    const detail = stderr?.trim() ?? "";
+    const reason = (detail === "" ? message : detail).split("\n")[0] ?? "unknown error";
     out.error(`forbidden-terms: the scan could not complete, so nothing was confirmed clean. ${reason}`);
     return 2;
   }

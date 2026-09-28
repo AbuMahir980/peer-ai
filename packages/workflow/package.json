@@ -1,0 +1,21 @@
+{
+  "name": "@peer-ai/workflow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Peer AI's workflow vocabulary, and the schemas for peer-ai.config.json and project state",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-schemas.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
