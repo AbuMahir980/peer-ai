@@ -3,19 +3,17 @@
   "version": 1,
   "project": {
     "name": "Harbourline",
-    "description": "Ferry bookings; the phone apps are being rebuilt on top of an existing backend",
+    "description": "Ferry bookings; the phone app is being rebuilt on top of an existing backend",
     "stage": "production",
-    "origin": "existing"
+    "origin": "existing",
+    "team": "team"
   },
   "tools": ["claude-code"],
-  "shape": {
-    "api": { "kind": "http", "contract": { "source": "openapi", "location": "/openapi.json", "checkDrift": true } },
-    "design": {
-      "status": "exists",
-      "reference": "design/screens/",
-      "tokens": "packages/tokens/tokens.json",
-      "authoritative": true
-    }
+  "design": {
+    "status": "exists",
+    "reference": "design/screens/",
+    "tokens": "packages/tokens/tokens.json",
+    "authoritative": true
   },
   "tracks": [
     {
@@ -23,18 +21,41 @@
       "kind": "mobile",
       "path": "apps/mobile",
       "stack": ["typescript", "react-native", "expo"],
+      "architecture": "feature-first",
+      "targets": ["ios", "android"],
+      "consumes": ["booking-api"],
+      "branch": "rebuild/mobile",
+      "deploy": { "target": "app-store" },
       "status": "active"
+    },
+    {
+      "id": "legacy-app",
+      "kind": "mobile",
+      "path": "legacy/app",
+      "stack": ["xamarin"],
+      "status": "retiring",
+      "replacedBy": ["mobile"],
+      "note": "Its end-to-end journeys are the acceptance tests for the rebuilt app."
     },
     {
       "id": "backend",
       "kind": "backend",
       "path": "services/api",
       "stack": ["python", "fastapi"],
+      "architecture": "modular-monolith",
       "status": "frozen",
       "note": "Not being rewritten. Document what exists; do not redesign it."
     }
   ],
-  "repo": { "remote": "origin", "defaultBranch": "main", "commits": "conventional", "mergePolicy": "pull-request" },
+  "apis": [
+    {
+      "id": "booking-api",
+      "kind": "http",
+      "providedBy": "backend",
+      "contract": { "source": "openapi", "location": "/openapi.json", "checkDrift": true }
+    }
+  ],
+  "repo": { "host": "github", "remote": "origin", "commits": "conventional", "mergePolicy": "pull-request" },
   "tracker": { "kind": "github", "ticketPrefix": "HBL" },
   "commands": { "verify": "pnpm verify" },
   "delivery": { "ci": "existing", "pipeline": ".github/workflows/ci.yml" },
@@ -45,6 +66,11 @@
       { "path": "docs/standards/backend.md", "role": "standard", "scope": ["backend"] }
     ],
     "onExisting": "revise"
+  },
+  "compliance": {
+    "jurisdictions": ["GB"],
+    "industries": ["payments"],
+    "packs": ["pci-dss", "uk-gdpr", "app-store", "play-store"]
   },
   "models": {
     "policy": "pinned",
@@ -58,8 +84,7 @@
     "security-review": { "also": ["/security-review"], "checklists": ["docs/security/payments-checklist.md"] }
   },
   "activities": {
-    "understand": { "inputs": ["docs/", "PRODUCT.md"] },
-    "test": { "notes": ["The existing end-to-end journeys are the acceptance criteria for the rebuilt apps."] }
+    "understand": { "inputs": ["docs/", "PRODUCT.md"] }
   },
   "docs": { "preserveStructure": true }
 }

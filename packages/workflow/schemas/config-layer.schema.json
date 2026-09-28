@@ -798,12 +798,7 @@
       "additionalProperties": false
     }
   },
-  "required": [
-    "version",
-    "project",
-    "tracks"
-  ],
   "additionalProperties": false,
-  "title": "Peer AI project config",
-  "description": "peer-ai.config.json: a project's settings, shape, standards, rule packs and customisations."
+  "title": "Peer AI shared base config",
+  "description": "A base config that projects inherit with extends. Every key is optional."
 }

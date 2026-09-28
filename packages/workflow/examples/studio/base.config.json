@@ -1,0 +1,10 @@
+{
+  "$schema": "../../schemas/config-layer.schema.json",
+  "tools": ["claude-code"],
+  "repo": { "host": "github", "remote": "origin", "commits": "conventional", "mergePolicy": "pull-request" },
+  "tracker": { "kind": "github" },
+  "standards": { "profiles": ["typescript"] },
+  "compliance": { "jurisdictions": ["NG"], "packs": ["ndpa"] },
+  "models": { "policy": "pinned", "default": "studio-default-model", "ifUnavailable": "most-capable" },
+  "capabilities": { "code-review": { "also": ["/code-review"] } }
+}

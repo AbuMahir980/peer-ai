@@ -1,9 +1,9 @@
 import type { z } from "zod";
-import { ConfigSchema, type PeerAiConfig } from "./config.ts";
+import { ConfigLayerSchema, ConfigSchema, type PeerAiConfig } from "./config.ts";
 import { MapSchema, WorkItemSchema, type ProjectMap, type WorkItem } from "./state.ts";
 
 export * from "./ids.ts";
-export { ConfigSchema, type PeerAiConfig } from "./config.ts";
+export { ConfigLayerSchema, ConfigSchema, mergeConfigs, resolveConfig, type PeerAiConfig } from "./config.ts";
 export { MapItemIdSchema, MapSchema, WorkItemSchema, type ProjectMap, type WorkItem } from "./state.ts";
 
 export type Validation<T> = { ok: true; value: T } | { ok: false; errors: string[] };
@@ -20,6 +20,9 @@ function validate<T>(schema: z.ZodType<T>, input: unknown): Validation<T> {
   };
 }
 
+/** Validates a resolved config: one with no `extends` left, or the result of `resolveConfig`. */
 export const validateConfig = (input: unknown): Validation<PeerAiConfig> => validate(ConfigSchema, input);
+export const validateConfigLayer = (input: unknown): Validation<z.output<typeof ConfigLayerSchema>> =>
+  validate(ConfigLayerSchema, input);
 export const validateMap = (input: unknown): Validation<ProjectMap> => validate(MapSchema, input);
 export const validateWorkItem = (input: unknown): Validation<WorkItem> => validate(WorkItemSchema, input);

@@ -1,0 +1,78 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Souq Fresh",
+    "description": "A grocery marketplace with a shopper app, a vendor app and one backend",
+    "stage": "mvp",
+    "origin": "new",
+    "team": "team"
+  },
+  "tools": ["claude-code", "gemini-cli"],
+  "design": {
+    "status": "exists",
+    "reference": "design/",
+    "tokens": "packages/core/tokens.json",
+    "authoritative": true
+  },
+  "tracks": [
+    {
+      "id": "shopper-app",
+      "kind": "mobile",
+      "path": "apps/shopper",
+      "stack": ["typescript", "react-native", "expo"],
+      "architecture": "feature-first",
+      "targets": ["ios", "android", "web"],
+      "uses": ["core"],
+      "consumes": ["marketplace-api", "maps"],
+      "deploy": { "target": "expo-eas" },
+      "status": "active"
+    },
+    {
+      "id": "vendor-app",
+      "kind": "mobile",
+      "path": "apps/vendor",
+      "stack": ["kotlin"],
+      "architecture": "mvvm",
+      "targets": ["android"],
+      "consumes": ["marketplace-api"],
+      "deploy": { "target": "play-store" },
+      "status": "active"
+    },
+    { "id": "core", "kind": "library", "path": "packages/core", "stack": ["typescript"], "status": "active" },
+    {
+      "id": "backend",
+      "kind": "backend",
+      "path": "services/api",
+      "stack": ["typescript", "node"],
+      "architecture": "modular-monolith",
+      "deploy": { "target": "fly", "environments": ["staging", "production"] },
+      "status": "active"
+    }
+  ],
+  "apis": [
+    {
+      "id": "marketplace-api",
+      "kind": "http",
+      "providedBy": "backend",
+      "contract": { "source": "openapi", "location": "services/api/openapi.json", "checkDrift": true }
+    },
+    {
+      "id": "maps",
+      "kind": "http",
+      "contract": { "source": "docs", "location": "https://docs.maps-provider.example" },
+      "note": "Third-party maps and routing."
+    }
+  ],
+  "environments": [{ "id": "staging" }, { "id": "production", "production": true }],
+  "repo": { "host": "github", "remote": "origin", "commits": "conventional", "mergePolicy": "pull-request" },
+  "tracker": { "kind": "github", "ticketPrefix": "SQ" },
+  "commands": { "verify": "pnpm verify" },
+  "standards": { "profiles": ["typescript", "react-native", "kotlin-android", "node"] },
+  "compliance": {
+    "jurisdictions": ["AE", "GB"],
+    "industries": ["food", "payments"],
+    "packs": ["halal-gso-2055", "allergens-uk", "pci-dss", "uae-pdpl", "uk-gdpr", "app-store", "play-store"],
+    "dataInventory": "docs/data-inventory.md"
+  }
+}

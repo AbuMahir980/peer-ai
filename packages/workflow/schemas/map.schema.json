@@ -27,6 +27,8 @@
               "specs",
               "api-contract",
               "data-model",
+              "data-inventory",
+              "dpia",
               "design",
               "standards",
               "ci",
@@ -65,6 +67,10 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "inferred": {
+            "description": "Found by reading the code, not a document, and not yet confirmed by a person.",
+            "type": "boolean"
           },
           "note": {
             "type": "string",

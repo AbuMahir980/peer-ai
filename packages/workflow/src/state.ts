@@ -17,6 +17,10 @@ const MapItem = z
   .strictObject({
     status: z.enum(["present", "partial", "missing", "not-applicable"]),
     evidence: z.array(Path).optional().describe("Files or URLs that prove the status."),
+    inferred: z
+      .boolean()
+      .optional()
+      .describe("Found by reading the code, not a document, and not yet confirmed by a person."),
     note: z.string().min(1).max(200).optional(),
     checkedAt: Timestamp,
   })

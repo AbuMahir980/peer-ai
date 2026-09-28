@@ -16,7 +16,7 @@ Everything here comes from running v0 end to end on real projects of different s
 | Customising | Editing phase files, or patching them with scripts after every pull | Config keys and a project addendum; package files are never edited |
 | Updates | A manual three-way merge; a copy can fall months behind without anyone noticing | Renovate or Dependabot opens a version-bump PR, and `peer-ai doctor` flags breaking changes |
 | How the agent gets it | Several thousand tokens of rules on every turn, plus "Follow peer-ai/…" | An MCP server hands over the next step and only the rules for the file being edited |
-| Skills | Four checklist prompts | 28 skills, each with a procedure, rule IDs, evidence and a coverage report |
+| Skills | Four checklist prompts | 29 skills, each with a procedure, rule IDs, evidence and a coverage report |
 | Standards | Prose rules with web-first defaults | Core principles, stack profiles with real linter and CI configs, and a project addendum |
 | Scope | Frontend and backend | 17 domains, from requirements to operations and AI features |
 | Enforcement | Written rules | JSON schemas, and `peer-ai check` runs in CI |
@@ -42,13 +42,13 @@ Everything here comes from running v0 end to end on real projects of different s
 8. **Output.** JSON for CI, plus a short summary for people.
 9. **Eval.** A fixture project with seeded defects that the skill must find before it ships.
 
-The 28 skills:
+The 29 skills:
 
 | Stage | Skills |
 |-------|--------|
 | Plan | requirements-analysis, product-spec, architecture, system-design, api-design, data-modelling, threat-model, design-system, issue-planning |
 | Build | implement-ticket |
-| Verify | code-review, security-review, contract-check, accessibility-review, design-review, performance-review, reliability-review, data-migration-review, dependency-review, test-strategy, qa-acceptance, ai-feature-review |
+| Verify | code-review, security-review, contract-check, accessibility-review, design-review, performance-review, reliability-review, data-migration-review, dependency-review, compliance-review, test-strategy, qa-acceptance, ai-feature-review |
 | Ship | release-readiness, infrastructure-review |
 | Operate | observability-review, incident-response |
 | Maintain | documentation, tech-debt-triage |
@@ -85,6 +85,8 @@ The 17 domains are:
 
 The first stack profiles are TypeScript, React, React Native with Expo, Node, Python with FastAPI, PostgreSQL, Redis, Docker, Terraform and GitHub Actions.
 
+**Rule packs for regulated products.** A rule pack is any outside rulebook a product must follow: a data protection law such as Nigeria's NDPA or the GDPR, an industry standard such as PCI DSS, a religious or cultural standard such as halal, labelling rules such as allergens, or a platform policy such as the App Store's. A project declares where it operates and what it does, and `compliance-review` checks every personal field, log line and third-party call against the packs that apply, with evidence a payment provider or regulator can read. Each rule cites its source. Packs reviewed by a qualified expert are marked verified, and anything only a lawyer or certifier can settle is flagged for them. The first packs are the NDPA, the GDPR, PCI DSS, and KYC and anti-money-laundering rules.
+
 ---
 
 ## Milestones
@@ -93,7 +95,7 @@ The first stack profiles are TypeScript, React, React Native with Expo, Node, Py
 |---|-----------|-------------|
 | 1 | **Foundations**: monorepo, CI, config and state schemas, RFC process | Every real customisation seen so far can be written as config, with nothing lost |
 | 2 | **Engine**: CLI (`init`, `assess`, `render`, `doctor`, `check`) and the MCP server | A fixture project takes a work item end to end on two different AI tools with one config |
-| 3 | **Skills and standards**: 28 skills, 17 domains, the first stack profiles, evals | Every skill finds every seeded Critical and High defect in its eval, with no invented findings |
+| 3 | **Skills and standards**: 29 skills, 17 domains, the first stack profiles and rule packs, evals | Every skill finds every seeded Critical and High defect in its eval, with no invented findings |
 | 4 | **Migrations**: `peer-ai migrate` moves the projects that run v0 today onto the package | Each ends with no `peer-ai/` folder, and a version bump lands as a one-line PR |
 | 5 | **Public 1.0**: docs site, quickstart, examples, npm release | A developer outside the team completes the quickstart unaided |
 

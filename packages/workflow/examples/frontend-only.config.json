@@ -1,0 +1,52 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Clearwell Patient Portal",
+    "description": "The patient-facing web portal; the clinic's backend lives in a separate repository",
+    "stage": "production",
+    "origin": "existing",
+    "team": "team"
+  },
+  "tools": ["cursor"],
+  "design": { "status": "exists", "reference": "https://design.clearwell.example/portal", "authoritative": true },
+  "tracks": [
+    {
+      "id": "portal",
+      "kind": "web",
+      "stack": ["typescript", "vue"],
+      "architecture": "feature-first",
+      "consumes": ["clinic-api", "identity"],
+      "deploy": { "target": "netlify", "environments": ["staging", "production"] },
+      "status": "active"
+    },
+    {
+      "id": "clinic-backend",
+      "kind": "backend",
+      "repo": "clearwell/clinic-api",
+      "stack": ["csharp", "dotnet"],
+      "status": "external"
+    }
+  ],
+  "apis": [
+    {
+      "id": "clinic-api",
+      "kind": "http",
+      "providedBy": "clinic-backend",
+      "contract": { "source": "openapi", "location": "https://api.clearwell.example/openapi.json", "checkDrift": true }
+    },
+    {
+      "id": "identity",
+      "kind": "http",
+      "contract": { "source": "docs", "location": "https://docs.identity-provider.example" },
+      "note": "Hosted sign-in service."
+    }
+  ],
+  "environments": [{ "id": "staging" }, { "id": "production", "production": true }],
+  "repo": { "host": "gitlab", "remote": "origin", "commits": "conventional", "mergePolicy": "pull-request" },
+  "tracker": { "kind": "jira", "ticketPrefix": "PORTAL" },
+  "commands": { "verify": "npm run verify" },
+  "delivery": { "ci": "existing", "pipeline": ".gitlab-ci.yml" },
+  "standards": { "profiles": ["typescript", "vue"] },
+  "compliance": { "jurisdictions": ["US"], "industries": ["health"], "packs": ["hipaa", "ada"] }
+}

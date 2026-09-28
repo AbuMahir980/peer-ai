@@ -3,6 +3,8 @@ import { ACTIVITY_IDS, SKILL_IDS, TOOL_IDS } from "./ids.ts";
 
 // peer-ai.config.json: everything a project used to get by editing or patching the
 // playbook's files. Objects are strict, so a misspelt key is an error, not a silent no-op.
+// Only `version`, `project.name` and `tracks` are required. Everything else has a default,
+// so an informal project's config can be ten lines.
 
 const Path = z.string().min(1).describe("A path relative to the project root, or a URL.");
 const Slug = z.string().regex(/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/, "use lowercase letters, digits and hyphens");
@@ -14,36 +16,27 @@ const AddOn = z
     /^(\/[a-z0-9-]+|[a-z0-9-]+:[a-z0-9-]+)$/,
     "use plugin:skill for a plugin skill, or /command for a tool's built-in command",
   )
-  .describe("An extra skill to run alongside Peer AI's own: plugin:skill, or /command for a tool's built-in command.");
+  .describe("An extra skill that feeds Peer AI's own: plugin:skill, or /command for a tool's built-in command.");
 
 const Project = z.strictObject({
   name: z.string().min(1),
   description: z.string().min(1).optional(),
   stage: z
     .enum(["prototype", "mvp", "production"])
-    .describe("Sets how strict the gates are. A prototype skips what only production needs, such as SLOs."),
+    .optional()
+    .describe(
+      "How strict the gates are: prototype asks for the essentials only, production for everything. Defaults to mvp.",
+    ),
   origin: z
     .enum(["new", "existing"])
+    .optional()
     .describe(
-      "new: nothing is built yet. existing: code or docs already exist; Peer AI reads them first and never overwrites them.",
+      "new: nothing is built yet. existing: code or docs already exist; Peer AI reads them first and never overwrites them. Detected when omitted.",
     ),
-});
-
-const Api = z.strictObject({
-  kind: z
-    .enum(["none", "in-process", "http", "graphql", "rpc"])
-    .describe("in-process: the boundary is an interface inside the app, such as a repository over local storage."),
-  contract: z
-    .strictObject({
-      source: z
-        .enum(["handwritten", "openapi", "types"])
-        .describe(
-          "Where the contract comes from. openapi and types are generated sources; the contract document is derived from them.",
-        ),
-      location: Path.optional(),
-      checkDrift: z.boolean().optional().describe("Fail CI when the derived contract document no longer matches."),
-    })
-    .optional(),
+  team: z
+    .enum(["solo", "team"])
+    .optional()
+    .describe("solo: nobody else reviews, so no second reviewer is asked for. Defaults to solo."),
 });
 
 const Design = z.strictObject({
@@ -62,29 +55,105 @@ const Design = z.strictObject({
 
 const Track = z.strictObject({
   id: Slug,
-  kind: z.enum(["web", "mobile", "desktop", "backend", "infrastructure", "library", "cli", "data"]),
+  kind: z.enum([
+    "web",
+    "mobile",
+    "desktop",
+    "backend",
+    "infrastructure",
+    "library",
+    "cli",
+    "data",
+    "extension",
+    "embedded",
+    "other",
+  ]),
   path: Path.optional(),
+  repo: z
+    .string()
+    .min(1)
+    .optional()
+    .describe("For an external track: the repository it lives in, such as acme/platform-api."),
   stack: z.array(z.string().min(1)).optional(),
+  architecture: Slug.optional().describe(
+    "The architecture style, such as layered, modular-monolith, microservice, hexagonal, feature-first or mvvm. The project's architecture decisions are the source of truth; this label tells reviews and stack profiles what shape to expect.",
+  ),
+  targets: z
+    .array(Slug)
+    .optional()
+    .describe("Platforms this track ships to, such as ios, android, web, macos or chrome."),
+  uses: z
+    .array(Slug)
+    .optional()
+    .describe("Tracks whose code this track shares, such as a core library. A change to one verifies both."),
+  consumes: z.array(Slug).optional().describe("Ids of the APIs this track calls."),
   branch: z
     .string()
     .min(1)
     .optional()
     .describe("The track's long-lived integration branch, when it has one. Work item branches start from it."),
+  deploy: z
+    .strictObject({
+      target: Slug.describe("Where it runs, such as vercel, fly, aws-ecs, app-store or play-store."),
+      environments: z.array(Slug).optional(),
+    })
+    .optional(),
   status: z
-    .enum(["active", "dormant", "frozen"])
+    .enum(["active", "dormant", "frozen", "retiring", "external"])
     .describe(
-      "active: being built or changed. dormant: not started; its activities do not run. frozen: it exists and is documented, not redesigned.",
+      "active: being built or changed. dormant: not started; its activities do not run. frozen: it exists and is documented, not redesigned. retiring: being replaced; its behaviour is the reference until then. external: it lives in another repository and is read here, never changed.",
     ),
+  replacedBy: z.array(Slug).min(1).optional().describe("For a retiring track: the tracks replacing it."),
   note: Note.optional(),
 });
 
+const Api = z.strictObject({
+  id: Slug,
+  kind: z
+    .enum(["http", "graphql", "rpc", "websocket", "events", "in-process", "package", "cli"])
+    .describe(
+      "in-process: an interface inside the app, such as a repository over local storage. package and cli: the public surface of a library or a command-line tool.",
+    ),
+  providedBy: Slug.optional().describe(
+    "The track that provides this API. Omit it for a third-party or hosted service.",
+  ),
+  contract: z
+    .strictObject({
+      source: z
+        .enum(["handwritten", "openapi", "asyncapi", "graphql-schema", "protobuf", "types", "docs"])
+        .describe(
+          "Where the contract comes from. A generated source is the truth; any contract document is derived from it.",
+        ),
+      location: Path.optional(),
+      checkDrift: z
+        .boolean()
+        .optional()
+        .describe("Fail CI when the derived contract document no longer matches its source."),
+    })
+    .optional(),
+  note: Note.optional(),
+});
+
+const Environment = z.strictObject({
+  id: Slug,
+  production: z.boolean().optional(),
+  url: z.string().min(1).optional(),
+});
+
 const Repo = z.strictObject({
-  remote: z.string().min(1).nullable().describe("The git remote, such as origin, or null for a local-only repo."),
+  host: z.enum(["github", "gitlab", "bitbucket", "azure-devops", "other"]).optional(),
+  remote: z
+    .string()
+    .min(1)
+    .nullable()
+    .optional()
+    .describe("The git remote, such as origin, or null for a local-only repo."),
   defaultBranch: z.string().min(1).optional(),
   branchNaming: z.string().min(1).optional().describe("A pattern such as feature/{ticket}-{slug}."),
   commits: z.enum(["conventional", "ticket-prefix", "free"]).optional(),
   mergePolicy: z
     .enum(["pull-request", "local-merge"])
+    .optional()
     .describe(
       "pull-request is required once branch protection is on. local-merge suits only a solo, unprotected repo.",
     ),
@@ -105,7 +174,10 @@ const Commands = z.strictObject({
     .string()
     .min(1)
     .nullable()
-    .describe("Run before any work item is called done. null means none yet; creating one is the first build item."),
+    .optional()
+    .describe(
+      "Run before any work item is called done. null or omitted means none yet; creating one is the first build item.",
+    ),
   test: z.string().min(1).optional(),
   lint: z.string().min(1).optional(),
   build: z.string().min(1).optional(),
@@ -138,6 +210,28 @@ const Standards = z.strictObject({
     .describe(
       "What the Standards activity does with existing documents: map each rule to its enforcer, or revise the documents.",
     ),
+});
+
+const Compliance = z.strictObject({
+  jurisdictions: z
+    .array(
+      z
+        .string()
+        .regex(
+          /^([A-Z]{2}(-[A-Z0-9]{1,3})?|[a-z][a-z0-9]*(-[a-z0-9]+)*)$/,
+          "use an ISO 3166 code such as NG or US-CA, or a lowercase zone id such as eu or difc",
+        ),
+    )
+    .optional()
+    .describe("Where the product operates or has users."),
+  industries: z.array(Slug).optional().describe("Such as payments, health, food or maritime."),
+  packs: z
+    .array(Slug)
+    .optional()
+    .describe(
+      "Rule packs to apply: laws, industry standards, religious or cultural standards, labelling rules, platform policies. peer-ai assess suggests them from the jurisdictions, industries and data it finds.",
+    ),
+  dataInventory: Path.optional().describe("Where the inventory of personal and sensitive data fields lives."),
 });
 
 const Capability = z.strictObject({
@@ -185,57 +279,144 @@ const Docs = z.strictObject({
   backlog: Path.optional().describe("Where ideas outside the agreed scope go, instead of becoming work items."),
 });
 
-export const ConfigSchema = z
-  .strictObject({
-    $schema: z.string().optional(),
-    version: z.literal(1),
-    project: Project,
-    tools: z.array(z.enum(TOOL_IDS)).min(1),
-    shape: z.strictObject({ api: Api, design: Design }),
-    tracks: z.array(Track).min(1),
-    repo: Repo,
-    tracker: Tracker,
-    commands: Commands,
-    delivery: Delivery.optional(),
-    standards: Standards.optional(),
-    rules: z
-      .array(z.strictObject({ path: Path, description: Note.optional() }))
-      .optional()
-      .describe("Project rules every activity respects, such as repository rules kept in CONTEXT.md."),
-    models: Models.optional(),
-    gates: Gates.optional(),
-    capabilities: z.partialRecord(z.enum(SKILL_IDS), Capability).optional(),
-    activities: z.partialRecord(z.enum(ACTIVITY_IDS), Activity).optional(),
-    docs: Docs.optional(),
-  })
-  .superRefine((config, ctx) => {
-    const ids = config.tracks.map((track) => track.id);
-    ids.forEach((id, i) => {
-      if (ids.indexOf(id) !== i)
-        ctx.addIssue({ code: "custom", path: ["tracks", i, "id"], message: `duplicate track id "${id}"` });
-    });
-    config.standards?.documents?.forEach((doc, i) => {
-      doc.scope?.forEach((scope, j) => {
-        if (!ids.includes(scope)) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["standards", "documents", i, "scope", j],
-            message: `"${scope}" is not a track id`,
-          });
-        }
-      });
-    });
-    if (config.shape.api.kind === "none" && config.shape.api.contract !== undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["shape", "api", "contract"],
-        message: "an api of kind none has no contract",
-      });
+const configShape = {
+  $schema: z.string().optional(),
+  extends: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "A shared base config to inherit, as a path or package name. The project's values win; objects merge key by key and lists are replaced.",
+    ),
+  version: z.literal(1),
+  project: Project,
+  tools: z.array(z.enum(TOOL_IDS)).min(1).optional(),
+  design: Design.optional(),
+  tracks: z.array(Track).min(1),
+  apis: z.array(Api).optional(),
+  environments: z.array(Environment).optional(),
+  repo: Repo.optional(),
+  tracker: Tracker.optional(),
+  commands: Commands.optional(),
+  delivery: Delivery.optional(),
+  standards: Standards.optional(),
+  compliance: Compliance.optional(),
+  rules: z
+    .array(z.strictObject({ path: Path, description: Note.optional() }))
+    .optional()
+    .describe("Project rules every activity respects, such as repository rules kept in CONTEXT.md."),
+  models: Models.optional(),
+  gates: Gates.optional(),
+  capabilities: z.partialRecord(z.enum(SKILL_IDS), Capability).optional(),
+  activities: z.partialRecord(z.enum(ACTIVITY_IDS), Activity).optional(),
+  docs: Docs.optional(),
+};
+
+type Config = z.output<z.ZodObject<typeof configShape>>;
+type Issue = (issue: { path: (string | number)[]; message: string }) => void;
+
+function checkUnique(ids: string[], path: (string | number)[], kind: string, report: Issue): void {
+  ids.forEach((id, i) => {
+    if (ids.indexOf(id) !== i) report({ path: [...path, i, "id"], message: `duplicate ${kind} id "${id}"` });
+  });
+}
+
+function checkRefs(
+  refs: string[] | undefined,
+  known: string[],
+  path: (string | number)[],
+  kind: string,
+  report: Issue,
+): void {
+  refs?.forEach((ref, i) => {
+    if (!known.includes(ref)) report({ path: [...path, i], message: `"${ref}" is not ${kind}` });
+  });
+}
+
+function checkConfig(config: Config, report: Issue): void {
+  const trackIds = config.tracks.map((track) => track.id);
+  const apiIds = (config.apis ?? []).map((api) => api.id);
+  const environmentIds = (config.environments ?? []).map((environment) => environment.id);
+  checkUnique(trackIds, ["tracks"], "track", report);
+  checkUnique(apiIds, ["apis"], "api", report);
+  checkUnique(environmentIds, ["environments"], "environment", report);
+
+  config.tracks.forEach((track, i) => {
+    const at = ["tracks", i];
+    checkRefs(track.uses, trackIds, [...at, "uses"], "a track id", report);
+    checkRefs(track.replacedBy, trackIds, [...at, "replacedBy"], "a track id", report);
+    checkRefs(track.consumes, apiIds, [...at, "consumes"], "an api id", report);
+    checkRefs(
+      track.deploy?.environments,
+      environmentIds,
+      [...at, "deploy", "environments"],
+      "an environment id",
+      report,
+    );
+    if (track.uses?.includes(track.id) === true || track.replacedBy?.includes(track.id) === true) {
+      report({ path: at, message: "a track cannot refer to itself" });
     }
+    if (track.status === "external" && track.repo === undefined) {
+      report({ path: [...at, "repo"], message: "an external track names the repository it lives in" });
+    }
+    if (track.status !== "external" && track.repo !== undefined) {
+      report({ path: [...at, "repo"], message: "only an external track lives in another repository" });
+    }
+    if (track.status === "retiring" && track.replacedBy === undefined) {
+      report({ path: [...at, "replacedBy"], message: "a retiring track names the tracks replacing it" });
+    }
+    if (track.status !== "retiring" && track.replacedBy !== undefined) {
+      report({ path: [...at, "replacedBy"], message: "only a retiring track is replaced" });
+    }
+  });
+
+  config.apis?.forEach((api, i) => {
+    if (api.providedBy !== undefined && !trackIds.includes(api.providedBy)) {
+      report({ path: ["apis", i, "providedBy"], message: `"${api.providedBy}" is not a track id` });
+    }
+  });
+
+  config.standards?.documents?.forEach((doc, i) => {
+    checkRefs(doc.scope, trackIds, ["standards", "documents", i, "scope"], "a track id", report);
+  });
+}
+
+export const ConfigSchema = z
+  .strictObject(configShape)
+  .superRefine((config, ctx) => {
+    checkConfig(config, (issue) => {
+      ctx.addIssue({ code: "custom", ...issue });
+    });
   })
   .meta({
     title: "Peer AI project config",
-    description: "peer-ai.config.json: a project's settings, shape, standards and customisations.",
+    description: "peer-ai.config.json: a project's settings, shape, standards, rule packs and customisations.",
   });
 
+export const ConfigLayerSchema = z.strictObject(configShape).partial().meta({
+  title: "Peer AI shared base config",
+  description: "A base config that projects inherit with extends. Every key is optional.",
+});
+
 export type PeerAiConfig = z.output<typeof ConfigSchema>;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Merges a project's config over a base: objects merge key by key, lists and values are replaced. */
+export function mergeConfigs(base: unknown, own: unknown): unknown {
+  if (!isPlainObject(base) || !isPlainObject(own)) return own === undefined ? base : own;
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(own)) merged[key] = mergeConfigs(base[key], value);
+  return merged;
+}
+
+/** Resolves a chain of configs, base first, into one config ready to validate. */
+export function resolveConfig(layers: unknown[]): unknown {
+  const resolved = layers.reduce<unknown>((base, own) => mergeConfigs(base, own), {});
+  if (!isPlainObject(resolved)) return resolved;
+  const withoutExtends = { ...resolved };
+  delete withoutExtends.extends;
+  return withoutExtends;
+}

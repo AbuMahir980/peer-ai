@@ -5,18 +5,43 @@
     "name": "Tallyho",
     "description": "A shared to-do list for small teams",
     "stage": "mvp",
-    "origin": "new"
+    "origin": "new",
+    "team": "team"
   },
   "tools": ["claude-code", "cursor"],
-  "shape": {
-    "api": { "kind": "http", "contract": { "source": "handwritten", "location": "docs/api-contract.md" } },
-    "design": { "status": "to-be-produced" }
-  },
+  "design": { "status": "to-be-produced" },
   "tracks": [
-    { "id": "web", "kind": "web", "path": "apps/web", "stack": ["typescript", "react"], "status": "active" },
-    { "id": "api", "kind": "backend", "path": "apps/api", "stack": ["typescript", "node"], "status": "active" }
+    {
+      "id": "web",
+      "kind": "web",
+      "path": "apps/web",
+      "stack": ["typescript", "react"],
+      "architecture": "feature-first",
+      "consumes": ["tallyho-api"],
+      "deploy": { "target": "vercel", "environments": ["staging", "production"] },
+      "status": "active"
+    },
+    {
+      "id": "api",
+      "kind": "backend",
+      "path": "apps/api",
+      "stack": ["typescript", "node"],
+      "architecture": "layered",
+      "deploy": { "target": "fly", "environments": ["staging", "production"] },
+      "status": "active"
+    }
   ],
+  "apis": [
+    {
+      "id": "tallyho-api",
+      "kind": "http",
+      "providedBy": "api",
+      "contract": { "source": "handwritten", "location": "docs/api-contract.md" }
+    }
+  ],
+  "environments": [{ "id": "staging" }, { "id": "production", "production": true }],
   "repo": {
+    "host": "github",
     "remote": "origin",
     "defaultBranch": "main",
     "branchNaming": "feature/{ticket}-{slug}",
@@ -27,5 +52,6 @@
   "commands": { "verify": "pnpm verify" },
   "delivery": { "ci": "none" },
   "standards": { "profiles": ["typescript", "react", "node"] },
+  "compliance": { "jurisdictions": ["GB"], "packs": ["uk-gdpr"] },
   "models": { "policy": "tiers" }
 }

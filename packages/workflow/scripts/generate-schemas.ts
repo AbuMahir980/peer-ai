@@ -6,13 +6,14 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { ConfigSchema } from "../src/config.ts";
+import { ConfigLayerSchema, ConfigSchema } from "../src/config.ts";
 import { MapSchema, WorkItemSchema } from "../src/state.ts";
 
 export const SCHEMA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "schemas");
 
 export const SCHEMAS = {
   "config.schema.json": ConfigSchema,
+  "config-layer.schema.json": ConfigLayerSchema,
   "map.schema.json": MapSchema,
   "work-item.schema.json": WorkItemSchema,
 } as const;

@@ -28,6 +28,17 @@ describe("the project map", () => {
     expect(errors(validateMap(input))).toContain("say why");
   });
 
+  it("accepts an item inferred from the code, and the data inventory", () => {
+    const input = {
+      ...map(),
+      items: {
+        architecture: { status: "present", evidence: ["src/"], inferred: true, checkedAt: at },
+        "data-inventory": { status: "missing", checkedAt: at },
+      },
+    };
+    expect(errors(validateMap(input))).toBe("");
+  });
+
   it("rejects an unknown item unless it is marked custom with x-", () => {
     expect(errors(validateMap({ ...map(), items: { tests2: { status: "missing", checkedAt: at } } }))).not.toBe("");
     expect(errors(validateMap({ ...map(), items: { "x-tests2": { status: "missing", checkedAt: at } } }))).toBe("");
