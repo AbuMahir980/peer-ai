@@ -60,20 +60,28 @@ export function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage,
 
   for (const review of latestReviews(item)) {
     // A prototype accepts a review that didn't cover every rule; a failed one still stops it.
-    if (review.result === "pass" || (review.result === "incomplete" && stage === "prototype")) continue;
-    checks.push(
-      review.result === "fail"
-        ? fail(
-            "gates",
-            `${claim}, but its latest ${review.skill} failed.`,
-            `Fix the findings and review again, ${backToBuild}`,
-          )
-        : fail(
-            "gates",
-            `${claim}, but its latest ${review.skill} is incomplete: it didn't check every rule.`,
-            `Review again until every rule is checked, ${backToBuild}`,
-          ),
-    );
+    const allowed = review.result === "pass" || (review.result === "incomplete" && stage === "prototype");
+    if (!allowed) {
+      checks.push(
+        review.result === "fail"
+          ? fail(
+              "gates",
+              `${claim}, but its latest ${review.skill} failed.`,
+              `Fix the findings and review again, ${backToBuild}`,
+            )
+          : fail(
+              "gates",
+              `${claim}, but its latest ${review.skill} is incomplete: it didn't check every rule.`,
+              `Review again until every rule is checked, ${backToBuild}`,
+            ),
+      );
+    } else if (review.report === undefined && stage !== "prototype") {
+      // Without a report, the result is the agent's word (RFC 0002): a warning for an MVP, a
+      // failure in production.
+      const message = `${claim}, but its latest ${review.skill} has no report, so its result is unproven.`;
+      const fix = "Write the review's report, and record the review again with it.";
+      checks.push(stage === "production" ? fail("gates", message, fix) : warn("gates", message, fix));
+    }
   }
 
   if (item.kind === "gap" && item.stage === "done" && item.gap !== undefined && isKnownItem(item.gap)) {
@@ -93,10 +101,15 @@ export function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage,
 
 function checkGates(items: WorkItem[], config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
   const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage));
-  const failures = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment));
-  if (failures.length > 0) return failures;
+  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment));
+  const failures = results.filter((check) => check.status === "fail");
+  const warnings = results.filter((check) => check.status === "warn");
+  if (failures.length > 0) return [...failures, ...warnings];
   if (claiming.length === 0) return [ok("gates", "No work items at ship or done yet")];
-  return [ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`)];
+  return [
+    ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`),
+    ...warnings,
+  ];
 }
 
 function checkVerifyCommand(config: PeerAiConfig, stage: Stage): Check[] {

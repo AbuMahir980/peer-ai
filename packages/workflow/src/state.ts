@@ -84,7 +84,12 @@ export const WorkItemSchema = z
         z.strictObject({
           skill: z.enum(SKILL_IDS),
           result: z.enum(["pass", "fail", "incomplete"]),
-          report: Path.optional(),
+          report: Path.optional().describe("The review report the result was worked out from."),
+          summary: z.string().min(1).max(500).optional(),
+          unproven: z
+            .boolean()
+            .optional()
+            .describe("Recorded without a report, so the result is the agent's word rather than proven."),
           at: Timestamp,
         }),
       )

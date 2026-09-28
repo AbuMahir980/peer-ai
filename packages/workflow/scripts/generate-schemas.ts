@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { ConfigLayerSchema, ConfigSchema } from "../src/config.ts";
+import { ReviewReportSchema } from "../src/report.ts";
 import { MapSchema, WorkItemSchema } from "../src/state.ts";
 
 export const SCHEMA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "schemas");
@@ -16,6 +17,7 @@ export const SCHEMAS = {
   "config-layer.schema.json": ConfigLayerSchema,
   "map.schema.json": MapSchema,
   "work-item.schema.json": WorkItemSchema,
+  "review-report.schema.json": ReviewReportSchema,
 } as const;
 
 export function render(schema: z.ZodType): string {

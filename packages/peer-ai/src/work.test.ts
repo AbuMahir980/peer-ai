@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PeerAiConfig } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
@@ -154,6 +154,101 @@ describe("moving work items", () => {
     );
     writeFileSync(join(root, "threat-model.md"), "# Threat model");
     expect(value(advanceWorkItem(root, config, "SHOP-1", "done", NOW)).stage).toBe("done");
+  });
+});
+
+describe("recording reviews", () => {
+  const REPORT = ".peer-ai/reports/SHOP-1/security-review.json";
+  const report = (changes: Record<string, unknown> = {}) => ({
+    version: 1,
+    skill: "security-review",
+    workItem: "SHOP-1",
+    at: NOW.toISOString(),
+    scope: { tracks: ["api"] },
+    inputs: ["docs/architecture.md"],
+    inventory: [{ id: "route:GET /orders/{id}", kind: "route" }],
+    coverage: [{ rule: "SEC-AUTHZ-01", item: "route:GET /orders/{id}", status: "fail", finding: "F1" }],
+    findings: [
+      {
+        id: "F1",
+        rule: "SEC-AUTHZ-01",
+        severity: "high",
+        status: "open",
+        title: "Any signed-in user can read another user's order",
+        location: { file: "services/api/orders.py", line: 58 },
+        evidence: "get_order never checks the owner.",
+      },
+    ],
+    result: "pass",
+    summary: "One high problem, below the blocking level.",
+    ...changes,
+  });
+  const withReport = (content: unknown, config: Record<string, unknown> = SHOP): [string, PeerAiConfig] => {
+    const [root, loaded] = shop(config);
+    value(createWorkItem(root, loaded, { title: "Orders", kind: "feature", track: "api" }, NOW));
+    mkdirSync(join(root, ".peer-ai/reports/SHOP-1"), { recursive: true });
+    writeFileSync(join(root, REPORT), typeof content === "string" ? content : json(content));
+    return [root, loaded];
+  };
+  const record = (root: string, config: PeerAiConfig, review: Record<string, unknown>) =>
+    recordReview(root, config, "SHOP-1", { skill: "security-review", ...review }, later(1));
+
+  it("works the result out from the report, at the project's blocking level", () => {
+    const [root, config] = withReport(report());
+    expect(value(record(root, config, { report: REPORT })).reviews).toEqual([
+      {
+        skill: "security-review",
+        result: "pass",
+        report: REPORT,
+        summary: "One high problem, below the blocking level.",
+        at: later(1).toISOString(),
+      },
+    ]);
+    const [strict, strictConfig] = withReport(report({ result: "fail" }), { ...SHOP, gates: { blockOn: "high" } });
+    expect(value(record(strict, strictConfig, { report: REPORT })).reviews?.[0]?.result).toBe("fail");
+  });
+
+  it("refuses a result the report doesn't support", () => {
+    const [root, config] = withReport(report());
+    expect(error(record(root, config, { report: REPORT, result: "fail" }))).toBe(
+      "You gave fail, but the report makes it pass.",
+    );
+    const [wrong, wrongConfig] = withReport(report(), { ...SHOP, gates: { blockOn: "high" } });
+    expect(error(record(wrong, wrongConfig, { report: REPORT }))).toBe(
+      "The report says pass, but its findings and coverage make it fail (blocking level: high). Correct the report's result.",
+    );
+  });
+
+  it("refuses a report for another skill or work item, an invalid one, or one outside the project", () => {
+    const [root, config] = withReport(report());
+    expect(error(record(root, config, { skill: "code-review", report: REPORT }))).toBe(
+      "The report is for security-review, not code-review.",
+    );
+    const [other, otherConfig] = withReport(report({ workItem: "SHOP-9" }));
+    expect(error(record(other, otherConfig, { report: REPORT }))).toBe(
+      "The report is for work item SHOP-9, not SHOP-1.",
+    );
+    const [invalid, invalidConfig] = withReport(report({ coverage: [] }));
+    expect(error(record(invalid, invalidConfig, { report: REPORT }))).toMatch(
+      /is not a valid review report:\n- coverage/,
+    );
+    expect(error(record(root, config, { report: "../elsewhere.json" }))).toBe(
+      "../elsewhere.json is outside the project. Save the report under .peer-ai/reports/.",
+    );
+    expect(error(record(root, config, { report: ".peer-ai/reports/none.json" }))).toBe(
+      "There is no report at .peer-ai/reports/none.json.",
+    );
+  });
+
+  it("records a review without a report as unproven, and needs a result for it", () => {
+    const [root, config] = shop();
+    value(createWorkItem(root, config, { title: "Orders", kind: "feature", track: "api" }, NOW));
+    expect(value(record(root, config, { result: "pass", summary: "Looked fine." })).reviews?.[0]).toMatchObject({
+      result: "pass",
+      summary: "Looked fine.",
+      unproven: true,
+    });
+    expect(error(record(root, config, {}))).toBe("Give the review's result, or the report to work it out from.");
   });
 });
 
