@@ -12,21 +12,21 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 |--------|-------|
 | Requirements | Coming |
 | [Architecture](architecture.md) | 8 |
-| System design and scalability | Coming |
-| API design | Coming |
-| Frontend | Coming |
+| [System design and scalability](system-design.md) | 6 |
+| [API design](api-design.md) | 8 |
+| [Frontend](frontend.md) | 9 |
 | Mobile | Coming |
-| Design and accessibility | Coming |
-| Backend | Coming |
-| Data | Coming |
-| Performance and caching | Coming |
-| Reliability | Coming |
+| [Design and accessibility](design-accessibility.md) | 16 |
+| [Backend](backend.md) | 2 |
+| [Data](data.md) | 5 |
+| [Performance and caching](performance.md) | 7 |
+| [Reliability](reliability.md) | 9 |
 | [Security](security.md) | 22 |
-| Privacy and compliance | Coming |
-| Testing | Coming |
+| [Privacy and compliance](privacy-compliance.md) | 6 |
+| [Testing](testing.md) | 9 |
 | Delivery | Coming |
 | Infrastructure and operations | Coming |
 | AI features | Coming |
 | [Code quality](code-quality.md) | 14 |
-| [Money](money.md) | 11 |
+| [Money](money.md) | 12 |
 | [Safety-critical data](safety-critical.md) | 6 |

@@ -13,7 +13,7 @@ describe("the standards pages", () => {
 
   it("list every domain in the index, marking the ones still to come", () => {
     const index = pages.get("README.md") ?? "";
-    expect(index).toContain("| [Money](money.md) | 11 |");
-    expect(index).toContain("| Testing | Coming |");
+    expect(index).toContain("| [Money](money.md) | 12 |");
+    expect(index).toContain("| Delivery | Coming |");
   });
 });

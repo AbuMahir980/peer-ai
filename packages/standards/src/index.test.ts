@@ -71,6 +71,28 @@ describe("choosing the rules that apply", () => {
 });
 
 describe("sources", () => {
+  const wcag = JSON.parse(readFileSync(new URL("../sources/wcag-2.2.json", import.meta.url), "utf8")) as {
+    levels: Record<string, string>;
+  };
+
+  it("cite WCAG 2.2 success criteria that exist, at their real level", () => {
+    const citations = CORE_RULES.flatMap((r) =>
+      (r.sources ?? []).filter((s) => s.name === "WCAG 2.2").map((s) => ({ rule: r.id, ref: s.ref })),
+    );
+    expect(citations.length).toBeGreaterThan(0);
+    for (const { rule, ref } of citations) {
+      const match = /^(\d+\.\d+\.\d+), level (A{1,3})$/.exec(ref);
+      expect(match, `${rule}: "${ref}" reads like "1.4.3, level AA"`).not.toBeNull();
+      const [, criterion = "", level = ""] = match ?? [];
+      expect(wcag.levels[criterion], `${rule} cites ${criterion}`).toBe(level);
+    }
+  });
+
+  it("name only the sources Peer AI can check", () => {
+    const names = new Set(CORE_RULES.flatMap((r) => (r.sources ?? []).map((s) => s.name)));
+    expect([...names].sort()).toEqual(["OWASP ASVS 5.0", "WCAG 2.2"]);
+  });
+
   const asvs = JSON.parse(readFileSync(new URL("../sources/asvs-5.0.json", import.meta.url), "utf8")) as {
     levels: Record<string, number>;
   };

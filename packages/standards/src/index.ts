@@ -1,15 +1,41 @@
 import { DOMAIN_IDS, type DomainId, type Trait } from "@peer-ai/workflow";
+import { apiDesign } from "./core/api-design.ts";
 import { architecture } from "./core/architecture.ts";
+import { backend } from "./core/backend.ts";
 import { codeQuality } from "./core/code-quality.ts";
+import { data } from "./core/data.ts";
+import { designAccessibility } from "./core/design-accessibility.ts";
+import { frontend } from "./core/frontend.ts";
 import { money } from "./core/money.ts";
+import { performance } from "./core/performance.ts";
+import { privacyCompliance } from "./core/privacy-compliance.ts";
+import { reliability } from "./core/reliability.ts";
 import { safetyCritical } from "./core/safety-critical.ts";
 import { security } from "./core/security.ts";
+import { systemDesign } from "./core/system-design.ts";
+import { testing } from "./core/testing.ts";
 import { RuleSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
 
 export { DOMAIN_INFO } from "./domains.ts";
 export { RuleSchema, SourceSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
 
-const CORE_INPUTS: RuleInput[] = [...codeQuality, ...architecture, ...security, ...money, ...safetyCritical];
+const CORE_INPUTS: RuleInput[] = [
+  ...architecture,
+  ...systemDesign,
+  ...apiDesign,
+  ...frontend,
+  ...designAccessibility,
+  ...backend,
+  ...data,
+  ...performance,
+  ...reliability,
+  ...security,
+  ...privacyCompliance,
+  ...testing,
+  ...codeQuality,
+  ...money,
+  ...safetyCritical,
+];
 
 /** Checks every rule against the schema and that no id is used twice. */
 export function checkRules(inputs: RuleInput[]): { rules: Rule[]; problems: string[] } {
