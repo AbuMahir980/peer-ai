@@ -6,6 +6,7 @@ import { cleanUp, project } from "./test-helpers.ts";
 afterEach(cleanUp);
 
 const pkg = (content: Record<string, unknown>) => JSON.stringify(content);
+const slugifiedName = (root: string) => slugify(basename(root));
 
 describe("detect", () => {
   it("treats an empty folder as a new project and guesses nothing", () => {
@@ -103,6 +104,64 @@ describe("detect", () => {
     expect(detect(root).tracks).toEqual([
       { id: "infra", path: "infra", kind: "infrastructure", stack: ["terraform", "docker"] },
     ]);
+  });
+
+  it("finds infrastructure as code by its files, in any infrastructure folder", () => {
+    const root = project({
+      "deploy/chart/Chart.yaml": "apiVersion: v2\n",
+      "k8s/api.yaml": "kind: Deployment\n",
+      "pulumi/Pulumi.yaml": "name: stack\n",
+    });
+    expect(detect(root).tracks.map((track) => [track.id, ...track.stack])).toEqual([
+      ["deploy", "helm"],
+      ["k8s", "kubernetes"],
+      ["pulumi", "pulumi"],
+    ]);
+  });
+
+  it("recognises a repository that is itself an infrastructure project", () => {
+    const root = project({ "main.tf": 'resource "x" "y" {}\n', "variables.tf": "" });
+    expect(detect(root).tracks).toEqual([{ id: slugifiedName(root), kind: "infrastructure", stack: ["terraform"] }]);
+  });
+
+  it("recognises infrastructure written in code, such as the AWS CDK", () => {
+    const root = project({
+      "packages/infra/package.json": pkg({
+        dependencies: { "aws-cdk-lib": "2.0.0" },
+        devDependencies: { typescript: "6.0.0" },
+      }),
+      "packages/infra/cdk.json": "{}",
+    });
+    expect(detect(root).tracks).toEqual([
+      { id: "infra", path: "packages/infra", kind: "infrastructure", stack: ["typescript", "aws-cdk"] },
+    ]);
+  });
+
+  it("records where each part deploys, on that part", () => {
+    const root = project({
+      "apps/web/package.json": pkg({ dependencies: { next: "16.0.0" } }),
+      "apps/web/vercel.json": "{}",
+      "apps/mobile/package.json": pkg({ dependencies: { expo: "57.0.0" } }),
+      "apps/mobile/eas.json": "{}",
+      "services/api/requirements.txt": "fastapi\n",
+      "services/api/fly.toml": "app = 'api'\n",
+      "services/worker/go.mod": "module worker\n",
+      "services/worker/Dockerfile": "FROM golang\n",
+      "packages/ui/package.json": pkg({ name: "ui" }),
+      "packages/ui/Dockerfile": "FROM node\n",
+    });
+    const deploys = Object.fromEntries(detect(root).tracks.map((track) => [track.id, track.deploy]));
+    expect(deploys).toEqual({ mobile: "expo-eas", web: "vercel", ui: undefined, api: "fly", worker: "container" });
+  });
+
+  it("finds an existing CI pipeline, and reports none when there isn't one", () => {
+    expect(detect(project({ ".github/workflows/ci.yml": "on: push\n" })).delivery).toEqual({
+      ci: "existing",
+      pipeline: ".github/workflows/",
+    });
+    expect(detect(project({ ".gitlab-ci.yml": "stages: []\n" })).delivery?.pipeline).toBe(".gitlab-ci.yml");
+    expect(detect(project({ ".github/workflows/": "" })).delivery).toBeUndefined();
+    expect(detect(project()).delivery).toBeUndefined();
   });
 
   it("finds the AI tools a repository is already set up for", () => {

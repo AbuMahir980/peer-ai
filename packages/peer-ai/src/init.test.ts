@@ -55,6 +55,28 @@ describe("peer-ai init --yes", () => {
     expect(config.tools).toEqual(["codex"]);
   });
 
+  it("writes where each part deploys and the existing CI pipeline", async () => {
+    const root = project({
+      "apps/web/package.json": JSON.stringify({ dependencies: { next: "16.0.0" } }),
+      "apps/web/vercel.json": "{}",
+      ".github/workflows/ci.yml": "on: push\n",
+    });
+    await runInit(options(root, { yes: true }), undefined, capture());
+    const config = readConfig(root);
+    expect(validateConfig(config).ok).toBe(true);
+    expect(config.delivery).toEqual({ ci: "existing", pipeline: ".github/workflows/" });
+    expect(config.tracks).toEqual([
+      {
+        id: "web",
+        kind: "web",
+        path: "apps/web",
+        stack: ["javascript", "next"],
+        deploy: { target: "vercel" },
+        status: "active",
+      },
+    ]);
+  });
+
   it("does not assume a stack for an empty folder", async () => {
     const root = project();
     await runInit(options(root, { yes: true }), undefined, capture());

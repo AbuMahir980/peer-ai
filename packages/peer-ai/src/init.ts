@@ -68,7 +68,8 @@ const TOOL_LABELS: Record<ToolId, string> = {
 export function describeTrack(track: DetectedTrack): string {
   const where = track.path ?? "repository root";
   const stack = track.stack.length === 0 ? "" : `: ${track.stack.join(", ")}`;
-  return `${track.id} (${track.kind}, ${where}${stack})`;
+  const deploy = track.deploy === undefined ? "" : `, deploys to ${track.deploy}`;
+  return `${track.id} (${track.kind}, ${where}${stack}${deploy})`;
 }
 
 function parseStack(text: string): string[] {
@@ -150,12 +151,14 @@ export function buildConfig(detected: Detected, answers: Answers): Record<string
       kind: track.kind,
       ...(track.path === undefined ? {} : { path: track.path }),
       ...(track.stack.length === 0 ? {} : { stack: track.stack }),
+      ...(track.deploy === undefined ? {} : { deploy: { target: track.deploy } }),
       status: "active",
       ...(track.kind === "other" && track.stack.length === 0
         ? { note: "Set the kind and stack once they are decided." }
         : {}),
     })),
     repo: { ...(detected.repo.host === undefined ? {} : { host: detected.repo.host }), remote: detected.repo.remote },
+    ...(detected.delivery === undefined ? {} : { delivery: detected.delivery }),
   };
 }
 

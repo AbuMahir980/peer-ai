@@ -1,6 +1,7 @@
 // Reads a repository and works out what it can without asking: the project's name, whether
-// it is new or existing, which AI tools are set up, the git host, and the parts it is made of.
-// Everything found here is a proposal; `init` shows it to the user before writing anything.
+// it is new or existing, which AI tools are set up, the git host, its CI, and the parts it is
+// made of, with where each one deploys. Everything found here is a proposal; `init` shows it
+// to the user before writing anything, and nothing that isn't found is assumed.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -17,6 +18,8 @@ export interface DetectedTrack {
   kind: TrackKind;
   path?: string;
   stack: string[];
+  /** Where it deploys, when a platform's config file says so. */
+  deploy?: string;
 }
 
 export interface Detected {
@@ -25,9 +28,13 @@ export interface Detected {
   origin: "new" | "existing";
   tools: ToolId[];
   repo: { host?: RepoHost; remote: string | null };
+  /** Present when a CI pipeline already exists, so Peer AI extends it instead of adding another. */
+  delivery?: { ci: "existing"; pipeline: string };
   tracks: DetectedTrack[];
   hasConfig: boolean;
 }
+
+type Found = Omit<DetectedTrack, "id" | "path">;
 
 const PROJECT_MARKERS = [
   "package.json",
@@ -46,11 +53,29 @@ const PROJECT_MARKERS = [
   "lib",
 ];
 const WORKSPACE_DIRS = ["apps", "packages", "services", "libs"];
-const STANDALONE_DIRS = ["infra", "infrastructure", "terraform"];
+const INFRA_DIRS = [
+  "infra",
+  "infrastructure",
+  "terraform",
+  "deploy",
+  "deployment",
+  "deployments",
+  "ops",
+  "devops",
+  "k8s",
+  "kubernetes",
+  "helm",
+  "charts",
+  "cdk",
+  "pulumi",
+];
 
-// Order matters: the first match decides the kind, so mobile and desktop frameworks come
-// before the web frameworks they are built on.
+// Order matters: the first match decides the kind, so infrastructure, mobile and desktop
+// frameworks come before the web frameworks they may be built with.
 const NODE_FRAMEWORKS: [dependency: string, tag: string, kind: TrackKind][] = [
+  ["aws-cdk-lib", "aws-cdk", "infrastructure"],
+  ["cdktf", "cdktf", "infrastructure"],
+  ["@pulumi/pulumi", "pulumi", "infrastructure"],
   ["expo", "expo", "mobile"],
   ["react-native", "react-native", "mobile"],
   ["electron", "electron", "desktop"],
@@ -71,8 +96,62 @@ const NODE_FRAMEWORKS: [dependency: string, tag: string, kind: TrackKind][] = [
   ["koa", "koa", "backend"],
 ];
 
+// Infrastructure as code, recognised by its files rather than by where it lives.
+const IAC_SIGNATURES: [matches: (file: string) => boolean, tag: string][] = [
+  [(file) => file.endsWith(".tf") || file.endsWith(".tf.json"), "terraform"],
+  [(file) => file === "Pulumi.yaml" || file === "Pulumi.yml", "pulumi"],
+  [(file) => file === "cdk.json", "aws-cdk"],
+  [(file) => file === "Chart.yaml", "helm"],
+  [(file) => file === "kustomization.yaml" || file === "kustomization.yml", "kustomize"],
+  [(file) => file === "serverless.yml" || file === "serverless.yaml", "serverless"],
+  [(file) => file === "samconfig.toml", "aws-sam"],
+  [(file) => /\.cfn\.(ya?ml|json)$/.test(file), "cloudformation"],
+  [(file) => file.endsWith(".bicep"), "bicep"],
+  [(file) => file === "ansible.cfg" || file === "playbook.yml" || file === "site.yml", "ansible"],
+];
+const DOCKER_FILE = /^(Dockerfile|docker-compose.*\.ya?ml|compose\.ya?ml)$|\.Dockerfile$/;
+
+// A platform's config file in a part's folder says where that part deploys. More specific
+// platforms come first; a bare Dockerfile only says it ships as a container.
+const DEPLOY_TARGETS: [file: string, target: string][] = [
+  ["vercel.json", "vercel"],
+  ["netlify.toml", "netlify"],
+  ["fly.toml", "fly"],
+  ["render.yaml", "render"],
+  ["railway.json", "railway"],
+  ["railway.toml", "railway"],
+  ["wrangler.toml", "cloudflare-workers"],
+  ["wrangler.json", "cloudflare-workers"],
+  ["wrangler.jsonc", "cloudflare-workers"],
+  ["firebase.json", "firebase"],
+  ["amplify.yml", "aws-amplify"],
+  ["eas.json", "expo-eas"],
+  ["serverless.yml", "serverless"],
+  ["serverless.yaml", "serverless"],
+  ["Procfile", "heroku"],
+  ["app.yaml", "gcp-app-engine"],
+  ["fastlane", "fastlane"],
+  ["Dockerfile", "container"],
+];
+
+const PIPELINES: [path: string, directory: boolean][] = [
+  [".github/workflows", true],
+  [".gitlab-ci.yml", false],
+  ["Jenkinsfile", false],
+  ["bitbucket-pipelines.yml", false],
+  ["azure-pipelines.yml", false],
+  [".circleci", true],
+  [".buildkite", true],
+  [".drone.yml", false],
+  [".travis.yml", false],
+  ["cloudbuild.yaml", false],
+  ["codemagic.yaml", false],
+  ["bitrise.yml", false],
+];
+
 const isDir = (path: string): boolean => existsSync(path) && statSync(path).isDirectory();
 const readText = (path: string): string => (existsSync(path) ? readFileSync(path, "utf8") : "");
+const listDir = (dir: string): string[] => (isDir(dir) ? readdirSync(dir) : []);
 
 function readJson(path: string): Record<string, unknown> | undefined {
   try {
@@ -106,16 +185,15 @@ function hasTypescript(dir: string): boolean {
   );
 }
 
-/** Folder names found in a directory and its immediate subdirectories. */
+/** File and folder names in a directory and its immediate subdirectories. */
 function filesTwoLevels(dir: string): string[] {
-  if (!isDir(dir)) return [];
-  return readdirSync(dir).flatMap((entry) =>
-    isDir(join(dir, entry)) && !entry.startsWith(".") ? [entry, ...readdirSync(join(dir, entry))] : [entry],
+  return listDir(dir).flatMap((entry) =>
+    isDir(join(dir, entry)) && !entry.startsWith(".") ? [entry, ...listDir(join(dir, entry))] : [entry],
   );
 }
 
 // In a monorepo, TypeScript is often installed once at the root rather than in each part.
-function detectNodeTrack(dir: string, inheritsTypescript: boolean): Omit<DetectedTrack, "id" | "path"> | undefined {
+function detectNodeTrack(dir: string, inheritsTypescript: boolean): Found | undefined {
   const pkg = readJson(join(dir, "package.json"));
   if (pkg === undefined) return undefined;
   const deps = dependencyNames(pkg);
@@ -132,7 +210,8 @@ function detectNodeTrack(dir: string, inheritsTypescript: boolean): Omit<Detecte
   return { kind, stack };
 }
 
-function detectTrack(dir: string, inheritsTypescript = false): Omit<DetectedTrack, "id" | "path"> | undefined {
+/** An application or library part, recognised by its language's project files. */
+function detectApp(dir: string, inheritsTypescript: boolean): Found | undefined {
   const node = detectNodeTrack(dir, inheritsTypescript);
   if (node !== undefined) return node;
 
@@ -168,15 +247,33 @@ function detectTrack(dir: string, inheritsTypescript = false): Omit<DetectedTrac
   return undefined;
 }
 
-// Only folders named like infrastructure are checked for it, so a docker-compose file used
-// for local development at the root is not mistaken for an infrastructure part.
-function detectInfrastructure(dir: string): Omit<DetectedTrack, "id" | "path"> | undefined {
-  const files = filesTwoLevels(dir);
-  const stack = [
-    ...(files.some((file) => file.endsWith(".tf")) ? ["terraform"] : []),
-    ...(files.some((file) => /^(Dockerfile|docker-compose.*\.ya?ml)$|\.Dockerfile$/.test(file)) ? ["docker"] : []),
-  ];
+/**
+ * Infrastructure as code. Docker files count only inside an infrastructure folder, so a
+ * docker-compose file used for local development is not mistaken for infrastructure.
+ */
+function detectInfrastructure(dir: string, options: { deep: boolean; includeDocker: boolean }): Found | undefined {
+  const files = options.deep ? filesTwoLevels(dir) : listDir(dir);
+  const stack = IAC_SIGNATURES.filter(([matches]) => files.some(matches)).map(([, tag]) => tag);
+  if (["k8s", "kubernetes"].includes(basename(dir)) && files.some((file) => /\.ya?ml$/.test(file))) {
+    stack.push("kubernetes");
+  }
+  if (options.includeDocker && files.some((file) => DOCKER_FILE.test(file))) stack.push("docker");
   return stack.length === 0 ? undefined : { kind: "infrastructure", stack };
+}
+
+export function detectDeploy(dir: string): string | undefined {
+  for (const [file, target] of DEPLOY_TARGETS) {
+    if (!existsSync(join(dir, file))) continue;
+    if (file === "app.yaml" && !readText(join(dir, file)).includes("runtime:")) continue;
+    return target;
+  }
+  return undefined;
+}
+
+function withDeploy(track: Found, dir: string): Found {
+  if (track.kind === "infrastructure" || track.kind === "library") return track;
+  const deploy = detectDeploy(dir);
+  return deploy === undefined ? track : { ...track, deploy };
 }
 
 function isWorkspaceRoot(root: string): boolean {
@@ -194,27 +291,32 @@ export function detectName(root: string): string {
 }
 
 export function detectTracks(root: string, projectName: string): DetectedTrack[] {
-  const candidates: string[] = [];
-  for (const workspace of WORKSPACE_DIRS) {
-    if (!isDir(join(root, workspace))) continue;
-    for (const child of readdirSync(join(root, workspace)).sort()) {
-      if (!child.startsWith(".") && isDir(join(root, workspace, child))) candidates.push(`${workspace}/${child}`);
-    }
-  }
-  for (const dir of STANDALONE_DIRS) if (isDir(join(root, dir))) candidates.push(dir);
+  const found: { path?: string; track: Found; name: string }[] = [];
 
-  const found: { path?: string; track: Omit<DetectedTrack, "id" | "path">; name: string }[] = [];
   if (!isWorkspaceRoot(root)) {
-    const rootTrack = detectTrack(root);
+    // The root is one app, or a repository that is itself an infrastructure project.
+    const app = detectApp(root, false);
+    const rootTrack =
+      app === undefined ? detectInfrastructure(root, { deep: false, includeDocker: false }) : withDeploy(app, root);
     if (rootTrack !== undefined) found.push({ track: rootTrack, name: projectName });
   }
+
   const rootTypescript = hasTypescript(root);
-  for (const path of candidates) {
-    const dir = join(root, path);
-    const track = STANDALONE_DIRS.includes(path)
-      ? (detectInfrastructure(dir) ?? detectTrack(dir, rootTypescript))
-      : detectTrack(dir, rootTypescript);
-    if (track !== undefined) found.push({ path, track, name: basename(path) });
+  for (const workspace of WORKSPACE_DIRS) {
+    for (const child of listDir(join(root, workspace)).sort()) {
+      const dir = join(root, workspace, child);
+      if (child.startsWith(".") || !isDir(dir)) continue;
+      const app = detectApp(dir, rootTypescript);
+      const track =
+        app === undefined ? detectInfrastructure(dir, { deep: false, includeDocker: false }) : withDeploy(app, dir);
+      if (track !== undefined) found.push({ path: `${workspace}/${child}`, track, name: child });
+    }
+  }
+  for (const infra of INFRA_DIRS) {
+    const dir = join(root, infra);
+    if (!isDir(dir)) continue;
+    const track = detectInfrastructure(dir, { deep: true, includeDocker: true }) ?? detectApp(dir, rootTypescript);
+    if (track !== undefined) found.push({ path: infra, track, name: infra });
   }
 
   const used = new Set<string>();
@@ -224,6 +326,15 @@ export function detectTracks(root: string, projectName: string): DetectedTrack[]
     used.add(id);
     return path === undefined ? { id, ...track } : { id, path, ...track };
   });
+}
+
+export function detectDelivery(root: string): Detected["delivery"] {
+  for (const [path, directory] of PIPELINES) {
+    const full = join(root, path);
+    const present = directory ? listDir(full).some((file) => /\.ya?ml$/.test(file)) : existsSync(full);
+    if (present) return { ci: "existing", pipeline: directory ? `${path}/` : path };
+  }
+  return undefined;
 }
 
 export function detectTools(root: string): ToolId[] {
@@ -259,6 +370,7 @@ export function detect(root: string): Detected {
   const name = detectName(root);
   const tracks = detectTracks(root, name);
   const description = readJson(join(root, "package.json"))?.description;
+  const delivery = detectDelivery(root);
   const existing = tracks.length > 0 || PROJECT_MARKERS.some((marker) => existsSync(join(root, marker)));
   return {
     name,
@@ -266,6 +378,7 @@ export function detect(root: string): Detected {
     origin: existing ? "existing" : "new",
     tools: detectTools(root),
     repo: detectRepo(root),
+    ...(delivery === undefined ? {} : { delivery }),
     tracks,
     hasConfig: existsSync(join(root, CONFIG_FILE)),
   };
