@@ -26,4 +26,9 @@ jobs:
         with:
           languages: javascript-typescript
           build-mode: none
+          # fixtures/ holds practice projects with security problems planted on purpose, for the
+          # evals. They are never shipped or run, so scanning them only reports what we put there.
+          config: |
+            paths-ignore:
+              - fixtures/**
       - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2

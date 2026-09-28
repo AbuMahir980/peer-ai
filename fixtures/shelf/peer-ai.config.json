@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Shelf",
+    "description": "Borrow books from neighbours, and lend yours.",
+    "stage": "production",
+    "origin": "existing",
+    "team": "team"
+  },
+  "tools": ["claude-code", "codex", "cursor"],
+  "design": { "status": "exists", "reference": "src/theme/tokens.ts" },
+  "tracks": [
+    { "id": "app", "kind": "mobile", "status": "active" },
+    { "id": "api", "kind": "backend", "repo": "example/shelf-api", "status": "external" }
+  ],
+  "apis": [{ "id": "shelf-api", "kind": "http", "providedBy": "api" }],
+  "tracker": { "kind": "none", "ticketPrefix": "SH" },
+  "commands": { "verify": "npm test" },
+  "compliance": { "jurisdictions": ["GB"] }
+}

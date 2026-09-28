@@ -5,6 +5,7 @@ An eval tests whether a review finds the problems it should. Each practice proje
 | Answer sheet | Practice project | Planted problems |
 |--------------|------------------|------------------|
 | [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 19: 18 planted, and 1 a review found that nobody planted |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 17: 16 planted, and 1 a review found that nobody planted |
 
 ## Running one
 
@@ -26,6 +27,16 @@ Until Peer AI's own review skills exist, the runner also tells the tool where th
 
 A planted problem is found in its file by a short piece of the exact code, not by line number, so the answers can't quietly drift when a file changes. A test fails if that code is ever changed or removed.
 
+## What people judged
+
+- **2026-09-28, courier, security-review, Claude Code.** This was a baseline, before Peer AI's own review skills exist. Of the 6 problems it raised that weren't on the answer sheet:
+  - **One was real and nobody had planted it:** session tokens never expire. It's now D19 on the answer sheet.
+  - **One was a planted problem at the wrong severity:** the migration that deletes customers' notes (D13) is critical, and the review called it medium.
+  - **The other four were fair, minor points:** the login token kept in the browser's storage, no length limits on text fields, no lockfile for the web app, and no tests for who can see what.
+- **2026-09-28, shelf, security-review, Claude Code.** Also a baseline. Of the 4 problems it raised that weren't on the answer sheet:
+  - **One was real and nobody had planted it:** usage data goes to an analytics service with no consent or opt-out. It's now S17 on the answer sheet.
+  - **The other three were fair, minor points:** API responses aren't checked for shape, the older sign-in doesn't check for a failed request, and there's no certificate pinning.
+
 ## Results
 
 Newest last.
@@ -33,11 +44,4 @@ Newest last.
 | Date | Project | Review | Tool | Found | Not on the sheet | Result | Cost |
 |------|---------|--------|------|-------|------------------|--------|------|
 | 2026-09-28 | courier | security-review | Claude Code | 9 of 9 | 6 | Ready | $2.49 |
-
-### What people judged
-
-- **2026-09-28, courier, security-review, Claude Code.** This was a baseline, before Peer AI's own review skills exist. Of the 6 problems it raised that weren't on the answer sheet:
-  - **One was real and nobody had planted it:** session tokens never expire. It's now D19 on the answer sheet.
-  - **One was a planted problem at the wrong severity:** the migration that deletes customers' notes (D13) is critical, and the review called it medium.
-  - **The other four were fair, minor points:** the login token kept in the browser's storage, no length limits on text fields, no lockfile for the web app, and no tests for who can see what.
-
+| 2026-09-28 | shelf | security-review | Claude Code | 7 of 7 | 4 | Ready | $2.24 |

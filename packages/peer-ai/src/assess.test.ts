@@ -69,6 +69,28 @@ describe("assess", () => {
     expect(signals.paymentProviders).toEqual(["stripe"]);
   });
 
+  it("doesn't ask for an API contract or a data model that belong to another repository", () => {
+    const root = project({
+      "peer-ai.config.json": json({
+        version: 1,
+        project: { name: "Reading app" },
+        tracks: [
+          { id: "app", kind: "mobile", status: "active" },
+          { id: "api", kind: "backend", repo: "example/api", status: "external" },
+        ],
+        apis: [{ id: "reading-api", kind: "http", providedBy: "api" }],
+      }),
+    });
+    const result = assess(root, loadConfig(root).config, "production");
+    expect(result.items["api-contract"]).toEqual({
+      status: "not-applicable",
+      note: "Provided by another repository, where its contract lives: reading-api.",
+      inferred: true,
+    });
+    expect(result.items["data-model"].status).toBe("not-applicable");
+    expect(result.tracks.map((track) => track.id)).toEqual(["app", "api"]);
+  });
+
   it("finds personal data in prefixed column names, but not inside other words", () => {
     const root = project({
       "db/migrations/0001.sql":

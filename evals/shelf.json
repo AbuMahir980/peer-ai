@@ -1,0 +1,245 @@
+{
+  "fixture": "shelf",
+  "prompts": {
+    "security-review": "Review the Shelf app for security problems.",
+    "code-review": "Review Shelf's code for bugs and problems.",
+    "compliance-review": "Review Shelf for data protection problems. It operates in the United Kingdom.",
+    "accessibility-review": "Review the Shelf app for accessibility problems.",
+    "data-migration-review": "Review how Shelf stores data on the phone, and what happens to that data when the app updates.",
+    "performance-review": "Review the Shelf app for performance problems.",
+    "reliability-review": "Review the Shelf app for reliability problems.",
+    "design-review": "Review the Shelf app against its design system."
+  },
+  "defects": [
+    {
+      "id": "S1",
+      "title": "A partner signing secret is built into the app, where anyone can extract it",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/config.ts",
+          "match": "export const PARTNER_SECRET = \"shelf-partner-secret-5f2c9e1d\";"
+        },
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "\"X-Partner-Signature\": PARTNER_SECRET,"
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "The app talks to the API over plain HTTP, and both platforms allow unencrypted traffic",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/config.ts",
+          "match": "export const API_URL = \"http://api.shelf.example/v1\";"
+        },
+        {
+          "file": "app.json",
+          "match": "\"NSAppTransportSecurity\": { \"NSAllowsArbitraryLoads\": true }"
+        },
+        {
+          "file": "app.json",
+          "match": "\"usesCleartextTraffic\": true,"
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Signing in writes the reader's password to the device log",
+      "severity": "critical",
+      "skills": ["security-review", "compliance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "console.log(\"Signing in\", email, password);"
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "The session token is kept in unencrypted storage",
+      "severity": "high",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "src/features/auth/session.ts",
+          "match": "await AsyncStorage.setItem(SESSION_KEY, token);"
+        },
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "await AsyncStorage.setItem(\"session\", token);"
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "A link in a QR code opens any web page in an in-app browser with JavaScript on",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/scan/ScanScreen.tsx",
+          "match": "return <WebView source={{ uri: route.params.url }} javaScriptEnabled domStorageEnabled />;"
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "title": "The app asks to track location all the time, when it needs it only while searching",
+      "severity": "high",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "await Location.requestBackgroundPermissionsAsync();"
+        },
+        {
+          "file": "app.json",
+          "match": "\"permissions\": [\"ACCESS_FINE_LOCATION\", \"ACCESS_BACKGROUND_LOCATION\"]"
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "title": "The reader's exact location goes to an analytics service and to the API, not just a rough area",
+      "severity": "high",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "analytics.track(\"nearby_opened\", { lat: coords.latitude, lng: coords.longitude });",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S8",
+      "title": "Version 3.4.0 reads saved books from a new key and never moves the old ones across, so readers lose them",
+      "severity": "high",
+      "skills": ["data-migration-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/storage/savedBooks.ts",
+          "match": "const KEY = \"savedBooks:v2\";"
+        }
+      ]
+    },
+    {
+      "id": "S9",
+      "title": "Adding a book changes the Redux state in place, so the list doesn't update",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/store/booksReducer.js",
+          "match": "state.books.push(action.book);",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "The book list draws every book at once in a ScrollView",
+      "severity": "medium",
+      "skills": ["performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/screens/BookListScreen.js",
+          "match": "{this.props.books.map((book) => ("
+        }
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "The book list keeps polling after the screen closes, because the timer is never cleared",
+      "severity": "medium",
+      "skills": ["reliability-review", "performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/screens/BookListScreen.js",
+          "match": "this.poll = setInterval(() => this.load(), POLL_EVERY_MS);"
+        }
+      ]
+    },
+    {
+      "id": "S12",
+      "title": "Loans load once and ignore a change of account, so the previous reader's loans stay on screen",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/loans/useLoans.ts",
+          "match": "  }, []);"
+        }
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "The return button is an unlabelled icon with a small touch target",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/loans/LoanCard.tsx",
+          "match": "<Pressable onPress={onReturn} style={styles.returnButton}>",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "Profile text ignores the reader's text size setting",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "src/features/profile/ProfileScreen.tsx",
+          "match": "<Text allowFontScaling={false} style={{ fontSize: 13, color: colours.muted }}>"
+        }
+      ]
+    },
+    {
+      "id": "S15",
+      "title": "The loan card hard-codes colours instead of using the design tokens",
+      "severity": "low",
+      "skills": ["design-review"],
+      "locations": [
+        {
+          "file": "src/features/loans/LoanCard.tsx",
+          "match": "card: { padding: 16, backgroundColor: \"#FFFFFF\", borderRadius: 8 },",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S16",
+      "title": "Loading books never checks for a failed response and has no timeout",
+      "severity": "medium",
+      "skills": ["reliability-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "const response = await fetch(`${API_URL}/books`, { headers: await headers() });",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S17",
+      "title": "Usage data goes to a third-party analytics service with no consent or opt-out",
+      "severity": "medium",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/lib/analytics.ts",
+          "match": "void fetch(\"https://events.analytics.example/v1/track\", {"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
+    }
+  ]
+}

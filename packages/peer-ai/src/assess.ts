@@ -214,11 +214,19 @@ const RULES: Record<KnownMapItemId, Rule> = {
     );
     const found = unique([...configured, ...files]);
     if (found.length > 0) return present(evidence(found));
+    const own = ctx.tracks.map((track) => track.id);
+    const apis = ctx.config?.apis ?? [];
     const providesApi =
       ctx.tracks.some((track) => track.kind === "backend") ||
-      (ctx.config?.apis ?? []).some((api) => api.providedBy !== undefined);
-    if (!providesApi)
-      return { status: "not-applicable", note: "No API is provided by this repository.", inferred: true };
+      apis.some((api) => api.providedBy !== undefined && own.includes(api.providedBy));
+    if (!providesApi) {
+      const elsewhere = apis.filter((api) => api.providedBy !== undefined).map((api) => api.id);
+      const note =
+        elsewhere.length > 0
+          ? `Provided by another repository, where its contract lives: ${elsewhere.join(", ")}.`
+          : "No API is provided by this repository.";
+      return { status: "not-applicable", note: clip(note), inferred: true };
+    }
     return {
       status: "missing",
       note: "No contract file found. Frameworks such as FastAPI generate one at runtime: commit it, or set its location in peer-ai.config.json.",
@@ -445,7 +453,9 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
   const allFiles = listRepoFiles(root);
   const legacyPlaybook = allFiles.some((file) => LEGACY_MARKERS.includes(file));
   const files = legacyPlaybook ? allFiles.filter((file) => !file.startsWith(LEGACY_PLAYBOOK)) : allFiles;
-  const ctx: Context = { root, files, tracks, config, read };
+  // Parts that live in another repository are listed, but this repository isn't checked for them.
+  const own = tracks.filter((track) => track.status !== "external");
+  const ctx: Context = { root, files, tracks: own, config, read };
   const signals = collectSignals(ctx);
   const items = Object.fromEntries(MAP_ITEM_IDS.map((id) => [id, RULES[id](ctx, signals)])) as Record<
     KnownMapItemId,

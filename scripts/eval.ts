@@ -339,13 +339,26 @@ export function formatRun(sheet: Sheet, tool: Tool, run: EvalRun, index: number,
   return lines;
 }
 
+/** Adds a row to the results table, which must be the last thing in the file. */
+export function appendResult(readme: string, row: string): void {
+  const lastLine = readFileSync(readme, "utf8").trimEnd().split("\n").at(-1) ?? "";
+  if (!lastLine.startsWith("|")) {
+    throw new Error(
+      `The results table must be the last thing in ${readme}, so a new row lands in it. Move anything after it above it.`,
+    );
+  }
+  appendFileSync(readme, `${row}\n`);
+}
+
 function record(sheet: Sheet, tool: Tool, run: EvalRun): void {
   const { score: marked } = run;
   const found = marked.expected.filter(({ foundBy }) => foundBy.length > 0).length;
   const date = new Date().toISOString().slice(0, 10);
   const cost = run.tool.costUsd === undefined ? "–" : `$${run.tool.costUsd.toFixed(2)}`;
-  const row = `| ${date} | ${sheet.fixture} | ${marked.skill} | ${TOOL_NAMES[tool]} | ${String(found)} of ${String(marked.expected.length)} | ${String(marked.unmatched.length)} | ${marked.ready ? "Ready" : "Not ready"} | ${cost} |\n`;
-  appendFileSync(join(EVALS, "README.md"), row);
+  appendResult(
+    join(EVALS, "README.md"),
+    `| ${date} | ${sheet.fixture} | ${marked.skill} | ${TOOL_NAMES[tool]} | ${String(found)} of ${String(marked.expected.length)} | ${String(marked.unmatched.length)} | ${marked.ready ? "Ready" : "Not ready"} | ${cost} |`,
+  );
 }
 
 const invokedDirectly = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
