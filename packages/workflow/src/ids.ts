@@ -59,6 +59,54 @@ export const TOOL_IDS = ["claude-code", "codex", "cursor", "copilot", "gemini-cl
 export type ToolId = (typeof TOOL_IDS)[number];
 
 /**
+ * What a product is or does that switches on rules only some products need (RFC 0003). A
+ * project lists its traits in its config; `peer-ai assess` suggests them from what it finds.
+ */
+export const TRAITS = [
+  "money",
+  "safety-critical",
+  "several-audiences",
+  "offline",
+  "real-time",
+  "uploads",
+  "ai-features",
+] as const;
+export type Trait = (typeof TRAITS)[number];
+
+/**
+ * The standards' domains, each with the prefix its rule ids use (RFC 0003). The last two are
+ * sets that apply only to a product with the trait of the same name.
+ */
+export const DOMAINS = {
+  requirements: "REQ",
+  architecture: "ARC",
+  "system-design": "SYS",
+  "api-design": "API",
+  frontend: "FE",
+  mobile: "MOB",
+  "design-accessibility": "DES",
+  backend: "BE",
+  data: "DATA",
+  performance: "PERF",
+  reliability: "REL",
+  security: "SEC",
+  "privacy-compliance": "PRIV",
+  testing: "TEST",
+  delivery: "DEL",
+  operations: "OPS",
+  "ai-features": "AI",
+  "code-quality": "CODE",
+  money: "MONEY",
+  "safety-critical": "SAFE",
+} as const;
+export type DomainId = keyof typeof DOMAINS;
+export const DOMAIN_IDS = Object.keys(DOMAINS) as DomainId[];
+
+/** How a rule is checked (RFC 0003): a tool, Peer AI's review with evidence, or a person's decision. */
+export const CHECKS = ["auto", "ai-review", "person"] as const;
+export type CheckKind = (typeof CHECKS)[number];
+
+/**
  * What `peer-ai assess` records on the project map. A project can add its own items
  * with an `x-` prefix, such as `x-legal-review`.
  */

@@ -1,14 +1,23 @@
-// Which standards govern a file: the track it belongs to, and the project's own documents and
-// rules for that track. An agent asks for these before editing a file, instead of loading every
-// rule on every turn.
+// Which standards govern a file: Peer AI's rules for the kind of part it belongs to, at the
+// project's stage and with its traits, and the project's own documents and rules. An agent asks
+// for these before editing a file, instead of loading every rule on every turn.
 
 import { isAbsolute, relative } from "node:path";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import { rulesFor, type Rule } from "@peer-ai/standards";
+import { DOMAIN_IDS, type DomainId, type PeerAiConfig } from "@peer-ai/workflow";
 
 type ConfigTrack = PeerAiConfig["tracks"][number];
 
+/** A rule as an agent needs it while editing: what to do, and the question it will be reviewed by. */
+export type RuleForFile = Pick<Rule, "id" | "title" | "rule" | "ask" | "check" | "severity">;
+
 export interface StandardsForFile {
   file: string;
+  stage: "prototype" | "mvp" | "production";
+  /** Peer AI's rules that apply to this file. */
+  peerAiRules: RuleForFile[];
+  /** Rules the project has set aside, with its reasons. */
+  setAside: { rule: string; reason: string }[];
   track?: { id: string; kind: ConfigTrack["kind"]; path?: string };
   /** Peer AI's core principles apply unless the config turns them off. */
   core: boolean;
@@ -38,6 +47,46 @@ export function trackFor(config: PeerAiConfig, file: string): ConfigTrack | unde
   return best;
 }
 
+// The domains that matter for every file, and those added by the kind of part it belongs to.
+// Money, safety-critical and AI rules are always considered, and apply only with their traits.
+const EVERY_FILE: DomainId[] = [
+  "code-quality",
+  "architecture",
+  "security",
+  "privacy-compliance",
+  "testing",
+  "money",
+  "safety-critical",
+  "ai-features",
+];
+const UI: DomainId[] = ["frontend", "design-accessibility", "performance"];
+const SERVER: DomainId[] = [
+  "backend",
+  "api-design",
+  "data",
+  "system-design",
+  "performance",
+  "reliability",
+  "operations",
+];
+const BY_KIND: Partial<Record<ConfigTrack["kind"], DomainId[]>> = {
+  web: UI,
+  desktop: UI,
+  extension: UI,
+  mobile: [...UI, "mobile"],
+  backend: SERVER,
+  data: ["data", "performance", "reliability"],
+  infrastructure: ["delivery", "operations", "reliability"],
+  library: ["api-design"],
+  cli: ["api-design", "reliability"],
+};
+
+/** The domains for a file: every domain when it belongs to no track or to a kind not listed. */
+function domainsFor(track: ConfigTrack | undefined): DomainId[] {
+  const extra = track === undefined ? undefined : BY_KIND[track.kind];
+  return extra === undefined ? [...DOMAIN_IDS] : [...new Set([...EVERY_FILE, ...extra])];
+}
+
 /** Returns undefined for a file outside the project. */
 export function standardsFor(config: PeerAiConfig, root: string, file: string): StandardsForFile | undefined {
   const path = normalise(isAbsolute(file) ? relative(root, file) : file);
@@ -47,8 +96,17 @@ export function standardsFor(config: PeerAiConfig, root: string, file: string): 
   const documents = (standards?.documents ?? [])
     .filter((doc) => doc.scope === undefined || (track !== undefined && doc.scope.includes(track.id)))
     .map((doc) => ({ path: doc.path, role: doc.role }));
+  const stage = config.project.stage ?? "mvp";
+  const exceptions = standards?.exceptions ?? [];
+  const setAside = new Set(exceptions.map((exception) => exception.rule));
+  const peerAiRules = rulesFor({ stage, traits: config.project.traits ?? [], domains: domainsFor(track) })
+    .filter((rule) => !setAside.has(rule.id))
+    .map(({ id, title, rule, ask, check, severity }) => ({ id, title, rule, ask, check, severity }));
   return {
     file: path,
+    stage,
+    peerAiRules,
+    setAside: exceptions.map((exception) => ({ rule: exception.rule, reason: exception.reason })),
     ...(track === undefined
       ? {}
       : { track: { id: track.id, kind: track.kind, ...(track.path === undefined ? {} : { path: track.path }) } }),

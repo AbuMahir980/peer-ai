@@ -208,6 +208,18 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.30.1
         version: 1.30.1(zod@4.6.5)
+      '@peer-ai/standards':
+        specifier: workspace:*
+        version: link:../standards
+      '@peer-ai/workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
+  packages/standards:
+    dependencies:
       '@peer-ai/workflow':
         specifier: workspace:*
         version: link:../workflow

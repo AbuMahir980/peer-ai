@@ -1,0 +1,21 @@
+{
+  "name": "@peer-ai/standards",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Peer AI's engineering standards: core principles for every project, with stack profiles and project add-ons",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-docs.ts"
+  },
+  "dependencies": {
+    "@peer-ai/workflow": "workspace:*",
+    "zod": "4.6.5"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
