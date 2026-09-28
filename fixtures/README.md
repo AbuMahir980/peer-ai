@@ -29,7 +29,11 @@ Each run gave the tool the same backlog item, the optional tip, on a fresh copy.
 
 | Date | Fixture | Tool | Result | Turns | Time | Cost | What it showed |
 |------|---------|------|--------|-------|------|------|----------------|
+| 2026-09-28 | split-bill | Codex CLI 0.158.0 | Pass, at `ship` | 18 steps | – | ChatGPT Free | With `run_verify` pre-approved, it checked the standards for every file it touched, moved to `build` before changing code, verified, reviewed its own diff and shipped, in order. |
+| 2026-09-28 | split-bill | Codex CLI 0.158.0 | Stopped at `verify` | 16 steps | – | ChatGPT Free | Codex asks before an MCP tool that reaches outside the project, and `run_verify` runs the project's verify command. With nobody to approve it, Codex recorded where it stopped instead of claiming a pass. `render` now prints the setting that pre-approves `run_verify`. |
 | 2026-09-28 | split-bill | Claude Code 2.1.274 | Pass, at `ship` | 25 | 1 min 30 s | $1.20 | With the stages explained, it moved to `build` before changing code, then verified, reviewed and shipped, in order. |
 | 2026-09-28 | split-bill | Claude Code 2.1.274 | Pass, at `ship` | 37 | 3 min 53 s | $2.06 | It wrote the code while the item was still at `prepare`: the instructions didn't say when to move stages, and now do. It recorded its own failed review, fixed both findings, verified again, then recorded a pass. |
 
-Both runs reviewed with the code review skill installed in Claude Code, since Peer AI's own skills come in Milestone 3.
+The Claude Code runs reviewed with the code review skill installed in Claude Code, and Codex reviewed the diff itself, since Peer AI's own skills come in Milestone 3.
+
+Codex ran headless with `codex exec --ephemeral --ignore-user-config`, with the server passed as `-c mcp_servers.peer-ai.command=…` for that run only, and `-c mcp_servers.peer-ai.tools.run_verify.approval_mode="approve"` on the second run.

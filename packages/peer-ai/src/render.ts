@@ -227,6 +227,7 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   if (uses("codex")) {
     manual.push(
       `Codex keeps MCP servers in your own config, not the project's. Register it once: codex mcp add ${SERVER} -- ${server.command} ${server.args.join(" ")}`,
+      `Codex asks before run_verify, because it runs the project's verify command. To allow it without asking, add to ~/.codex/config.toml: [mcp_servers.${SERVER}.tools.run_verify] approval_mode = "approve"`,
     );
   }
   if (uses("other")) {

@@ -106,7 +106,7 @@ pnpm peer-ai render
 | Tool | Instructions | MCP server registration |
 |------|--------------|-------------------------|
 | Claude Code | A block in `CLAUDE.md`, unless it imports `AGENTS.md` | `.mcp.json` |
-| Codex | A block in `AGENTS.md` | Codex keeps servers in your own config, so render prints the `codex mcp add` command to run once |
+| Codex | A block in `AGENTS.md` | Codex keeps servers in your own config, so render prints the `codex mcp add` command to run once. Codex asks before `run_verify` runs the project's verify command; render prints the setting that allows it without asking, if you choose to. |
 | Cursor | `.cursor/rules/peer-ai.mdc`, a rule that always applies | `.cursor/mcp.json` |
 | GitHub Copilot | A block in `.github/copilot-instructions.md` | `.vscode/mcp.json` |
 | Gemini CLI | A block in `GEMINI.md`, unless it imports `AGENTS.md` | `.gemini/settings.json` |

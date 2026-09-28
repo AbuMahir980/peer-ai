@@ -48,6 +48,7 @@ describe("render", () => {
       expect(first.text).toContain(`✓ ${path} created.`);
     }
     expect(first.text).toContain(`codex mcp add peer-ai -- npx -y peer-ai@${VERSION} mcp`);
+    expect(first.text).toContain('[mcp_servers.peer-ai.tools.run_verify] approval_mode = "approve"');
     expect(JSON.parse(read(root, ".mcp.json"))).toEqual({ mcpServers: { "peer-ai": SERVER } });
     expect(JSON.parse(read(root, ".vscode/mcp.json"))).toEqual({
       servers: { "peer-ai": { type: "stdio", ...SERVER } },
