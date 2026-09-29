@@ -218,6 +218,18 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
+  packages/skills:
+    dependencies:
+      '@peer-ai/standards':
+        specifier: workspace:*
+        version: link:../standards
+      '@peer-ai/workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
+
   packages/standards:
     dependencies:
       '@peer-ai/workflow':

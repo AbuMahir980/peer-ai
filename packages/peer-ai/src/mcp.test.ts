@@ -4,6 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MCP_TOOL_IDS } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { evaluate } from "./check.ts";
 import { loadConfig } from "./assess.ts";
@@ -87,6 +88,7 @@ describe("the MCP server", () => {
   it("offers the workflow's tools, and tells the agent how to use them", async () => {
     const client = await connect(shop());
     const { tools } = await client.listTools();
+    expect(tools.map((tool) => tool.name)).toEqual(MCP_TOOL_IDS);
     expect(tools.map((tool) => [tool.name, tool.annotations?.readOnlyHint])).toEqual([
       ["project_map", true],
       ["next_work", true],
