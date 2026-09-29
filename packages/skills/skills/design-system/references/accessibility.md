@@ -11,7 +11,7 @@ How to check each design and accessibility rule, from the tokens and the code. T
 
 ## Tokens (DES-01 to DES-03)
 
-- Search the screens for colours, sizes and fonts written as values, such as `#1a73e8`, `16px` or `fontSize: 18`, instead of tokens. Each is a stray value (DES-01).
+- Search the screens for colours, sizes and fonts written as values, such as `#c0392b`, `14px` or `fontSize: 15`, instead of tokens. Each is a stray value (DES-01).
 - Find every token file. More than one source of the same tokens, such as a web copy and an app copy that differ, breaks DES-02.
 - A token named for its look, such as `blue` or `grey-300`, breaks DES-03 when a screen uses it for a purpose. Name it for the purpose.
 

@@ -25,7 +25,7 @@ Then the ones that go wrong: the day fills up while they're choosing; it's past 
 - **Loading:** the booking's details stay on screen while the free days load.
 - **Empty:** no free day in the next 14: say so, and offer the shop's phone number.
 - **Error:** "We couldn't move your booking. It's still on Thursday. Try again." Say what happened and what to do next.
-- **Offline:** the Move button says it needs a connection, rather than failing after a tap.
+- **Offline:** the booking still shows as it was last loaded, with a note that it may be out of date.
 
 ## Acceptance criteria
 
@@ -41,4 +41,4 @@ Then the ones that go wrong: the day fills up while they're choosing; it's past 
 
 ## Proposed behaviour
 
-When the requirements don't say, write what you recommend and mark it: "Proposed: a cyclist can move a booking at most twice. Waiting for the shop owners."
+When the requirements don't say, write what you recommend and mark it: "Proposed: a moved booking keeps the same mechanic when they're free on the new day. Waiting for the shop owners."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Peer AI code review"
-  short_description: "Code review that proves every rule was checked"
-  default_prompt: "Use $peer-ai-code-review to review this change for bugs and maintainability and record the report."

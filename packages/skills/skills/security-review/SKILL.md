@@ -48,8 +48,8 @@ List everything an attacker can reach and everything worth protecting. Take it f
 | `screen` | `screen:sign-in` | Screens that handle sign-in, payment, uploads or personal data |
 | `link` | `link:app://item` | Deep links and app links into a phone app |
 | `upload` | `upload:avatar` | Every place a file comes in |
-| `permission` | `permission:location` | Each device permission a phone app asks for |
-| `service` | `service:analytics` | Each outside service that receives personal data: analytics, AI models, payment providers |
+| `permission` | `permission:camera` | Each device permission a phone app asks for |
+| `service` | `service:email` | Each outside service that receives personal data: analytics, AI models, payment providers |
 | `secret` | `secret:PAYMENT_API_KEY` | Each secret the code reads |
 | `store` | `store:customers` | Tables, buckets and on-device stores holding personal or sensitive data |
 | `config` | `config:cors` | CORS, headers, TLS, session and cookie settings |

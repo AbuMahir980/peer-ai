@@ -17,7 +17,7 @@ AI-01, AI-03, AI-04 and AI-06, for projects with the ai-features trait. For othe
 **Fail** when:
 
 - personal or sensitive data goes to a model provider without the person being told first;
-- more is sent than the feature needs, such as a full-resolution photo carrying its location, or a whole record when one field would do.
+- more is sent than the feature needs: personal details the task doesn't use.
 
 ## AI-04: content can't change what the model may do
 

@@ -146,6 +146,8 @@ Before a skill's instructions are written, it has at least three eval scenarios 
 
 Every skill must beat the same scenario run without it, on Claude Code and on Codex, with a fast model and a strong one. Watch how the agent uses the skill: a reference it never opens is badly signposted or not needed, and one it opens every time may belong in `SKILL.md`.
 
+Never let a skill give away the answers. Its text states each rule, and the general ways it's broken, but never a planted problem or a scenario's point: not its mechanism, its file, its field or its product's details. Examples come from the made-up bicycle repair booking service, never from a practice project. A skill that describes what's planted makes its evals measure the answers, not the skill: data-migration-review's first guide named its three planted problems almost word for word, and was rewritten as the rule for every kind of storage before its evals counted.
+
 ## Sources
 
 - [Agent Skills specification](https://agentskills.io/specification)

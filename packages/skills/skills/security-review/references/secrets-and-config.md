@@ -33,7 +33,7 @@ Keep the two apart. A missing scanner is SEC-27, medium: a gap in the safety net
 
 Anything built into a web page or a phone app can be read. **Fail** when a secret reaches either:
 
-- through an environment variable with a public prefix, such as `NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_` or `REACT_APP_`;
+- through an environment variable the build copies into the app, such as one with the framework's public prefix;
 - through the app's bundled config;
 - through code that calls a paid or private API straight from the device.
 

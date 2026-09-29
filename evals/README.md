@@ -272,6 +272,13 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **The baseline's count is right for the wrong items.** By the rules it cited, it missed the lockfile and found the missing vulnerability check. A person reads it the other way round: it found the missing lockfile, and its nearest point to the vulnerability check was "no update tooling", at low. Either way it's 3 of 4, and not ready.
 
+- **2026-09-29, an audit of the first twelve skills: they gave away their evals' answers.** Reading each skill against the answer sheets found text that described the planted problems: code-review named shelf's half-rebuilt layout, courier's mix of pounds and pence and a date worked out in UTC; ai-feature-review named courier's `cancel_parcel` tool; product-spec, system-design and issue-planning each carried a line added after an eval to catch one project's point. Several of the "What the runs changed" fixes above were of this kind, so those results partly measured the answers. Every such line now states the rule generally, with examples from the made-up bicycle repair service, and the authoring guide says a skill never gives away its evals' answers. Five descriptions that narrowed a skill to something it can do without, such as "use after a product spec", were widened, and three skills that could stop to ask now write down their questions and ask at hand-over. Skills rendered into `refill` by mistake, with the old text, are no longer kept in git; eval copies never used them.
+  - **Each skill ran again on the project its leak matched most,** with Claude Code on Sonnet, graded by Claude Code on Haiku. By a person's reading, eleven of the twelve are ready: code-review on shelf 12 of 13, ai-feature-review on courier 6 of 6, requirements-analysis on courier 11 of 11, threat-model on courier 13 of 13, architecture on refill 9 of 10, product-spec on shelf 10 of 10, system-design on shelf 7 of 8, api-design on courier 9 of 10, data-modelling on courier 8 of 9, design-system on sprout 7 of 8, and issue-planning on sprout 6 of 6.
+  - **security-review on shelf found 10 of 11 and wasn't ready.** It named the partner's catalogue text steering the librarian (S20), but inside another finding, about reserving a book without the reader confirming, and on the screen rather than where the text joins the instructions. One finding counts once. The shared report guidance now says each finding is one problem, at the place it happens.
+- **What people judged in those runs:**
+  - **The grader didn't count a proposal as setting a convention.** api-design on courier proposed one error shape, money in pence with its currency, and idempotency keys, and said the tracking endpoint must show status only; the grader marked all four as missing, quoting them. A person counts it 9 of 10. Its one real miss: how a field changes without breaking clients.
+  - **design-system on sprout listed every component with the states it has and lacks,** and loading, empty and error with offline, which the grader marked missing. A person counts it 7 of 8; it proposed nothing, so nothing was marked proposed.
+
 - **2026-09-29, test-strategy with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
   - **With the skill, courier is ready at 8 of 9.** Without it, courier made 3 of 9 and wasn't ready: it said the web app's tests run on every change, which they don't, and never said which main journeys have no end-to-end test.
   - **Sprout is ready by a person's reading, at 7 of 8.** The grader counted 4, marking as missing the midnight edge, the journeys with no connection and the update reaching people, all of which the strategy plans. Its one real miss: making photos smaller before they're stored.
@@ -369,6 +376,9 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | shelf | dependency-review | Claude Code | sonnet | used | 5 of 5 | 8 of 8 | 0 | Ready | $1.44 |
 | 2026-09-29 | sprout | dependency-review | Claude Code | sonnet | used | 4 of 4 | 8 of 8 | 0 | Ready | $1.01 |
 | 2026-09-29 | courier | dependency-review | Claude Code | sonnet | without | 3 of 4 | 8 of 8 | 4 | Not ready | $1.26 |
+| 2026-09-29 | shelf | security-review | Claude Code | sonnet | used | 10 of 11 | 47 of 47 | 5 | Not ready | $1.76 |
+| 2026-09-29 | shelf | code-review | Claude Code | sonnet | used | 12 of 13 | 67 of 67 | 4 | Ready | $1.93 |
+| 2026-09-29 | courier | ai-feature-review | Claude Code | sonnet | used | 6 of 6 | 14 of 14 | 1 | Ready | $1.11 |
 
 ## Document results
 
@@ -453,6 +463,15 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.20 |
 | 2026-09-29 | split-bill | implement-ticket | Claude Code | sonnet | without | 5 of 8 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $0.43 |
 | 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.24 |
+| 2026-09-29 | courier | requirements-analysis | Claude Code | sonnet | used | 11 of 11 | 5 of 5 | Accepted | Ready | Claude Code, haiku | $0.87 |
+| 2026-09-29 | courier | threat-model | Claude Code | sonnet | used | 13 of 13 | 5 of 5 | Accepted | Ready | Claude Code, haiku | $1.51 |
+| 2026-09-29 | refill | architecture | Claude Code | sonnet | used | 9 of 10 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $0.75 |
+| 2026-09-29 | shelf | product-spec | Claude Code | sonnet | used | 10 of 10 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.75 |
+| 2026-09-29 | shelf | system-design | Claude Code | sonnet | used | 7 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.09 |
+| 2026-09-29 | courier | api-design | Claude Code | sonnet | used | 5 of 10 | 3 of 3 | Accepted | Not ready | Claude Code, haiku | $0.80 |
+| 2026-09-29 | courier | data-modelling | Claude Code | sonnet | used | 8 of 9 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $0.54 |
+| 2026-09-29 | sprout | design-system | Claude Code | sonnet | used | 5 of 8 | 3 of 3 | Accepted | Not ready | Claude Code, haiku | $0.71 |
+| 2026-09-29 | sprout | issue-planning | Claude Code | sonnet | used | 6 of 6 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.47 |
 | 2026-09-29 | courier | test-strategy | Claude Code | sonnet | used | 8 of 9 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $0.92 |
 | 2026-09-29 | shelf | test-strategy | Claude Code | sonnet | used | 6 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $1.03 |
 | 2026-09-29 | sprout | test-strategy | Claude Code | sonnet | used | 4 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $1.25 |

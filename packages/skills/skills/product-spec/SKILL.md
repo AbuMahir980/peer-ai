@@ -33,7 +33,7 @@ Copy this checklist and tick it off as you go:
 - **The work item:** call the peer-ai MCP tool `next_work`. The feature, and anything already agreed, is there.
 - **The requirements:** the feature's acceptance criteria and the needs around it. The spec must meet them; where it can't, say so.
 - **The design,** if there is one: `design` in `peer-ai.config.json` says where. When it's marked authoritative, the spec follows it exactly and invents no layout of its own.
-- **What exists:** call the peer-ai MCP tool `project_map` for existing specs and the architecture. Read the code for the area the feature touches: the spec builds on what's there. If the product already does the same thing another way, such as through another screen, a job or an assistant, the spec says how the two must agree.
+- **What exists:** call the peer-ai MCP tool `project_map` for existing specs and the architecture. Read the code for the area the feature touches: the spec builds on what's there. If the product already does the same thing another way, such as a staff screen or a nightly job, the spec says how the two must agree.
 - **Where to save it:** `docs/specs/<feature>.md`, such as `docs/specs/move-a-booking.md`, unless the project keeps its specs somewhere else.
 
 ## 2. Inventory
@@ -62,7 +62,7 @@ Copy the [template](assets/product-spec.md) and fill in every part. [writing.md]
 - **Edge cases** (CODE-15): midnight and time zones, daylight saving, empty and very long input, two people at once, the first and the last item, zero.
 - **Only the data it needs** (PRIV-03): each personal field says why the feature needs it.
 - **Usable by everyone:** keyboard, labels, colour never the only signal, an alternative to dragging, and on phones the person's text size and large enough touch targets (DES-07 to DES-10, DES-12, DES-14, DES-15).
-- **Who's told:** each person a change affects, such as the other side of a booking or a loan, and how they find out.
+- **Who's told:** each person a change affects, such as the shop when a cyclist moves a booking, and how they find out.
 - **What, not how.** No database tables, endpoints or code: those belong to the system design.
 - **Say where each decision came from:** the requirements, the design, a person, or proposed by you.
 
