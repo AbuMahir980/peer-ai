@@ -198,6 +198,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, reliability-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
+  - **With the skill, all three are ready:** courier 1 of 1, shelf 3 of 3 and sprout 4 of 4, each covering all 14 rules. Without it, sprout found 4 of 4 too, so the skill's gain here isn't what's found: its run took half the time and cost ($1.06 against $1.93).
+  - **The baseline raised one point that isn't on the sheet,** judged fair and minor: the service worker has no fallback page when a route is neither cached nor reachable.
+- **What people judged in those runs:**
+  - **Sprout's data that can be cleared was named where the store opens.** The run with the skill put it at `src/db.ts`, where the database is created; the sheet only accepted `src/main.tsx`, where it's opened, and marked the run 3 of 4. Both are fair places for the fix, so the sheet now accepts either, and the run counts 4 of 4.
+
 ## Results
 
 Newest last.
@@ -250,6 +256,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | reliability-review | Claude Code | sonnet | used | 1 of 1 | 14 of 14 | 0 | Ready | $1.16 |
+| 2026-09-29 | shelf | reliability-review | Claude Code | sonnet | used | 3 of 3 | 14 of 14 | 0 | Ready | $1.69 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | used | 4 of 4 | 14 of 14 | 0 | Ready | $1.06 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | without | 4 of 4 | 14 of 14 | 1 | Ready | $1.93 |
 
 ## Document results
 
