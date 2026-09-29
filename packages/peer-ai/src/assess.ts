@@ -7,12 +7,14 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname, join } from "node:path";
 import {
   MAP_ITEM_IDS,
+  TRAITS,
   resolveConfig,
   validateConfig,
   validateMap,
   type KnownMapItemId,
   type PeerAiConfig,
   type ProjectMap,
+  type Trait,
 } from "@peer-ai/workflow";
 import { CONFIG_FILE, detect, detectDelivery } from "./detect.ts";
 import { listRepoFiles } from "./files.ts";
@@ -50,12 +52,21 @@ export interface Signals {
   paymentProviders: string[];
 }
 
+/** A trait the code suggests the product has, which the config doesn't declare yet. */
+export interface TraitSuggestion {
+  trait: Trait;
+  /** What was found, and where, such as "stripe in services/api/package.json". */
+  evidence: string;
+}
+
 export interface Assessment {
   name: string;
   stage: Stage;
   tracks: Track[];
   items: Record<KnownMapItemId, ItemResult>;
   signals: Signals;
+  /** Traits to consider adding to project.traits, each switching on extra rules (RFC 0003). */
+  suggestedTraits: TraitSuggestion[];
   /** A copy of the v0 playbook was found and left out of the assessment. */
   legacyPlaybook: boolean;
 }
@@ -115,6 +126,31 @@ const LOCAL_SCHEMA_FILE = /(^|\/)(db|database|schema|storage|store|models?)\.(ts
 const LOCAL_SCHEMA = /\.stores\(\s*\{|indexedDB\.open\(|\bopenDB\(|\bappSchema\(|CREATE TABLE/;
 const INFRASTRUCTURE_AS_CODE =
   /\.tf$|\.tf\.json$|\.bicep$|\.cfn\.(ya?ml|json)$|(^|\/)(Pulumi\.ya?ml|cdk\.json|Chart\.yaml|kustomization\.ya?ml|serverless\.ya?ml|samconfig\.toml)$/;
+// Libraries that suggest a trait, found by name in dependency files. A suggestion is only that:
+// the evidence is shown, and a person decides.
+const TRAIT_LIBRARIES: [trait: Trait, pattern: RegExp][] = [
+  [
+    "offline",
+    /(workbox[\w-]*|vite-plugin-pwa|next-pwa|@serwist\/[\w-]+|\bdexie\b|\brxdb\b|\bpouchdb[\w-]*|@nozbe\/watermelondb|\bsqflite\b|\bdrift\b|androidx\.room)/gi,
+  ],
+  [
+    "real-time",
+    /(@nestjs\/websockets|socket\.io[\w-]*|\bwebsockets?\b|gorilla\/websocket|\bpusher[\w-]*|\bably\b|@supabase\/realtime-js|\bsignalr\b|\bactioncable\b|\bcentrifuge[\w-]*)/gi,
+  ],
+  [
+    "uploads",
+    /(\bmulter\b|\bbusboy\b|\bformidable\b|@fastify\/multipart|python-multipart|\buploadthing\b|react-dropzone|@uppy\/[\w-]+|\bfilepond\b|expo-image-picker|expo-document-picker|\bimage_picker\b|\bfile_picker\b|\bcarrierwave\b|\bshrine\b|\bcloudinary\b)/gi,
+  ],
+  [
+    "ai-features",
+    /(@anthropic-ai\/sdk|\banthropic\b|@ai-sdk\/[\w-]+|\bopenai\b|@langchain\/[\w-]+|\blangchain[\w-]*|llama[-_]?index|@google\/(?:generative-ai|genai)|google-(?:generativeai|genai)|@mistralai\/[\w-]+|\bmistralai\b|groq-sdk|\bollama\b|\breplicate\b|\bhuggingface[\w-]*|semantickernel|spring-ai[\w-]*|langchain4j)/gi,
+  ],
+];
+const SERVICE_WORKER = /(^|\/)(service-worker|sw)\.[cm]?[jt]s$/;
+const TENANT_FIELD = /(?<![a-z0-9])(tenant_?id|organi[sz]ation_?id|org_?id|workspace_?id)(?![a-z0-9])/gi;
+const SAFETY_FIELD =
+  /(?<![a-z0-9])(allerg(?:en|ens|y|ies)|medications?|dosage|contraindications?|blood_type|diagnos[ie]s)(?![a-z0-9])/gi;
+
 // A copy of the v0 playbook, which 1.0 replaces, recognised by its setup files. Its templates
 // would otherwise read as the project's own requirements, specs and standards.
 export const LEGACY_PLAYBOOK = "peer-ai/";
@@ -175,6 +211,42 @@ export function collectSignals(ctx: Context): Signals {
 
 function trackEvidence(tracks: Track[]): string[] {
   return tracks.map((track) => track.path ?? ".");
+}
+
+/**
+ * Traits the code suggests, with what suggested each. Traits the config already declares are left
+ * out. Several apps on one backend count, even when the backend lives in another repository.
+ */
+function suggestTraits(ctx: Context, signals: Signals, tracks: Track[]): TraitSuggestion[] {
+  const found = new Map<Trait, string>();
+  const suggest = (trait: Trait, evidence: string | undefined) => {
+    if (evidence !== undefined && !found.has(trait)) found.set(trait, evidence);
+  };
+  const first = (findings: Finding[]) =>
+    findings[0] === undefined ? undefined : `${findings[0].name} in ${findings[0].file}`;
+  const schemaFiles = matching(ctx, SCHEMA_FILE);
+  const manifests = matching(ctx, MANIFEST);
+
+  if (signals.paymentProviders.length > 0) suggest("money", `payment provider ${signals.paymentProviders.join(", ")}`);
+  suggest("money", first(signals.cardData));
+  suggest("safety-critical", first(scan(ctx, schemaFiles, SAFETY_FIELD, snakeCase)));
+  const apps = tracks.filter((track) => UI_KINDS.includes(track.kind) && track.status !== "dormant");
+  if (apps.length > 1 && tracks.some((track) => track.kind === "backend")) {
+    suggest(
+      "several-audiences",
+      `${String(apps.length)} apps (${apps.map((track) => track.id).join(", ")}) share a backend`,
+    );
+  }
+  suggest("several-audiences", first(scan(ctx, schemaFiles, TENANT_FIELD, snakeCase)));
+  const worker = matching(ctx, SERVICE_WORKER)[0];
+  suggest("offline", worker === undefined ? undefined : `a service worker, ${worker}`);
+  for (const [trait, pattern] of TRAIT_LIBRARIES) suggest(trait, first(scan(ctx, manifests, pattern)));
+
+  const declared: readonly Trait[] = ctx.config?.project.traits ?? [];
+  return TRAITS.flatMap((trait) => {
+    const evidence = found.get(trait);
+    return evidence === undefined || declared.includes(trait) ? [] : [{ trait, evidence }];
+  });
 }
 
 type Rule = (ctx: Context, signals: Signals) => ItemResult;
@@ -499,6 +571,7 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
     tracks,
     items,
     signals,
+    suggestedTraits: suggestTraits(ctx, signals, tracks),
     legacyPlaybook,
   };
 }

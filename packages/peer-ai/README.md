@@ -77,6 +77,20 @@ It also reports what the next stage will need, so nothing arrives as a surprise.
 
 `assess` reads the schema and migrations for personal data (emails, phone numbers, dates of birth, addresses, national ID numbers and more) and card-related names, and the dependency manifests for payment providers. It reports them as things to check, not as findings, and suggests the rule packs to consider, such as PCI DSS or the data protection law where you operate.
 
+### Traits to consider
+
+A trait says what the product is or does, and switches on the rules for it (see `@peer-ai/standards`). `assess` suggests the traits the code points to, each with what it found, and leaves out any the config already declares. A person decides: add the ones that fit to `project.traits`.
+
+| Trait | Suggested by |
+|-------|--------------|
+| `money` | A payment provider, or card-related names in the schema |
+| `safety-critical` | Names such as `allergens`, `medication` or `dosage` in the schema |
+| `several-audiences` | Two or more apps sharing a backend, or names such as `tenant_id` or `organizationId` in the schema |
+| `offline` | A service worker, or an offline or on-device database library such as Workbox, Dexie, WatermelonDB or sqflite |
+| `real-time` | A live-connection library such as Socket.IO, a WebSocket library, Pusher, Ably or SignalR |
+| `uploads` | An upload library such as Multer, `python-multipart`, Uppy or an image picker |
+| `ai-features` | An AI model SDK such as OpenAI's, Anthropic's, the Vercel AI SDK, LangChain or Gemini's |
+
 ### What it reads
 
 The files git tracks, plus new files git doesn't ignore, so `.gitignore` is respected. Outside a git repository it walks the folder and skips dependency and build folders such as `node_modules/`, `.venv/` and `dist/`. A copy of the v0 playbook in `peer-ai/` is left out, and the report says so.
@@ -152,6 +166,7 @@ pnpm peer-ai doctor
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
+| Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, and a rule set aside twice. |
 | The v0 playbook | A copy left in `peer-ai/`, with how to remove it |
 
 Every check reports, including the ones it had to skip (for example, the tracks can't be checked without a valid config), so a clean report means everything was looked at.
@@ -232,7 +247,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 
 | Tool | What it does |
 |------|--------------|
-| `project_map` | Each item on the project map with its evidence, what the stage still needs, and compliance signals. It assesses afresh on every call, and says whether the committed map has fallen behind. |
+| `project_map` | Each item on the project map with its evidence, what the stage still needs, compliance signals and traits to consider. It assesses afresh on every call, and says whether the committed map has fallen behind. |
 | `next_work` | The open work item for the current git branch, with where it stopped and its next action, and every other open item. When nothing is open, the gaps the stage needs. |
 | `standards_for_file` | The track a file belongs to, the stack profiles, and the project's own standards documents and rules for that track |
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |

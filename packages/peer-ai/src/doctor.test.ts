@@ -281,6 +281,72 @@ describe("doctor on the repository", () => {
     expect(checksFor(noGit, "git")).toMatchObject([{ status: "warn", fix: "Run git init." }]);
   });
 
+  it("lists every rule the project sets aside or changes, so none is switched off silently", () => {
+    expect(checksFor(healthy(), "standards")).toEqual([
+      { id: "standards", status: "ok", message: "No rules set aside or changed" },
+    ]);
+    const root = assessed({
+      "peer-ai.config.json": config({
+        standards: {
+          exceptions: [
+            {
+              rule: "SEC-13",
+              reason: "One server, so a shared rate limiter can wait",
+              decidedBy: "Ada Obi",
+              until: "2026-12-31",
+            },
+          ],
+          overrides: { "REACT-03": { value: 200, reason: "The legacy screens are split up next quarter" } },
+        },
+      }),
+      "CLAUDE.md": "# Shop",
+      "apps/web/package.json": web,
+    });
+    expect(diagnose(root, NODE, NOW).checks.filter((check) => check.id === "standards")).toEqual([
+      {
+        id: "standards",
+        status: "ok",
+        message:
+          "SEC-13 set aside: One server, so a shared rate limiter can wait (decided by Ada Obi, until 2026-12-31)",
+      },
+      {
+        id: "standards",
+        status: "ok",
+        message: "REACT-03 changed to 200: The legacy screens are split up next quarter",
+      },
+    ]);
+  });
+
+  it("warns about an exception that has ended, a rule that doesn't exist, and a rule set aside twice", () => {
+    const exception = (rule: string, until?: string) => ({
+      rule,
+      reason: "Decided at the launch review",
+      decidedBy: "Ada Obi",
+      ...(until === undefined ? {} : { until }),
+    });
+    const root = assessed({
+      "peer-ai.config.json": config({
+        standards: {
+          exceptions: [
+            exception("SEC-13", "2026-09-01"),
+            exception("SEC-99"),
+            exception("CODE-02"),
+            exception("CODE-02"),
+          ],
+        },
+      }),
+      "CLAUDE.md": "# Shop",
+      "apps/web/package.json": web,
+    });
+    const found = diagnose(root, NODE, NOW).checks.filter((check) => check.id === "standards");
+    expect(found.map((check) => [check.status, check.message])).toEqual([
+      ["warn", "The exception for SEC-13 ended on 2026-09-01, so the rule applies again."],
+      ["warn", "SEC-99 isn't one of Peer AI's rules, so setting it aside or changing it does nothing."],
+      ["ok", "CODE-02 set aside: Decided at the launch review (decided by Ada Obi)"],
+      ["warn", "CODE-02 is set aside more than once."],
+    ]);
+  });
+
   it("points out a copy of the v0 playbook, only when it is one", () => {
     const legacy = project({ "peer-ai/shared/00-setup.md": "", "peer-ai/phase-config.json": "{}" });
     expect(checksFor(legacy, "legacy")).toMatchObject([
