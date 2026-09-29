@@ -93,8 +93,9 @@ describe("the document skills", () => {
         .map(([item]) => item);
       const assessment = assess(project({ [path]: filledIn(id) }), undefined, "mvp");
       for (const item of items) {
-        // A test strategy is a start on the tests item; only tests themselves make it present.
-        const status = item === "tests" ? "partial" : "present";
+        // A test strategy is a start on the tests item, and a README on the docs item; only tests
+        // themselves, and a docs folder beside the README, make them present.
+        const status = item === "tests" || item === "docs" ? "partial" : "present";
         expect(assessment.items[item], `${id} writes ${path}, which the map's ${item} item must find`).toMatchObject({
           status,
           evidence: [path],
