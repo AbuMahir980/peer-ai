@@ -241,7 +241,7 @@
         },
         {
           "id": "SR11",
-          "point": "States no number of users, plants or storage as fact: any figure is marked as assumed or asked about.",
+          "point": "Invents no numbers: any count of users, plants or photos, or any storage limit, that nobody gave is marked as assumed or asked about.",
           "must": true
         }
       ]
