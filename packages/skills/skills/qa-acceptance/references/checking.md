@@ -4,20 +4,20 @@ Examples are from a made-up bicycle repair booking service.
 
 ## Contents
 
-- Each criterion: TEST-02, TEST-03
+- Each criterion: REQ-05, TEST-02, TEST-03
 - Its edges: CODE-15
 - Refusals and whose data: TEST-08
 - Tests that can't fail: TEST-04, TEST-09
 - Scope: REQ-04
 - Criteria and bug fixes: REQ-02, TEST-01
 
-## Each criterion: TEST-02, TEST-03
+## Each criterion: REQ-05, TEST-02, TEST-03
 
 A criterion reads "Given…, when…, then…". Each "then" is a check.
 
 - **In the code:** find the code that makes the "then" true, and follow it with the criterion's own values, step by step. Work the answer out yourself; don't trust a comment or a function's name.
   - **Pass:** it holds for the criterion's values, with the file and line.
-  - **Fail:** a value the criterion names that the code gets wrong, or a case it names that the code doesn't handle.
+  - **Fail (REQ-05):** a value the criterion names that the code gets wrong, or a case it names that the code doesn't handle.
 - **In the tests:** find a test that uses the criterion's values, or values that exercise the same rule, and asserts its "then".
   - **Fail:** no such test; a test that asserts something else; a test whose values can't tell right from wrong, because a wrong answer and the right one come out the same for them.
 

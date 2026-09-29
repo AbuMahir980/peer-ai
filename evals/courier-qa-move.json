@@ -71,7 +71,7 @@
     {
       "id": "QM4",
       "title": "Today is the server's date, not the UK's, so around midnight the wrong days are refused or allowed",
-      "severity": "medium",
+      "severity": "high",
       "skills": ["qa-acceptance"],
       "locations": [
         {

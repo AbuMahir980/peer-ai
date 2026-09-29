@@ -6,7 +6,7 @@ compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and N
 metadata:
   peer-ai-kind: work
   peer-ai-domains: testing
-  peer-ai-rules: REQ-02 REQ-04 CODE-15 DEL-04
+  peer-ai-rules: REQ-02 REQ-04 REQ-05 CODE-15 DEL-04
 ---
 
 # Implement a ticket
@@ -68,6 +68,6 @@ Move the item to verify with `advance_work_item`: Peer AI works out the reviews 
 
 ## 7. Ship
 
-You MUST finish with this step. Call `advance_work_item` to move the item to ship. It checks the same gates as CI: a passing verify, the reviews, and the items it depends on. When it refuses, fix what it names, or, when it's waiting on another item, leave the item at verify and say so. Then run `npx peer-ai check`.
+You MUST finish with this step. First, check each acceptance criterion holds in the code (REQ-05). One that doesn't is fixed, or raised with the person who agreed it, never shipped. Then call `advance_work_item` to move the item to ship. It checks the same gates as CI: a passing verify, the reviews, and the items it depends on. When it refuses, fix what it names, or, when it's waiting on another item, leave the item at verify and say so. Then run `npx peer-ai check`.
 
 Tell the person, in a few lines: what changed, each acceptance criterion with the test that proves it, the reviews and their results, anything left for the backlog, and the stage the item reached.

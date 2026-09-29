@@ -5,7 +5,7 @@ license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
   peer-ai-kind: review
-  peer-ai-rules: REQ-02 REQ-04 TEST-01 TEST-02 TEST-03 TEST-04 TEST-08 TEST-09 CODE-15
+  peer-ai-rules: REQ-02 REQ-04 REQ-05 TEST-01 TEST-02 TEST-03 TEST-04 TEST-08 TEST-09 CODE-15
 ---
 
 # QA acceptance
@@ -53,8 +53,9 @@ Call the peer-ai MCP tool `standards_for_file` for the files the item changed. E
 
 Hold every line to this bar:
 
-- **Every criterion gets its own coverage line,** under TEST-02, with the `criterion` as its item. A pass names the code and the test: "slots.ts:12 refuses a full slot; slots.test.ts:40 books a full slot and expects the refusal".
-- **A criterion the code doesn't meet is a finding,** saying which "then" fails and for which values, with the file and line. So is a criterion no test proves, or a test that would pass even if the code were wrong.
+- **Every criterion gets its own coverage line,** under REQ-05, with the `criterion` as its item. A pass names the code and the test: "slots.ts:12 refuses a full slot; slots.test.ts:40 books a full slot and expects the refusal".
+- **A criterion the code doesn't meet is a finding under REQ-05,** saying which "then" fails and for which values, with the file and line. The item can't ship until it's fixed, or the criterion is changed or dropped by whoever agreed it.
+- **A criterion no test proves, or a test that would pass even if the code were wrong, is a finding under the testing rule it breaks,** such as TEST-02 or TEST-09.
 - **Follow the criterion's own values through the code,** and then its edges. Never accept a criterion because a test with its name passes.
 - **Where a criterion protects something another rule covers,** such as whose data a person may change, cite that rule too.
 - **Its severity is its rule's,** from [severity.md](references/severity.md).

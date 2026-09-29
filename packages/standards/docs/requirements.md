@@ -49,3 +49,15 @@ An idea outside the agreed scope of a piece of work goes to the backlog, not int
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Low | Always | – |
+
+## REQ-05 · A feature ships only when every acceptance criterion holds
+
+A feature ships only when every one of its acceptance criteria holds. A criterion that doesn't is fixed first, or changed or dropped by whoever agreed it, never shipped broken or quietly skipped.
+
+**Why:** The acceptance criteria are what was agreed. A feature that fails one does something nobody agreed to, and the people relying on it find out first.
+
+**Ask:** Does every acceptance criterion of this feature hold in the code?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | High | Always | – |

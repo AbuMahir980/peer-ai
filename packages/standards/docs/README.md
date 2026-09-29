@@ -10,7 +10,7 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 
 | Domain | Rules |
 |--------|-------|
-| [Requirements](requirements.md) | 4 |
+| [Requirements](requirements.md) | 5 |
 | [Architecture](architecture.md) | 8 |
 | [System design and scalability](system-design.md) | 6 |
 | [API design](api-design.md) | 8 |
