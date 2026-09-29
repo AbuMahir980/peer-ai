@@ -21,7 +21,7 @@ Copy this checklist and tick it off as you go:
 ```
 - [ ] 1. Sources: the person's words, what the project already has, and the code
 - [ ] 2. Inventory: every group of people, feature, need and fact, with its source
-- [ ] 3. Questions: what only a person can answer, asked together
+- [ ] 3. Questions: what only a person can answer, written down to ask
 - [ ] 4. Write: the template filled in, against the rules
 - [ ] 5. Check: accepted by the peer-ai MCP tool `check_document`
 - [ ] 6. Hand over: what's open, and what switches on rules
@@ -57,7 +57,7 @@ Compare the code with the existing requirements both ways, even when you were as
 
 ## 3. Questions
 
-Turn everything unclear into concrete questions: "Can a customer move a booking, and until when?", not "What about changes?". If the person is there, ask them all at once and wait. Whatever stays unanswered goes under Open questions, with who can answer it. Where work can't wait for the answer, add an assumption, and what changes if it's wrong.
+Turn everything unclear into concrete questions: "Can a customer move a booking, and until when?", not "What about changes?". Don't stop to wait for answers: write the document with each question under Open questions, with who can answer it, and an assumption where work can't wait, with what changes if it's wrong. Ask the person the questions when you hand over; their answers update the document.
 
 ## 4. Write
 
