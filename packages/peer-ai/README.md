@@ -257,6 +257,22 @@ Run it after the project's own checks:
 
 `0` passed (warnings are allowed), `1` failed, `2` a usage error or no valid `peer-ai.config.json`.
 
+## `peer-ai check-report`
+
+Checks a review's report the way the `record_review` tool does: that it's valid, gives every rule its skill answers for a line, and claims the result its findings and coverage support. It records nothing. It's there for AI tools that work in a shell rather than through the MCP server, and for a person checking a report by hand.
+
+```bash
+npx peer-ai check-report .peer-ai/reports/project/security-review.json
+```
+
+| Option | What it does |
+|--------|--------------|
+| `--skill <skill>` | The skill the report is for. By default, the one the report names. |
+| `--work-item <id>` | The work item it's for, when there is one |
+| `--json` | Print the result as JSON |
+
+Exit codes: `0` when the report passes, `1` when it doesn't, and `2` without a valid config or a report path.
+
 ## `peer-ai mcp`
 
 Starts the Peer AI MCP server over stdio. Any AI tool that supports MCP servers reaches the same project map, work items and gates through it, so a project behaves the same whichever tool a person uses.

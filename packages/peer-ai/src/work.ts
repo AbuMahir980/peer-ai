@@ -6,7 +6,9 @@
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { availableSkills, skillRuleIds } from "@peer-ai/skills";
 import {
+  SKILL_IDS,
   deriveResult,
   validateReport,
   validateWorkItem,
@@ -18,11 +20,11 @@ import {
   type SkillId,
   type WorkItem,
 } from "@peer-ai/workflow";
-import { NEXT_STAGE, assess, gaps } from "./assess.ts";
-import { availableSkills, skillRuleIds } from "@peer-ai/skills";
+import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
+import { CONFIG_FILE } from "./detect.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
-import type { Stage } from "./init.ts";
+import type { Output, Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
 
 export const WORK_ITEM_SCHEMA_URL =
@@ -231,6 +233,61 @@ export function checkReport(
     ok: true,
     value: { skill: review.skill, result: worked, report: review.report, summary: review.summary ?? report.summary },
   };
+}
+
+export interface CheckReportOptions {
+  cwd: string;
+  /** The report's path, relative to the project root. */
+  report: string;
+  /** The skill it's for. Defaults to the skill the report names. */
+  skill?: string | undefined;
+  /** The work item it's for, when there is one. */
+  workItem?: string | undefined;
+  json: boolean;
+}
+
+/**
+ * peer-ai check-report: the same checks as the record_review tool, for a model or a person that
+ * works in a shell. Exit code 0 when the report passes them; 1 when it doesn't; 2 without a config.
+ */
+export function runCheckReport(options: CheckReportOptions, out: Output): number {
+  const { config, errors } = loadConfig(options.cwd);
+  if (config === undefined) {
+    out.error(
+      errors === undefined ? `There is no ${CONFIG_FILE}. Run peer-ai init first.` : `${CONFIG_FILE} is not valid.`,
+    );
+    return 2;
+  }
+  let skill = options.skill;
+  if (skill === undefined) {
+    try {
+      const named = (JSON.parse(readFileSync(resolve(options.cwd, options.report), "utf8")) as { skill?: unknown })
+        .skill;
+      if (typeof named === "string") skill = named;
+    } catch {
+      // Unreadable or not JSON: checkReport says which.
+    }
+  }
+  if (skill === undefined || !(SKILL_IDS as readonly string[]).includes(skill)) {
+    const problem = `The report doesn't name one of Peer AI's skills as its "skill", such as "security-review": give it with --skill, and put it in the report.`;
+    if (options.json) out.log(JSON.stringify({ ok: false, error: problem }, null, 2));
+    else out.error(`✗ ${problem}`);
+    return 1;
+  }
+  const checked = checkReport(
+    options.cwd,
+    config,
+    { skill: skill as SkillId, report: options.report },
+    options.workItem,
+  );
+  if (options.json) {
+    out.log(JSON.stringify(checked.ok ? { ok: true, ...checked.value } : { ok: false, error: checked.error }, null, 2));
+  } else if (checked.ok) {
+    out.log(`✓ ${options.report} passes Peer AI's checks. Its result is ${checked.value.result}.`);
+  } else {
+    out.error(`✗ ${checked.error}`);
+  }
+  return checked.ok ? 0 : 1;
 }
 
 export function recordReview(

@@ -103,7 +103,7 @@ export const MCP_TOOL_IDS = [
 export type McpToolId = (typeof MCP_TOOL_IDS)[number];
 
 /** The peer-ai commands. Skills name them. */
-export const CLI_COMMAND_IDS = ["init", "assess", "render", "doctor", "check", "mcp"] as const;
+export const CLI_COMMAND_IDS = ["init", "assess", "render", "doctor", "check", "check-report", "mcp"] as const;
 export type CliCommandId = (typeof CLI_COMMAND_IDS)[number];
 
 /** AI tools Peer AI renders instructions for. */

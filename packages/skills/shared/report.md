@@ -75,7 +75,7 @@ Peer AI works out the result from the report, and the report must say the same:
 
 Call the peer-ai MCP tool `record_review` with the `skill` and the `report` path, and the work item's `id` when there is one. Peer AI checks the report and works out the result. If it refuses, fix what it names and call it again, until it accepts. Record failed and incomplete reviews too.
 
-A whole-project review has no work item: leave out the `id`. Peer AI checks the report the same way and gives its result, without recording it anywhere. Never skip this step: a report nobody checked may not count.
+A whole-project review has no work item: leave out the `id`. Peer AI checks the report the same way and gives its result, without recording it anywhere. If the peer-ai MCP tools aren't available, run `npx peer-ai check-report <report path>`, which makes the same checks. Never skip this step: a report nobody checked may not count.
 
 ## Example
 
