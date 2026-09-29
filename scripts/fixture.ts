@@ -59,6 +59,16 @@ export function prepareFixture(name: string, into?: string, options: PrepareOpti
     }
   }
   if (options.skills === true) execFileSync(process.execPath, [CLI, "render"], { cwd: target, stdio: "ignore" });
+  else {
+    // A copy without skills is a baseline: its instructions mustn't send the agent off to install
+    // them, which a tool that asks before running commands stops to ask about.
+    for (const file of ["AGENTS.md", ".cursor/rules/peer-ai.mdc"]) {
+      const path = join(target, file);
+      if (!existsSync(path)) continue;
+      const text = readFileSync(path, "utf8");
+      writeFileSync(path, text.replace(/^- Peer AI's skills are named .*\n/m, ""));
+    }
+  }
 
   for (const [path, key] of REGISTRATIONS) {
     const file = join(target, path);
