@@ -753,6 +753,17 @@ export function workItemsDocument(dir: string): string | undefined {
   if (items.length === 0) return undefined;
   const list = (value: unknown) => (Array.isArray(value) ? value.map((entry) => `  - ${String(entry)}`) : []);
   const text = (value: unknown) => (typeof value === "string" ? value : "–");
+  const verified = (value: unknown) => {
+    const { result, at } = (value ?? {}) as { result?: unknown; at?: unknown };
+    return typeof result === "string" ? `${result}${typeof at === "string" ? ` (${at})` : ""}` : "none";
+  };
+  const reviewed = (value: unknown) =>
+    Array.isArray(value)
+      ? value.map((review) => {
+          const { skill, result, report } = review as { skill?: unknown; result?: unknown; report?: unknown };
+          return `  - ${String(skill)}: ${String(result)}${typeof report === "string" ? `, report ${report}` : ", no report"}`;
+        })
+      : ["  - none"];
   const needs = (value: unknown) =>
     Array.isArray(value) && value.length > 0 ? value.map(String).join(", ") : "nothing";
   const sections = items.map((item) =>
@@ -766,6 +777,9 @@ export function workItemsDocument(dir: string): string | undefined {
       "- Sources:",
       ...list(item.sources),
       `- Depends on: ${needs(item.dependsOn)}`,
+      `- Last verify: ${verified(item.lastVerify)}`,
+      "- Reviews recorded:",
+      ...reviewed(item.reviews),
       `- Next: ${text(item.next)}`,
     ].join("\n"),
   );

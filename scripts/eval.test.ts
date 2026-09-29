@@ -572,6 +572,8 @@ describe("marking a document", () => {
     expect(text).toContain("- Goal: A customer cancels their own pickup.");
     expect(text).toContain("- Acceptance criteria:\n  - Given…, then one refund.");
     expect(text).toContain("- Depends on: CR-9");
+    expect(text).toContain("- Last verify: none");
+    expect(text).toContain("- Reviews recorded:\n  - none");
   });
 
   it("sets up a scenario in the copy, and shows the grader only what the run changed", () => {
