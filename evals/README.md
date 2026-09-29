@@ -5,8 +5,8 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
 | [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 25: 21 planted, and 4 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 16: 14 planted, and 2 that reviews found and nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 
 ## Running one
@@ -198,6 +198,13 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, design-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
+  - **With the skill, all three are ready after the fix below:** courier 3 of 3, shelf 3 of 3 and sprout 3 of 3, each covering all 11 rules. Without it, sprout found 3 of 3 too.
+  - **The runs raised real problems nobody planted,** now on the answer sheets, and the counts include them: courier's failed booking and stuck tracking page (D26 and D27, which accessibility-review found too), shelf's librarian screen writing its colour as a value (S28), and on sprout, a card radius with no token (SP15) and a plant list that shows nothing while it loads or when it's empty (SP16).
+  - **Fair, minor points not added:** no shared component set in an app with three components, no notice when offline (called high, though only plant identification needs a connection), a colour token named for how it looks, and shelf's tokens having no radii, elevation or dark colours.
+- **What the runs changed:**
+  - **The first courier run never used the skill.** Its description said it reviews screens against the design system; courier has none, so the model stopped to ask whether to write one first. Most design rules, such as colour alone, contrast and text size, need only the code. The description now says the skill reviews against the design system when there is one, the skill says to review anyway without stopping to ask, and the prompt no longer says "against its design". The next run made every point. The authoring guide now carries both lessons.
+
 ## Results
 
 Newest last.
@@ -250,6 +257,11 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | design-review | Claude Code | sonnet | installed, not used | 0 of 3 | 0 of 11 | 0 | Not ready | $0.18 |
+| 2026-09-29 | shelf | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 1 | Ready | $1.71 |
+| 2026-09-29 | sprout | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 2 | Ready | $0.95 |
+| 2026-09-29 | sprout | design-review | Claude Code | sonnet | without | 3 of 3 | 11 of 11 | 2 | Ready | $1.08 |
+| 2026-09-29 | courier | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 0 | Ready | $0.90 |
 
 ## Document results
 
