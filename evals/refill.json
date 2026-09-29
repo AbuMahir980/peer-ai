@@ -95,7 +95,7 @@
         },
         {
           "id": "AR5",
-          "point": "Treats the riders' location and delivery progress as live data with its own needs."
+          "point": "Covers how riders see where to go, and asks whether patients should follow a delivery live rather than assuming it."
         },
         {
           "id": "AR6",

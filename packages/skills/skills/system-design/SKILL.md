@@ -49,7 +49,9 @@ List everything the feature touches, from the code, with its file:
 | `outside` | Each call to another service |
 | `client` | Each app or screen that uses what changes |
 
-A part in another repository is designed only as far as what this feature needs from it: write the contract change it needs, and mark it as a request to that part's owners.
+Find every existing path that already does what the feature does, such as another screen, a job or an assistant. They must go through the one module that owns the data (ARC-02), so the rules hold on every path.
+
+A part in another repository is designed only as far as what this feature needs from it: the contract change, and what it must guarantee, such as "extending twice extends once". Mark it as a request to that part's owners, and leave its tables, locks and code to them.
 
 ## 3. Flow
 

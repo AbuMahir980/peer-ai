@@ -343,7 +343,7 @@
         },
         {
           "id": "PP10",
-          "point": "Leaves tables, storage details and code to the system design."
+          "point": "Leaves database tables, storage details, API endpoints and code to the system design."
         }
       ]
     },

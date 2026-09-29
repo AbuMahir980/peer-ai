@@ -17,6 +17,7 @@ import {
   formatDocumentRun,
   formatRun,
   loadSheet,
+  otherDocuments,
   regradeDocument,
   scoreDocument,
   writtenDocument,
@@ -456,6 +457,22 @@ describe("marking a document", () => {
     expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBe("specs/cancel-design.md");
     writeFileSync(join(dir, "docs", "specs", "cancel-design.md"), "# Design\n");
     expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBe("docs/specs/cancel-design.md");
+  });
+
+  it("gives the grader the other documents the run wrote, such as decision records", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-others-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    for (const file of [
+      "docs/architecture.md",
+      "docs/decisions/0001-database.md",
+      ".peer-ai/work/X-1.md",
+      "notes.txt",
+    ]) {
+      mkdirSync(join(dir, file, ".."), { recursive: true });
+      writeFileSync(join(dir, file), "# A\n");
+    }
+    expect(otherDocuments(dir, "docs/architecture.md")).toEqual(["docs/decisions/0001-database.md"]);
   });
 
   it("grades an earlier run's document again from its copy", async () => {

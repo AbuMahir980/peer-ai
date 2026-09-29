@@ -472,7 +472,7 @@ export const GradesSchema = z.array(
 export type Grade = z.output<typeof GradesSchema>[number];
 
 /** What the grader is asked. It sees only the document and the points, never the project or the tool's run. */
-export const GRADE_PROMPT = `Grade a document against a list of points. document.md is the document. points.json lists the points, each with an id.
+export const GRADE_PROMPT = `Grade a document against a list of points. document.md is the document, followed by any other documents written with it, each under an "Also written" heading: judge the points against all of it. points.json lists the points, each with an id.
 
 For each point, decide whether the document makes it: clearly and in substance, not by mentioning a word in passing. Judge only from what the document says.
 
@@ -625,7 +625,10 @@ export async function markDocument(
   const gradeDir = `${dir}-grades`;
   rmSync(gradeDir, { recursive: true, force: true });
   mkdirSync(gradeDir, { recursive: true });
-  writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8"));
+  const also = otherDocuments(dir, path).map(
+    (file) => `\n\n---\n\n# Also written: ${file}\n\n${readFileSync(join(dir, file), "utf8")}`,
+  );
+  writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8") + also.join(""));
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
   await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
@@ -635,6 +638,25 @@ export async function markDocument(
 /** A file's text, or undefined for a folder or nothing at all. */
 const readIfFile = (path: string): string | undefined =>
   statSync(path, { throwIfNoEntry: false })?.isFile() === true ? readFileSync(path, "utf8") : undefined;
+
+/**
+ * The other Markdown documents the run wrote or changed beside the main one, such as an
+ * architecture's decision records, so the grader sees everything the skill produced. Peer AI's own
+ * files and rendered skills are left out.
+ */
+export function otherDocuments(dir: string, main: string): string[] {
+  let changed: string[];
+  try {
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter((line) => line !== "");
+  } catch {
+    return [];
+  }
+  const skipped = /^\.(peer-ai|claude|agents|cursor|github)\//;
+  return changed.filter((file) => file.endsWith(".md") && file !== main && !skipped.test(file)).sort();
+}
 
 /**
  * Where the run wrote its document: the expected path when it changed there, or else a new or
@@ -820,7 +842,8 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
     "",
   ];
   const expected = sheet.documents?.[marked.skill]?.path;
-  if (marked.written && expected !== undefined && marked.path !== expected) {
+  const pattern = expected !== undefined && (expected.endsWith("/") || expected.includes("*"));
+  if (marked.written && expected !== undefined && !pattern && marked.path !== expected) {
     lines.push(`Written to ${marked.path}, not ${expected}.`);
   }
   if (marked.written) {

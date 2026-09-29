@@ -53,7 +53,7 @@ Compare the code with the contract both ways. A route in the code but not in the
 
 ## 3. Conventions
 
-Settle these once for the whole API, and write them down. [conventions.md](references/conventions.md) shows each done well.
+Settle these once for the whole API, and write them down. Where the API has no convention yet, or breaks one, say so and propose one, marked proposed: a design records what should be, not only what is. [conventions.md](references/conventions.md) shows each done well.
 
 - **Types** (API-01): every request and response is a typed schema.
 - **Errors** (API-04): one shape for every error, with a code a client can act on. No internal detail (SEC-09).
