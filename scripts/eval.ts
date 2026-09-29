@@ -28,7 +28,15 @@ import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
-import { SEVERITIES, SKILL_IDS, SKILL_KINDS, validateReport, type ReviewReport, type SkillId } from "@peer-ai/workflow";
+import {
+  MAP_ITEM_SKILLS,
+  SEVERITIES,
+  SKILL_IDS,
+  SKILL_KINDS,
+  validateReport,
+  type ReviewReport,
+  type SkillId,
+} from "@peer-ai/workflow";
 import { z } from "zod";
 import { CLI, localServer, prepareFixture } from "./fixture.ts";
 
@@ -619,7 +627,7 @@ export async function markDocument(
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const path = writtenDocument(dir, scenario.path, before);
+  const path = writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
   if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
   const check = checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
@@ -656,6 +664,30 @@ export function otherDocuments(dir: string, main: string): string[] {
   }
   const skipped = /^\.(peer-ai|claude|agents|cursor|github)\//;
   return changed.filter((file) => file.endsWith(".md") && file !== main && !skipped.test(file)).sort();
+}
+
+/**
+ * A document the project map finds for the skill's map item, among the files the run wrote, such as
+ * docs/plant-watering-spec.md for product-spec. It counts wherever it is, because it fills the gap.
+ */
+export function mappedDocument(dir: string, skill: SkillId): string | undefined {
+  const items = Object.entries(MAP_ITEM_SKILLS)
+    .filter(([, skills]) => skills.includes(skill))
+    .map(([item]) => item);
+  let evidence: string[];
+  let changed: string[];
+  try {
+    const map = JSON.parse(
+      execFileSync(process.execPath, [CLI, "assess", "--json", "--dry-run"], { cwd: dir, encoding: "utf8" }),
+    ) as { items: Record<string, { evidence?: string[] } | undefined> };
+    evidence = items.flatMap((item) => map.items[item]?.evidence ?? []);
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim());
+  } catch {
+    return undefined;
+  }
+  return evidence.find((file) => file.endsWith(".md") && changed.includes(file));
 }
 
 /**
