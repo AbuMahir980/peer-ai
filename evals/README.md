@@ -65,6 +65,21 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **Codex did as well or better with the skill, and faster:** 9 of 10, 7 of 8 and 3 of 3 with it, against 8 of 10, 7 of 8 and 3 of 3 without, in about 2.5 minutes a run rather than 3.5 to 6.
 - **Rules covered** is out of 46 before SEC-27 was added, and out of 47 after. The rows are in the order the runs happened.
 
+- **2026-09-29, code-review with the skill, on courier, shelf and sprout.** One Opus run and Codex on all three, to spare the Claude allowance:
+  - **Opus on courier: 11 of 11, every rule covered.** It was first scored 10 of 11. It rated the decimal-money bug (D14) critical, as MONEY-01 says, and the answer sheet said medium: two levels apart, so the scorer didn't count it. Under RFC 0002 the rule sets the level, so D14 is now critical, and the same report, marked again, finds all 11. Its eight other findings were real under Peer AI's rules:
+    - a failed booking or lookup tells the customer nothing (FE-07, FE-08);
+    - tracking data is copied into the page (FE-01);
+    - two tracking requests can race;
+    - requests have no size limit (BE-02);
+    - nothing tests the payment path (MONEY-10);
+    - the tests leak into each other (TEST-07) and check a fake (TEST-04).
+  - **Codex found more with the skill, but not reliably:** courier 7 of 11 with the skill against 4 without. On sprout it scored 6, 6 and 4 of 8 across three runs with the skill, each missing different problems, and it missed problems on the skill's own sweep list: a password written to shelf's device log, and, in sprout's third run, a secret key built into the web app. Its default model on the free plan finishes in about 2 minutes where Opus takes 8. For code review, use a strong model.
+- **What the code-review runs changed:**
+  - **Older code was skipped.** Codex skipped shelf's older JavaScript half, with and without the skill. The skill now says to review older code too, starting from every file in scope. After that, Codex scored 6 of 11 against 5: it found one more problem in the older half, but still missed three of the five planted only there.
+  - **Plain logic bugs had no rule.** A date worked out in UTC had no rule to be reported under. CODE-15, "Edge cases are handled", now covers it, and the next run found it.
+  - **Two runs shared a folder.** They started in the same millisecond, and one was lost; it isn't in the table. Each run now gets its own folder.
+- **Rules covered for code-review** is out of 66 before CODE-15, and 67 after.
+
 ## Results
 
 Newest last.
@@ -101,3 +116,13 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | security-review | Codex | default | without | 8 of 10 | 47 of 47 | 1 | Not ready | – |
 | 2026-09-29 | shelf | security-review | Codex | default | without | 7 of 8 | 47 of 47 | 4 | Not ready | – |
 | 2026-09-29 | sprout | security-review | Codex | default | without | 3 of 3 | 47 of 47 | 2 | Ready | – |
+| 2026-09-29 | shelf | code-review | Codex | default | used | 5 of 11 | 66 of 66 | 2 | Not ready | – |
+| 2026-09-29 | sprout | code-review | Codex | default | used | 6 of 8 | 66 of 66 | 1 | Not ready | – |
+| 2026-09-29 | courier | code-review | Claude Code | opus | used | 11 of 11 | 66 of 66 | 8 | Ready | $2.78 |
+| 2026-09-29 | courier | code-review | Codex | default | without | 4 of 11 | 0 of 66 | 1 | Not ready | – |
+| 2026-09-29 | shelf | code-review | Codex | default | without | 5 of 11 | 66 of 66 | 2 | Not ready | – |
+| 2026-09-29 | sprout | code-review | Codex | default | without | 7 of 8 | 66 of 66 | 0 | Not ready | – |
+| 2026-09-29 | courier | code-review | Codex | default | used | 7 of 11 | 66 of 66 | 0 | Not ready | – |
+| 2026-09-29 | shelf | code-review | Codex | default | used | 6 of 11 | 66 of 66 | 3 | Not ready | – |
+| 2026-09-29 | sprout | code-review | Codex | default | used | 6 of 8 | 66 of 66 | 0 | Not ready | – |
+| 2026-09-29 | sprout | code-review | Codex | default | used | 4 of 8 | 67 of 67 | 0 | Not ready | – |
