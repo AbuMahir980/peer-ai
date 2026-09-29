@@ -1,6 +1,6 @@
 ---
 name: release-readiness
-description: Checks a release before production (every item's gates, the pipeline's checks, a way back at each step, safe data changes, staging, and signs it's healthy), proving each rule was checked. Use when a release is about to go to production.
+description: Checks a release before it reaches people (every item's gates, the pipeline's checks, a way back at each step, safe data changes, staging, signs it's healthy), proving each rule was checked. Use when a deploy, app release or library publish is next.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -10,7 +10,7 @@ metadata:
 
 # Release readiness
 
-Check a release before it reaches production: every item in it has passed its own gates, it goes out through the pipeline with every required check, it can be undone at every step, its data changes are safe in the order they'll run, it was tried first, and someone will know if it goes wrong. Record a report that proves what was checked. The report is the output: don't release, deploy or publish anything during the check.
+Check a release before it reaches production: every item in it has passed its own gates, it goes out through the pipeline with every required check, it can be undone at every step, its data changes are safe in the order they'll run, it was tried first, and someone will know if it goes wrong. Record a report that proves what was checked. The report is the output: don't release, deploy or publish anything during the check, and don't move any work item's stage.
 
 `next_work`, `project_map`, `standards_for_file` and `record_review` are tools of the peer-ai MCP server, listed with your other tools. They aren't shell commands: never run them with `npx`. The one check that also runs in a shell is `npx peer-ai check-report`, for when those tools aren't available to you.
 
@@ -27,7 +27,7 @@ Copy this checklist and tick it off as you go:
 
 ## 1. Scope
 
-- **The release:** what the person names, such as a version, a tag or a branch to deploy. Otherwise, the work items at verify and ship that haven't shipped, from the peer-ai MCP tool `next_work`. List each item in the report's `scope`.
+- **The release:** what the person names, such as a version, a tag or a branch to deploy, an app going to the stores, or a library about to be published. Otherwise, the work items at verify and ship that haven't shipped, from the peer-ai MCP tool `next_work`. List each item in the report's `scope`.
 - **What changed:** everything between the last release and this one, such as the commits since the last release tag, and each work item's record: its stage, last verify, required reviews and their results.
 - **How it goes out:** the release plan or notes, if there are any; the CI and deployment pipelines; the environments in `peer-ai.config.json`; and the infrastructure it runs on.
 
