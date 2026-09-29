@@ -165,6 +165,13 @@ describe("assess", () => {
     }
   });
 
+  it("never counts Peer AI's own skills as the project's documents", () => {
+    const skill = "skills/peer-ai-code-review/references/architecture.md";
+    const status = statusOf(project({ [`.claude/${skill}`]: "# Where code lives", [`.agents/${skill}`]: "" }));
+    expect(status.architecture).not.toBe("present");
+    expect(statusOf(project({ "docs/architecture.md": "# Architecture" })).architecture).toBe("present");
+  });
+
   it("finds a Rails data model in its migrations", () => {
     expect(statusOf(project({ "db/migrate/20260101000000_create_orders.rb": "" }))["data-model"]).toBe("present");
   });

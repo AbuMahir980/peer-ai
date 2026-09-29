@@ -8,7 +8,8 @@
     "data-migration-review": "Review how Shelf stores data on the phone, and what happens to that data when the app updates.",
     "performance-review": "Review the Shelf app for performance problems.",
     "reliability-review": "Review the Shelf app for reliability problems.",
-    "design-review": "Review the Shelf app against its design system."
+    "design-review": "Review the Shelf app against its design system.",
+    "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model."
   },
   "defects": [
     {
@@ -253,6 +254,83 @@
         }
       ],
       "found": "Not planted: first raised by Peer AI's security-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S19",
+      "title": "The librarian is sent everything the reader has borrowed and their exact location, without telling them",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review", "compliance-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "Everything this reader has borrowed:"
+        },
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });"
+        }
+      ]
+    },
+    {
+      "id": "S20",
+      "title": "Catalogue descriptions from the partner are pasted into the librarian's instructions, so a description can steer it",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "${book.id} ${book.title}: ${book.description}"
+        }
+      ]
+    },
+    {
+      "id": "S21",
+      "title": "A book is reserved because the librarian's reply says so, without the reader confirming",
+      "severity": "high",
+      "skills": ["ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "if (answer.action === \"reserve\" && answer.bookId !== undefined) {"
+        }
+      ]
+    },
+    {
+      "id": "S22",
+      "title": "The librarian's guess at a book's youngest suitable age is shown as fact",
+      "severity": "high",
+      "skills": ["ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "Suitable for ages {reply.minimumAge}+"
+        }
+      ]
+    },
+    {
+      "id": "S23",
+      "title": "The librarian call has no timeout and no limit on how often a reader can ask",
+      "severity": "medium",
+      "skills": ["ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "http<LibrarianReply>(\"/librarian\""
+        }
+      ]
+    },
+    {
+      "id": "S24",
+      "title": "The newer features' request helper has no timeout, so a slow API leaves a screen waiting forever",
+      "severity": "medium",
+      "skills": ["code-review", "reliability-review"],
+      "locations": [
+        {
+          "file": "src/lib/http.ts",
+          "match": "const response = await fetch(`${API_URL}${path}`, {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
     }
   ]
 }

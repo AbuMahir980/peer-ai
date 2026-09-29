@@ -142,6 +142,35 @@
           "parcel_id",
           "payment_token"
         ]
+      },
+      "Question": {
+        "type": "object",
+        "required": [
+          "parcel_id",
+          "message"
+        ],
+        "properties": {
+          "parcel_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AssistantReply": {
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "properties": {
+          "reply": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       }
     }
   },
@@ -178,7 +207,7 @@
         }
       },
       "get": {
-        "summary": "The customer’s parcels, newest first, 20 at a time",
+        "summary": "The customer\u2019s parcels, newest first, 20 at a time",
         "security": [
           {
             "session": []
@@ -220,7 +249,7 @@
     },
     "/parcels/{parcel_id}": {
       "get": {
-        "summary": "One of the customer’s own parcels",
+        "summary": "One of the customer\u2019s own parcels",
         "security": [
           {
             "session": []
@@ -304,6 +333,40 @@
         "responses": {
           "201": {
             "description": "Paid"
+          }
+        }
+      }
+    },
+    "/assistant/messages": {
+      "post": {
+        "summary": "Ask the support assistant about a parcel",
+        "operationId": "askAssistant",
+        "tags": [
+          "assistant"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Question"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The assistant's reply",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such parcel for this customer"
           }
         }
       }

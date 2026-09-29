@@ -1,6 +1,6 @@
 // Lists a repository's files as forward-slash paths relative to its root. In a git repository
 // it asks git, so .gitignore is respected; otherwise it walks the folder. Dependency and build
-// folders are always skipped, and symlinks are never followed.
+// folders are always skipped, as are Peer AI's own rendered skills, and symlinks are never followed.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync } from "node:fs";
@@ -31,7 +31,11 @@ const SKIP_DIRS = new Set([
 ]);
 const MAX_FILES = 50_000;
 
-const skipped = (path: string): boolean => path.split("/").some((part) => SKIP_DIRS.has(part));
+/** Peer AI's own skills, wherever render wrote them. They describe Peer AI, not the project. */
+const PEER_AI_SKILL = /(^|\/)\.(claude|agents)\/skills\/peer-ai-[^/]+\//;
+
+const skipped = (path: string): boolean =>
+  path.split("/").some((part) => SKIP_DIRS.has(part)) || PEER_AI_SKILL.test(path);
 
 export function listRepoFiles(root: string): string[] {
   if (existsSync(join(root, ".git"))) {
@@ -59,7 +63,10 @@ export function listRepoFiles(root: string): string[] {
       const full = join(dir, entry);
       const stats = lstatSync(full);
       if (stats.isDirectory()) walk(full);
-      else if (stats.isFile()) files.push(relative(root, full).split(sep).join("/"));
+      else if (stats.isFile()) {
+        const path = relative(root, full).split(sep).join("/");
+        if (!skipped(path)) files.push(path);
+      }
     }
   };
   walk(root);

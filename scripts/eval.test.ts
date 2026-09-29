@@ -145,6 +145,33 @@ describe("marking a review", () => {
     ]);
   });
 
+  it("pairs findings with problems so that as many as possible are found", () => {
+    const nearby = (id: string, line: number): ResolvedDefect => ({
+      id,
+      title: "A problem",
+      severity: "high",
+      skills: ["security-review"],
+      locations: [],
+      spans: [{ file: "ai.py", line, endLine: line }],
+    });
+    // Two findings that both cover lines 63 to 67, where two problems sit at 65 and 67. Each is
+    // nearest to the first, but together they found both.
+    const close: Sheet = { ...SHEET, defects: [nearby("A", 65), nearby("B", 67)] };
+    const both = score(close, "security-review", [
+      report([finding("ai.py", 62, "high", 67), finding("ai.py", 63, "high", 67)]),
+    ]);
+    expect(both.expected.map(({ defect, foundBy }) => [defect.id, foundBy.length])).toEqual([
+      ["A", 1],
+      ["B", 1],
+    ]);
+    // A third finding on the same lines has nothing left to find, and still isn't counted as unmatched.
+    const three = score(close, "security-review", [
+      report([finding("ai.py", 62, "high", 67), finding("ai.py", 63, "high", 67), finding("ai.py", 65, "high")]),
+    ]);
+    expect(three.expected.map(({ foundBy }) => foundBy.length)).toEqual([2, 1]);
+    expect(three.unmatched).toEqual([]);
+  });
+
   it("counts a problem found at any of its locations, and only a review's own reports", () => {
     const marked = score(SHEET, "security-review", [
       report([finding("db/0001.sql", 5, "high")]),
@@ -197,14 +224,14 @@ describe("running an eval", () => {
 
     const printed = formatRun(sheet, "claude-code", result, 1, 1).join("\n");
     expect(printed).toMatch(
-      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 10 problems on the answer sheet:/,
+      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 14 problems on the answer sheet:/,
     );
     expect(printed).toContain(
       "\n  D3   critical services/api/app/routes/parcels.py:55  The status filter is pasted into SQL",
     );
     expect(printed).toContain("Invalid report .peer-ai/reports/project/broken.json:");
     expect(printed).toContain("30 turns · 12 s · $1.50");
-    expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 5 high problems/);
+    expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 8 high problems/);
   });
 
   it("installs the skill, asks in plain words, and notices whether the tool used it", async () => {
