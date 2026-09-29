@@ -1,0 +1,79 @@
+{
+  "fixture": "sprout",
+  "setup": {
+    "Dockerfile": "FROM node:24 AS build\nWORKDIR /app\nCOPY . .\nRUN npm install && npm run build\n\nFROM nginx:1.29\nCOPY --from=build /app/dist /usr/share/nginx/html\nCOPY deploy/nginx.conf /etc/nginx/conf.d/default.conf\n",
+    "deploy/nginx.conf": "server {\n  listen 80;\n  server_name sprout.example;\n  root /usr/share/nginx/html;\n\n  location / {\n    try_files $uri /index.html;\n  }\n\n  # Plant identification goes through here, so the service's key stays out of the app.\n  location /identify {\n    proxy_pass https://api.plantid.example/v1/identify;\n    proxy_set_header Authorization \"Bearer pk_live_7Hc2Qm9Xv4Lr8Tn1\";\n  }\n\n  location /server-status {\n    stub_status;\n  }\n}\n",
+    "deploy/push.sh": "#!/bin/sh\n# Pushes the image and points the site at it.\nset -e\ndocker tag sprout registry.sprout.example/sprout:latest\ndocker push registry.sprout.example/sprout:latest\ncloudctl deploy sprout --image registry.sprout.example/sprout:latest --env production\n",
+    ".github/workflows/deploy.yml": "name: Deploy\n\non:\n  push:\n    branches: [\"**\"]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - run: docker build -t sprout .\n      - run: ./deploy/push.sh\n        env:\n          CLOUD_ACCESS_KEY: ${{ secrets.CLOUD_ADMIN_KEY }}\n"
+  },
+  "prompts": {
+    "infrastructure-review": "Review how Sprout is hosted and deployed."
+  },
+  "defects": [
+    {
+      "id": "IH1",
+      "title": "The site is served over plain HTTP, with no TLS and no redirect to it",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/nginx.conf",
+          "match": "listen 80;"
+        }
+      ]
+    },
+    {
+      "id": "IH2",
+      "title": "The plant identification key is written in the web server's configuration",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/nginx.conf",
+          "match": "proxy_set_header Authorization \"Bearer pk_live_7Hc2Qm9Xv4Lr8Tn1\";"
+        }
+      ]
+    },
+    {
+      "id": "IH3",
+      "title": "The web server's status page is open to anyone on the internet",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/nginx.conf",
+          "match": "location /server-status {",
+          "lines": 3
+        }
+      ]
+    },
+    {
+      "id": "IH4",
+      "title": "Every push to any branch deploys straight to production, with no checks first",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": ".github/workflows/deploy.yml",
+          "match": "branches: [\"**\"]"
+        },
+        {
+          "file": "deploy/push.sh",
+          "match": "cloudctl deploy sprout --image registry.sprout.example/sprout:latest --env production"
+        }
+      ]
+    },
+    {
+      "id": "IH5",
+      "title": "The deploy uses an administrator's cloud key",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": ".github/workflows/deploy.yml",
+          "match": "CLOUD_ACCESS_KEY: ${{ secrets.CLOUD_ADMIN_KEY }}"
+        }
+      ]
+    }
+  ]
+}

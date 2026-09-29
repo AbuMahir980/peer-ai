@@ -14,6 +14,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`split-bill-qa-tip.json`](split-bill-qa-tip.json) | `split-bill`, with a tip already built | 5 | – |
 | [`split-bill-qa-uneven.json`](split-bill-qa-uneven.json) | `split-bill`, with uneven splits already built | 5 | – |
 | [`courier-qa-move.json`](courier-qa-move.json) | `courier`, with moving a pickup already built | 5 | – |
+| [`courier-infra.json`](courier-infra.json) | `courier`, with its cloud infrastructure in Terraform | 7 | – |
+| [`courier-kubernetes.json`](courier-kubernetes.json) | `courier`, deployed on Kubernetes | 5 | – |
+| [`sprout-hosting.json`](sprout-hosting.json) | `sprout`, with its container, web server and deploy workflow | 5 | – |
 
 ## Running one
 

@@ -1,0 +1,112 @@
+{
+  "fixture": "courier",
+  "setup": {
+    "infra/main.tf": "terraform {\n  required_providers {\n    aws = {\n      source  = \"hashicorp/aws\"\n      version = \"6.14.0\"\n    }\n  }\n}\n\nprovider \"aws\" {\n  region = \"eu-west-2\"\n}\n\nvariable \"environment\" {\n  type = string\n}\n\nvariable \"db_password\" {\n  type      = string\n  sensitive = true\n}\n",
+    "infra/network.tf": "resource \"aws_security_group\" \"api\" {\n  name = \"courier-${var.environment}-api\"\n\n  ingress {\n    from_port   = 443\n    to_port     = 443\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n}\n\nresource \"aws_security_group\" \"db\" {\n  name = \"courier-${var.environment}-db\"\n\n  ingress {\n    from_port   = 5432\n    to_port     = 5432\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n}\n",
+    "infra/database.tf": "resource \"aws_db_instance\" \"courier\" {\n  identifier              = \"courier-${var.environment}\"\n  engine                  = \"postgres\"\n  engine_version          = \"17.4\"\n  instance_class          = \"db.t4g.small\"\n  allocated_storage       = 20\n  storage_encrypted       = true\n  username                = \"courier\"\n  password                = var.db_password\n  publicly_accessible     = true\n  vpc_security_group_ids  = [aws_security_group.db.id]\n  backup_retention_period = 0\n  skip_final_snapshot     = true\n  deletion_protection     = false\n}\n",
+    "infra/storage.tf": "# Shipping labels, printed by drivers at pickup.\nresource \"aws_s3_bucket\" \"labels\" {\n  bucket = \"courier-${var.environment}-labels\"\n}\n\nresource \"aws_s3_bucket_public_access_block\" \"labels\" {\n  bucket                  = aws_s3_bucket.labels.id\n  block_public_acls       = false\n  block_public_policy     = false\n  ignore_public_acls      = false\n  restrict_public_buckets = false\n}\n\nresource \"aws_s3_bucket_policy\" \"labels\" {\n  bucket = aws_s3_bucket.labels.id\n  policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [{\n      Effect    = \"Allow\"\n      Principal = \"*\"\n      Action    = \"s3:GetObject\"\n      Resource  = \"${aws_s3_bucket.labels.arn}/*\"\n    }]\n  })\n}\n",
+    "infra/iam.tf": "resource \"aws_iam_role\" \"api\" {\n  name = \"courier-${var.environment}-api\"\n  assume_role_policy = jsonencode({\n    Version   = \"2012-10-17\"\n    Statement = [{ Effect = \"Allow\", Principal = { Service = \"ecs-tasks.amazonaws.com\" }, Action = \"sts:AssumeRole\" }]\n  })\n}\n\nresource \"aws_iam_role_policy\" \"api\" {\n  role = aws_iam_role.api.id\n  policy = jsonencode({\n    Version   = \"2012-10-17\"\n    Statement = [{ Effect = \"Allow\", Action = \"*\", Resource = \"*\" }]\n  })\n}\n",
+    "infra/environments/production.tfvars": "environment = \"production\"\ndb_password = \"Courier-Prod-2026!\"\n",
+    "infra/environments/staging.tfvars": "environment = \"staging\"\n",
+    "infra/scripts/refresh-staging.sh": "#!/bin/sh\n# Gives staging real data to test with: copies production's database over staging's.\nset -e\npg_dump \"$PRODUCTION_DATABASE_URL\" | psql \"$STAGING_DATABASE_URL\"\n",
+    "infra/README.md": "# Infrastructure\n\nCourier runs on AWS, described in Terraform in this folder.\n\n## Deploying a change\n\nFrom your own machine, with your AWS credentials:\n\n```sh\nterraform apply -var-file=environments/production.tfvars\n```\n\nStaging is the same, with `environments/staging.tfvars`. Run `scripts/refresh-staging.sh` first when you need real data to test with.\n"
+  },
+  "prompts": {
+    "infrastructure-review": "Review Courier's infrastructure."
+  },
+  "defects": [
+    {
+      "id": "IT1",
+      "title": "The database has a public address, and its network rule lets any address on the internet reach it",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/database.tf",
+          "match": "publicly_accessible     = true"
+        },
+        {
+          "file": "infra/network.tf",
+          "match": "from_port   = 5432",
+          "lines": 4
+        }
+      ]
+    },
+    {
+      "id": "IT2",
+      "title": "Anyone on the internet can download every shipping label, with recipients' names and addresses",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/storage.tf",
+          "match": "Principal = \"*\""
+        },
+        {
+          "file": "infra/storage.tf",
+          "match": "restrict_public_buckets = false"
+        }
+      ]
+    },
+    {
+      "id": "IT3",
+      "title": "The API's role may do anything to any resource in the account",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/iam.tf",
+          "match": "Statement = [{ Effect = \"Allow\", Action = \"*\", Resource = \"*\" }]"
+        }
+      ]
+    },
+    {
+      "id": "IT4",
+      "title": "The production database password is written in a file in the repository",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/environments/production.tfvars",
+          "match": "db_password = \"Courier-Prod-2026!\""
+        }
+      ]
+    },
+    {
+      "id": "IT5",
+      "title": "The database keeps no backups, and can be deleted with no final copy",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/database.tf",
+          "match": "backup_retention_period = 0"
+        }
+      ]
+    },
+    {
+      "id": "IT6",
+      "title": "A script copies production's customers and recipients into staging",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/scripts/refresh-staging.sh",
+          "match": "pg_dump \"$PRODUCTION_DATABASE_URL\" | psql \"$STAGING_DATABASE_URL\""
+        }
+      ]
+    },
+    {
+      "id": "IT7",
+      "title": "Production is changed by applying Terraform from a person's own machine, not through the pipeline",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "infra/README.md",
+          "match": "terraform apply -var-file=environments/production.tfvars"
+        }
+      ]
+    }
+  ]
+}

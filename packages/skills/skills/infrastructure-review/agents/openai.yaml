@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI infrastructure review"
+  short_description: "Environments, access, exposure, secrets and backups"
+  default_prompt: "Use ${{name}} to review this project's infrastructure and deployment, and record the report."
