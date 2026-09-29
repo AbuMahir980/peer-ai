@@ -4,7 +4,7 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 30: 24 planted, and 6 that reviews found and nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
 | [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
@@ -198,6 +198,14 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, contract-check with Claude Code on Sonnet, on courier with the skill and without.** Courier is the only practice project with an API contract so far:
+  - **With the skill, both runs are ready:** 6 of 8, then 7 of 8 after the fix below, each covering all 12 rules. Without it, 6 of 8 and not ready: it missed the parcel list with no paging, which was planted, and the web app's hand-written API types. It also took longer ($1.75 and 11 minutes, against $1.26 and 6).
+  - **The runs raised five real problems nobody planted,** now on the answer sheet, and the counts include them. With the skill: the contract says anyone can ask the assistant, though the API requires sign-in (D28), and the web app's API types are written by hand (D29). Without it: a customer can pay for any parcel, since the payment never checks the parcel is theirs (D30, a security problem, now on the security-review and code-review sheets too); a payment returns a body the contract doesn't describe (D31); and the API refuses parcels over 30 kg, which the contract doesn't say (D32).
+- **What the runs changed:**
+  - **Limits weren't compared.** The baseline caught the undocumented 30 kg limit; the first run with the skill didn't. The guide now compares each field's limits, such as a range or a length, and a response with no body in the contract. The next run caught the limit; the undescribed payment body, which is low, was still missed.
+- **What people judged in those runs:**
+  - **The hand-written API types were named where one is written.** The second run with the skill put them at the tracking page's own `Tracking` type, and the sheet only accepted the shared request helper. Both are fair, so the sheet now accepts either.
+
 ## Results
 
 Newest last.
@@ -250,6 +258,9 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | contract-check | Claude Code | sonnet | used | 6 of 8 | 12 of 12 | 0 | Ready | $1.26 |
+| 2026-09-29 | courier | contract-check | Claude Code | sonnet | without | 6 of 8 | 12 of 12 | 0 | Not ready | $1.75 |
+| 2026-09-29 | courier | contract-check | Claude Code | sonnet | used | 7 of 8 | 12 of 12 | 0 | Ready | $1.13 |
 
 ## Document results
 

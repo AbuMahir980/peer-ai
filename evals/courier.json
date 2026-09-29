@@ -361,6 +361,10 @@
         {
           "file": "apps/web/src/api.ts",
           "match": "export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {"
+        },
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "interface Tracking {"
         }
       ],
       "found": "Not planted: raised by Peer AI's contract-check skill on 2026-09-29, and judged real."
