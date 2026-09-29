@@ -2,7 +2,8 @@
   "fixture": "refill",
   "prompts": {
     "requirements-analysis": "Write the requirements for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
-    "architecture": "Propose an architecture for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
+    "architecture": "Propose an architecture for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
+    "api-design": "Design the API for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
   },
   "defects": [],
   "documents": {
@@ -115,6 +116,50 @@
           "id": "AR10",
           "point": "Names vendors, clouds or frameworks only as options, never as settled.",
           "must": true
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAR1",
+          "point": "Gives each endpoint who may call it among patients, pharmacists and riders, and for which records.",
+          "must": true
+        },
+        {
+          "id": "PAR2",
+          "point": "Takes prescriptions as uploads, with a size and type limit, and never puts health details in a URL.",
+          "must": true
+        },
+        {
+          "id": "PAR3",
+          "point": "Verifies payment providers' webhooks before acting on them.",
+          "must": true
+        },
+        {
+          "id": "PAR4",
+          "point": "Gives paying an idempotency key so a retry doesn't charge twice."
+        },
+        {
+          "id": "PAR5",
+          "point": "Sets money as a whole number in the smallest unit, with its currency, for both countries."
+        },
+        {
+          "id": "PAR6",
+          "point": "Sets one error shape, and paging for every list."
+        },
+        {
+          "id": "PAR7",
+          "point": "Chooses where the contract lives, such as an OpenAPI file, as its one source of truth, or proposes it."
+        },
+        {
+          "id": "PAR8",
+          "point": "Lets riders see only the deliveries assigned to them."
+        },
+        {
+          "id": "PAR9",
+          "point": "Marks choices nobody has made yet as proposed, or asks."
         }
       ]
     }

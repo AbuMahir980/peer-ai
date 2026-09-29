@@ -13,7 +13,8 @@
     "threat-model": "Write a threat model for Shelf.",
     "architecture": "Bring Shelf's architecture document up to date with the code.",
     "product-spec": "Readers want to extend a loan by a week. Write the spec for it.",
-    "system-design": "Readers will be able to extend a loan by a week. Design how it's built."
+    "system-design": "Readers will be able to extend a loan by a week. Design how it's built.",
+    "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs."
   },
   "defects": [
     {
@@ -521,6 +522,46 @@
         {
           "id": "DS8",
           "point": "Names the files that change in the app."
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAS1",
+          "point": "Writes it as a request to the API's owners in the other repository, not as a change it makes itself.",
+          "must": true
+        },
+        {
+          "id": "PAS2",
+          "point": "Designs the endpoint: what it takes, what it returns, and each error, such as the book being reserved.",
+          "must": true
+        },
+        {
+          "id": "PAS3",
+          "point": "Says only the reader who has the loan may extend it, checked on the server.",
+          "must": true
+        },
+        {
+          "id": "PAS4",
+          "point": "Makes a repeated request extend the loan only once."
+        },
+        {
+          "id": "PAS5",
+          "point": "Adds to the API without breaking the app versions already in use."
+        },
+        {
+          "id": "PAS6",
+          "point": "Uses the API's existing error shape and conventions, or asks what they are."
+        },
+        {
+          "id": "PAS7",
+          "point": "Returns the new due date in one date format."
+        },
+        {
+          "id": "PAS8",
+          "point": "Lists the questions for the API's owners, such as how many extensions are allowed."
         }
       ]
     }

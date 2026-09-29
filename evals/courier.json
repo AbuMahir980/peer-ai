@@ -14,7 +14,8 @@
     "threat-model": "Write a threat model for Courier.",
     "architecture": "Courier's architecture document is out of date. Bring it up to date with the code.",
     "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it.",
-    "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built."
+    "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built.",
+    "api-design": "Write down Courier's API design from the code and its contract."
   },
   "defects": [
     {
@@ -597,6 +598,54 @@
         {
           "id": "DC10",
           "point": "Keeps money as whole pence, never decimals."
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAC1",
+          "point": "Names services/api/openapi.json as the one source of truth, and says whether it's written by hand or generated.",
+          "must": true
+        },
+        {
+          "id": "PAC2",
+          "point": "Lists every endpoint, including booking, listing and viewing parcels, public tracking, payment and the assistant, with who may call each.",
+          "must": true
+        },
+        {
+          "id": "PAC3",
+          "point": "Finds that booking returns recipientName where the contract promises recipient_name, and says which is right.",
+          "must": true
+        },
+        {
+          "id": "PAC4",
+          "point": "Notes that listing parcels isn't paged."
+        },
+        {
+          "id": "PAC5",
+          "point": "Notes that the payment takes the amount from the client, or card details, and that the server should decide the price and a provider should take the card."
+        },
+        {
+          "id": "PAC6",
+          "point": "Sets one error shape for the whole API."
+        },
+        {
+          "id": "PAC7",
+          "point": "Sets money as a whole number in pence with its currency."
+        },
+        {
+          "id": "PAC8",
+          "point": "Gives booking or payment an idempotency key so a retry doesn't repeat it."
+        },
+        {
+          "id": "PAC9",
+          "point": "Says the public tracking endpoint shows nothing personal."
+        },
+        {
+          "id": "PAC10",
+          "point": "Describes how a field changes without breaking clients: add, migrate, then remove."
         }
       ]
     }
