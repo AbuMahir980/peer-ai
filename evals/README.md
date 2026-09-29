@@ -5,7 +5,7 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
 | [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 27: 24 planted, and 3 that reviews found and nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 27: 21 planted, and 6 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 28: 21 planted, and 7 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 16: 14 planted, and 2 that reviews found and nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
@@ -241,6 +241,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Shelf's analytics with no consent was named where it's called.** Every shelf run, with the skill and without, put it at the one place analytics is called, and the sheet only accepted the analytics module. It's the same problem, so the sheet now accepts both, and the counts above include it.
 
+- **2026-09-29, data-migration-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready, twice:** courier 1 of 1, shelf 2 of 2 and sprout 1 of 1, each covering all 9 rules. Without it, courier found 1 of 1 too.
+  - **Both shelf runs raised a real problem nobody planted:** the app has no way to make people on an unsafe version update (MOB-06), so a version that loses saved books can't be retired. It's now S27 on the answer sheet, and the counts include it.
+- **What the runs changed:**
+  - **The guide named the planted problems.** Its example failures were a column dropped with its replacement, a browser database version that deletes an old store, and a new storage key with no move: the three planted problems, almost word for word. That makes an eval measure the answers, not the skill. The guide now states the rule for every kind of storage instead, and the second runs, with that guide, found every problem again.
+
 - **2026-09-29, design-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
   - **With the skill, all three are ready after the fix below:** courier 3 of 3, shelf 3 of 3 and sprout 3 of 3, each covering all 11 rules. Without it, sprout found 3 of 3 too.
   - **The runs raised real problems nobody planted,** now on the answer sheets, and the counts include them: courier's failed booking and stuck tracking page (D26 and D27, which accessibility-review found too), shelf's librarian screen writing its colour as a value (S28), and on sprout, a card radius with no token (SP15) and a plant list that shows nothing while it loads or when it's empty (SP16).
@@ -319,6 +325,13 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | without | 5 of 5 | 12 of 12 | 1 | Ready | $1.65 |
 | 2026-09-29 | courier | compliance-review | Claude Code | sonnet | used | 4 of 4 | 12 of 12 | 0 | Ready | $1.27 |
 | 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | used | 5 of 5 | 12 of 12 | 1 | Ready | $1.32 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.81 |
+| 2026-09-29 | shelf | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $1.02 |
+| 2026-09-29 | sprout | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.88 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | without | 1 of 1 | 9 of 9 | 0 | Ready | $0.90 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.68 |
+| 2026-09-29 | shelf | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $0.84 |
+| 2026-09-29 | sprout | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.86 |
 | 2026-09-29 | courier | design-review | Claude Code | sonnet | installed, not used | 0 of 3 | 0 of 11 | 0 | Not ready | $0.18 |
 | 2026-09-29 | shelf | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 1 | Ready | $1.71 |
 | 2026-09-29 | sprout | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 2 | Ready | $0.95 |
