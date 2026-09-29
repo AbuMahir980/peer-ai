@@ -157,3 +157,27 @@ Security logs are watched for signs of attack, such as a burst of failed sign-in
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | Always | [OWASP ASVS 5.0, 16.4.3, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md) |
+
+## OPS-14 · Every release can be undone
+
+Every release has a tested way back to the version before it, and its database changes still work with that version, so undoing the release doesn't need an emergency fix.
+
+**Why:** A release that can't be undone turns every bad deploy into an outage that lasts until someone writes a fix under pressure.
+
+**Ask:** If this release goes wrong, can it be undone, and will the previous version still run on the changed database?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | High | Always | – |
+
+## OPS-15 · The product's service targets are written down and watched
+
+The product's targets for its main journeys, such as how often they work and how fast, are written down, measured in production, and raise an alert before they're missed.
+
+**Why:** Without a target, nobody can tell a slow week from an outage, or decide when reliability work should come before features.
+
+**Ask:** Does this change affect a main journey's target, and is that target still measured and alerted on?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | AI review | Medium | Always | – |
