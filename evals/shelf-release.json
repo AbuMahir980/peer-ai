@@ -199,6 +199,10 @@
         {
           "file": "docs/releases/3.5.0.md",
           "match": "- SH-15: The librarian suggests two books instead of one."
+        },
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "whole": true
         }
       ],
       "rules": ["REQ-05", "DEL-04"]
@@ -212,8 +216,13 @@
         {
           "file": "docs/releases/3.5.0.md",
           "match": "We fix forward: a patch release goes through the stores in a day or two."
+        },
+        {
+          "file": "app.json",
+          "whole": true
         }
-      ]
+      ],
+      "rules": ["OPS-14", "MOB-06"]
     },
     {
       "id": "RS4",
@@ -231,6 +240,111 @@
         }
       ],
       "rules": ["TEST-10"]
+    },
+    {
+      "id": "RS5",
+      "title": "SH-14's new saved-books format ships on top of 3.4.0's move to a new storage key, which never copied the old saved books across",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "src/storage/savedBooks.ts",
+          "match": "const KEY = \"savedBooks:v2\";"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "RS6",
+      "title": "The reviews recorded on the release's items point to reports that don't exist, so none of them is proven",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".peer-ai/work/SH-12.json",
+          "whole": true
+        },
+        {
+          "file": ".peer-ai/work/SH-15.json",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["REQ-05"]
+    },
+    {
+      "id": "RS7",
+      "title": "There's no CI at all, though the plan says CI builds both apps, so no required check can stop the release",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "docs/releases/3.5.0.md",
+          "match": "1. Merge to main. CI builds both apps."
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["DEL-04", "DEL-05", "DEL-06"]
+    },
+    {
+      "id": "RS8",
+      "title": "There's no list of the app's dependencies for this release",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["DEL-10"]
+    },
+    {
+      "id": "RS9",
+      "title": "There's no written plan for an incident",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-11"]
+    },
+    {
+      "id": "RS10",
+      "title": "There are no service targets for the journeys this release changes",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-15"]
+    },
+    {
+      "id": "RS11",
+      "title": "There's no staging environment for the release to go through first",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-04"]
     }
   ]
 }

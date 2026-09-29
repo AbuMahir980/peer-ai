@@ -84,6 +84,10 @@
         {
           "file": "docs/releases/launch.md",
           "match": "Redeploy the previous images."
+        },
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "INSERT INTO parcels (customer_id, tracking_code, weight_kg, pickup_address, pickup_lat, pickup_lng,"
         }
       ]
     },
@@ -122,6 +126,102 @@
           "match": "DEBUG=true"
         }
       ]
+    },
+    {
+      "id": "RC6",
+      "title": "The launch runs a migration that drops customers' parcel notes, which the API still reads and writes",
+      "severity": "critical",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "services/api/migrations/0002_delivery_notes.sql",
+          "match": "ALTER TABLE parcels DROP COLUMN notes;"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "RC7",
+      "title": "The launch takes card numbers and security codes onto Courier's own server, against the requirements",
+      "severity": "critical",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    card_number: str",
+          "lines": 3
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "RC8",
+      "title": "The public tracking page shows the recipient's name and address, against the requirements",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"SELECT status, recipient_name, recipient_address FROM parcels WHERE tracking_code = %s\","
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "RC9",
+      "title": "There's no list of the dependencies this release ships",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["DEL-10"]
+    },
+    {
+      "id": "RC10",
+      "title": "The API has no health or readiness check",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-10"]
+    },
+    {
+      "id": "RC11",
+      "title": "There's no written plan for an incident",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-11"]
+    },
+    {
+      "id": "RC12",
+      "title": "There are no service targets for booking, paying or tracking",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-15"]
     }
   ]
 }

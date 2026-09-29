@@ -114,6 +114,38 @@
         }
       ],
       "rules": ["REQ-05", "DEL-04"]
+    },
+    {
+      "id": "RL4",
+      "title": "There's no tested way back from a bad publish",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".github/workflows/publish.yml",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-14"]
+    },
+    {
+      "id": "RL5",
+      "title": "There's no written plan for an incident, though the publish token is a live secret",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-11"]
     }
   ]
 }

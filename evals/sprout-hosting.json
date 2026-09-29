@@ -74,6 +74,19 @@
           "match": "CLOUD_ACCESS_KEY: ${{ secrets.CLOUD_ADMIN_KEY }}"
         }
       ]
+    },
+    {
+      "id": "IH6",
+      "title": "The app sends the plant identification key from people's browsers, so the key is in the code everyone downloads, whatever the web server does",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/identify.ts",
+          "match": "const PLANT_ID_KEY = import.meta.env.VITE_PLANT_ID_KEY;"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's infrastructure-review skill on 2026-09-29, and judged real."
     }
   ]
 }
