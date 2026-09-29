@@ -22,6 +22,7 @@ import {
   regradeDocument,
   scoreDocument,
   changeIn,
+  finalMessage,
   setUp,
   workItemsDocument,
   writtenDocument,
@@ -569,6 +570,7 @@ describe("marking a document", () => {
     workItem("CR-9", { title: "Cancel a pickup", goal: "A customer cancels their own pickup." });
     const text = workItemsDocument(dir) ?? "";
     expect(text.indexOf("## CR-9: Cancel a pickup")).toBeLessThan(text.indexOf("## CR-10"));
+    expect(text).toContain("Created or changed by this run.");
     expect(text).toContain("- Goal: A customer cancels their own pickup.");
     expect(text).toContain("- Acceptance criteria:\n  - Given…, then one refund.");
     expect(text).toContain("- Depends on: CR-9");
@@ -595,6 +597,21 @@ describe("marking a document", () => {
     expect(change).toContain("+export const split = 2;");
     expect(change).toContain("tip.test.ts");
     expect(change).not.toContain(".peer-ai");
+  });
+
+  it("reads what a run told the person at the end, from Claude Code's or Codex's log", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-final-"));
+    made.push(dir);
+    const claude = join(dir, "claude.log");
+    writeFileSync(claude, '{"type":"assistant"}\n{"type":"result","result":"SB-2 waits on SB-1."}\n');
+    const codex = join(dir, "codex.log");
+    writeFileSync(
+      codex,
+      '{"type":"item.completed","item":{"type":"agent_message","text":"First."}}\nnoise\n{"type":"item.completed","item":{"type":"agent_message","text":"Done."}}\n',
+    );
+    expect(finalMessage(claude)).toBe("SB-2 waits on SB-1.");
+    expect(finalMessage(codex)).toBe("Done.");
+    expect(finalMessage(join(dir, "none.log"))).toBeUndefined();
   });
 
   it("keeps every scenario's set-up work items valid", () => {

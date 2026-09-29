@@ -658,10 +658,12 @@ export async function markDocument(
   const also = otherDocuments(dir, path).map(
     (file) => `\n\n---\n\n# Also written: ${file}\n\n${readFileSync(join(dir, file), "utf8")}`,
   );
+  const told = work ? finalMessage(`${dir}.log`) : undefined;
+  const answer = told === undefined ? "" : `\n\n---\n\n# What the run told the person at the end\n\n${told}\n`;
   const change = scenario.diff === true ? `\n\n---\n\n# The change\n\n\`\`\`diff\n${changeIn(dir)}\n\`\`\`\n` : "";
   writeFileSync(
     join(gradeDir, "document.md"),
-    (plan ?? readFileSync(join(dir, path), "utf8")) + also.join("") + change,
+    (plan ?? readFileSync(join(dir, path), "utf8")) + also.join("") + change + answer,
   );
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
@@ -736,15 +738,40 @@ export function changeIn(dir: string): string {
   }
 }
 
+/**
+ * What a run told the person at the end, from its log: Claude Code's result, or Codex's last message.
+ * Undefined when the log has none.
+ */
+export function finalMessage(log: string): string | undefined {
+  if (!existsSync(log)) return undefined;
+  let last: string | undefined;
+  for (const line of readFileSync(log, "utf8").split("\n")) {
+    if (!line.startsWith("{")) continue;
+    try {
+      const event = JSON.parse(line) as { type?: string; result?: unknown; item?: { type?: string; text?: unknown } };
+      if (event.type === "result" && typeof event.result === "string") last = event.result;
+      if (event.item?.type === "agent_message" && typeof event.item.text === "string") last = event.item.text;
+    } catch {
+      // Not an event line.
+    }
+  }
+  return last;
+}
+
 const WORK_FOLDER = ".peer-ai/work/";
 
 /** The work items a run created or changed, written out as a document for the grader, or undefined for none. */
 export function workItemsDocument(dir: string): string | undefined {
-  const changed = changedSinceStart(dir).filter((file) => file.startsWith(WORK_FOLDER) && file.endsWith(".json"));
-  const items = changed
-    .flatMap((file) => {
+  // Every work item, marked by whether the run changed it: leaving an item as it was can be the
+  // right outcome, such as one waiting on another.
+  const changed = new Set(changedSinceStart(dir));
+  const folder = join(dir, WORK_FOLDER);
+  const files = existsSync(folder) ? readdirSync(folder).filter((file) => file.endsWith(".json")) : [];
+  const items = files
+    .flatMap((file): Record<string, unknown>[] => {
       try {
-        return [JSON.parse(readFileSync(join(dir, file), "utf8")) as Record<string, unknown>];
+        const item = JSON.parse(readFileSync(join(folder, file), "utf8")) as Record<string, unknown>;
+        return [{ ...item, changedByRun: changed.has(`${WORK_FOLDER}${file}`) }];
       } catch {
         return [];
       }
@@ -769,6 +796,8 @@ export function workItemsDocument(dir: string): string | undefined {
   const sections = items.map((item) =>
     [
       `## ${text(item.id)}: ${text(item.title)}`,
+      "",
+      item.changedByRun ? "Created or changed by this run." : "Left as it was by this run.",
       "",
       `- Kind: ${text(item.kind)}; part: ${text(item.track)}; stage: ${text(item.stage)}`,
       `- Goal: ${text(item.goal)}`,
