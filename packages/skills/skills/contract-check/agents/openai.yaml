@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI contract check"
+  short_description: "The API compared with its contract, route by route"
+  default_prompt: "Use ${{name}} to check that this API does what its contract says, and record the report."
