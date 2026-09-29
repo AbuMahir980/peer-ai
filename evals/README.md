@@ -185,6 +185,11 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The grader was wrong once:** it marked refill's run as not modelling order statuses as a fixed set, while quoting the fixed set, rejected prescriptions included. A person counts that run 9 of 9.
   - **Two plants with the same position** was missed with the skill and without, on sprout.
 
+- **2026-09-29, design-system with Codex, on sprout, shelf and courier, with the skill and without:**
+  - **With the skill, every point on all three:** 8 of 8 each, all ready. Without it: sprout 3 of 8, shelf 6 of 8 and courier 6 of 8, none ready.
+  - **Without the skill, contrast was never worked out:** sprout's baseline found the stray grey but didn't say it's too pale, and neither sprout's nor shelf's gave contrast ratios. Courier's baseline listed no shared components with their states, and didn't pin the danger colour to one meaning.
+  - **With the skill, each run found the planted problems its project has:** sprout's pale, off-token muted text and drag-only reordering; shelf's hard-coded colours, the unnamed return icon and text that ignores the reader's size; courier's status shown only by colour, the Book button a keyboard can't use, and fields without labels.
+
 ## Results
 
 Newest last.
@@ -302,3 +307,9 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | courier | data-modelling | Codex | default | without | 6 of 9 | 4 of 4 | Refused | Not ready | Codex | – |
 | 2026-09-29 | sprout | data-modelling | Codex | default | without | 6 of 8 | 3 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | refill | data-modelling | Codex | default | without | 9 of 9 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | design-system | Codex | default | used | 8 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | design-system | Codex | default | used | 8 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | design-system | Codex | default | used | 8 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | design-system | Codex | default | without | 3 of 8 | 1 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | design-system | Codex | default | without | 6 of 8 | 3 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | design-system | Codex | default | without | 6 of 8 | 3 of 3 | Accepted | Not ready | Codex | – |
