@@ -486,7 +486,7 @@ export const GRADE_PROMPT = `Grade a document against a list of points. document
 
 For each point, decide whether the document makes it: clearly and in substance, not by mentioning a word in passing. Judge only from what the document says.
 
-Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Change no other file.`;
+Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Escape any double quotes inside a quote, and check that grades.json parses as JSON. Change no other file.`;
 
 /** The grades the grader wrote, or undefined when it wrote none that are valid. */
 export function readGrades(dir: string): Grade[] | undefined {
@@ -642,8 +642,14 @@ export async function markDocument(
   writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8") + also.join(""));
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
-  await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
-  return { ...scoreDocument(skill, scenario, true, check, readGrades(gradeDir)), path };
+  // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
+  let grades: Grade[] | undefined;
+  for (let attempt = 1; attempt <= 2 && grades === undefined; attempt++) {
+    rmSync(join(gradeDir, "grades.json"), { force: true });
+    await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}${attempt === 1 ? "" : "-2"}.log`, grader.model);
+    grades = readGrades(gradeDir);
+  }
+  return { ...scoreDocument(skill, scenario, true, check, grades), path };
 }
 
 /** A file's text, or undefined for a folder or nothing at all. */

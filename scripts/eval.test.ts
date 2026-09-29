@@ -521,6 +521,34 @@ describe("marking a document", () => {
     expect(printed).toContain(`Graded again from the copy in ${dir}`);
   });
 
+  it("grades again once when the grader writes nothing valid", async () => {
+    const sheet = loadSheet("refill");
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-retry-"));
+    made.push(dir, `${dir}-grades`, `${dir}-grades.log`, `${dir}-grades-2.log`);
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Requirements: Refill\n");
+    let attempts = 0;
+    const result = await regradeDocument(
+      sheet,
+      "requirements-analysis",
+      dir,
+      (_tool, gradeDir) => {
+        attempts++;
+        const points = JSON.parse(readFileSync(join(gradeDir, "points.json"), "utf8")) as { id: string }[];
+        writeFileSync(
+          join(gradeDir, "grades.json"),
+          attempts === 1
+            ? '[{"id": "F1", "met": true, "quote": "an "unescaped" quote"}]'
+            : JSON.stringify(points.map(({ id }) => ({ id, met: true, quote: "Yes." }))),
+        );
+        return Promise.resolve();
+      },
+      { tool: "codex" },
+    );
+    expect(attempts).toBe(2);
+    expect(result.score.graded).toBe(true);
+  });
+
   it("notices when the run leaves the document as it was", async () => {
     const result = await evaluateDocument(
       loadSheet("courier"),
