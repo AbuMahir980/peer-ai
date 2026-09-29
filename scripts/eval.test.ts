@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { skillRuleIds } from "@peer-ai/skills";
-import { validateReport, type ReviewReport } from "@peer-ai/workflow";
+import { WorkItemSchema, validateReport, type ReviewReport } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   DOCUMENT_RESULTS,
@@ -21,6 +21,8 @@ import {
   otherDocuments,
   regradeDocument,
   scoreDocument,
+  changeIn,
+  setUp,
   workItemsDocument,
   writtenDocument,
   type ResolvedDefect,
@@ -570,6 +572,38 @@ describe("marking a document", () => {
     expect(text).toContain("- Goal: A customer cancels their own pickup.");
     expect(text).toContain("- Acceptance criteria:\n  - Given…, then one refund.");
     expect(text).toContain("- Depends on: CR-9");
+  });
+
+  it("sets up a scenario in the copy, and shows the grader only what the run changed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-setup-"));
+    made.push(dir);
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", ...args], { cwd: dir });
+    git("init", "-q");
+    writeFileSync(join(dir, "split.ts"), "export const split = 1;\n");
+    git("add", "-A");
+    git("commit", "-q", "-m", "fixture");
+    setUp(dir, { ".peer-ai/work/SB-1.json": { id: "SB-1" }, "notes.md": "# Notes\n" });
+    expect(readFileSync(join(dir, ".peer-ai/work/SB-1.json"), "utf8")).toBe('{\n  "id": "SB-1"\n}\n');
+    expect(changeIn(dir)).toBe("");
+    writeFileSync(join(dir, "split.ts"), "export const split = 2;\n");
+    writeFileSync(join(dir, "tip.test.ts"), "test();\n");
+    writeFileSync(join(dir, ".peer-ai/work/SB-1.json"), '{ "id": "SB-1", "stage": "ship" }\n');
+    const change = changeIn(dir);
+    expect(change).toContain("+export const split = 2;");
+    expect(change).toContain("tip.test.ts");
+    expect(change).not.toContain(".peer-ai");
+  });
+
+  it("keeps every scenario's set-up work items valid", () => {
+    for (const name of sheets()) {
+      for (const scenario of Object.values(loadSheet(name).documents ?? {})) {
+        for (const [path, content] of Object.entries(scenario.setup ?? {})) {
+          if (path.startsWith(".peer-ai/work/"))
+            expect(WorkItemSchema.safeParse(content).success, `${name} ${path}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("notices when the run leaves the document as it was", async () => {

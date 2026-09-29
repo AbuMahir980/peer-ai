@@ -80,6 +80,13 @@ const DocumentScenario = z.strictObject({
       "Where the document should be written, relative to the project root. When the skill names the file, a folder ending in /, such as docs/specs/, or a pattern with * for the name, such as docs/specs/*-design.md.",
     ),
   points: z.array(Point).min(3),
+  setup: z
+    .record(z.string().min(1), z.union([z.string(), z.record(z.string(), z.unknown())]))
+    .optional()
+    .describe(
+      "Files written into the copy and committed before the run, such as a planned work item. An object is written as JSON.",
+    ),
+  diff: z.boolean().optional().describe("Give the grader the change the run made to the code, as a diff."),
 });
 
 export const SheetSchema = z.strictObject({
@@ -651,7 +658,11 @@ export async function markDocument(
   const also = otherDocuments(dir, path).map(
     (file) => `\n\n---\n\n# Also written: ${file}\n\n${readFileSync(join(dir, file), "utf8")}`,
   );
-  writeFileSync(join(gradeDir, "document.md"), (plan ?? readFileSync(join(dir, path), "utf8")) + also.join(""));
+  const change = scenario.diff === true ? `\n\n---\n\n# The change\n\n\`\`\`diff\n${changeIn(dir)}\n\`\`\`\n` : "";
+  writeFileSync(
+    join(gradeDir, "document.md"),
+    (plan ?? readFileSync(join(dir, path), "utf8")) + also.join("") + change,
+  );
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
   // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
@@ -664,19 +675,72 @@ export async function markDocument(
   return { ...scoreDocument(skill, scenario, true, check, grades), path };
 }
 
+/** The tag a scenario's copy is marked with once it's set up, so the run's change can be told apart. */
+const START = "eval-start";
+
+/** Writes a scenario's files into the copy and commits them, then marks where the run starts. */
+export function setUp(dir: string, files: DocumentScenario["setup"]): void {
+  const git = (...args: string[]) =>
+    execFileSync(
+      "git",
+      ["-c", "user.name=Peer AI eval", "-c", "user.email=eval@example.com", "-c", "commit.gpgsign=false", ...args],
+      { cwd: dir, stdio: "ignore" },
+    );
+  if (files !== undefined && Object.keys(files).length > 0) {
+    for (const [path, content] of Object.entries(files)) {
+      mkdirSync(join(dir, path, ".."), { recursive: true });
+      writeFileSync(join(dir, path), typeof content === "string" ? content : `${JSON.stringify(content, null, 2)}\n`);
+    }
+    git("add", "-A");
+    git("commit", "-q", "-m", "Set up the scenario");
+  }
+  git("tag", "-f", START);
+}
+
+/**
+ * The files the run changed since the scenario was set up, committed or not, new files included. A
+ * copy made before the start was marked falls back to what git reports as changed.
+ */
+export function changedSinceStart(dir: string): string[] {
+  const lines = (args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+  try {
+    execFileSync("git", ["add", "-A", "-N", "."], { cwd: dir, stdio: "ignore" });
+    return lines(["diff", "--name-only", START]);
+  } catch {
+    try {
+      return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+        .split("\n")
+        .map((line) => line.slice(3).trim())
+        .filter((line) => line !== "");
+    } catch {
+      return [];
+    }
+  }
+}
+
+/** Everything the run changed in the code since the scenario was set up, new files included, leaving out Peer AI's own files. */
+export function changeIn(dir: string): string {
+  try {
+    execFileSync("git", ["add", "-A", "-N", "."], { cwd: dir, stdio: "ignore" });
+    return execFileSync(
+      "git",
+      ["diff", START, "--", ".", ":(exclude).peer-ai", ":(exclude).claude", ":(exclude).agents", ":(exclude).cursor"],
+      { cwd: dir, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    ).trim();
+  } catch {
+    return "";
+  }
+}
+
 const WORK_FOLDER = ".peer-ai/work/";
 
 /** The work items a run created or changed, written out as a document for the grader, or undefined for none. */
 export function workItemsDocument(dir: string): string | undefined {
-  let changed: string[];
-  try {
-    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
-      .split("\n")
-      .map((line) => line.slice(3).trim())
-      .filter((file) => file.startsWith(WORK_FOLDER) && file.endsWith(".json"));
-  } catch {
-    return undefined;
-  }
+  const changed = changedSinceStart(dir).filter((file) => file.startsWith(WORK_FOLDER) && file.endsWith(".json"));
   const items = changed
     .flatMap((file) => {
       try {
@@ -830,6 +894,7 @@ export async function evaluateDocument(
     throw new Error(`There's no ${skill} skill yet. Run with --baseline to measure the document without one.`);
   }
   const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
+  setUp(dir, scenario.setup);
   const before = readIfFile(join(dir, scenario.path));
   const log = `${dir}.log`;
   const toolRun = await runner(tool, dir, evalPrompt(sheet, skill, baseline), log, options.model);

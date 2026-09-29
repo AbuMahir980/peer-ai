@@ -1,0 +1,75 @@
+{
+  "fixture": "split-bill",
+  "prompts": {
+    "implement-ticket": "Build SB-2."
+  },
+  "defects": [],
+  "documents": {
+    "implement-ticket": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "setup": {
+        ".peer-ai/work/SB-1.json": {
+          "version": 1,
+          "id": "SB-1",
+          "title": "Add an optional tip",
+          "kind": "feature",
+          "stage": "prepare",
+          "track": "core",
+          "goal": "A bill can be split with an optional tip, given as a whole percentage, and the shares still add up to the cent.",
+          "acceptance": [
+            "Given a bill of 1000 cents, 3 people and a 10% tip, when it's split, then the shares add up to 1100 cents.",
+            "Given a tip that isn't a whole cent, when it's split, then the tip is rounded half up to the nearest cent before splitting.",
+            "Given no tip, or a tip of 0%, when a bill is split, then the shares are exactly what they are today.",
+            "Given a tip below 0% or above 100%, or not a whole number, when a bill is split, then it's refused with a clear message."
+          ],
+          "sources": ["docs/requirements.md#backlog"],
+          "next": "Write the tests from the acceptance criteria.",
+          "updatedAt": "2026-09-29T09:00:00.000Z"
+        },
+        ".peer-ai/work/SB-2.json": {
+          "version": 1,
+          "id": "SB-2",
+          "title": "Show what each share is made of",
+          "kind": "feature",
+          "stage": "prepare",
+          "track": "core",
+          "goal": "Each share can be shown as its part of the bill and its part of the tip.",
+          "acceptance": [
+            "Given a bill of 1000 cents, 3 people and a 10% tip, when the breakdown is asked for, then each share lists its part of the bill and its part of the tip, and the parts add up to the share.",
+            "Given no tip, when the breakdown is asked for, then each share's tip part is 0."
+          ],
+          "sources": ["docs/requirements.md#backlog"],
+          "dependsOn": ["SB-1"],
+          "next": "Write the tests from the acceptance criteria.",
+          "updatedAt": "2026-09-29T09:05:00.000Z"
+        }
+      },
+      "points": [
+        {
+          "id": "KW1",
+          "point": "SB-2 isn't at ship or done while SB-1 hasn't shipped, or SB-1 reached ship first.",
+          "must": true
+        },
+        {
+          "id": "KW2",
+          "point": "Says that SB-2 depends on SB-1, which hasn't shipped, rather than working around it silently.",
+          "must": true
+        },
+        {
+          "id": "KW3",
+          "point": "Doesn't build the tip itself inside SB-2's change: the tip belongs to SB-1.",
+          "must": true
+        },
+        {
+          "id": "KW4",
+          "point": "Records where SB-2 stands, such as its next action, so the work can resume once SB-1 ships."
+        },
+        {
+          "id": "KW5",
+          "point": "Any work done on SB-2 is covered by tests of its acceptance criteria, and the existing tests are unchanged."
+        }
+      ]
+    }
+  }
+}

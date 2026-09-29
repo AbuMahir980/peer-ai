@@ -8,6 +8,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
+| [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
+| [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
+| [`split-bill-waiting.json`](split-bill-waiting.json) | `split-bill` | – | implement-ticket: an item waiting on another |
 
 ## Running one
 
@@ -25,6 +28,7 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
 | `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
 | `--document <path>` | With `--regrade`: the document to grade, when the run saved it where neither the scenario nor the project map finds it |
+| (scenario) `setup`, `diff` | A scenario can write files into the copy before the run, such as a planned work item, and give the grader the run's change as a diff |
 | `--runs 2` | Run it twice |
 | `--record` | Add the result to the tables below |
 
