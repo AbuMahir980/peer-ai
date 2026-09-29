@@ -17,7 +17,8 @@
     "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs.",
     "design-system": "Write down Shelf's design system from its tokens and screens.",
     "issue-planning": "Readers want to extend a loan by a week. Plan the work. This is the spec we agreed:\n\n\"A reader can extend their own loan by a week, once, unless someone has reserved the book. The lender is told about the extension. With no connection, the Extend button says it needs one. The Shelf API, in its own repository, needs a new endpoint for this.\"",
-    "dependency-review": "Review the Shelf app's dependencies."
+    "dependency-review": "Review the Shelf app's dependencies.",
+    "test-strategy": "Write a test strategy for the Shelf app."
   },
   "defects": [
     {
@@ -779,6 +780,55 @@
         {
           "id": "IS6",
           "point": "Gives each item a goal and a first action."
+        }
+      ]
+    },
+    "test-strategy": {
+      "path": "docs/test-strategy.md",
+      "points": [
+        {
+          "id": "ES1",
+          "point": "Says the only test is in the older JavaScript half, and the newer TypeScript features have none.",
+          "must": true
+        },
+        {
+          "id": "ES2",
+          "point": "Plans a test that upgrading to version 3.4 keeps each reader's saved books, starting from the older version's saved data.",
+          "must": true
+        },
+        {
+          "id": "ES3",
+          "point": "Plans the main journeys end to end (signing in, lending a book, borrowing one, finding books nearby), on both iOS and Android.",
+          "must": true
+        },
+        {
+          "id": "ES4",
+          "point": "Plans a penetration test before launch and every year, since the app is at the production stage.",
+          "must": true
+        },
+        {
+          "id": "ES5",
+          "point": "Says the existing reducer test only checks adding to an empty list, and what it can't prove."
+        },
+        {
+          "id": "ES6",
+          "point": "Plans how tests meet the lending API, which lives in another repository: a contract both sides check."
+        },
+        {
+          "id": "ES7",
+          "point": "Plans tests that the app sends only a rough area, never the reader's exact location, and that signing out ends the session on the server."
+        },
+        {
+          "id": "ES8",
+          "point": "Plans accessibility checks with VoiceOver and TalkBack, and with larger text sizes."
+        },
+        {
+          "id": "ES9",
+          "point": "Plans tests for the librarian: catalogue text that tries to steer it, and reservations that need the reader to confirm."
+        },
+        {
+          "id": "ES10",
+          "point": "Says nothing runs the tests automatically before a change merges."
         }
       ]
     }

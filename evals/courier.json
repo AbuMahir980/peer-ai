@@ -20,7 +20,8 @@
     "design-system": "Courier has no design system yet. Write one from its web app's screens.",
     "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\"",
     "design-review": "Review the design of Courier's web app screens.",
-    "dependency-review": "Review Courier's dependencies."
+    "dependency-review": "Review Courier's dependencies.",
+    "test-strategy": "Write Courier's test strategy."
   },
   "defects": [
     {
@@ -945,6 +946,51 @@
         {
           "id": "IC8",
           "point": "Gives each item a goal and a first action."
+        }
+      ]
+    },
+    "test-strategy": {
+      "path": "docs/test-strategy.md",
+      "points": [
+        {
+          "id": "EC1",
+          "point": "Names the main journeys (booking a pickup, paying for it, tracking a parcel) and says none has an end-to-end test yet.",
+          "must": true
+        },
+        {
+          "id": "EC2",
+          "point": "Says the verify command runs only the API's tests, so the web app's tests never run on a change.",
+          "must": true
+        },
+        {
+          "id": "EC3",
+          "point": "Says the API's tests use a stand-in database that ignores every query, so they can't catch a wrong or unsafe query, and plans tests against a database built by the migrations.",
+          "must": true
+        },
+        {
+          "id": "EC4",
+          "point": "Plans abuse tests that a customer can't see or change another customer's parcel, and that the tracking link doesn't show the recipient's details.",
+          "must": true
+        },
+        {
+          "id": "EC5",
+          "point": "Plans the price as a business rule tested with plain values at its edges, and says the one price test checks a single weight."
+        },
+        {
+          "id": "EC6",
+          "point": "Plans how tests meet the payment provider and the geocoding service: stand-ins for Courier's own handling, including failures, and something that checks the real contract."
+        },
+        {
+          "id": "EC7",
+          "point": "Plans tests for the support assistant: text in a parcel's notes that tries to steer it, and actions that must be confirmed first."
+        },
+        {
+          "id": "EC8",
+          "point": "Says nothing runs the tests automatically before a change merges."
+        },
+        {
+          "id": "EC9",
+          "point": "Lists the gaps most serious first, each with the level it belongs at."
         }
       ]
     }
