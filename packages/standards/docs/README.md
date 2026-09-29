@@ -27,6 +27,6 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Delivery](delivery.md) | 8 |
 | [Infrastructure and operations](operations.md) | 13 |
 | [AI features](ai-features.md) | 8 |
-| [Code quality](code-quality.md) | 14 |
+| [Code quality](code-quality.md) | 15 |
 | [Money](money.md) | 12 |
 | [Safety-critical data](safety-critical.md) | 6 |

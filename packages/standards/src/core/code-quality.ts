@@ -157,4 +157,15 @@ export const codeQuality = [
     check: "auto",
     severity: "medium",
   },
+  {
+    id: "CODE-15",
+    domain: "code-quality",
+    title: "Edge cases are handled",
+    rule: "Code gives the right answer at the edges of what it can receive: time zones and daylight saving, empty and very long input, ties and equal values, the first and last item, and zero.",
+    why: "Most bugs live at the edges. The ordinary path is the one everyone tries, so it's rarely where things break.",
+    ask: "Does this change give the right answer at its edges: time zones, empty or huge input, ties, first and last, and zero?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "medium",
+  },
 ] satisfies RuleInput[];
