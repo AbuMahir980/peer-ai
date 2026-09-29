@@ -125,6 +125,17 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The grader was wrong once:** in the second courier run it counted "about ten minutes", from the operations lead's message, as an invented figure. A person counts that run 10 of 11; it still isn't ready, because of the loyalty scheme.
   - **The grader varies:** refill with the skill was graded 12 and then 13 of 13 on the same document, over whether it asked if a patient is charged when a prescription is rejected.
 
+- **2026-09-29, threat-model with Codex, on courier, shelf and sprout, with the skill and without.** The first six rows were graded again after two points were corrected:
+  - **With the skill, after the fixes below:** courier 13 of 13 and sprout 10 of 10, both ready; shelf 9 of 11. Without it: 10 of 13, 7 of 11 and 9 of 10, none ready.
+  - **Without the skill, Codex missed what matters most on shelf:** the partner secret built into the app and the plain HTTP to the API. On courier it missed the notes shown as HTML, and cited no rules.
+- **What the runs changed:**
+  - **Only missing defences were listed.** Every first run listed what's missing and marked nothing in place, so a reader couldn't tell what must be kept, such as the sign-in check on courier's routes. The skill now looks as hard for defences that hold. Courier and sprout then marked theirs, with files and lines; shelf still didn't.
+  - **Stopping to wait.** The skill said to wait for answers to its questions, as requirements-analysis did. It now writes them down as assumptions and asks at hand-over. No threat-model run was caught by it.
+- **What people judged in those runs:**
+  - **Two points were wrong about courier,** and were rewritten before the re-grade. Courier has no sign-in route: a customer is identified by a signed token, and the threat model said so correctly. The point on in-place defences was empty when none was marked; it now asks for at least one.
+  - **Shelf's in-place defences are a judgement call.** Its requests carry the reader's session token, which a person would mark in place; almost everything else it has is planted as missing. The shelf run is counted as not ready.
+  - **The grader varies:** the same sprout baseline was graded 7 and then 9 of 10, though only one of its points had changed.
+
 ## Results
 
 Newest last.
@@ -194,3 +205,12 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
 | 2026-09-29 | courier | requirements-analysis | Codex | default | used | No document | – | – | Not ready | Codex | – |
 | 2026-09-29 | courier | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | threat-model | Codex | default | used | 11 of 13 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | threat-model | Codex | default | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | threat-model | Codex | default | used | 9 of 10 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | threat-model | Codex | default | without | 10 of 13 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | threat-model | Codex | default | without | 7 of 11 | 2 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | threat-model | Codex | default | without | 9 of 10 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | threat-model | Codex | default | used | 13 of 13 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | threat-model | Codex | default | used | 9 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | threat-model | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
