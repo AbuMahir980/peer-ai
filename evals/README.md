@@ -11,6 +11,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
 | [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
 | [`split-bill-waiting.json`](split-bill-waiting.json) | `split-bill` | – | implement-ticket: an item waiting on another |
+| [`split-bill-qa-tip.json`](split-bill-qa-tip.json) | `split-bill`, with a tip already built | 5 | – |
+| [`split-bill-qa-uneven.json`](split-bill-qa-uneven.json) | `split-bill`, with uneven splits already built | 5 | – |
+| [`courier-qa-move.json`](courier-qa-move.json) | `courier`, with moving a pickup already built | 5 | – |
 
 ## Running one
 

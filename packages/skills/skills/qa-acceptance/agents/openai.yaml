@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI QA acceptance"
+  short_description: "A built item checked against its acceptance criteria"
+  default_prompt: "Use ${{name}} to check this work item against its acceptance criteria, and record the report."

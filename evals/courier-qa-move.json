@@ -1,0 +1,97 @@
+{
+  "fixture": "courier",
+  "setup": {
+    ".peer-ai/work/CR-4.json": {
+      "version": 1,
+      "id": "CR-4",
+      "title": "Move a pickup to another day",
+      "kind": "feature",
+      "stage": "verify",
+      "track": "api",
+      "goal": "A customer can move their own pickup to a later day, up until the evening before, without ringing support.",
+      "acceptance": [
+        "Given a customer's own pickup that hasn't been collected, when they move it to a later day before 6pm the day before its current date, then it's moved and the new date is saved.",
+        "Given it's after 6pm the day before the pickup, when the customer tries to move it, then it's refused, with a message saying it's too late to move online.",
+        "Given a pickup that has been collected, when the customer tries to move it, then it's refused.",
+        "Given someone else's pickup, when a customer tries to move it, then it's refused as if it didn't exist.",
+        "Given a new date that is today or in the past, in the UK, when the customer tries to move a pickup to it, then it's refused."
+      ],
+      "sources": ["docs/requirements.md"],
+      "next": "Check the item against its acceptance criteria before it ships.",
+      "updatedAt": "2026-09-29T09:00:00.000Z"
+    },
+    "services/api/app/main.py": "from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\n\nfrom app.routes import assistant, moves, parcels, payments\n\napp = FastAPI(title=\"Courier API\")\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"*\"],\n    allow_credentials=True,\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)\n\napp.include_router(parcels.router)\napp.include_router(moves.router)\napp.include_router(payments.router)\napp.include_router(assistant.router)\n",
+    "services/api/app/routes/moves.py": "from datetime import date\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom pydantic import BaseModel\n\nfrom app.auth import current_customer\nfrom app.db import get_db\n\nrouter = APIRouter(prefix=\"/parcels\", tags=[\"parcels\"])\n\n\nclass Move(BaseModel):\n    pickup_date: date\n\n\n@router.post(\"/{parcel_id}/move\")\ndef move_pickup(parcel_id: int, move: Move, customer=Depends(current_customer), db=Depends(get_db)):\n    parcel = db.execute(\"SELECT id, status, pickup_date FROM parcels WHERE id = %s\", (parcel_id,)).fetchone()\n    if parcel is None:\n        raise HTTPException(status_code=404, detail=\"No parcel with that id\")\n    if move.pickup_date <= date.today():\n        raise HTTPException(status_code=422, detail=\"Choose a day after today\")\n    db.execute(\"UPDATE parcels SET pickup_date = %s WHERE id = %s\", (move.pickup_date, parcel_id))\n    return {\"id\": parcel_id, \"pickup_date\": move.pickup_date.isoformat()}\n",
+    "services/api/tests/test_moves.py": "from fastapi.testclient import TestClient\n\nfrom app.auth import current_customer\nfrom app.db import get_db\nfrom app.main import app\n\n\nclass FakeDb:\n    def __init__(self, row):\n        self.row = row\n\n    def execute(self, query, params=None):\n        return self\n\n    def fetchone(self):\n        return self.row\n\n\ndef test_moves_a_pickup_to_a_later_day():\n    app.dependency_overrides[current_customer] = lambda: {\"id\": 1, \"email\": \"ada@example.com\", \"name\": \"Ada\"}\n    app.dependency_overrides[get_db] = lambda: FakeDb({\"id\": 7, \"status\": \"booked\", \"pickup_date\": \"2026-10-12\"})\n    client = TestClient(app)\n    response = client.post(\"/parcels/7/move\", json={\"pickup_date\": \"2099-01-15\"}, headers={\"Authorization\": \"Bearer t\"})\n    assert response.status_code == 200\n    assert response.json()[\"pickup_date\"] == \"2099-01-15\"\n"
+  },
+  "prompts": {
+    "qa-acceptance": "CR-4 is built. Check it against its acceptance criteria before it ships."
+  },
+  "defects": [
+    {
+      "id": "QM1",
+      "title": "Any signed-in customer can move another customer's pickup",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/moves.py",
+          "match": "parcel = db.execute(\"SELECT id, status, pickup_date FROM parcels WHERE id = %s\", (parcel_id,)).fetchone()"
+        }
+      ]
+    },
+    {
+      "id": "QM2",
+      "title": "Nothing stops a move after 6pm the day before the pickup",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/moves.py",
+          "match": "if move.pickup_date <= date.today():"
+        }
+      ]
+    },
+    {
+      "id": "QM3",
+      "title": "A pickup that has already been collected can still be moved",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/moves.py",
+          "match": "parcel = db.execute(\"SELECT id, status, pickup_date FROM parcels WHERE id = %s\", (parcel_id,)).fetchone()"
+        },
+        {
+          "file": "services/api/app/routes/moves.py",
+          "match": "db.execute(\"UPDATE parcels SET pickup_date = %s WHERE id = %s\", (move.pickup_date, parcel_id))"
+        }
+      ]
+    },
+    {
+      "id": "QM4",
+      "title": "Today is the server's date, not the UK's, so around midnight the wrong days are refused or allowed",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/moves.py",
+          "match": "if move.pickup_date <= date.today():"
+        }
+      ]
+    },
+    {
+      "id": "QM5",
+      "title": "The only test moves a pickup successfully: none covers the cut-off, a collected pickup, someone else's pickup or a past date",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "services/api/tests/test_moves.py",
+          "whole": true
+        }
+      ],
+      "rules": ["REQ-02", "TEST-02", "TEST-03", "TEST-08"]
+    }
+  ]
+}

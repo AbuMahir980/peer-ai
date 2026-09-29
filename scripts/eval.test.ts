@@ -275,6 +275,29 @@ describe("running an eval", () => {
     expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 8 high problems/);
   });
 
+  it("writes a review scenario's files into the copy, committed, before the run", async () => {
+    const sheet: Sheet = {
+      ...loadSheet("split-bill"),
+      prompts: { "code-review": "Review the change." },
+      setup: { "src/extra.ts": "export const extra = 1;\n", ".peer-ai/work/SB-9.json": { id: "SB-9" } },
+    };
+    await evaluate(
+      sheet,
+      "code-review",
+      "claude-code",
+      (_tool, dir) => {
+        made.push(dir, `${dir}.log`);
+        expect(readFileSync(join(dir, "src", "extra.ts"), "utf8")).toBe("export const extra = 1;\n");
+        expect(JSON.parse(readFileSync(join(dir, ".peer-ai", "work", "SB-9.json"), "utf8"))).toEqual({ id: "SB-9" });
+        const status = execFileSync("git", ["status", "--porcelain", "--", "src"], { cwd: dir, encoding: "utf8" });
+        expect(status).toBe("");
+        return Promise.resolve({ seconds: 1 });
+      },
+      undefined,
+      { baseline: true },
+    );
+  });
+
   it("installs the skill, asks in plain words, and notices whether the tool used it", async () => {
     const sheet = loadSheet("courier");
     let log = "";
