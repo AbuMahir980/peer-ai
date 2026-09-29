@@ -13,12 +13,12 @@ Examples are from a made-up bicycle repair booking service. The laws named are p
 
 ## What's collected
 
-- **PRIV-03, only what's needed:** each `field` and `collection` has a reason in the feature. Fail an exact location where a town would do, or location collected all the time for a feature used now and then.
+- **PRIV-03, only what's needed:** each `field` and `collection` has a reason in the feature. Fail an exact location where a town would do, or location collected all the time for a feature used now and then. Each page or response that shows personal data shows only what its readers need, and a page anyone can open shows none: a public repair-status page shows the stage of the repair, not the customer's name or phone number.
 - **MOB-05, permissions:** each device permission is asked for when its feature is used, says why, and at the least level, such as location while in use rather than always.
 
 ## Where it goes
 
-- **PRIV-04, only where people were told:** each `destination` that's an outside service is one the privacy notice names, and analytics stays off until the person opts in. Check where the service is set up, not only where it's called.
+- **PRIV-04, only where people were told:** each `destination` that's an outside service is one the privacy notice names, and analytics stays off until the person opts in. Check where the service is set up, not only where it's called, and point the finding there, so one fix covers every caller.
 - **PRIV-05, hidden details removed:** photos and files sent anywhere have their hidden details, such as where a photo was taken, removed first.
 - **AI-03, AI services:** people are told what goes to an AI model before it goes, and personal data is sent only when the feature needs it.
 - **SEC-22, never in a URL:** personal data and tokens travel in the body or headers.

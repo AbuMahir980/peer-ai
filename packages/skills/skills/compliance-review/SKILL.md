@@ -41,7 +41,7 @@ List every piece of personal data and everywhere it goes, from the code, with an
 |------|-----------------|--------|
 | `field` | `field:cyclists.phone` | Each personal field stored or collected: names, contact details, location, photos, health, money |
 | `collection` | `collection:location-permission` | Each place data is collected: a form, a device permission, a sensor, a photo |
-| `destination` | `destination:analytics` | Each place it goes: a log, an outside service, an AI model, a URL, another app |
+| `destination` | `destination:analytics` | Each place it goes: a log, an outside service, an AI model, a URL, another app, a page or response that shows it to people |
 | `payment` | `payment:deposit` | Each place card details or payments are handled |
 | `retention` | `retention:bookings` | Each store, and how long its data is kept |
 
