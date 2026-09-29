@@ -29,6 +29,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0001](0001-configuration-instead-of-patching.md) | Configuration instead of patching | Accepted |
 | [0002](0002-review-reports-and-evals.md) | Review reports and evals | Accepted |
 | [0003](0003-how-a-standard-is-written.md) | How a standard is written | Accepted |
+| [0004](0004-how-a-skill-is-written.md) | How a skill is written | Accepted |
 
 ## What carries weight
 

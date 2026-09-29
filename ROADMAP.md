@@ -2,7 +2,7 @@
 
 Peer AI 1.0 turns this playbook into an open-source, agent-agnostic npm package. A project keeps one config file and no copied `peer-ai/` folder, every skill proves what it checked, and the standards cover a full-stack project from the UI to the infrastructure.
 
-Everything here comes from running v0 end to end on real projects of different shapes: a local-first web app, a React Native rebuild of an existing production system, and a static marketing site. The defects those runs found are logged in [docs/peer-ai-feedback.md](docs/peer-ai-feedback.md).
+Everything here comes from running v0 end to end on real projects of different shapes: a local-first web app, a React Native rebuild of an existing production system, and a static marketing site. The defects those runs found are logged in [legacy/v0/docs/peer-ai-feedback.md](legacy/v0/docs/peer-ai-feedback.md).
 
 ---
 
