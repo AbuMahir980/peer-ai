@@ -420,6 +420,8 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log, model) => {
 };
 
 export interface EvalOptions {
+  /** For a re-grade: the document to grade, when the run saved it where neither the scenario nor the map finds it. */
+  document?: string;
   /** Run without Peer AI's skills, to measure what a skill adds. */
   baseline?: boolean;
   /** The model to ask for, such as a fast one and a strong one; otherwise the tool's default. */
@@ -624,10 +626,11 @@ export async function markDocument(
   before: string | undefined,
   grade: GraderRunner,
   grader: GraderOptions,
+  document?: string,
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const path = writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
+  const path = document ?? writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
   if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
   const check = checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
@@ -783,7 +786,7 @@ export async function regradeDocument(
   const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
   return {
     dir,
-    score: await markDocument(sheet, skill, dir, before, grade, grader),
+    score: await markDocument(sheet, skill, dir, before, grade, grader, options.document),
     tool: { seconds: 0 },
     baseline,
     ...(options.model === undefined ? {} : { model: options.model }),
@@ -939,6 +942,7 @@ if (invokedDirectly) {
       grader: { type: "string", default: "codex" },
       "grader-model": { type: "string" },
       regrade: { type: "string" },
+      document: { type: "string" },
     },
   });
   const [name] = positionals;
@@ -948,7 +952,7 @@ if (invokedDirectly) {
   const tools: string[] = ["claude-code", "codex"];
   if (name === undefined || skill === undefined || !tools.includes(tool) || !tools.includes(graderTool)) {
     console.error(
-      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
+      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy> [--document <path>]] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
     );
     process.exit(2);
   }
@@ -968,7 +972,10 @@ if (invokedDirectly) {
       tool: graderTool,
       ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
     };
-    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, options);
+    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, {
+      ...options,
+      ...(values.document === undefined ? {} : { document: values.document }),
+    });
     console.log(formatDocumentRun(sheet, tool, result, 1, 1).join("\n"));
     if (values.record === true) recordDocument(sheet, tool, result);
     allReady &&= result.score.ready;
