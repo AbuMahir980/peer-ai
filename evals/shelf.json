@@ -11,7 +11,8 @@
     "design-review": "Review the Shelf app against its design system.",
     "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model.",
     "threat-model": "Write a threat model for Shelf.",
-    "architecture": "Bring Shelf's architecture document up to date with the code."
+    "architecture": "Bring Shelf's architecture document up to date with the code.",
+    "product-spec": "Readers want to extend a loan by a week. Write the spec for it."
   },
   "defects": [
     {
@@ -431,6 +432,54 @@
           "id": "AS9",
           "point": "Invents no parts, hosting or services the code doesn't show, and doesn't describe the API's insides as known.",
           "must": true
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PS1",
+          "point": "Says a reader can extend only their own loans, and what the lender can see or do.",
+          "must": true
+        },
+        {
+          "id": "PS2",
+          "point": "Covers a book someone else has reserved or asked for, and what the reader is told when they can't extend.",
+          "must": true
+        },
+        {
+          "id": "PS3",
+          "point": "Gives acceptance criteria for each journey, including the ones that go wrong.",
+          "must": true
+        },
+        {
+          "id": "PS4",
+          "point": "Covers what happens with no connection, since it's a phone app."
+        },
+        {
+          "id": "PS5",
+          "point": "Asks, or proposes, how many times a loan can be extended."
+        },
+        {
+          "id": "PS6",
+          "point": "Covers edge cases around the due date, such as a loan due today, an overdue loan, or the reader's time zone."
+        },
+        {
+          "id": "PS7",
+          "point": "Says whether and how the lender is told about the extension."
+        },
+        {
+          "id": "PS8",
+          "point": "Describes each screen or message in its loading, error and success states."
+        },
+        {
+          "id": "PS9",
+          "point": "Covers use with a screen reader and large enough touch targets."
+        },
+        {
+          "id": "PS10",
+          "point": "Leaves database tables, API endpoints and code to the system design."
         }
       ]
     }

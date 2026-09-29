@@ -12,7 +12,8 @@
     "ai-feature-review": "Review Courier's support assistant, which uses an AI model.",
     "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\"",
     "threat-model": "Write a threat model for Courier.",
-    "architecture": "Courier's architecture document is out of date. Bring it up to date with the code."
+    "architecture": "Courier's architecture document is out of date. Bring it up to date with the code.",
+    "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it."
   },
   "defects": [
     {
@@ -493,6 +494,59 @@
           "id": "AC10",
           "point": "Invents no parts, hosting or services the code doesn't show; anything it can't see is a question.",
           "must": true
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PC1",
+          "point": "Says who can cancel which pickups: a customer only their own, and anyone else only as the requirements or a person decide.",
+          "must": true
+        },
+        {
+          "id": "PC2",
+          "point": "Covers a pickup that can't be cancelled any more, such as one already collected, with what the customer is told.",
+          "must": true
+        },
+        {
+          "id": "PC3",
+          "point": "Covers the refund going back through the payment provider, and what happens when the refund fails.",
+          "must": true
+        },
+        {
+          "id": "PC4",
+          "point": "Makes sure a pickup cancelled twice, such as by a double tap or two devices, is refunded only once."
+        },
+        {
+          "id": "PC5",
+          "point": "Gives acceptance criteria for each journey, including the ones that go wrong.",
+          "must": true
+        },
+        {
+          "id": "PC6",
+          "point": "Describes each screen or message in its loading, error and success states, with what to do next after an error."
+        },
+        {
+          "id": "PC7",
+          "point": "Asks, or proposes, whether a fee is kept or the refund is partial after some point."
+        },
+        {
+          "id": "PC8",
+          "point": "Notes that the support assistant can already cancel parcels, and asks how the two should agree."
+        },
+        {
+          "id": "PC9",
+          "point": "Covers cancelling from a keyboard and a screen reader, including the confirmation step."
+        },
+        {
+          "id": "PC10",
+          "point": "Lists what's out of scope, such as changing the address instead of cancelling."
+        },
+        {
+          "id": "PC11",
+          "point": "Leaves database tables, API endpoints and code to the system design."
         }
       ]
     }

@@ -13,13 +13,30 @@
 
 import { execFile, execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
-import { SEVERITIES, SKILL_IDS, SKILL_KINDS, validateReport, type ReviewReport, type SkillId } from "@peer-ai/workflow";
+import {
+  MAP_ITEM_SKILLS,
+  SEVERITIES,
+  SKILL_IDS,
+  SKILL_KINDS,
+  validateReport,
+  type ReviewReport,
+  type SkillId,
+} from "@peer-ai/workflow";
 import { z } from "zod";
 import { CLI, localServer, prepareFixture } from "./fixture.ts";
 
@@ -56,7 +73,12 @@ const Point = z.strictObject({
 });
 
 const DocumentScenario = z.strictObject({
-  path: z.string().min(1).describe("Where the document should be written, relative to the project root."),
+  path: z
+    .string()
+    .min(1)
+    .describe(
+      "Where the document should be written, relative to the project root, or a folder ending in / when the skill names the file, such as docs/specs/.",
+    ),
   points: z.array(Point).min(3),
 });
 
@@ -605,7 +627,7 @@ export async function markDocument(
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const path = writtenDocument(dir, scenario.path, before);
+  const path = writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
   if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
   const check = checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
@@ -620,6 +642,10 @@ export async function markDocument(
   await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
   return { ...scoreDocument(skill, scenario, true, check, readGrades(gradeDir)), path };
 }
+
+/** A file's text, or undefined for a folder or nothing at all. */
+const readIfFile = (path: string): string | undefined =>
+  statSync(path, { throwIfNoEntry: false })?.isFile() === true ? readFileSync(path, "utf8") : undefined;
 
 /**
  * The other Markdown documents the run wrote or changed beside the main one, such as an
@@ -641,13 +667,39 @@ export function otherDocuments(dir: string, main: string): string[] {
 }
 
 /**
+ * A document the project map finds for the skill's map item, among the files the run wrote, such as
+ * docs/plant-watering-spec.md for product-spec. It counts wherever it is, because it fills the gap.
+ */
+export function mappedDocument(dir: string, skill: SkillId): string | undefined {
+  const items = Object.entries(MAP_ITEM_SKILLS)
+    .filter(([, skills]) => skills.includes(skill))
+    .map(([item]) => item);
+  let evidence: string[];
+  let changed: string[];
+  try {
+    const map = JSON.parse(
+      execFileSync(process.execPath, [CLI, "assess", "--json", "--dry-run"], { cwd: dir, encoding: "utf8" }),
+    ) as { items: Record<string, { evidence?: string[] } | undefined> };
+    evidence = items.flatMap((item) => map.items[item]?.evidence ?? []);
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim());
+  } catch {
+    return undefined;
+  }
+  return evidence.find((file) => file.endsWith(".md") && changed.includes(file));
+}
+
+/**
  * Where the run wrote its document: the expected path when it changed there, or else a new or
  * changed file of the same name elsewhere in the copy, such as requirements/requirements.md for
- * docs/requirements.md. The project map finds a document by its name, so either counts.
+ * docs/requirements.md. The project map finds a document by its name, so either counts. For a
+ * folder, such as docs/specs/, it's a new or changed Markdown file in that folder, or failing that
+ * one whose path names the folder, such as specs/cancel-a-pickup.md.
  */
 export function writtenDocument(dir: string, expected: string, before: string | undefined): string | undefined {
-  const target = join(dir, expected);
-  if (existsSync(target) && readFileSync(target, "utf8") !== before) return expected;
+  const now = readIfFile(join(dir, expected));
+  if (now !== undefined && now !== before) return expected;
   let changed: string[];
   try {
     changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
@@ -656,6 +708,13 @@ export function writtenDocument(dir: string, expected: string, before: string | 
       .filter((line) => line !== "");
   } catch {
     return undefined;
+  }
+  if (expected.endsWith("/")) {
+    const folder = expected.split("/").at(-2) ?? "";
+    const markdown = changed.filter((file) => file.endsWith(".md") && !file.startsWith(".peer-ai/"));
+    return (
+      markdown.find((file) => file.startsWith(expected)) ?? markdown.find((file) => file.split("/").includes(folder))
+    );
   }
   const name = expected.split("/").at(-1)?.toLowerCase();
   return changed.find((file) => file !== expected && file.split("/").at(-1)?.toLowerCase() === name);
@@ -679,8 +738,7 @@ export async function evaluateDocument(
     throw new Error(`There's no ${skill} skill yet. Run with --baseline to measure the document without one.`);
   }
   const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
-  const target = join(dir, scenario.path);
-  const before = existsSync(target) ? readFileSync(target, "utf8") : undefined;
+  const before = readIfFile(join(dir, scenario.path));
   const log = `${dir}.log`;
   const toolRun = await runner(tool, dir, evalPrompt(sheet, skill, baseline), log, options.model);
   const score = await markDocument(sheet, skill, dir, before, grade, grader);
@@ -710,8 +768,7 @@ export async function regradeDocument(
 ): Promise<DocumentRun> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const original = join(REPO, "fixtures", sheet.fixture, scenario.path);
-  const before = existsSync(original) ? readFileSync(original, "utf8") : undefined;
+  const before = readIfFile(join(REPO, "fixtures", sheet.fixture, scenario.path));
   const baseline = ![".claude/skills", ".agents/skills"].some((home) =>
     existsSync(join(dir, home, renderedName(skill))),
   );
