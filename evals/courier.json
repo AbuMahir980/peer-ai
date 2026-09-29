@@ -444,15 +444,18 @@
       "locations": [
         {
           "file": "apps/web/package.json",
-          "match": "\"name\": \"courier-web\",",
-          "lines": 19
+          "whole": true
         },
         {
           "file": "services/api/requirements.txt",
-          "match": "fastapi==0.118.0",
-          "lines": 7
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
         }
       ],
+      "rules": ["DEL-01"],
       "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
     },
     {
@@ -463,15 +466,18 @@
       "locations": [
         {
           "file": "apps/web/package.json",
-          "match": "\"name\": \"courier-web\",",
-          "lines": 19
+          "whole": true
         },
         {
           "file": "services/api/requirements.txt",
-          "match": "fastapi==0.118.0",
-          "lines": 7
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
         }
       ],
+      "rules": ["DEL-03"],
       "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
     },
     {

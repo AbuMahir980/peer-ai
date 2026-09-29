@@ -235,10 +235,14 @@
       "locations": [
         {
           "file": "package.json",
-          "match": "\"name\": \"sprout\",",
-          "lines": 26
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
         }
       ],
+      "rules": ["DEL-01"],
       "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
     },
     {
@@ -249,10 +253,14 @@
       "locations": [
         {
           "file": "package.json",
-          "match": "\"name\": \"sprout\",",
-          "lines": 26
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
         }
       ],
+      "rules": ["DEL-03"],
       "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
     },
     {

@@ -197,6 +197,31 @@ describe("marking a review", () => {
     expect(marked.bySeverity.critical).toEqual({ found: 0, of: 1 });
   });
 
+  it("counts a finding on a whole file or the project, line or not, only when it cites the problem's rule", () => {
+    const noLockfile: ResolvedDefect = {
+      id: "L",
+      title: "No lockfile",
+      severity: "medium",
+      skills: ["dependency-review"],
+      locations: [],
+      rules: ["DEL-01"],
+      spans: [
+        { file: "package.json", line: 1, endLine: 1, whole: true },
+        { file: ".", line: 1, endLine: 1, whole: true },
+      ],
+    };
+    const sheet: Sheet = { ...SHEET, defects: [noLockfile] };
+    const on = (file: string, rule: string) =>
+      ({ ...finding(file, 1, "medium"), rule, location: { file } }) as unknown as ReturnType<typeof finding>;
+    const found = (f: ReturnType<typeof finding>) =>
+      score(sheet, "dependency-review", [report([f], "dependency-review")]);
+    expect(found(on("package.json", "DEL-01")).expected[0]?.foundBy).toHaveLength(1);
+    expect(found({ ...finding("./", 1, "medium"), rule: "DEL-01" }).expected[0]?.foundBy).toHaveLength(1);
+    const otherRule = found(on("package.json", "DEL-11"));
+    expect(otherRule.expected[0]?.foundBy).toHaveLength(0);
+    expect(otherRule.unmatched).toHaveLength(1);
+  });
+
   it("isn't ready without a report, or when too few medium problems are found", () => {
     expect(score(SHEET, "security-review", []).reasons).toEqual([
       "it wrote no valid security-review report",

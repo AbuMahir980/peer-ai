@@ -404,10 +404,14 @@
       "locations": [
         {
           "file": "package.json",
-          "match": "\"name\": \"shelf\",",
-          "lines": 32
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
         }
       ],
+      "rules": ["DEL-01"],
       "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
     },
     {
@@ -418,10 +422,14 @@
       "locations": [
         {
           "file": "package.json",
-          "match": "\"name\": \"shelf\",",
-          "lines": 32
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
         }
       ],
+      "rules": ["DEL-03"],
       "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
     },
     {
@@ -455,6 +463,24 @@
           "match": "registry=https://packages.shelf.example/npm/"
         }
       ]
+    },
+    {
+      "id": "S33",
+      "title": "There's no list of the app's dependencies, though it ships to people's phones",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-10"],
+      "found": "Not planted: raised by Peer AI's dependency-review skill on 2026-09-29, and judged real."
     }
   ],
   "documents": {
