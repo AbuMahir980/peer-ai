@@ -225,6 +225,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Apps never got the reliability rules.** The first sprout run saw that the service worker always serves its first copy, then marked REL-09 not applicable, because `standards_for_file` didn't return it. The tool now gives web, mobile, desktop and extension apps the reliability rules, offline ones included.
   - **A problem the code shows is a finding, whether or not its rule applies yet.** The skill already said so for rules from a later stage. It now says the same for a trait the project hasn't set, since projects often forget one. The next sprout run found the service worker problem.
 
+- **2026-09-29, reliability-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
+  - **With the skill, all three are ready:** courier 1 of 1, shelf 3 of 3 and sprout 4 of 4, each covering all 14 rules. Without it, sprout found 4 of 4 too, so the skill's gain here isn't what's found: its run took half the time and cost ($1.06 against $1.93).
+  - **The baseline raised one point that isn't on the sheet,** judged fair and minor: the service worker has no fallback page when a route is neither cached nor reachable.
+- **What people judged in those runs:**
+  - **Sprout's data that can be cleared was named where the store opens.** The run with the skill put it at `src/db.ts`, where the database is created; the sheet only accepted `src/main.tsx`, where it's opened, and marked the run 3 of 4. Both are fair places for the fix, so the sheet now accepts either, and the run counts 4 of 4.
+
 - **2026-09-29, contract-check with Claude Code on Sonnet, on courier with the skill and without.** Courier is the only practice project with an API contract so far:
   - **With the skill, both runs are ready:** 6 of 8, then 7 of 8 after the fix below, each covering all 12 rules. Without it, 6 of 8 and not ready: it missed the parcel list with no paging, which was planted, and the web app's hand-written API types. It also took longer ($1.75 and 11 minutes, against $1.26 and 6).
   - **The runs raised five real problems nobody planted,** now on the answer sheet, and the counts include them. With the skill: the contract says anyone can ask the assistant, though the API requires sign-in (D28), and the web app's API types are written by hand (D29). Without it: a customer can pay for any parcel, since the payment never checks the parcel is theirs (D30, a security problem, now on the security-review and code-review sheets too); a payment returns a body the contract doesn't describe (D31); and the API refuses parcels over 30 kg, which the contract doesn't say (D32).
@@ -294,6 +300,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 2 of 3 | 12 of 12 | 0 | Not ready | $1.15 |
 | 2026-09-29 | courier | performance-review | Claude Code | sonnet | without | 2 of 3 | 12 of 12 | 1 | Not ready | $1.27 |
 | 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $0.92 |
+| 2026-09-29 | courier | reliability-review | Claude Code | sonnet | used | 1 of 1 | 14 of 14 | 0 | Ready | $1.16 |
+| 2026-09-29 | shelf | reliability-review | Claude Code | sonnet | used | 3 of 3 | 14 of 14 | 0 | Ready | $1.69 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | used | 4 of 4 | 14 of 14 | 0 | Ready | $1.06 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | without | 4 of 4 | 14 of 14 | 1 | Ready | $1.93 |
 | 2026-09-29 | courier | contract-check | Claude Code | sonnet | used | 6 of 8 | 12 of 12 | 0 | Ready | $1.26 |
 | 2026-09-29 | courier | contract-check | Claude Code | sonnet | without | 6 of 8 | 12 of 12 | 0 | Not ready | $1.75 |
 | 2026-09-29 | courier | contract-check | Claude Code | sonnet | used | 7 of 8 | 12 of 12 | 0 | Ready | $1.13 |

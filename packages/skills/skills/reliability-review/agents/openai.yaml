@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI reliability review"
+  short_description: "Reliability review that proves every rule was checked"
+  default_prompt: "Use ${{name}} to review this code for reliability problems and record the report."
