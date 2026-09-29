@@ -4,8 +4,8 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 27: 24 planted, and 3 that reviews found and nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 26: 21 planted, and 5 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
@@ -212,6 +212,11 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **A point about work the run rightly didn't do.** The grader marked the second waiting run as missing "any work done on SB-2 is covered by tests", though it wrote no code. The point now says that writing no code makes it, and graded again, the run made all 5.
 
+- **2026-09-29, accessibility-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready:** courier 5 of 5, shelf 4 of 4 and sprout 2 of 2, each covering all 11 rules. Without it, courier found 4 of 5 and wasn't ready.
+  - **The runs with the skill raised four real problems nobody planted,** now on the answer sheets: on courier, a failed booking shows the person nothing (D26), and a failed tracking lookup stays on "Loading…" for ever (D27); on shelf, the librarian's question field has no label (S25), and its button is too small to tap reliably (S26). The counts above include them. Against the sheets as they were, every run found every planted problem, the baseline included.
+  - **Without the skill, courier's review missed the failed booking** and rated problems a level higher than the rules do: the Book button that isn't a button critical, and the missing labels and the colour-only status high.
+
 - **2026-09-29, performance-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
   - **With the skill, all three are ready:** courier 3 of 3, shelf 2 of 2, and sprout 3 of 3 after the fixes below, each covering all 12 rules. Without it, courier found 2 of 3 and wasn't ready: it missed the parcels looked up by customer with no index.
   - **The baseline raised one problem that isn't on the sheet,** and a person judged it fair but outside the rules: every request opens a new database connection, with no pool. It called it high; at this stage it's minor. No rule covers connection pooling yet.
@@ -272,6 +277,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | accessibility-review | Claude Code | sonnet | used | 5 of 5 | 11 of 11 | 0 | Ready | $0.91 |
+| 2026-09-29 | shelf | accessibility-review | Claude Code | sonnet | used | 4 of 4 | 11 of 11 | 0 | Ready | $1.64 |
+| 2026-09-29 | sprout | accessibility-review | Claude Code | sonnet | used | 2 of 2 | 11 of 11 | 0 | Ready | $0.97 |
+| 2026-09-29 | courier | accessibility-review | Claude Code | sonnet | without | 4 of 5 | 11 of 11 | 0 | Not ready | $0.94 |
 | 2026-09-29 | courier | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $1.02 |
 | 2026-09-29 | shelf | performance-review | Claude Code | sonnet | used | 2 of 2 | 12 of 12 | 0 | Ready | $1.43 |
 | 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 2 of 3 | 12 of 12 | 0 | Not ready | $1.15 |

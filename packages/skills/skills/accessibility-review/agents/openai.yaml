@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI accessibility review"
+  short_description: "Accessibility review that proves every rule was checked"
+  default_prompt: "Use ${{name}} to review these screens for accessibility and record the report."
