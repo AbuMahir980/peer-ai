@@ -8,6 +8,7 @@ import { parseArgs } from "node:util";
 import { CLI_COMMAND_IDS, TOOL_IDS, type CliCommandId, type ToolId } from "@peer-ai/workflow";
 import { runAssess } from "./assess.ts";
 import { runCheck } from "./check.ts";
+import { runCheckDocument } from "./document.ts";
 import { runDoctor } from "./doctor.ts";
 import { serveStdio } from "./mcp.ts";
 import { runInit, type Output, type Stage, type Team } from "./init.ts";
@@ -28,6 +29,9 @@ Usage:
   peer-ai doctor [options]    Check that Peer AI is set up correctly, and how to fix it
   peer-ai check [options]     The CI gate: fail when work claims more than its record shows
   peer-ai check-report <file> Check a review's report, as the record_review tool does
+  peer-ai check-document <file> --skill <skill>
+                              Check a document against its skill's template, as the
+                              check_document tool does
   peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
 
 Options for init:
@@ -53,6 +57,11 @@ Options for render:
 Options for check-report:
       --skill <skill>         The skill the report is for (default: the one it names)
       --work-item <id>        The work item it's for, when there is one
+      --json                  Print the result as JSON
+
+Options for check-document:
+      --skill <skill>         The document skill that wrote it, such as requirements-analysis
+      --template <name>       Which of the skill's templates it follows (default: the main one)
       --json                  Print the result as JSON
 
 Options for doctor and check:
@@ -156,6 +165,24 @@ function checkReportCommand(args: string[], io: Io): number {
   );
 }
 
+function checkDocumentCommand(args: string[], io: Io): number {
+  const { values, positionals } = parseArgs({
+    args,
+    strict: true,
+    allowPositionals: true,
+    options: { skill: { type: "string" }, template: { type: "string" }, json: { type: "boolean" } },
+  });
+  const [path] = positionals;
+  if (path === undefined || values.skill === undefined)
+    throw new TypeError(
+      "Give the document's path and its skill, such as peer-ai check-document docs/requirements.md --skill requirements-analysis",
+    );
+  return runCheckDocument(
+    { cwd: io.cwd, path, skill: values.skill, template: values.template, json: values.json === true },
+    io.out,
+  );
+}
+
 function render(args: string[], io: Io): number {
   const { values } = parseArgs({
     args,
@@ -181,6 +208,7 @@ const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promis
   doctor,
   check,
   "check-report": checkReportCommand,
+  "check-document": checkDocumentCommand,
   mcp,
 };
 

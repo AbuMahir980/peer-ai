@@ -101,6 +101,7 @@ describe("the MCP server", () => {
       ["update_work_item", false],
       ["run_verify", false],
       ["record_review", false],
+      ["check_document", true],
       ["advance_work_item", false],
     ]);
     expect(client.getInstructions()).toContain("Start a session with next_work");
@@ -174,6 +175,28 @@ describe("the MCP server", () => {
 
     const noReport = await call(client, "record_review", { skill: "security-review", result: "pass" });
     expect(noReport.text).toBe("A review of the whole project needs its report: give the report's path.");
+  });
+
+  it("checks a document against its skill's template, and says what to fix", async () => {
+    const root = shop();
+    const client = await connect(root);
+    const path = "docs/requirements.md";
+    mkdirSync(join(root, "docs"), { recursive: true });
+
+    writeFileSync(join(root, path), "# Requirements: Shop\n\n## Summary\n\nA shop.\n");
+    const refused = await call(client, "check_document", { skill: "requirements-analysis", path });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain("docs/requirements.md isn't ready yet. Fix these, then call check_document again:");
+    expect(refused.text).toContain("- Add the missing parts, each under its own heading: People and their problems");
+
+    const parts = ["Summary", "People and their problems", "Needs", "Features", "Scope", "What it handles"];
+    const more = ["Dependencies", "Open questions", "Assumptions", "Sources"];
+    const filled = [...parts, ...more].map((part) => `## ${part}\n\nWritten.\n`).join("\n");
+    writeFileSync(join(root, path), `# Requirements: Shop\n\n${filled}`);
+    expect((await call(client, "check_document", { skill: "requirements-analysis", path })).value()).toMatchObject({
+      ready: true,
+      template: "requirements",
+    });
   });
 
   it("serves the map, the next work and the standards for a file", async () => {

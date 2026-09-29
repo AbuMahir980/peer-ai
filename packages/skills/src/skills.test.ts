@@ -47,6 +47,25 @@ const OPENAI = [
   '  default_prompt: "Use ${{name}} to review this change for security problems."',
 ].join("\n");
 
+const DOC_FIELDS = [
+  "name: requirements-analysis",
+  "description: Writes a product's requirements, with a source for every statement. Use when requirements are missing.",
+  "license: MIT",
+  "metadata:",
+  "  peer-ai-kind: document",
+  "  peer-ai-domains: requirements",
+  "  peer-ai-templates: requirements",
+  "  peer-ai-path: docs/requirements.md",
+  "",
+].join("\n");
+const DOC_BODY =
+  "# Requirements analysis\n\nFill in the [template](assets/requirements.md), then check it with the peer-ai MCP tool `check_document`.";
+const documentSource = (): SkillFiles =>
+  new Map([
+    ["SKILL.md", skillMd(DOC_FIELDS, DOC_BODY)],
+    ["assets/requirements.md", "# Requirements: {{product}}\n\n## Problem\n\n{{Who has it}}\n"],
+  ]);
+
 const source = (): SkillFiles =>
   new Map([
     ["SKILL.md", skillMd(FIELDS, BODY)],
@@ -232,6 +251,71 @@ describe("validating a skill", () => {
     ],
   ])("reports %s", (_, change, expected) => {
     expect(problemsWith(change).join("\n")).toContain(expected);
+  });
+
+  it("reports a review skill that never records its report", () => {
+    expect(
+      problemsWith(setSkillMd(FIELDS, BODY.replace("the peer-ai MCP tool `record_review`", "a tool"))).join("\n"),
+    ).toContain("a review skill ends by handing its output to the peer-ai MCP tool `record_review`");
+  });
+
+  it("reports templates on a skill that doesn't write documents", () => {
+    expect(problemsWith(setSkillMd(`${FIELDS}\n  peer-ai-templates: requirements`)).join("\n")).toContain(
+      "only document skills have metadata.peer-ai-templates",
+    );
+  });
+
+  it.each<[string, (files: SkillFiles) => void, string]>([
+    [
+      "no templates",
+      (files) =>
+        files.set("SKILL.md", skillMd(DOC_FIELDS.replace("  peer-ai-templates: requirements\n", ""), DOC_BODY)),
+      "metadata.peer-ai-templates must name the document's templates",
+    ],
+    [
+      "a template that isn't there",
+      (files) => files.delete("assets/requirements.md"),
+      "names requirements, but assets/requirements.md is missing",
+    ],
+    [
+      "no path",
+      (files) =>
+        files.set("SKILL.md", skillMd(DOC_FIELDS.replace("  peer-ai-path: docs/requirements.md\n", ""), DOC_BODY)),
+      "metadata.peer-ai-path must say where the document is saved",
+    ],
+    [
+      "a path outside the project",
+      (files) =>
+        files.set("SKILL.md", skillMd(DOC_FIELDS.replace("docs/requirements.md", "../requirements.md"), DOC_BODY)),
+      "must be a path inside the project",
+    ],
+    [
+      "a template with no title",
+      (files) => files.set("assets/requirements.md", "## Problem\n\n{{Who}}\n"),
+      'start with the document\'s title, as a "# " heading',
+    ],
+    [
+      "a template with no required part",
+      (files) => files.set("assets/requirements.md", "# Requirements\n\n## Notes (optional)\n\n{{Anything}}\n"),
+      "at least one required part",
+    ],
+    [
+      "no check at the end",
+      (files) =>
+        files.set("SKILL.md", skillMd(DOC_FIELDS, DOC_BODY.replace("the peer-ai MCP tool `check_document`", "a tool"))),
+      "a document skill ends by handing its output to the peer-ai MCP tool `check_document`",
+    ],
+  ])("reports a document skill with %s", (_, change, expected) => {
+    const files = buildSkill("requirements-analysis", documentSource());
+    change(files);
+    expect(validateSkill(files, expectations("requirements-analysis", "requirements-analysis")).join("\n")).toContain(
+      expected,
+    );
+  });
+
+  it("accepts a well-formed document skill", () => {
+    const files = buildSkill("requirements-analysis", documentSource());
+    expect(validateSkill(files, expectations("requirements-analysis", "requirements-analysis"))).toEqual([]);
   });
 
   it("stays fast on text full of unclosed links", () => {

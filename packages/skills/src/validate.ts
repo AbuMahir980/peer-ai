@@ -5,6 +5,8 @@
 import { posix } from "node:path";
 import { CLI_COMMAND_IDS, DOMAIN_IDS, MCP_TOOL_IDS, type SkillKind } from "@peer-ai/workflow";
 import { parse } from "yaml";
+import { documentInfo, templatePath } from "./build.ts";
+import { templateParts } from "./document.ts";
 import { parseSkillMd, type SkillFiles } from "./skill.ts";
 
 export const LIMITS = {
@@ -40,6 +42,8 @@ const TOOL = /peer-ai MCP tool `([a-z_]+)`/g;
 /** The older wording, which a fast model read as a shell command to run with npx. */
 const AMBIGUOUS_TOOL = /peer-ai `[a-z_]+` tool/;
 const COMMAND = /`(?:npx )?peer-ai ([a-z][a-z-]*)/g;
+/** The peer-ai MCP tool each kind of skill hands its output to. Work skills pass the work item's own gates. */
+const OUTPUT_CHECK: Partial<Record<SkillKind, string>> = { review: "record_review", document: "check_document" };
 // A link's target stops at the next ], ( or ), and both parts have a length limit, so a long run of
 // unclosed links can't make the search slow.
 const LINK = /\]\(([^()\]\s]{1,500})(?:\s+"[^"\n]{0,200}")?\)/g;
@@ -78,6 +82,7 @@ export function validateSkill(files: SkillFiles, expect: Expectations): string[]
     problems.push(`SKILL.md: compatibility must be text of at most ${String(LIMITS.compatibility)} characters.`);
   }
   problems.push(...checkMetadata(frontmatter.metadata, expect.kind, expect.ruleIds));
+  problems.push(...checkOutput(files, body, expect.kind));
 
   const lines = body.split("\n").length;
   if (lines > LIMITS.bodyLines) {
@@ -158,6 +163,47 @@ function checkMetadata(metadata: unknown, kind: SkillKind, ruleIds: ReadonlySet<
       if (!(DOMAIN_IDS as string[]).includes(domain)) {
         problems.push(`SKILL.md: metadata.peer-ai-domains names "${domain}", which isn't a standards domain.`);
       }
+    }
+  }
+  return problems;
+}
+
+/** Each kind of skill hands its output to Peer AI's check (RFC 0004), and a document skill has its templates. */
+function checkOutput(files: SkillFiles, body: string, kind: SkillKind): string[] {
+  const problems: string[] = [];
+  const check = OUTPUT_CHECK[kind];
+  if (check !== undefined && !body.includes(`peer-ai MCP tool \`${check}\``)) {
+    problems.push(`SKILL.md: a ${kind} skill ends by handing its output to the peer-ai MCP tool \`${check}\`.`);
+  }
+  const { templates, path } = documentInfo(files);
+  if (kind !== "document") {
+    if (templates.length > 0 || path !== undefined) {
+      problems.push("SKILL.md: only document skills have metadata.peer-ai-templates and metadata.peer-ai-path.");
+    }
+    return problems;
+  }
+  if (templates.length === 0) {
+    problems.push(
+      "SKILL.md: metadata.peer-ai-templates must name the document's templates, such as requirements for assets/requirements.md.",
+    );
+  }
+  if (path === undefined) {
+    problems.push(
+      "SKILL.md: metadata.peer-ai-path must say where the document is saved, such as docs/requirements.md.",
+    );
+  } else if (path.includes("\\") || posix.isAbsolute(path) || posix.normalize(path).startsWith("..")) {
+    problems.push(`SKILL.md: metadata.peer-ai-path must be a path inside the project, with forward slashes: ${path}.`);
+  }
+  for (const name of templates) {
+    const file = templatePath(name);
+    const template = files.get(file);
+    if (template === undefined) {
+      problems.push(`SKILL.md: metadata.peer-ai-templates names ${name}, but ${file} is missing.`);
+      continue;
+    }
+    if (!template.startsWith("# ")) problems.push(`${file}: start with the document's title, as a "# " heading.`);
+    if (!templateParts(template).some((part) => part.required)) {
+      problems.push(`${file}: give the document at least one required part, as a "## " heading.`);
     }
   }
   return problems;

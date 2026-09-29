@@ -45,19 +45,37 @@ export function buildSkill(id: SkillId, source: SkillFiles, options: BuildOption
   return files;
 }
 
-/** The domains and single rules a skill's metadata names. */
-function ruleChoice(skillMd: string): { domains: DomainId[]; extra: string[] } {
+/** The words in one of SKILL.md's metadata fields, such as peer-ai-domains. */
+export function metadataWords(skillMd: string, key: string): string[] {
   const parsed = parseSkillMd(skillMd);
   const metadata = parsed.ok ? (parsed.value.frontmatter.metadata as Record<string, unknown> | undefined) : undefined;
-  const words = (key: string) => {
-    const value = metadata?.[key];
-    return typeof value === "string" ? value.split(/\s+/).filter((word) => word !== "") : [];
-  };
+  const value = metadata?.[key];
+  return typeof value === "string" ? value.split(/\s+/).filter((word) => word !== "") : [];
+}
+
+/** The domains and single rules a skill's metadata names. */
+function ruleChoice(skillMd: string): { domains: DomainId[]; extra: string[] } {
   return {
-    domains: words("peer-ai-domains").filter((domain): domain is DomainId => domain in DOMAIN_INFO),
-    extra: words("peer-ai-rules"),
+    domains: metadataWords(skillMd, "peer-ai-domains").filter((domain): domain is DomainId => domain in DOMAIN_INFO),
+    extra: metadataWords(skillMd, "peer-ai-rules"),
   };
 }
+
+export interface DocumentInfo {
+  /** Its templates, by name: assets/<name>.md. The first is the main document's. */
+  templates: string[];
+  /** Where the main document is saved when the project map doesn't have one yet, such as docs/requirements.md. */
+  path: string | undefined;
+}
+
+/** What a document skill writes, from metadata.peer-ai-templates and metadata.peer-ai-path. */
+export function documentInfo(source: SkillFiles): DocumentInfo {
+  const skillMd = source.get("SKILL.md") ?? "";
+  return { templates: metadataWords(skillMd, "peer-ai-templates"), path: metadataWords(skillMd, "peer-ai-path")[0] };
+}
+
+/** A template's file inside the skill. */
+export const templatePath = (name: string): string => `assets/${name}.md`;
 
 /** The ids of the rules a skill answers for, which its report must cover. */
 export function ruleIdsFor(source: SkillFiles): string[] {

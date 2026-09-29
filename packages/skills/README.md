@@ -8,18 +8,19 @@ You don't install this package yourself. `peer-ai render` writes the skills wher
 
 | Path | What it holds |
 |------|---------------|
-| `skills/<id>/` | Each skill's source: `SKILL.md`, its own references, and Codex's `agents/openai.yaml` |
+| `skills/<id>/` | Each skill's source: `SKILL.md`, its own references, a document skill's templates in `assets/`, and Codex's `agents/openai.yaml` |
 | `shared/` | The severity scale and report format every review skill gets |
 | `src/build.ts` | Builds a skill: adds its rules from `@peer-ai/standards` and the shared references, and sets the name it's written under |
 | `src/validate.ts` | Checks a built skill against the specification, Anthropic's and OpenAI's guidance, and RFC 0004 |
+| `src/document.ts` | Compares a document with its skill's template: the check behind the `check_document` tool |
 | [AUTHORING.md](AUTHORING.md) | How to write a skill, and which rules the build enforces |
 
 ## The three kinds
 
 | Kind | Output | Checked by |
 |------|--------|------------|
-| Review | A review report (RFC 0002) | The `record_review` tool |
-| Document | A document from a template | A document check (to come in this milestone) |
+| Review | A review report (RFC 0002) | The `record_review` tool, or `peer-ai check-report` |
+| Document | A document from a template | The `check_document` tool, or `peer-ai check-document` |
 | Work | Work items created and moved | The work item's gates |
 
 Every skill has at least three evals before it ships. See [AUTHORING.md](AUTHORING.md#evals-come-first).
