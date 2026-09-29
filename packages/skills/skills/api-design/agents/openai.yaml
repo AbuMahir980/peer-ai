@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI API design"
+  short_description: "Endpoints, who may call them, and safe changes"
+  default_prompt: "Use ${{name}} to design this API change, with the contract as its one source of truth."
