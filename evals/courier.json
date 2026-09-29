@@ -351,7 +351,7 @@
         },
         {
           "id": "C4",
-          "point": "Puts the loyalty scheme out of scope, for the backlog.",
+          "point": "Keeps the loyalty scheme out of the agreed scope: out of scope for the backlog, or unclear until someone decides, but not in scope.",
           "must": true
         },
         {
