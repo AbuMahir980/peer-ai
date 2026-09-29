@@ -1,0 +1,53 @@
+{
+  "fixture": "sprout",
+  "prompts": {
+    "incident-response": "People are writing in: since updating Sprout this week, their journal entries are gone. Their plants are still there. Handle it."
+  },
+  "defects": [],
+  "documents": {
+    "incident-response": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "setup": {
+        "docs/releases/2.0.md": "# Sprout 2.0\n\nReleased on 26 September 2026.\n\n- Plants are sorted by room.\n- The journal is renamed, ready for syncing between devices.\n"
+      },
+      "points": [
+        {
+          "id": "IS1",
+          "point": "Finds the cause: the version 2 database upgrade deletes the old journal store without copying its entries into the new one.",
+          "must": true
+        },
+        {
+          "id": "IS2",
+          "point": "Stops more people losing their journal, such as by shipping a fixed upgrade quickly, and says undoing the release can't bring back entries already deleted.",
+          "must": true
+        },
+        {
+          "id": "IS3",
+          "point": "Says plainly whether the lost entries can be recovered, and why: the device held the only copy, and nothing backed it up or asked the browser to keep it.",
+          "must": true
+        },
+        {
+          "id": "IS4",
+          "point": "The fix copies every entry into the new store, with a test that starts from version 1's data."
+        },
+        {
+          "id": "IS5",
+          "point": "Drafts a plain message to the people affected: what happened, and what they can and can't do."
+        },
+        {
+          "id": "IS6",
+          "point": "Asks whether losing people's journals must be reported under Nigeria's data protection law, as a question for someone qualified."
+        },
+        {
+          "id": "IS7",
+          "point": "Creates follow-up work items, such as asking the browser to keep the data, a backup or export, and a test for every upgrade."
+        },
+        {
+          "id": "IS8",
+          "point": "Writes a blameless review and a runbook for this kind of incident."
+        }
+      ]
+    }
+  }
+}

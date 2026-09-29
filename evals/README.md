@@ -23,6 +23,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`courier-observability.json`](courier-observability.json) | `courier` in production, with its logs, health check and alerts | 8: 5 planted, and 3 found that nobody planted | – |
 | [`courier-security-logs.json`](courier-security-logs.json) | `courier` in production, with sign-in and an audit log | 9: 4 planted, and 5 found that nobody planted | – |
 | [`shelf-monitoring.json`](shelf-monitoring.json) | `shelf`, with crash reporting | 4: 2 planted, and 2 found that nobody planted | – |
+| [`courier-incident.json`](courier-incident.json) | `courier`, with customers seeing each other's parcels | – | incident-response: data exposed |
+| [`sprout-incident.json`](sprout-incident.json) | `sprout`, with journals lost after an update | – | incident-response: data lost on devices |
+| [`shelf-incident.json`](shelf-incident.json) | `shelf`, with the librarian reserving books nobody asked for | – | incident-response: an AI feature abused |
 
 ## Running one
 
@@ -323,6 +326,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Fair points not added:** a phone app not logging sign-ins itself, which the API in the other repository should; no request id sent from the app; unhandled errors not logged; and no measure of payments.
 - **What people judged in those runs:** findings about something missing everywhere, such as no service targets, were placed at the requirements or at the place an attack starts. They now count wherever they cite their rule, and the baseline's point about sentences in logs counts at the logging setup, where it starts.
 
+- **2026-09-29, incident-response with Claude Code on Sonnet, graded by Claude Code on Haiku, on three incidents, and on courier's without it.** Customers seeing each other's parcels after a release, journals lost on people's devices after an update, and a partner's catalogue text steering the librarian into reserving books nobody asked for. The grader reads the work items, the change and what the run told the person:
+  - **Courier and sprout are ready:** 8 of 8 and 7 of 8. Without the skill, courier made 2 of 8 and wasn't ready: it went straight to a fix, with no containment, no question about the data breach, no timeline, review or runbook.
+  - **Shelf isn't ready, at 6 of 8.** It contained the librarian, found the cause and kept the evidence, but didn't plan cancelling the reservations nobody asked for, since they live in the other repository's API, and left telling the partner as an open question.
+  - **Sprout's one miss:** it held back the message to the people affected, "to confirm tone first", where the skill says to draft it and let a person send it.
+  - **Shelf's run cost $11.09,** in 6 turns over 23 minutes, several times any other run. Keeping an eval run within a set cost is work for the runner.
+
 ## Results
 
 Newest last.
@@ -532,3 +541,7 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | test-strategy | Claude Code | sonnet | used | 4 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $1.25 |
 | 2026-09-29 | courier | test-strategy | Claude Code | sonnet | without | 3 of 9 | 2 of 4 | Accepted | Not ready | Claude Code, haiku | $0.91 |
 | 2026-09-29 | shelf | test-strategy | Claude Code | sonnet | used | 2 of 10 | 1 of 4 | Accepted | Not ready | Claude Code, haiku | $1.20 |
+| 2026-09-29 | courier-incident | incident-response | Claude Code | sonnet | used | 8 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.33 |
+| 2026-09-29 | sprout-incident | incident-response | Claude Code | sonnet | used | 7 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.04 |
+| 2026-09-29 | shelf-incident | incident-response | Claude Code | sonnet | used | 6 of 8 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $11.09 |
+| 2026-09-29 | courier-incident | incident-response | Claude Code | sonnet | without | 2 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.60 |
