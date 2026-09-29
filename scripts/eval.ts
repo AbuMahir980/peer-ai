@@ -842,7 +842,8 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
     "",
   ];
   const expected = sheet.documents?.[marked.skill]?.path;
-  if (marked.written && expected !== undefined && marked.path !== expected) {
+  const pattern = expected !== undefined && (expected.endsWith("/") || expected.includes("*"));
+  if (marked.written && expected !== undefined && !pattern && marked.path !== expected) {
     lines.push(`Written to ${marked.path}, not ${expected}.`);
   }
   if (marked.written) {
