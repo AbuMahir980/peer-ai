@@ -136,6 +136,16 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Shelf's in-place defences are a judgement call.** Its requests carry the reader's session token, which a person would mark in place; almost everything else it has is planted as missing. The shelf run is counted as not ready.
   - **The grader varies:** the same sprout baseline was graded 7 and then 9 of 10, though only one of its points had changed.
 
+- **2026-09-29, architecture with Codex, on courier, shelf and refill, with the skill and without.** Every row was graded after the grader was given the decision records as well as the main document:
+  - **With the skill, all three are ready:** courier 10 of 10 after the fix below, shelf 8 of 9 and refill 9 of 10. Without it: 5 of 10, 8 of 9 and 7 of 10, none ready.
+  - **Without the skill, courier's rules were lost:** the baseline dropped what the old document decided, and didn't flag the assistant changing parcels that another module owns. Refill's baseline gave no options for a person to decide between. Shelf's baseline made the same points as the skill, but didn't follow the template, so `check_document` refused it.
+- **What the runs changed:**
+  - **An existing rule was dropped.** The first courier run with the skill lost the rule that each request carries a signed session token. The skill now keeps every rule and decision the document already states, even where the code breaks it; the break goes under Risks. The next run made every point.
+  - **The grader saw only the main document,** so it couldn't credit options written in a decision record. The runner now gives it every Markdown document the run wrote.
+- **What people judged in those runs:**
+  - **One point was wrong about refill:** its brief doesn't ask for live tracking, which the skill rightly didn't assume. The point now asks how riders see where to go, and whether patients should follow a delivery live.
+  - **Shelf's storage rule was missed with the skill and without:** neither kept the rule that a change to how data is stored on the phone moves the existing data.
+
 ## Results
 
 Newest last.
@@ -214,3 +224,10 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | courier | threat-model | Codex | default | used | 13 of 13 | 5 of 5 | Accepted | Ready | Codex | – |
 | 2026-09-29 | shelf | threat-model | Codex | default | used | 9 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | sprout | threat-model | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | architecture | Codex | default | used | 9 of 10 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | architecture | Codex | default | used | 8 of 9 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | refill | architecture | Codex | default | used | 9 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | architecture | Codex | default | without | 5 of 10 | 2 of 4 | Refused | Not ready | Codex | – |
+| 2026-09-29 | shelf | architecture | Codex | default | without | 8 of 9 | 3 of 3 | Refused | Not ready | Codex | – |
+| 2026-09-29 | refill | architecture | Codex | default | without | 7 of 10 | 2 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | architecture | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
