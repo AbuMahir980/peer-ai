@@ -20,6 +20,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`shelf-release.json`](shelf-release.json) | `shelf`, with release 3.5.0 about to go to the stores | 4 | – |
 | [`courier-launch.json`](courier-launch.json) | `courier`, about to launch in production | 5 | – |
 | [`split-bill-release.json`](split-bill-release.json) | `split-bill`, with version 1.3.0 about to be published | 3 | – |
+| [`courier-observability.json`](courier-observability.json) | `courier` in production, with its logs, health check and alerts | 5 | – |
+| [`courier-security-logs.json`](courier-security-logs.json) | `courier` in production, with sign-in and an audit log | 4 | – |
+| [`shelf-monitoring.json`](shelf-monitoring.json) | `shelf`, with crash reporting | 2 | – |
 
 ## Running one
 
