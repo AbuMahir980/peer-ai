@@ -25,9 +25,12 @@ const passingReport = (workItem: string) => ({
   scope: { tracks: ["web"] },
   inputs: ["docs/standards/web.md"],
   inventory: [{ id: "file:apps/web/src/cart.ts", kind: "file" }],
-  coverage: [
-    { rule: "CODE-TEST-01", item: "file:apps/web/src/cart.ts", status: "pass", evidence: "cart.test.ts covers totals" },
-  ],
+  // Every rule the skill answers for gets a line; this change touches none but the first.
+  coverage: skillRuleIds("code-review").map((rule, index) =>
+    index === 0
+      ? { rule, item: "file:apps/web/src/cart.ts", status: "pass", evidence: "cart.ts names say what they are" }
+      : { rule, status: "not-applicable", reason: "Nothing in this change is of its kind." },
+  ),
   findings: [],
   result: "pass",
   summary: "Clean: every rule checked, nothing found.",

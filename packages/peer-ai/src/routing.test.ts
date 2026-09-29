@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { SKILL_IDS, type PeerAiConfig, type WorkItem } from "@peer-ai/workflow";
+import { SKILL_IDS, type PeerAiConfig, type SkillId, type WorkItem } from "@peer-ai/workflow";
+import { availableSkills } from "@peer-ai/skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { assess, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
@@ -154,18 +155,16 @@ describe("the files a change touched", () => {
     advanceWorkItem(root, config, "MENU-1", "build", NOW);
     const moved = advanceWorkItem(root, config, "MENU-1", "verify", NOW);
     if (!moved.ok) throw new Error(moved.error);
-    // Only security-review is written so far, so it's the only review required.
-    expect(moved.value.requiredReviews).toEqual([
+    // Only reviews whose skills are written are required; the rest follow as they're written.
+    const needed = [
+      { skill: "code-review", reason: "it changes code" },
       { skill: "security-review", reason: "it changes code, at the mvp stage" },
-    ]);
-    expect(nextWork(root, config).reviews).toEqual([
-      {
-        skill: "security-review",
-        use: "peer-ai-security-review",
-        reason: "it changes code, at the mvp stage",
-        done: false,
-      },
-    ]);
+      { skill: "contract-check", reason: "it changes an API or its contract" },
+    ].filter((review) => availableSkills().includes(review.skill as SkillId));
+    expect(moved.value.requiredReviews).toEqual(needed);
+    expect(nextWork(root, config).reviews).toEqual(
+      needed.map((review) => ({ ...review, use: `peer-ai-${review.skill}`, done: false })),
+    );
   });
 });
 

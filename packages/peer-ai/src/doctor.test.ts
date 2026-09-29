@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { availableSkills } from "@peer-ai/skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { runAssess } from "./assess.ts";
 import { main } from "./cli.ts";
@@ -211,7 +212,9 @@ describe("doctor on what render writes", () => {
       {
         id: "render",
         status: "warn",
-        message: "Out of date for the AI tools: .claude/skills/peer-ai-security-review/.",
+        message: `Out of date for the AI tools: ${availableSkills()
+          .map((id) => `.claude/skills/peer-ai-${id}/`)
+          .join(", ")}.`,
         fix: "Run peer-ai render.",
       },
     ]);
