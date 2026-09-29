@@ -322,6 +322,8 @@ describe("next work", () => {
           "runbooks",
           "load-testing",
         ],
+        // No skill that fills one of these gaps is written yet; see routing.test.ts.
+        useSkill: {},
       },
     });
   });

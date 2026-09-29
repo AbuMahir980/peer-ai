@@ -185,4 +185,27 @@ export const MAP_ITEM_IDS = [
 ] as const;
 export type KnownMapItemId = (typeof MAP_ITEM_IDS)[number];
 
+/**
+ * The skills that fill each map item, in order (RFC 0004). standards, ci and environments have
+ * none: next_work says what to set up for them instead.
+ */
+export const MAP_ITEM_SKILLS: Partial<Record<KnownMapItemId, SkillId[]>> = {
+  requirements: ["requirements-analysis"],
+  architecture: ["architecture"],
+  "threat-model": ["threat-model"],
+  specs: ["product-spec", "system-design"],
+  "api-contract": ["api-design"],
+  "data-model": ["data-modelling"],
+  "data-inventory": ["compliance-review"],
+  dpia: ["compliance-review"],
+  design: ["design-system"],
+  tests: ["test-strategy"],
+  "load-testing": ["performance-review"],
+  infrastructure: ["infrastructure-review"],
+  observability: ["observability-review"],
+  slos: ["observability-review"],
+  runbooks: ["incident-response"],
+  docs: ["documentation"],
+};
+
 export const CUSTOM_MAP_ITEM_PATTERN = /^x-[a-z0-9]+(-[a-z0-9]+)*$/;

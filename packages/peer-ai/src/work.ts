@@ -20,6 +20,7 @@ import {
 } from "@peer-ai/workflow";
 import { NEXT_STAGE, assess, gaps } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
+import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
 
@@ -253,6 +254,19 @@ export function advanceWorkItem(
   }
   const target = to ?? ORDER[ORDER.indexOf(item.stage) + 1];
   if (target === undefined) return failed(`${item.id} has no stage after ${item.stage}.`);
+  if (target === "verify") {
+    // The reviews it needs are worked out once, from what the change touched, and kept on the item
+    // so CI can hold it to them without the branch's history.
+    const read = (file: string) => {
+      try {
+        return readFileSync(join(root, file), "utf8");
+      } catch {
+        return "";
+      }
+    };
+    const requiredReviews = reviewsFor(changedFiles(root), config, projectStage(config), read);
+    return save(root, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
+  }
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
@@ -347,8 +361,18 @@ export interface NextWork {
   current?: WorkItem;
   /** Every open work item, most recently updated first. */
   open: WorkItem[];
-  /** When nothing is open: what the project's stage still needs, to start as gap work items. */
-  gaps?: { stage: Stage; needed: KnownMapItemId[]; later: KnownMapItemId[] };
+  /** The current item's required reviews, by the names their skills are installed under. */
+  reviews?: ReturnType<typeof reviewsToDo>;
+  /**
+   * When nothing is open: what the project's stage still needs, to start as gap work items, and
+   * the skill to use for each gap that has one.
+   */
+  gaps?: {
+    stage: Stage;
+    needed: KnownMapItemId[];
+    later: KnownMapItemId[];
+    useSkill: Partial<Record<KnownMapItemId, string>>;
+  };
 }
 
 export function nextWork(root: string, config: PeerAiConfig): NextWork {
@@ -357,12 +381,18 @@ export function nextWork(root: string, config: PeerAiConfig): NextWork {
     .flatMap(({ item }) => (item.ok && !CLOSED.includes(item.value.stage) ? [item.value] : []))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const current = branch === undefined ? undefined : open.find((item) => item.branch === branch);
-  const result: NextWork = { ...(branch === undefined ? {} : { branch }), ...(current ? { current } : {}), open };
+  const reviews = current === undefined ? [] : reviewsToDo(current);
+  const result: NextWork = {
+    ...(branch === undefined ? {} : { branch }),
+    ...(current ? { current } : {}),
+    ...(reviews.length > 0 ? { reviews } : {}),
+    open,
+  };
   if (open.length > 0) return result;
   const stage = projectStage(config);
   const assessment = assess(root, config, stage);
   const next = NEXT_STAGE[stage];
   const needed = gaps(assessment, stage);
   const later = next === undefined ? [] : gaps(assessment, next).filter((id) => !needed.includes(id));
-  return { ...result, gaps: { stage, needed, later } };
+  return { ...result, gaps: { stage, needed, later, useSkill: gapSkills([...needed, ...later]) } };
 }

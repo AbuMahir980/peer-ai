@@ -104,18 +104,18 @@ export const NEXT_STAGE: Record<Stage, Stage | undefined> = {
   production: undefined,
 };
 
-const UI_KINDS = ["web", "mobile", "desktop", "extension"];
-const MANIFEST =
+export const UI_KINDS = ["web", "mobile", "desktop", "extension"];
+export const MANIFEST =
   /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|pubspec\.yaml|Gemfile|go\.mod|Cargo\.toml|composer\.json|build\.gradle(\.kts)?|pom\.xml|[^/]+\.csproj|Directory\.Packages\.props|Package\.swift|Podfile|mix\.exs)$/;
 // Where a project describes its data: migrations and schema files, and the model or entity
 // classes that ORMs in any language read, such as models/order.py, app/Models/Order.php,
 // Entities/Order.cs or order.entity.ts.
-const SCHEMA_FILE =
+export const SCHEMA_FILE =
   /(^|\/)(migrations?|migrate|alembic|prisma|drizzle|supabase|db|database)\/.*\.(sql|prisma|py|ts|js|rb|php|cs|go|java|kt|rs|exs?)$|\.sql$|schema\.prisma$|(^|\/)(models?|entities|entity|schemas?)\/[^/]+\.(py|ts|js|rb|php|cs|go|java|kt|rs|swift|ex)$|(^|\/)models?\.(py|ts|js|go|rs)$|\.(entity|model|schema)\.[cm]?[jt]s$/i;
 // Field names are matched as whole words, where an underscore also separates words, so a prefixed
 // name such as recipient_phone counts but iphone doesn't. camelCase names are split into words
 // first (see snakeCase), so recipientPhone and phoneNumber count too.
-const PERSONAL_FIELD =
+export const PERSONAL_FIELD =
   /(?<![a-z0-9])(email|phone(?:_number)?|mobile_number|date_of_birth|dob|birth_?date|home_address|address(?:_line_?\d)?|post_?code|zip_?code|bvn|nin|ssn|national_id|passport(?:_number)?|ip_address|latitude|longitude)(?![a-z0-9])/gi;
 const CARD_FIELD = /(?<![a-z0-9])(card_?number|card_no|pan|cvv2?|cvc|card_expiry)(?![a-z0-9])/gi;
 const PAYMENT_PROVIDER =
@@ -124,11 +124,11 @@ const OBSERVABILITY =
   /(@sentry\/[\w-]+|\bsentry[\w-]*|@opentelemetry\/[\w-]+|\bopentelemetry[\w-]*|\bdd-trace\b|\bdatadog\b|\bnewrelic\b|\bprom-client\b|\bprometheus[\w-]*|\bpino\b|\bwinston\b|\bstructlog\b|\bloguru\b|\blogfire\b|go\.uber\.org\/zap|\bzerolog\b|\bmicrometer[\w-]*|\bserilog[\w.]*|\bmonolog\b|\blograge\b|\btracing-subscriber\b)/gi;
 const LOCAL_SCHEMA_FILE = /(^|\/)(db|database|schema|storage|store|models?)\.(ts|tsx|js|mjs)$/i;
 const LOCAL_SCHEMA = /\.stores\(\s*\{|indexedDB\.open\(|\bopenDB\(|\bappSchema\(|CREATE TABLE/;
-const INFRASTRUCTURE_AS_CODE =
+export const INFRASTRUCTURE_AS_CODE =
   /\.tf$|\.tf\.json$|\.bicep$|\.cfn\.(ya?ml|json)$|(^|\/)(Pulumi\.ya?ml|cdk\.json|Chart\.yaml|kustomization\.ya?ml|serverless\.ya?ml|samconfig\.toml)$/;
 // Libraries that suggest a trait, found by name in dependency files. A suggestion is only that:
 // the evidence is shown, and a person decides.
-const TRAIT_LIBRARIES: [trait: Trait, pattern: RegExp][] = [
+export const TRAIT_LIBRARIES: [trait: Trait, pattern: RegExp][] = [
   [
     "offline",
     /(workbox[\w-]*|vite-plugin-pwa|next-pwa|@serwist\/[\w-]+|\bdexie\b|\brxdb\b|\bpouchdb[\w-]*|@nozbe\/watermelondb|\bsqflite\b|\bdrift\b|androidx\.room)/gi,
@@ -155,7 +155,7 @@ const SAFETY_FIELD =
 // would otherwise read as the project's own requirements, specs and standards.
 export const LEGACY_PLAYBOOK = "peer-ai/";
 export const LEGACY_MARKERS = ["peer-ai/shared/00-setup.md", "peer-ai/phase-config.json"];
-const TEST_FILE =
+export const TEST_FILE =
   /(^|\/)(tests?|Tests|__tests__|integration_test|spec|e2e)\/|(^|\/)[^/]+\.Tests?\/|[._-](test|spec)\.[cm]?[jt]sx?$|_test\.(go|dart|py|exs)$|(^|\/)test_[^/]+\.py$|_spec\.rb$|(Tests?|Spec)\.(swift|kt|java|cs|php)$/;
 
 interface Context {
