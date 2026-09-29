@@ -53,7 +53,7 @@
     {
       "id": "QU3",
       "title": "Nobody to pay fails with a confusing error from the code, not a clear message",
-      "severity": "medium",
+      "severity": "high",
       "skills": ["qa-acceptance"],
       "locations": [
         {

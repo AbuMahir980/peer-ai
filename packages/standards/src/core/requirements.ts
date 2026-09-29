@@ -47,4 +47,15 @@ export const requirements = [
     check: "ai-review",
     severity: "low",
   },
+  {
+    id: "REQ-05",
+    domain: "requirements",
+    title: "A feature ships only when every acceptance criterion holds",
+    rule: "A feature ships only when every one of its acceptance criteria holds. A criterion that doesn't is fixed first, or changed or dropped by whoever agreed it, never shipped broken or quietly skipped.",
+    why: "The acceptance criteria are what was agreed. A feature that fails one does something nobody agreed to, and the people relying on it find out first.",
+    ask: "Does every acceptance criterion of this feature hold in the code?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "high",
+  },
 ] satisfies RuleInput[];
