@@ -37,12 +37,15 @@ describe("fixtures", () => {
     });
     // Without skills, the hook that would write them is taken out; with them, it starts this checkout.
     expect(readFileSync(join(target, ".claude/settings.json"), "utf8")).not.toContain("render --skills");
+    // Nor do its instructions send the agent off to install them.
+    expect(readFileSync(join(target, "AGENTS.md"), "utf8")).not.toContain("Peer AI's skills are named");
     const [cli = ""] = localServer().args;
     const withSkills = prepared("split-bill", { skills: true });
     expect(readFileSync(join(withSkills, ".claude/settings.json"), "utf8")).toContain(
       `"command": "${process.execPath} ${cli} render --skills --quiet"`,
     );
     expect(existsSync(join(withSkills, ".claude/skills/peer-ai-security-review/SKILL.md"))).toBe(true);
+    expect(readFileSync(join(withSkills, "AGENTS.md"), "utf8")).toContain("Peer AI's skills are named");
     expect(execFileSync("git", ["log", "--oneline"], { cwd: target, encoding: "utf8" })).toMatch(
       /^[0-9a-f]+ The fixture as it starts\n$/,
     );
