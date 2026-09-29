@@ -14,7 +14,8 @@
     "threat-model": "Write a threat model for Sprout.",
     "product-spec": "Write the spec for recording that a plant was watered.",
     "system-design": "People will be able to record that a plant was watered. Design how it's built.",
-    "data-modelling": "Write down Sprout's data model: what it keeps on the device."
+    "data-modelling": "Write down Sprout's data model: what it keeps on the device.",
+    "design-system": "Write down Sprout's design system from its tokens and screens."
   },
   "defects": [
     {
@@ -424,6 +425,46 @@
         {
           "id": "MP8",
           "point": "Leaves syncing between devices out, as not built yet."
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YP1",
+          "point": "Names src/styles/tokens.css as the one place the tokens come from, and lists its colour and spacing tokens with their values.",
+          "must": true
+        },
+        {
+          "id": "YP2",
+          "point": "Finds that the muted text in app.css uses a colour that isn't a token, and that it's too pale to read.",
+          "must": true
+        },
+        {
+          "id": "YP3",
+          "point": "Gives contrast as ratios worked out from the values, such as for the text and muted colours on white.",
+          "must": true
+        },
+        {
+          "id": "YP4",
+          "point": "Finds that plants can be reordered only by dragging, and asks for another way."
+        },
+        {
+          "id": "YP5",
+          "point": "Lists the shared components, such as the plant card, with the states each has or lacks."
+        },
+        {
+          "id": "YP6",
+          "point": "Says screens that wait show loading, empty and error, and offline as a state since the app works offline."
+        },
+        {
+          "id": "YP7",
+          "point": "Notes values written straight into styles, such as the card's corner radius, that aren't tokens."
+        },
+        {
+          "id": "YP8",
+          "point": "Marks proposals, such as new tokens, as proposed rather than decided."
         }
       ]
     }

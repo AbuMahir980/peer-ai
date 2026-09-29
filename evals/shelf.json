@@ -14,7 +14,8 @@
     "architecture": "Bring Shelf's architecture document up to date with the code.",
     "product-spec": "Readers want to extend a loan by a week. Write the spec for it.",
     "system-design": "Readers will be able to extend a loan by a week. Design how it's built.",
-    "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs."
+    "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs.",
+    "design-system": "Write down Shelf's design system from its tokens and screens."
   },
   "defects": [
     {
@@ -562,6 +563,46 @@
         {
           "id": "PAS8",
           "point": "Lists the questions for the API's owners, such as how many extensions are allowed."
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YS1",
+          "point": "Names src/theme/tokens.ts as the one place the tokens come from, and lists its colours, spacing and type sizes.",
+          "must": true
+        },
+        {
+          "id": "YS2",
+          "point": "Finds colours written straight into screens instead of tokens, such as in the loan card or the librarian screen.",
+          "must": true
+        },
+        {
+          "id": "YS3",
+          "point": "Finds the loan card's return button is an icon with no name and a small touch target.",
+          "must": true
+        },
+        {
+          "id": "YS4",
+          "point": "Finds text that ignores the reader's text size setting, such as on the profile screen."
+        },
+        {
+          "id": "YS5",
+          "point": "Gives contrast as ratios worked out from the token values."
+        },
+        {
+          "id": "YS6",
+          "point": "Notes the older and newer halves of the app style screens differently, and says which new screens follow."
+        },
+        {
+          "id": "YS7",
+          "point": "Sets touch target and text size rules suited to a phone."
+        },
+        {
+          "id": "YS8",
+          "point": "Marks proposals as proposed rather than decided."
         }
       ]
     }
