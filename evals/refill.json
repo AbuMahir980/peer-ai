@@ -3,7 +3,8 @@
   "prompts": {
     "requirements-analysis": "Write the requirements for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
     "architecture": "Propose an architecture for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
-    "api-design": "Design the API for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
+    "api-design": "Design the API for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
+    "data-modelling": "Design Refill's data model from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
   },
   "defects": [],
   "documents": {
@@ -160,6 +161,50 @@
         {
           "id": "PAR9",
           "point": "Marks choices nobody has made yet as proposed, or asks."
+        }
+      ]
+    },
+    "data-modelling": {
+      "path": "docs/data-model.md",
+      "points": [
+        {
+          "id": "MR1",
+          "point": "Models patients, prescriptions, orders, payments, pharmacies, pharmacists, riders and deliveries, with their links.",
+          "must": true
+        },
+        {
+          "id": "MR2",
+          "point": "Marks prescriptions and medicines as health data, especially sensitive, with who may see them.",
+          "must": true
+        },
+        {
+          "id": "MR3",
+          "point": "Keeps money as a whole number in the smallest unit, with its currency, for both countries.",
+          "must": true
+        },
+        {
+          "id": "MR4",
+          "point": "Never stores card details: a payment keeps the provider's reference."
+        },
+        {
+          "id": "MR5",
+          "point": "Keeps prescription photos as files with their owner, and deletes them with their record."
+        },
+        {
+          "id": "MR6",
+          "point": "Asks, or proposes, how long prescriptions, photos and riders' locations are kept."
+        },
+        {
+          "id": "MR7",
+          "point": "Uses database guarantees, such as a unique order per payment or allowed statuses."
+        },
+        {
+          "id": "MR8",
+          "point": "Models an order's status as a fixed set of values, including a rejected prescription."
+        },
+        {
+          "id": "MR9",
+          "point": "Marks choices nobody has made as proposed, and invents no scale."
         }
       ]
     }
