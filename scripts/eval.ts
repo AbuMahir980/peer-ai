@@ -234,7 +234,12 @@ function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect
     if (gap > 1) continue;
     const lines = Math.min(
       ...defect.spans
-        .filter((span) => normalise(finding.location.file) === normalise(span.file))
+        // A problem with the whole project can be named anywhere, as long as its rule is cited.
+        .filter(
+          (span) =>
+            (span.whole === true && normalise(span.file) === ".") ||
+            normalise(finding.location.file) === normalise(span.file),
+        )
         .map((span) => distance(finding, defect, span)),
     );
     if (lines <= LINE_TOLERANCE) ranked.push({ defect, lines, gap });
