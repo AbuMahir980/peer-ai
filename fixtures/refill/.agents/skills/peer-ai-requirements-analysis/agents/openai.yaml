@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI requirements analysis"
+  short_description: "Requirements with sources, criteria and open questions"
+  default_prompt: "Use $peer-ai-requirements-analysis to write down this product's requirements, with a source for every statement."
