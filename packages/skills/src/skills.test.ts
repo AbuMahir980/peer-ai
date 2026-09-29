@@ -96,6 +96,13 @@ describe("building a skill", () => {
     expect(rulesReference(["ai-features"])).toContain("- Only for products with: ai-features.");
   });
 
+  it("adds single rules from other domains, grouped under their own domain", () => {
+    const rules = rulesReference(["security"], ["TEST-08", "PRIV-01"]);
+    expect(rules).toContain("- Security: SEC-01 to SEC-26\n- Privacy and compliance: PRIV-01\n- Testing: TEST-08\n");
+    expect(rules).toContain("## Testing");
+    expect(rules).not.toContain("### TEST-01");
+  });
+
   it("gives only review skills the severity scale and report format", () => {
     const document = new Map([
       ["SKILL.md", skillMd(FIELDS.replace("security-review", "threat-model"), "# Threat model")],
@@ -154,6 +161,11 @@ describe("validating a skill", () => {
       "an unknown domain",
       setSkillMd(FIELDS.replace("peer-ai-domains: security", "peer-ai-domains: security crypto")),
       '"crypto", which isn\'t a standards domain',
+    ],
+    [
+      "an unknown single rule",
+      setSkillMd(`${FIELDS}\n  peer-ai-rules: PRIV-01 PRIV-99`),
+      "peer-ai-rules names PRIV-99",
     ],
     ["a body over 500 lines", setSkillMd(FIELDS, `${BODY}\n${"More.\n".repeat(500)}`), "keep it under 500"],
     ["role-play", setSkillMd(FIELDS, `You are a security engineer.\n\n${BODY}`), "no role-play"],

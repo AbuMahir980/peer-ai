@@ -41,15 +41,16 @@ license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
   peer-ai-kind: review
-  peer-ai-domains: security privacy-compliance
+  peer-ai-domains: security
+  peer-ai-rules: PRIV-01 TEST-08
 ---
 ```
 
 - Only the standard's fields: `name`, `description`, `license`, `compatibility`, `metadata` and `allowed-tools`. **Checked.**
-- `name` matches the folder: lowercase letters, digits and single hyphens, at most 64 characters, without "anthropic" or "claude". **Checked.** When `render` writes a skill under another name, the build sets it.
+- `name` matches the folder: lowercase letters, digits and single hyphens, at most 64 characters, without "anthropic" or "claude". **Checked.** In a project, `render` writes the skill as `peer-ai-<id>`, such as `peer-ai-security-review`, so it never replaces a tool's own skill of the same name; the build sets the name. The report's `skill` field is always the plain id.
 - `license` is `MIT`. **Checked.**
 - `metadata.peer-ai-kind` is the kind RFC 0004 gives the skill: review, document or work. **Checked.**
-- `metadata.peer-ai-domains` lists the standards domains whose rules the skill checks. They become `references/rules.md`. **Checked.**
+- `metadata.peer-ai-domains` lists the standards domains whose rules the skill checks, and `metadata.peer-ai-rules` lists single rules from other domains. Together they become `references/rules.md`, and they're the rules the skill's report must cover. **Checked.**
 - Leave out `allowed-tools`: it is experimental, and tools treat it differently.
 
 ## The description

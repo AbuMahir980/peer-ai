@@ -75,7 +75,7 @@ export function validateSkill(files: SkillFiles, expect: Expectations): string[]
   ) {
     problems.push(`SKILL.md: compatibility must be text of at most ${String(LIMITS.compatibility)} characters.`);
   }
-  problems.push(...checkMetadata(frontmatter.metadata, expect.kind));
+  problems.push(...checkMetadata(frontmatter.metadata, expect.kind, expect.ruleIds));
 
   const lines = body.split("\n").length;
   if (lines > LIMITS.bodyLines) {
@@ -127,7 +127,7 @@ function checkDescription(description: unknown): string[] {
   return problems;
 }
 
-function checkMetadata(metadata: unknown, kind: SkillKind): string[] {
+function checkMetadata(metadata: unknown, kind: SkillKind, ruleIds: ReadonlySet<string>): string[] {
   if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
     return ["SKILL.md: metadata is missing; it holds peer-ai-kind."];
   }
@@ -142,6 +142,13 @@ function checkMetadata(metadata: unknown, kind: SkillKind): string[] {
     problems.push("SKILL.md: metadata.peer-ai-kind must be review, document or work.");
   } else if (declared !== kind) {
     problems.push(`SKILL.md: metadata.peer-ai-kind is ${declared}, but RFC 0004 makes this skill a ${kind} skill.`);
+  }
+  const rules = values["peer-ai-rules"];
+  if (typeof rules === "string") {
+    for (const id of rules.split(/\s+/).filter((word) => word !== "")) {
+      if (!ruleIds.has(id))
+        problems.push(`SKILL.md: metadata.peer-ai-rules names ${id}, which isn't one of Peer AI's rules.`);
+    }
   }
   const domains = values["peer-ai-domains"];
   if (typeof domains === "string") {

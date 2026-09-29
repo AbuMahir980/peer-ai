@@ -208,6 +208,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.30.1
         version: 1.30.1(zod@4.6.5)
+      '@peer-ai/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@peer-ai/standards':
         specifier: workspace:*
         version: link:../standards

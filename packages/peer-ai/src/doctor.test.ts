@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { runAssess } from "./assess.ts";
@@ -198,6 +198,19 @@ describe("doctor on what render writes", () => {
         id: "render",
         status: "warn",
         message: "Out of date for the AI tools: AGENTS.md, .cursor/rules/peer-ai.mdc, .cursor/mcp.json.",
+        fix: "Run peer-ai render.",
+      },
+    ]);
+  });
+
+  it("warns when the skills are missing, as in a fresh clone", () => {
+    const root = healthy();
+    rmSync(join(root, ".claude/skills"), { recursive: true });
+    expect(checksFor(root, "render")).toEqual([
+      {
+        id: "render",
+        status: "warn",
+        message: "Out of date for the AI tools: .claude/skills/peer-ai-security-review/.",
         fix: "Run peer-ai render.",
       },
     ]);

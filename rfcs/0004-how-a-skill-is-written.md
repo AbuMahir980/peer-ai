@@ -246,3 +246,18 @@ One existing behaviour changes: `peer-ai check` starts enforcing required review
 ## Open questions
 
 - Should a project be able to choose to commit its rendered skills, for teams who want them visible in review? Leaving them uncommitted is the default either way.
+
+## Amendments
+
+**30 September 2026: rendered names and folders.** Checking how each tool reads skills changed three details of section 5:
+
+- **Names.** A skill is written into a project as `peer-ai-<id>`, such as `peer-ai-security-review`, in a folder of the same name. Its id stays its name everywhere else: in config, in reports and on work items. Two reasons:
+  - Claude Code lets a project skill with the same name replace its own bundled `/code-review`.
+  - Other skill packs use names such as `security-review`.
+
+  The prefix avoids both clashes, and shows where a skill came from.
+- **Folders.**
+  - Codex, Cursor, GitHub Copilot and Gemini CLI all read `.agents/skills/`.
+  - Claude Code reads `.claude/skills/`, which Cursor and Copilot also read.
+  - `render` writes each skill to as few of these as the listed tools need, and to none when no tool is listed.
+- **Cloud sessions.** Claude Code's cloud sessions load only the skills committed to `.claude/skills/`. A project that keeps its skills out of git has none there, unless its setup runs `peer-ai render`. This adds weight to the open question above.
