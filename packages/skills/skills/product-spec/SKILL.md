@@ -22,7 +22,7 @@ Copy this checklist and tick it off as you go:
 ```
 - [ ] 1. Sources: the work item, the requirements, the design, and the code around it
 - [ ] 2. Inventory: every role, journey, screen and piece of data
-- [ ] 3. Questions: the behaviour only a person can decide, asked together
+- [ ] 3. Questions: the behaviour only a person can decide, proposed and written down to ask
 - [ ] 4. Write: the template filled in, with every state and edge case
 - [ ] 5. Check: accepted by the peer-ai MCP tool `check_document`
 - [ ] 6. Hand over: what's open, and what comes next
@@ -50,7 +50,7 @@ List before writing:
 
 ## 3. Questions
 
-A spec is where product decisions get made: what happens when a person changes their mind, when two people act at once, or when something outside fails. Where the requirements don't say, ask the person, all at once, and wait if they're there. What stays unanswered goes under Open questions; where building can't wait, write the behaviour you recommend and mark it **proposed**.
+A spec is where product decisions get made: what happens when a person changes their mind, when two people act at once, or when something outside fails. Where the requirements don't say, don't stop to wait for answers: write the behaviour you recommend and mark it **proposed**, and put the question under Open questions. Ask the person when you hand over; their answers update the spec.
 
 ## 4. Write
 
