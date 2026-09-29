@@ -170,6 +170,13 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **The grader varies:** sprout's first run was graded 8 of 8, and 7 of 8 when graded again.
 
+- **2026-09-29, api-design with Codex, on courier, shelf and refill, with the skill and without:**
+  - **With the skill, all three are ready:** courier 10 of 10 after the fix below, shelf 8 of 8 and refill 9 of 9.
+  - **Without it, the content was close on two of three:** shelf 7 of 8 and refill 9 of 9, both ready, and courier 5 of 10. The skill's clearest gain is on an API that exists: the courier baseline described the missing conventions without proposing any, and didn't flag that public tracking shows personal details.
+  - **Two baselines saved `docs/api-design.md`,** where the project map doesn't find an API contract, so the gap stayed open. They were graded where they were saved, with `--document`.
+- **What the runs changed:**
+  - **Describing gaps instead of closing them.** The first courier run with the skill said the API has no error shape, no currency and no idempotency keys, without proposing any. The skill now proposes a convention wherever the API has none, marked proposed. The next run made every point.
+
 ## Results
 
 Newest last.
@@ -274,3 +281,10 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | courier | system-design | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
 | 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | api-design | Codex | default | used | 7 of 10 | 3 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | api-design | Codex | default | used | 8 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | refill | api-design | Codex | default | used | 9 of 9 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | api-design | Codex | default | without | 5 of 10 | 3 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | api-design | Codex | default | without | 7 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | refill | api-design | Codex | default | without | 9 of 9 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | api-design | Codex | default | used | 10 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
