@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI product spec"
+  short_description: "A feature's journeys, screens, states and criteria"
+  default_prompt: "Use ${{name}} to write the product spec for this feature before it's built."

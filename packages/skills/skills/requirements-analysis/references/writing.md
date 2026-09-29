@@ -31,7 +31,7 @@ Each criterion is one situation, one action and one result a tester can see. Cov
 - **Badly:** putting "a parts shop" in scope because someone mentioned it once.
 - **Well:** in scope, what someone agreed to; out of scope, ideas for the backlog, such as a parts shop; unclear, what could go either way, such as whether a shop can have several mechanics' calendars.
 
-When in doubt, it's unclear, not in scope.
+An idea tacked onto a request ("and while you're at it, could we add a parts shop?") is a separate decision: list it as unclear or out of scope, and ask who decides. When in doubt, it's unclear, not in scope.
 
 ## Open questions
 

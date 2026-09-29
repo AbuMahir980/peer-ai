@@ -9,7 +9,13 @@
     "reliability-review": "Review Sprout for reliability problems.",
     "performance-review": "Review Sprout for performance problems.",
     "accessibility-review": "Review Sprout for accessibility problems.",
-    "design-review": "Review Sprout against its design system."
+    "design-review": "Review Sprout against its design system.",
+    "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today.",
+    "threat-model": "Write a threat model for Sprout.",
+    "product-spec": "Write the spec for recording that a plant was watered.",
+    "system-design": "People will be able to record that a plant was watered. Design how it's built.",
+    "data-modelling": "Write down Sprout's data model: what it keeps on the device.",
+    "design-system": "Write down Sprout's design system from its tokens and screens."
   },
   "defects": [
     {
@@ -189,5 +195,278 @@
         }
       ]
     }
-  ]
+  ],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "SR1",
+          "point": "Keeps every existing requirement: working with no connection without losing data, updates reaching everyone, identification sending only the photo and saying so first, advice shown as a suggestion with pet and child safety left to an expert, keyboard and screen reader use, and Nigeria's NDPA.",
+          "must": true
+        },
+        {
+          "id": "SR2",
+          "point": "Describes what the app does today with acceptance criteria, including adding a plant with a name, a room and a photo, and putting plants in order; and treats the journal, watering and plant identification, which are in the code but not reachable from the app's screens, as unclear or as questions.",
+          "must": true
+        },
+        {
+          "id": "SR3",
+          "point": "Marks what it worked out from the code as coming from the code, apart from what someone stated.",
+          "must": true
+        },
+        {
+          "id": "SR4",
+          "point": "Puts syncing between devices out of scope, or leaves it unclear, rather than in scope.",
+          "must": true
+        },
+        {
+          "id": "SR5",
+          "point": "Names the plant identification service as a dependency run by someone else."
+        },
+        {
+          "id": "SR6",
+          "point": "Notes that a photo can carry where it was taken, or show people, so sending \"only the photo\" needs care."
+        },
+        {
+          "id": "SR7",
+          "point": "Asks how much a person may keep, such as how many plants and photos, or what happens when the device runs short of space."
+        },
+        {
+          "id": "SR8",
+          "point": "Asks which browsers or devices it must work on."
+        },
+        {
+          "id": "SR9",
+          "point": "Names the personal data it keeps, such as photos and notes, and that photos go to another company for identification."
+        },
+        {
+          "id": "SR10",
+          "point": "Writes acceptance criteria a tester could check, each with a result anyone can see, not words like \"easy\" or \"fast\"."
+        },
+        {
+          "id": "SR11",
+          "point": "Invents no numbers: any count of users, plants or photos, or any storage limit, that nobody gave is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    },
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TP1",
+          "point": "Lists the ways in, including adding plants and photos, identifying a plant through the outside service, the service worker, and the data kept in the browser.",
+          "must": true
+        },
+        {
+          "id": "TP2",
+          "point": "Names what's worth protecting, including people's plants, photos and journal, which exist only on their device, and the identification service's key.",
+          "must": true
+        },
+        {
+          "id": "TP3",
+          "point": "Finds that the identification service's key is built into the web app, where anyone can read it, and marks it missing.",
+          "must": true
+        },
+        {
+          "id": "TP4",
+          "point": "Finds that care instructions from the identification service are shown as HTML, where they can run a script, and marks it missing."
+        },
+        {
+          "id": "TP5",
+          "point": "Finds that a photo sent for identification can carry where it was taken."
+        },
+        {
+          "id": "TP6",
+          "point": "Considers losing the only copy of a person's data, such as the browser clearing it, an update that fails, or running out of space."
+        },
+        {
+          "id": "TP7",
+          "point": "Treats the identification service's reply as untrusted, including its advice on whether a plant is safe for pets."
+        },
+        {
+          "id": "TP8",
+          "point": "Marks at least one defence as in place where the app has one, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TP9",
+          "point": "Treats sync as not built yet, rather than describing its threats as present."
+        },
+        {
+          "id": "TP10",
+          "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PP1",
+          "point": "Works with no connection: recording watering never needs the network, and it's kept on the device.",
+          "must": true
+        },
+        {
+          "id": "PP2",
+          "point": "Says \"today\" follows the person's own time zone, including around midnight.",
+          "must": true
+        },
+        {
+          "id": "PP3",
+          "point": "Gives acceptance criteria for recording watering, seeing it on the plant list, and undoing a mistake.",
+          "must": true
+        },
+        {
+          "id": "PP4",
+          "point": "Covers watering the same plant twice in a day."
+        },
+        {
+          "id": "PP5",
+          "point": "Shows watering in words or an icon with a label, not by colour alone."
+        },
+        {
+          "id": "PP6",
+          "point": "Can be done with a keyboard and a screen reader."
+        },
+        {
+          "id": "PP7",
+          "point": "Leaves syncing between devices out of scope."
+        },
+        {
+          "id": "PP8",
+          "point": "Asks or proposes whether past waterings are kept as a history, such as in the journal."
+        },
+        {
+          "id": "PP9",
+          "point": "Describes the plant list's states, such as no plants yet."
+        },
+        {
+          "id": "PP10",
+          "point": "Leaves database tables, storage details, API endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DP1",
+          "point": "Keeps every plant, photo and note already on the device when the stored data changes, with a version upgrade that moves it.",
+          "must": true
+        },
+        {
+          "id": "DP2",
+          "point": "Works out \"today\" in the person's own time zone, not UTC.",
+          "must": true
+        },
+        {
+          "id": "DP3",
+          "point": "Needs no network to record watering."
+        },
+        {
+          "id": "DP4",
+          "point": "Says whether waterings are kept as a history, and where."
+        },
+        {
+          "id": "DP5",
+          "point": "Names the tests that prove it, including an upgrade from the current data and a watering just before midnight.",
+          "must": true
+        },
+        {
+          "id": "DP6",
+          "point": "Names the files and stores that change."
+        },
+        {
+          "id": "DP7",
+          "point": "Handles recording watering twice in a day without a duplicate or an error."
+        },
+        {
+          "id": "DP8",
+          "point": "Leaves syncing between devices for later, without blocking it."
+        }
+      ]
+    },
+    "data-modelling": {
+      "path": "docs/data-model.md",
+      "points": [
+        {
+          "id": "MP1",
+          "point": "Lists plants and journal entries with their fields, from the device database's code.",
+          "must": true
+        },
+        {
+          "id": "MP2",
+          "point": "Finds that version 2 renames the entries store to journal without moving what's in it, so existing journal notes are lost, and treats it as a problem.",
+          "must": true
+        },
+        {
+          "id": "MP3",
+          "point": "Notes that the device holds the only copy of people's plants, photos and notes, and what that means for keeping it safe.",
+          "must": true
+        },
+        {
+          "id": "MP4",
+          "point": "Marks photos as possibly personal, since they can show people or where they were taken."
+        },
+        {
+          "id": "MP5",
+          "point": "Notes that two plants can end up with the same position, and that nothing in the store prevents it."
+        },
+        {
+          "id": "MP6",
+          "point": "Says how a future change keeps existing data, with a version upgrade that moves it."
+        },
+        {
+          "id": "MP7",
+          "point": "Asks how long data is kept, or how a person deletes a plant with its photo and notes."
+        },
+        {
+          "id": "MP8",
+          "point": "Leaves syncing between devices out, as not built yet."
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YP1",
+          "point": "Names src/styles/tokens.css as the one place the tokens come from, and lists its colour and spacing tokens with their values.",
+          "must": true
+        },
+        {
+          "id": "YP2",
+          "point": "Finds that the muted text in app.css uses a colour that isn't a token, and that it's too pale to read.",
+          "must": true
+        },
+        {
+          "id": "YP3",
+          "point": "Gives contrast as ratios worked out from the values, such as for the text and muted colours on white.",
+          "must": true
+        },
+        {
+          "id": "YP4",
+          "point": "Finds that plants can be reordered only by dragging, and asks for another way."
+        },
+        {
+          "id": "YP5",
+          "point": "Lists the shared components, such as the plant card, with the states each has or lacks."
+        },
+        {
+          "id": "YP6",
+          "point": "Says screens that wait show loading, empty and error, and offline as a state since the app works offline."
+        },
+        {
+          "id": "YP7",
+          "point": "Notes values written straight into styles, such as the card's corner radius, that aren't tokens."
+        },
+        {
+          "id": "YP8",
+          "point": "Marks proposals, such as new tokens, as proposed rather than decided."
+        }
+      ]
+    }
+  }
 }

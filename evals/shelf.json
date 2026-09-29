@@ -9,7 +9,13 @@
     "performance-review": "Review the Shelf app for performance problems.",
     "reliability-review": "Review the Shelf app for reliability problems.",
     "design-review": "Review the Shelf app against its design system.",
-    "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model."
+    "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model.",
+    "threat-model": "Write a threat model for Shelf.",
+    "architecture": "Bring Shelf's architecture document up to date with the code.",
+    "product-spec": "Readers want to extend a loan by a week. Write the spec for it.",
+    "system-design": "Readers will be able to extend a loan by a week. Design how it's built.",
+    "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs.",
+    "design-system": "Write down Shelf's design system from its tokens and screens."
   },
   "defects": [
     {
@@ -332,5 +338,273 @@
       ],
       "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
     }
-  ]
+  ],
+  "documents": {
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TS1",
+          "point": "Lists the ways in, including signing in, scanning a QR code, finding books nearby, the librarian, and the calls the app makes to the API and to analytics.",
+          "must": true
+        },
+        {
+          "id": "TS2",
+          "point": "Names what's worth protecting, including readers' accounts, their location and what they've borrowed.",
+          "must": true
+        },
+        {
+          "id": "TS3",
+          "point": "Finds that a secret is built into the app, or that the app talks to the API over plain HTTP, and marks it missing.",
+          "must": true
+        },
+        {
+          "id": "TS4",
+          "point": "Finds that signing in writes the password to the device log, or that the session token is kept in unencrypted storage."
+        },
+        {
+          "id": "TS5",
+          "point": "Finds that a link in a QR code can open any web page inside the app."
+        },
+        {
+          "id": "TS6",
+          "point": "Finds that the reader's exact location goes to analytics or to the librarian when it isn't needed."
+        },
+        {
+          "id": "TS7",
+          "point": "Finds that catalogue descriptions from the partner reach the librarian's instructions, or that the librarian's reply can reserve a book without the reader confirming."
+        },
+        {
+          "id": "TS8",
+          "point": "Treats the API as run in another repository, and marks the defences that live there as not checked rather than in place.",
+          "must": true
+        },
+        {
+          "id": "TS9",
+          "point": "Marks at least one defence as in place where the app has one, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TS10",
+          "point": "Considers a lost or shared phone."
+        },
+        {
+          "id": "TS11",
+          "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AS1",
+          "point": "Keeps the rebuild rule: features move from src/legacy to src/features, and the legacy Redux store owns the book list while both halves exist.",
+          "must": true
+        },
+        {
+          "id": "AS2",
+          "point": "Keeps that the Shelf API is a separate service in another repository, and describes only what the app uses of it.",
+          "must": true
+        },
+        {
+          "id": "AS3",
+          "point": "Adds the parts the document is missing, such as the librarian, analytics, QR scanning and finding books nearby."
+        },
+        {
+          "id": "AS4",
+          "point": "Notes that there are two ways to reach the API, the legacy client and the newer helper, and says which new code must use or treats it as a risk."
+        },
+        {
+          "id": "AS5",
+          "point": "Keeps the rule that a change to how data is stored on the phone moves the existing data across."
+        },
+        {
+          "id": "AS6",
+          "point": "Names each outside service the app sends data to, such as the Shelf API and analytics."
+        },
+        {
+          "id": "AS7",
+          "point": "Marks what it worked out from the code as coming from the code."
+        },
+        {
+          "id": "AS8",
+          "point": "States which parts or folders may depend on which, in a direction a reviewer could check."
+        },
+        {
+          "id": "AS9",
+          "point": "Invents no parts, hosting or services the code doesn't show, and doesn't describe the API's insides as known.",
+          "must": true
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PS1",
+          "point": "Says a reader can extend only their own loans, and what the lender can see or do.",
+          "must": true
+        },
+        {
+          "id": "PS2",
+          "point": "Covers a book someone else has reserved or asked for, and what the reader is told when they can't extend.",
+          "must": true
+        },
+        {
+          "id": "PS3",
+          "point": "Gives acceptance criteria for each journey, including the ones that go wrong.",
+          "must": true
+        },
+        {
+          "id": "PS4",
+          "point": "Covers what happens with no connection, since it's a phone app."
+        },
+        {
+          "id": "PS5",
+          "point": "Asks, or proposes, how many times a loan can be extended."
+        },
+        {
+          "id": "PS6",
+          "point": "Covers edge cases around the due date, such as a loan due today, an overdue loan, or the reader's time zone."
+        },
+        {
+          "id": "PS7",
+          "point": "Says whether and how the lender is told about the extension."
+        },
+        {
+          "id": "PS8",
+          "point": "Describes each screen or message in its loading, error and success states."
+        },
+        {
+          "id": "PS9",
+          "point": "Covers use with a screen reader and large enough touch targets."
+        },
+        {
+          "id": "PS10",
+          "point": "Leaves database tables, API endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DS1",
+          "point": "Treats the API as another repository's: writes the contract change the app needs as a request to its owners, and doesn't design the API's insides.",
+          "must": true
+        },
+        {
+          "id": "DS2",
+          "point": "Says what the app does when the request fails, hangs or there's no connection, with a timeout.",
+          "must": true
+        },
+        {
+          "id": "DS3",
+          "point": "Builds the new screen in the newer TypeScript features, not the legacy half, reaching the API through one helper."
+        },
+        {
+          "id": "DS4",
+          "point": "Handles pressing extend twice, so the loan is extended once."
+        },
+        {
+          "id": "DS5",
+          "point": "Checks on the server that the loan belongs to the reader asking, as part of the request to the API's owners."
+        },
+        {
+          "id": "DS6",
+          "point": "Names the tests that prove it, including a failed request and a double press.",
+          "must": true
+        },
+        {
+          "id": "DS7",
+          "point": "Says how the loan's new due date reaches the screen, such as refreshing the loans the app holds."
+        },
+        {
+          "id": "DS8",
+          "point": "Names the files that change in the app."
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAS1",
+          "point": "Writes it as a request to the API's owners in the other repository, not as a change it makes itself.",
+          "must": true
+        },
+        {
+          "id": "PAS2",
+          "point": "Designs the endpoint: what it takes, what it returns, and each error, such as the book being reserved.",
+          "must": true
+        },
+        {
+          "id": "PAS3",
+          "point": "Says only the reader who has the loan may extend it, checked on the server.",
+          "must": true
+        },
+        {
+          "id": "PAS4",
+          "point": "Makes a repeated request extend the loan only once."
+        },
+        {
+          "id": "PAS5",
+          "point": "Adds to the API without breaking the app versions already in use."
+        },
+        {
+          "id": "PAS6",
+          "point": "Uses the API's existing error shape and conventions, or asks what they are."
+        },
+        {
+          "id": "PAS7",
+          "point": "Returns the new due date in one date format."
+        },
+        {
+          "id": "PAS8",
+          "point": "Lists the questions for the API's owners, such as how many extensions are allowed."
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YS1",
+          "point": "Names src/theme/tokens.ts as the one place the tokens come from, and lists its colours, spacing and type sizes.",
+          "must": true
+        },
+        {
+          "id": "YS2",
+          "point": "Finds colours written straight into screens instead of tokens, such as in the loan card or the librarian screen.",
+          "must": true
+        },
+        {
+          "id": "YS3",
+          "point": "Finds the loan card's return button is an icon with no name and a small touch target.",
+          "must": true
+        },
+        {
+          "id": "YS4",
+          "point": "Finds text that ignores the reader's text size setting, such as on the profile screen."
+        },
+        {
+          "id": "YS5",
+          "point": "Gives contrast as ratios worked out from the token values."
+        },
+        {
+          "id": "YS6",
+          "point": "Notes the older and newer halves of the app style screens differently, and says which new screens follow."
+        },
+        {
+          "id": "YS7",
+          "point": "Sets touch target and text size rules suited to a phone."
+        },
+        {
+          "id": "YS8",
+          "point": "Marks proposals as proposed rather than decided."
+        }
+      ]
+    }
+  }
 }

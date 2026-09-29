@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { PeerAiConfig } from "@peer-ai/workflow";
-import { skillRuleIds } from "@peer-ai/skills";
+import { MAP_ITEM_SKILLS, type KnownMapItemId, type PeerAiConfig } from "@peer-ai/workflow";
+import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
 import { cleanUp, project } from "./test-helpers.ts";
@@ -316,29 +316,30 @@ describe("next work", () => {
     expect(next.gaps).toBeUndefined();
   });
 
-  it("offers the stage's gaps when nothing is open", () => {
+  it("offers the stage's gaps when nothing is open, with the skill that fills each", () => {
     const [root, config] = shop();
-    expect(nextWork(root, config)).toEqual({
-      open: [],
-      gaps: {
-        stage: "mvp",
-        needed: ["requirements", "api-contract", "ci", "tests", "threat-model", "docs"],
-        later: [
-          "architecture",
-          "specs",
-          "data-model",
-          "design",
-          "standards",
-          "environments",
-          "infrastructure",
-          "observability",
-          "slos",
-          "runbooks",
-          "load-testing",
-        ],
-        // Only the skills written so far; see routing.test.ts.
-        useSkill: { requirements: "peer-ai-requirements-analysis" },
-      },
-    });
+    const needed = ["requirements", "api-contract", "ci", "tests", "threat-model", "docs"];
+    const later = [
+      "architecture",
+      "specs",
+      "data-model",
+      "design",
+      "standards",
+      "environments",
+      "infrastructure",
+      "observability",
+      "slos",
+      "runbooks",
+      "load-testing",
+    ];
+    // The first skill written so far for each gap; routing.test.ts covers the choice itself.
+    const useSkill = Object.fromEntries(
+      [...needed, ...later].flatMap((item) => {
+        const skill = MAP_ITEM_SKILLS[item as KnownMapItemId]?.find((id) => availableSkills().includes(id));
+        return skill === undefined ? [] : [[item, renderedName(skill)]];
+      }),
+    );
+    expect(useSkill).toMatchObject({ requirements: "peer-ai-requirements-analysis" });
+    expect(nextWork(root, config)).toEqual({ open: [], gaps: { stage: "mvp", needed, later, useSkill } });
   });
 });

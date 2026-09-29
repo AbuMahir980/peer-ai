@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI architecture"
+  short_description: "Parts, owners, dependencies and decision records"
+  default_prompt: "Use ${{name}} to write down this product's architecture and record each decision."

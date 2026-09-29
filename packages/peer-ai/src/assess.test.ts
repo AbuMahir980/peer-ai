@@ -172,6 +172,15 @@ describe("assess", () => {
     expect(statusOf(project({ "docs/architecture.md": "# Architecture" })).architecture).toBe("present");
   });
 
+  it("finds a design system written down", () => {
+    const status = statusOf(project({ "web/package.json": "{}", "docs/design-system.md": "# Design system" }));
+    expect(status.design).toBe("present");
+  });
+
+  it("finds a data model written down before any migration exists", () => {
+    expect(statusOf(project({ "docs/data-model.md": "# Data model" }))["data-model"]).toBe("present");
+  });
+
   it("finds a Rails data model in its migrations", () => {
     expect(statusOf(project({ "db/migrate/20260101000000_create_orders.rb": "" }))["data-model"]).toBe("present");
   });

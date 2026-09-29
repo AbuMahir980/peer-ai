@@ -9,7 +9,15 @@
     "data-migration-review": "Review Courier's database migrations.",
     "performance-review": "Review Courier's API and database for performance problems.",
     "reliability-review": "Review Courier's API for reliability problems.",
-    "ai-feature-review": "Review Courier's support assistant, which uses an AI model."
+    "ai-feature-review": "Review Courier's support assistant, which uses an AI model.",
+    "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\"",
+    "threat-model": "Write a threat model for Courier.",
+    "architecture": "Courier's architecture document is out of date. Bring it up to date with the code.",
+    "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it.",
+    "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built.",
+    "api-design": "Write down Courier's API design from the code and its contract.",
+    "data-modelling": "Write down Courier's data model from its migrations.",
+    "design-system": "Courier has no design system yet. Write one from its web app's screens."
   },
   "defects": [
     {
@@ -326,5 +334,407 @@
         }
       ]
     }
-  ]
+  ],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "C1",
+          "point": "Keeps every existing requirement: signing in and booking a pickup, customers seeing only their own parcels, card payment through the payment provider with no card details stored, the tracking link without the recipient's details, keyboard and screen reader use, and UK GDPR.",
+          "must": true
+        },
+        {
+          "id": "C2",
+          "point": "Adds moving a pickup to another day, with acceptance criteria that allow it until the evening before and refuse it after.",
+          "must": true
+        },
+        {
+          "id": "C3",
+          "point": "Adds a text message when the driver is about ten minutes away, with acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "C4",
+          "point": "Keeps the loyalty scheme out of the agreed scope: out of scope for the backlog, or unclear until someone decides, but not in scope.",
+          "must": true
+        },
+        {
+          "id": "C5",
+          "point": "Asks what time \"the evening before\" ends, or records an assumption about it with what changes if it's wrong."
+        },
+        {
+          "id": "C6",
+          "point": "Asks who gets the text, the customer who booked or someone at the pickup address, or notes that the phone numbers used are personal data sent to a messaging provider."
+        },
+        {
+          "id": "C7",
+          "point": "Lists a text messaging provider as a dependency."
+        },
+        {
+          "id": "C8",
+          "point": "Notes that the code already has an assistant that can cancel and reschedule parcels, which the requirements didn't mention, and asks whether it's meant to."
+        },
+        {
+          "id": "C9",
+          "point": "Says what changed and why, citing the operations lead's message."
+        },
+        {
+          "id": "C10",
+          "point": "Asks about needs nobody gave, such as how many bookings to expect or how available the service must be, instead of inventing them."
+        },
+        {
+          "id": "C11",
+          "point": "Invents no numbers: any count of bookings or users, or any time or target the operations lead's message didn't give, is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    },
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TC1",
+          "point": "Lists the ways in, including booking a pickup, viewing a customer's parcels, the public tracking link, card payment, the support assistant, and the signed token that identifies a customer.",
+          "must": true
+        },
+        {
+          "id": "TC2",
+          "point": "Names what's worth protecting, including customers' and recipients' personal details, payments and customer accounts.",
+          "must": true
+        },
+        {
+          "id": "TC3",
+          "point": "Finds that a signed-in customer can read another customer's parcel by its id, and marks the defence missing.",
+          "must": true
+        },
+        {
+          "id": "TC4",
+          "point": "Finds that the assistant can be steered by parcel notes pasted into its instructions, or can cancel or reschedule parcels without the customer confirming, and marks the defence missing.",
+          "must": true
+        },
+        {
+          "id": "TC5",
+          "point": "Finds that card numbers and security codes reach Courier's own servers, or that the customer's browser decides the amount to pay, and marks it missing."
+        },
+        {
+          "id": "TC6",
+          "point": "Finds that the parcel status filter can be used for SQL injection, and marks it missing."
+        },
+        {
+          "id": "TC7",
+          "point": "Finds that parcel notes are shown as HTML on the tracking page, where they can run a script, and marks it missing."
+        },
+        {
+          "id": "TC8",
+          "point": "Finds that the session signing key is written in the code, or that sessions never expire, and marks it missing."
+        },
+        {
+          "id": "TC9",
+          "point": "Finds personal data going where it shouldn't: into the logs, to anyone with a tracking link, or to the AI provider."
+        },
+        {
+          "id": "TC10",
+          "point": "Marks at least one defence as in place, such as booking needing a signed-in customer, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TC11",
+          "point": "Cites Peer AI rule ids, such as SEC-01, for the defences."
+        },
+        {
+          "id": "TC12",
+          "point": "States an assumption about who can reach the service or where it runs, or asks about it."
+        },
+        {
+          "id": "TC13",
+          "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AC1",
+          "point": "Keeps what the document already decides: the web app reaches the API only through the contract, each request is authenticated with a signed session token, each route module owns one resource, and database changes are migrations that never lose data.",
+          "must": true
+        },
+        {
+          "id": "AC2",
+          "point": "Adds the parts the document is missing: the support assistant with its AI provider, and card payments.",
+          "must": true
+        },
+        {
+          "id": "AC3",
+          "point": "Notes that the assistant changes parcels itself, although the parcels module owns them, and treats it as a problem or a question, not as the new rule.",
+          "must": true
+        },
+        {
+          "id": "AC4",
+          "point": "Names where the data lives and the one way the code reaches the database."
+        },
+        {
+          "id": "AC5",
+          "point": "States which parts may depend on which, in a direction a reviewer could check."
+        },
+        {
+          "id": "AC6",
+          "point": "Names the API contract file as the one source of truth for what the API offers."
+        },
+        {
+          "id": "AC7",
+          "point": "Marks what it worked out from the code as coming from the code."
+        },
+        {
+          "id": "AC8",
+          "point": "Records a decision the code shows but nobody recorded, such as using an AI provider or a geocoding service, or lists it as one to record."
+        },
+        {
+          "id": "AC9",
+          "point": "Ties the design to needs from the requirements, such as UK GDPR or keeping recipients' details private."
+        },
+        {
+          "id": "AC10",
+          "point": "Invents no parts, hosting or services the code doesn't show; anything it can't see is a question.",
+          "must": true
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PC1",
+          "point": "Says who can cancel which pickups: a customer only their own, and anyone else only as the requirements or a person decide.",
+          "must": true
+        },
+        {
+          "id": "PC2",
+          "point": "Covers a pickup that can't be cancelled any more, such as one already collected, with what the customer is told.",
+          "must": true
+        },
+        {
+          "id": "PC3",
+          "point": "Covers the refund going back through the payment provider, and what happens when the refund fails.",
+          "must": true
+        },
+        {
+          "id": "PC4",
+          "point": "Makes sure a pickup cancelled twice, such as by a double tap or two devices, is refunded only once."
+        },
+        {
+          "id": "PC5",
+          "point": "Gives acceptance criteria for each journey, including the ones that go wrong.",
+          "must": true
+        },
+        {
+          "id": "PC6",
+          "point": "Describes each screen or message in its loading, error and success states, with what to do next after an error."
+        },
+        {
+          "id": "PC7",
+          "point": "Asks, or proposes, whether a fee is kept or the refund is partial after some point."
+        },
+        {
+          "id": "PC8",
+          "point": "Notes that the support assistant can already cancel parcels, and asks how the two should agree."
+        },
+        {
+          "id": "PC9",
+          "point": "Covers cancelling from a keyboard and a screen reader, including the confirmation step."
+        },
+        {
+          "id": "PC10",
+          "point": "Lists what's out of scope, such as changing the address instead of cancelling."
+        },
+        {
+          "id": "PC11",
+          "point": "Leaves database tables, API endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DC1",
+          "point": "Checks on the server that the pickup belongs to the customer asking, for that record.",
+          "must": true
+        },
+        {
+          "id": "DC2",
+          "point": "Makes a cancel sent twice, from a retry or two devices, refund only once, such as with an idempotency key or a database guarantee.",
+          "must": true
+        },
+        {
+          "id": "DC3",
+          "point": "Stops a pickup being cancelled after it's collected, even when collection and cancelling happen at the same moment, such as with a lock or a conditional update.",
+          "must": true
+        },
+        {
+          "id": "DC4",
+          "point": "Gives the refund call a timeout, and says what happens and what the customer sees when it fails or hangs."
+        },
+        {
+          "id": "DC5",
+          "point": "Verifies any payment provider webhook before acting on it."
+        },
+        {
+          "id": "DC6",
+          "point": "Keeps existing data and clients working: any migration keeps what's stored, and the API changes by adding."
+        },
+        {
+          "id": "DC7",
+          "point": "Has the assistant's cancel go through the same place as the customer's, since one module owns parcels."
+        },
+        {
+          "id": "DC8",
+          "point": "Names the tests that prove it, including two cancels at once and another customer's parcel.",
+          "must": true
+        },
+        {
+          "id": "DC9",
+          "point": "Names the files, tables and routes that change, not only \"the backend\"."
+        },
+        {
+          "id": "DC10",
+          "point": "Keeps money as whole pence, never decimals."
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAC1",
+          "point": "Names services/api/openapi.json as the one source of truth, and says whether it's written by hand or generated.",
+          "must": true
+        },
+        {
+          "id": "PAC2",
+          "point": "Lists every endpoint, including booking, listing and viewing parcels, public tracking, payment and the assistant, with who may call each.",
+          "must": true
+        },
+        {
+          "id": "PAC3",
+          "point": "Finds that booking returns recipientName where the contract promises recipient_name, and says which is right.",
+          "must": true
+        },
+        {
+          "id": "PAC4",
+          "point": "Notes that listing parcels isn't paged."
+        },
+        {
+          "id": "PAC5",
+          "point": "Notes that the payment takes the amount from the client, or card details, and that the server should decide the price and a provider should take the card."
+        },
+        {
+          "id": "PAC6",
+          "point": "Sets one error shape for the whole API."
+        },
+        {
+          "id": "PAC7",
+          "point": "Sets money as a whole number in pence with its currency."
+        },
+        {
+          "id": "PAC8",
+          "point": "Gives booking or payment an idempotency key so a retry doesn't repeat it."
+        },
+        {
+          "id": "PAC9",
+          "point": "Says the public tracking endpoint shows nothing personal."
+        },
+        {
+          "id": "PAC10",
+          "point": "Describes how a field changes without breaking clients: add, migrate, then remove."
+        }
+      ]
+    },
+    "data-modelling": {
+      "path": "docs/data-model.md",
+      "points": [
+        {
+          "id": "MC1",
+          "point": "Lists customers, parcels and payments with their fields, from the migrations.",
+          "must": true
+        },
+        {
+          "id": "MC2",
+          "point": "Finds that full card numbers and security codes are stored, and treats it as a critical problem.",
+          "must": true
+        },
+        {
+          "id": "MC3",
+          "point": "Finds that a migration dropped the customers' parcel notes, losing them, and treats it as a problem.",
+          "must": true
+        },
+        {
+          "id": "MC4",
+          "point": "Marks the recipient's name, phone and address, and the pickup address and location, as personal data, with why each is kept."
+        },
+        {
+          "id": "MC5",
+          "point": "Notes that a parcel's status can be any text, and that the database could limit it to the allowed values."
+        },
+        {
+          "id": "MC6",
+          "point": "Keeps money as whole pence, and notes that nothing stops a parcel being paid for twice."
+        },
+        {
+          "id": "MC7",
+          "point": "Asks how long parcels and personal details are kept, and how they're deleted."
+        },
+        {
+          "id": "MC8",
+          "point": "Notes which reads need an index, such as a customer's parcels."
+        },
+        {
+          "id": "MC9",
+          "point": "Names the migrations folder as the one source of the database's structure.",
+          "must": true
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YC1",
+          "point": "Proposes a starting set of tokens from what the screens already use, and marks it as proposed for a designer or the person to decide.",
+          "must": true
+        },
+        {
+          "id": "YC2",
+          "point": "Finds that a parcel's status is shown only by colour, and requires words or an icon too.",
+          "must": true
+        },
+        {
+          "id": "YC3",
+          "point": "Finds that the Book button isn't a real button, so a keyboard can't use it.",
+          "must": true
+        },
+        {
+          "id": "YC4",
+          "point": "Finds that the booking form's fields have placeholders but no labels."
+        },
+        {
+          "id": "YC5",
+          "point": "Gives contrast ratios for the status colours, or asks for them to be checked."
+        },
+        {
+          "id": "YC6",
+          "point": "Lists the shared components the screens need, such as a button, a field and a status badge, with their states."
+        },
+        {
+          "id": "YC7",
+          "point": "Says the danger colour means one thing."
+        },
+        {
+          "id": "YC8",
+          "point": "Invents no designs or brand the code doesn't show."
+        }
+      ]
+    }
+  }
 }

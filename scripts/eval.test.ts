@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -5,12 +6,22 @@ import { skillRuleIds } from "@peer-ai/skills";
 import { validateReport, type ReviewReport } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  DOCUMENT_RESULTS,
+  GRADE_PROMPT,
+  REVIEW_RESULTS,
   appendResult,
   collectReports,
   evalPrompt,
   evaluate,
+  evaluateDocument,
+  formatDocumentRun,
   formatRun,
   loadSheet,
+  mappedDocument,
+  otherDocuments,
+  regradeDocument,
+  scoreDocument,
+  writtenDocument,
   type ResolvedDefect,
   score,
   type Sheet,
@@ -92,7 +103,8 @@ function report(findings: ReturnType<typeof finding>[], skill = "security-review
 describe("answer sheets", () => {
   it.each(sheets())("%s finds every planted problem, exactly once, in its practice project", (name) => {
     const sheet = loadSheet(name);
-    expect(sheet.defects.length).toBeGreaterThan(0);
+    expect(sheet.defects.length + Object.keys(sheet.documents ?? {}).length).toBeGreaterThan(0);
+    for (const skill of Object.keys(sheet.documents ?? {})) expect(sheet.prompts).toHaveProperty([skill]);
     for (const defect of sheet.defects) {
       for (const span of defect.spans) expect(span.endLine).toBeGreaterThanOrEqual(span.line);
     }
@@ -279,21 +291,279 @@ describe("running an eval", () => {
     ).rejects.toThrow(/There's no contract-check skill yet. Run with --baseline/);
   });
 
-  it("adds a result to the table only when the table is the last thing in the file", () => {
+  it("adds a result to the end of the table under its heading", () => {
     const dir = mkdtempSync(join(tmpdir(), "peer-ai-evals-"));
     made.push(dir);
     const readme = join(dir, "README.md");
-    writeFileSync(readme, "# Evals\n\n| Date | Result |\n|------|--------|\n");
-    appendResult(readme, "| 2026-10-05 | Ready |");
-    expect(readFileSync(readme, "utf8").endsWith("|------|--------|\n| 2026-10-05 | Ready |\n")).toBe(true);
-    writeFileSync(readme, "| Date | Result |\n\n## Notes\n");
+    const table = "| Date | Result |\n|------|--------|\n| 2026-10-04 | Ready |\n";
+    writeFileSync(readme, `# Evals\n\n${REVIEW_RESULTS}\n\n${table}\n${DOCUMENT_RESULTS}\n\nNewest last.\n\n${table}`);
+    appendResult(readme, REVIEW_RESULTS, "| 2026-10-05 | Not ready |");
+    appendResult(readme, DOCUMENT_RESULTS, "| 2026-10-06 | Ready |");
+    expect(readFileSync(readme, "utf8")).toBe(
+      `# Evals\n\n${REVIEW_RESULTS}\n\n${table}| 2026-10-05 | Not ready |\n\n${DOCUMENT_RESULTS}\n\nNewest last.\n\n${table}| 2026-10-06 | Ready |\n`,
+    );
     expect(() => {
-      appendResult(readme, "| 2026-10-05 | Ready |");
-    }).toThrow(/must be the last thing/);
+      appendResult(readme, "## Other results", "| 2026-10-05 | Ready |");
+    }).toThrow(/has no table under "## Other results"/);
+  });
+
+  it("keeps the README's result tables where the runner writes to them", () => {
+    const readme = readFileSync(new URL("../evals/README.md", import.meta.url), "utf8").split("\n");
+    for (const heading of [REVIEW_RESULTS, DOCUMENT_RESULTS]) expect(readme).toContain(heading);
   });
 
   it("asks only for reviews the answer sheet has a prompt for", () => {
     expect(() => evalPrompt(SHEET, "design-review")).toThrow(/has no prompt for design-review/);
     expect(collectReports("/nowhere")).toEqual({ reports: [], invalid: [] });
+  });
+});
+
+describe("marking a document", () => {
+  const scenario = {
+    path: "docs/requirements.md",
+    points: [
+      { id: "R1", point: "Names who it's for.", must: true },
+      { id: "R2", point: "Gives acceptance criteria." },
+      { id: "R3", point: "Puts video calls out of scope." },
+      { id: "R4", point: "Asks how many orders to expect." },
+      { id: "R5", point: "Says where it came from." },
+    ],
+  };
+  const grades = (met: string[]) =>
+    scenario.points.map(({ id }) => ({ id, met: met.includes(id), quote: `${id} quote` }));
+
+  it("is ready when it's accepted, makes every point it must, and 80% of all of them", () => {
+    const marked = scoreDocument(
+      "requirements-analysis",
+      scenario,
+      true,
+      { ready: true, problems: [] },
+      grades(["R1", "R2", "R3", "R4"]),
+    );
+    expect(marked).toMatchObject({ ready: true, reasons: [], graded: true });
+    expect(marked.points[0]).toEqual({
+      id: "R1",
+      point: "Names who it's for.",
+      must: true,
+      met: true,
+      quote: "R1 quote",
+    });
+  });
+
+  it("says why it isn't ready", () => {
+    expect(
+      scoreDocument(
+        "requirements-analysis",
+        scenario,
+        true,
+        { ready: false, problems: ["Add Scope."] },
+        grades(["R2", "R3"]),
+      ).reasons,
+    ).toEqual([
+      "check_document didn't accept it",
+      "it missed 1 of the 1 points it must make",
+      "it made 2 of 5 points, under 80%",
+    ]);
+    expect(scoreDocument("requirements-analysis", scenario, false, undefined, undefined).reasons).toEqual([
+      "it wrote no document at docs/requirements.md",
+    ]);
+    expect(
+      scoreDocument("requirements-analysis", scenario, true, { ready: true, problems: [] }, undefined).reasons[0],
+    ).toBe("the grader gave no valid grades");
+  });
+
+  it("runs the skill on a copy, checks the document, and has another run grade it", async () => {
+    const sheet = loadSheet("refill");
+    const result = await evaluateDocument(
+      sheet,
+      "requirements-analysis",
+      "codex",
+      (_tool, dir, prompt, logPath) => {
+        made.push(dir, logPath);
+        expect(prompt).toContain("Write the requirements for Refill from our founder's brief");
+        expect(
+          existsSync(join(dir, ".agents", "skills", "peer-ai-requirements-analysis", "assets", "requirements.md")),
+        ).toBe(true);
+        mkdirSync(join(dir, "docs"), { recursive: true });
+        writeFileSync(
+          join(dir, "docs", "requirements.md"),
+          "# Requirements: Refill\n\n## Summary\n\nMedicine at home.\n",
+        );
+        writeFileSync(logPath, "exec cat .agents/skills/peer-ai-requirements-analysis/SKILL.md");
+        return Promise.resolve({ seconds: 7 });
+      },
+      (tool, dir, prompt, logPath) => {
+        made.push(dir, logPath);
+        expect([tool, prompt]).toEqual(["codex", GRADE_PROMPT]);
+        expect(readFileSync(join(dir, "document.md"), "utf8")).toContain("Medicine at home.");
+        const points = JSON.parse(readFileSync(join(dir, "points.json"), "utf8")) as { id: string }[];
+        const graded = points.map(({ id }) => ({
+          id,
+          met: id !== "F3",
+          quote: id === "F3" ? "Nothing about video calls." : "It says so.",
+        }));
+        writeFileSync(join(dir, "grades.json"), JSON.stringify(graded));
+        return Promise.resolve();
+      },
+      { tool: "codex" },
+      join(tmpdir(), `peer-ai-eval-document-test-${String(Date.now())}`),
+    );
+    expect(result.skillUsed).toBe(true);
+    expect(result.score).toMatchObject({ written: true, graded: true, ready: false });
+    expect(result.score.check?.ready).toBe(false);
+    expect(result.score.reasons).toEqual([
+      "check_document didn't accept it",
+      "it missed 1 of the 6 points it must make",
+    ]);
+
+    const printed = formatDocumentRun(sheet, "codex", result, 1, 1).join("\n");
+    expect(printed).toMatch(
+      /^refill · requirements-analysis · Codex · with the skill · run 1 of 1\n\nMade 12 of 13 points, and 5 of the 6 it must make\. Graded by Codex; check the quotes:/,
+    );
+    expect(printed).toContain(
+      '  ✗ F3   must Puts video calls with a doctor out of scope, for later. "Nothing about video calls."',
+    );
+    expect(printed).toContain(
+      "check_document refused it: Add the missing parts, each under its own heading: People and their problems",
+    );
+  });
+
+  it("finds a document written under the same name elsewhere, and ignores one left as it was", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-written-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Old\n");
+    expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBeUndefined();
+    mkdirSync(join(dir, "requirements"));
+    writeFileSync(join(dir, "requirements", "Requirements.md"), "# New\n");
+    expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("requirements/Requirements.md");
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Changed\n");
+    expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("docs/requirements.md");
+  });
+
+  it("finds a document wherever the project map finds it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-mapped-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(
+      join(dir, "peer-ai.config.json"),
+      JSON.stringify({
+        version: 1,
+        project: { name: "Plants", stage: "mvp" },
+        tracks: [{ id: "app", kind: "web", status: "active" }],
+      }),
+    );
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "notes.md"), "# Notes\n");
+    expect(mappedDocument(dir, "product-spec")).toBeUndefined();
+    writeFileSync(join(dir, "docs", "plant-watering-spec.md"), "# Spec\n");
+    expect(mappedDocument(dir, "product-spec")).toBe("docs/plant-watering-spec.md");
+  });
+
+  it("finds a document the skill named, in the folder the scenario gives", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-written-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    expect(writtenDocument(dir, "docs/specs/", undefined)).toBeUndefined();
+    mkdirSync(join(dir, "specs"));
+    writeFileSync(join(dir, "specs", "cancel-a-pickup.md"), "# Spec\n");
+    expect(writtenDocument(dir, "docs/specs/", undefined)).toBe("specs/cancel-a-pickup.md");
+    mkdirSync(join(dir, "docs", "specs"), { recursive: true });
+    writeFileSync(join(dir, "docs", "specs", "cancel.md"), "# Spec\n");
+    expect(writtenDocument(dir, "docs/specs/", undefined)).toBe("docs/specs/cancel.md");
+    expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBeUndefined();
+    writeFileSync(join(dir, "specs", "cancel-design.md"), "# Design\n");
+    expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBe("specs/cancel-design.md");
+    writeFileSync(join(dir, "docs", "specs", "cancel-design.md"), "# Design\n");
+    expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBe("docs/specs/cancel-design.md");
+  });
+
+  it("gives the grader the other documents the run wrote, such as decision records", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-others-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    for (const file of [
+      "docs/architecture.md",
+      "docs/decisions/0001-database.md",
+      ".peer-ai/work/X-1.md",
+      "notes.txt",
+    ]) {
+      mkdirSync(join(dir, file, ".."), { recursive: true });
+      writeFileSync(join(dir, file), "# A\n");
+    }
+    expect(otherDocuments(dir, "docs/architecture.md")).toEqual(["docs/decisions/0001-database.md"]);
+  });
+
+  it("grades an earlier run's document again from its copy", async () => {
+    const sheet = loadSheet("refill");
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-regrade-"));
+    made.push(dir, `${dir}-grades`, `${dir}-grades.log`);
+    mkdirSync(join(dir, ".agents", "skills", "peer-ai-requirements-analysis"), { recursive: true });
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Requirements: Refill\n");
+    writeFileSync(`${dir}.log`, "exec cat .agents/skills/peer-ai-requirements-analysis/SKILL.md");
+    made.push(`${dir}.log`);
+    const result = await regradeDocument(
+      sheet,
+      "requirements-analysis",
+      dir,
+      (_tool, gradeDir) => {
+        writeFileSync(join(gradeDir, "grades.json"), "not json");
+        return Promise.resolve();
+      },
+      { tool: "claude-code", model: "strong-model" },
+    );
+    expect(result).toMatchObject({ baseline: false, skillUsed: true, regraded: true });
+    expect(result.score).toMatchObject({ written: true, graded: false });
+    const printed = formatDocumentRun(sheet, "codex", result, 1, 1).join("\n");
+    expect(printed).toContain("Graded by Claude Code (strong-model)");
+    expect(printed).toContain(`Graded again from the copy in ${dir}`);
+  });
+
+  it("grades again once when the grader writes nothing valid", async () => {
+    const sheet = loadSheet("refill");
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-retry-"));
+    made.push(dir, `${dir}-grades`, `${dir}-grades.log`, `${dir}-grades-2.log`);
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Requirements: Refill\n");
+    let attempts = 0;
+    const result = await regradeDocument(
+      sheet,
+      "requirements-analysis",
+      dir,
+      (_tool, gradeDir) => {
+        attempts++;
+        const points = JSON.parse(readFileSync(join(gradeDir, "points.json"), "utf8")) as { id: string }[];
+        writeFileSync(
+          join(gradeDir, "grades.json"),
+          attempts === 1
+            ? '[{"id": "F1", "met": true, "quote": "an "unescaped" quote"}]'
+            : JSON.stringify(points.map(({ id }) => ({ id, met: true, quote: "Yes." }))),
+        );
+        return Promise.resolve();
+      },
+      { tool: "codex" },
+    );
+    expect(attempts).toBe(2);
+    expect(result.score.graded).toBe(true);
+  });
+
+  it("notices when the run leaves the document as it was", async () => {
+    const result = await evaluateDocument(
+      loadSheet("courier"),
+      "requirements-analysis",
+      "codex",
+      (_tool, dir, _prompt, logPath) => {
+        made.push(dir, logPath);
+        return Promise.resolve({ seconds: 1 });
+      },
+      () => Promise.reject(new Error("nothing to grade")),
+      { tool: "codex" },
+      join(tmpdir(), `peer-ai-eval-document-test-${String(Date.now())}`),
+      { baseline: true },
+    );
+    expect(result.score).toMatchObject({ written: false, graded: false, ready: false });
+    expect(evalPrompt(loadSheet("courier"), "requirements-analysis", true)).not.toContain("review-report.schema.json");
   });
 });
