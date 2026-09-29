@@ -129,37 +129,60 @@ function distance(finding: Finding, span: Span): number {
 }
 
 /**
- * The planted problem a finding is about: the nearest one in the same file within the line
- * tolerance, at a severity no more than one level away. Each finding counts for one problem at
- * most, so a single finding can't score twice when two problems sit close together.
+ * The planted problems a finding could be about, nearest first: those in the same file within the
+ * line tolerance, at a severity no more than one level away.
  */
-function bestMatch(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect | undefined {
-  let best: { defect: ResolvedDefect; lines: number; gap: number } | undefined;
+function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect[] {
+  const ranked: { defect: ResolvedDefect; lines: number; gap: number }[] = [];
   for (const defect of defects) {
     const gap = Math.abs(SEVERITIES.indexOf(finding.severity) - SEVERITIES.indexOf(defect.severity));
     if (gap > 1) continue;
-    for (const span of defect.spans) {
-      if (normalise(finding.location.file) !== span.file) continue;
-      const lines = distance(finding, span);
-      if (lines > LINE_TOLERANCE) continue;
-      if (best === undefined || lines < best.lines || (lines === best.lines && gap < best.gap)) {
-        best = { defect, lines, gap };
+    const lines = Math.min(
+      ...defect.spans
+        .filter((span) => normalise(finding.location.file) === span.file)
+        .map((span) => distance(finding, span)),
+    );
+    if (lines <= LINE_TOLERANCE) ranked.push({ defect, lines, gap });
+  }
+  return ranked.sort((a, b) => a.lines - b.lines || a.gap - b.gap).map(({ defect }) => defect);
+}
+
+/**
+ * Which planted problem each finding is about. Each finding counts for one problem at most, so a
+ * single finding can't score twice when two problems sit close together. Findings are paired with
+ * problems so that as many problems as possible are found: when two findings both cover the same
+ * two problems, each counts for one. A finding left over after that is about its nearest problem.
+ */
+function matchFindings(findings: Finding[], expected: ResolvedDefect[], all: ResolvedDefect[]) {
+  const options = new Map(findings.map((finding) => [finding, candidates(finding, expected)]));
+  const owner = new Map<ResolvedDefect, Finding>();
+  // Kuhn's algorithm: a finding takes a problem, or moves the finding that holds it to another.
+  const assign = (finding: Finding, tried: Set<ResolvedDefect>): boolean => {
+    for (const defect of options.get(finding) ?? []) {
+      if (tried.has(defect)) continue;
+      tried.add(defect);
+      const holder = owner.get(defect);
+      if (holder === undefined || assign(holder, tried)) {
+        owner.set(defect, finding);
+        return true;
       }
     }
-  }
-  return best?.defect;
+    return false;
+  };
+  for (const finding of findings) assign(finding, new Set());
+  const paired = new Map([...owner].map(([defect, finding]) => [finding, defect]));
+  return new Map(findings.map((finding) => [finding, paired.get(finding) ?? candidates(finding, all)[0]]));
 }
 
 /** Marks a review's reports against the answer sheet. */
 export function score(sheet: Sheet, skill: SkillId, reports: ReviewReport[]): Score {
   const findings = reports.filter((report) => report.skill === skill).flatMap((report) => report.findings);
-  const matched = new Map(findings.map((finding) => [finding, bestMatch(finding, sheet.defects)]));
-  const expected = sheet.defects
-    .filter((defect) => defect.skills.includes(skill))
-    .map((defect) => ({
-      defect,
-      foundBy: findings.filter((finding) => matched.get(finding) === defect).map((finding) => finding.id),
-    }));
+  const own = sheet.defects.filter((defect) => defect.skills.includes(skill));
+  const matched = matchFindings(findings, own, sheet.defects);
+  const expected = own.map((defect) => ({
+    defect,
+    foundBy: findings.filter((finding) => matched.get(finding) === defect).map((finding) => finding.id),
+  }));
   const unmatched = findings.filter((finding) => matched.get(finding) === undefined);
   const bySeverity = Object.fromEntries(
     SEVERITIES.map((severity) => {

@@ -5,7 +5,7 @@
     "name": "Courier",
     "description": "Book a parcel pickup, pay for it, and track it to the door.",
     "stage": "mvp",
-    "traits": ["money"],
+    "traits": ["money", "ai-features"],
     "origin": "existing",
     "team": "team"
   },
