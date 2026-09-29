@@ -156,6 +156,26 @@ describe("check on work items", () => {
     expect(failures(root)).toEqual([]);
   });
 
+  it("fails work at ship before the items it depends on, a dependency that doesn't exist, and a loop", () => {
+    const root = shop();
+    addWorkItems(
+      root,
+      item("SHOP-1", { stage: "build" }),
+      item("SHOP-2", { dependsOn: ["SHOP-1"] }),
+      item("SHOP-3", { stage: "prepare", dependsOn: ["SHOP-9"] }),
+      item("SHOP-4", { stage: "prepare", dependsOn: ["SHOP-5"] }),
+      item("SHOP-5", { stage: "prepare", dependsOn: ["SHOP-4"] }),
+    );
+    expect(failures(root)).toEqual([
+      "SHOP-3 depends on SHOP-9, which isn't a work item.",
+      "Work items wait on each other in a loop: SHOP-4 → SHOP-5 → SHOP-4.",
+      "SHOP-2 is at done, but it depends on SHOP-1, which is only at build.",
+    ]);
+    addWorkItems(root, item("SHOP-1"), item("SHOP-3", { stage: "prepare" }), item("SHOP-5", { stage: "prepare" }));
+    expect(failures(root)).toEqual([]);
+    expect(find(root, "plans")[0]?.message).toBe("2 work items with dependencies, each on a real item");
+  });
+
   it("fails an invalid work item, and one on a track the config doesn't have", () => {
     const root = shop();
     addWorkItems(root, item("SHOP-1", { track: "mobile" }), { id: "SHOP-2", title: "No stage" });

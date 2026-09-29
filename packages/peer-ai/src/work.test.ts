@@ -146,6 +146,48 @@ describe("moving work items", () => {
     expect(value(advanceWorkItem(root, config, "SHOP-1", "cancelled", NOW)).stage).toBe("cancelled");
   });
 
+  it("keeps a plan on a work item, and won't ship it before the items it depends on (RFC 0005)", () => {
+    const [root, config] = shop({ ...SHOP, commands: { verify: null } });
+    value(createWorkItem(root, config, { title: "Store the new due date", kind: "feature", track: "api" }, NOW));
+    const screen = value(
+      createWorkItem(
+        root,
+        config,
+        {
+          title: "Extend a loan from the loan card",
+          kind: "feature",
+          track: "web",
+          goal: "A reader extends their own loan by a week from the loan card.",
+          acceptance: ["Given a loan due Friday, when the reader extends it, then it's due the Friday after."],
+          sources: ["docs/specs/extend-a-loan.md"],
+          dependsOn: ["SHOP-1"],
+        },
+        later(1),
+      ),
+    );
+    expect(screen).toMatchObject({
+      goal: "A reader extends their own loan by a week from the loan card.",
+      sources: ["docs/specs/extend-a-loan.md"],
+    });
+    expect(nextWork(root, config).waiting).toEqual({ "SHOP-2": ["SHOP-1"] });
+
+    // Building before a dependency ships is fine; shipping before it isn't.
+    expect(value(advanceWorkItem(root, config, "SHOP-2", "build", later(2))).stage).toBe("build");
+    expect(error(advanceWorkItem(root, config, "SHOP-2", "ship", later(3)))).toBe(
+      "SHOP-2 can't move to ship yet:\n- SHOP-2 is at ship, but it depends on SHOP-1, which is only at prepare. Ship SHOP-1 first, or move the item back to build.",
+    );
+    value(advanceWorkItem(root, config, "SHOP-1", "ship", later(4)));
+    expect(nextWork(root, config).waiting).toBeUndefined();
+    expect(value(advanceWorkItem(root, config, "SHOP-2", "ship", later(5))).stage).toBe("ship");
+
+    const replanned = value(updateWorkItem(root, config, "SHOP-2", { acceptance: ["A new criterion."] }, later(6)));
+    expect(replanned.acceptance).toEqual(["A new criterion."]);
+    expect(replanned.goal).toBe(screen.goal);
+    expect(error(updateWorkItem(root, config, "SHOP-2", { dependsOn: ["SHOP-2"] }, later(7)))).toContain(
+      "a work item can't depend on itself",
+    );
+  });
+
   it("won't close a gap that a fresh assessment still finds", () => {
     const [root, config] = shop({ ...SHOP, commands: { verify: null } });
     value(createWorkItem(root, config, { title: "Threat model", kind: "gap", gap: "threat-model" }, NOW));

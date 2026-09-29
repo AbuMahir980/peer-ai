@@ -125,7 +125,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Next work",
       description:
-        "The work to continue: the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill).",
+        "The work to continue: the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill).",
       annotations: READ_ONLY,
     },
     withProject((root, config) => reply(nextWork(root, config))),
@@ -151,7 +151,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Create a work item",
       description:
-        "Start a piece of work: a feature, bug, refactor, migration, discovery, chore, or a gap on the project map. It starts at prepare. The id comes from the tracker's ticket prefix unless you give one, such as a tracker key.",
+        "Start a piece of work: a feature, bug, refactor, migration, discovery, chore, or a gap on the project map. It starts at prepare. The id comes from the tracker's ticket prefix unless you give one, such as a tracker key. Give it a goal, acceptance criteria, the sources it implements and the items it depends on when you know them: it can't ship before those items have.",
       inputSchema: {
         title: z.string().min(1),
         kind: WorkItemSchema.shape.kind,
@@ -160,6 +160,10 @@ export function createServer(options: ServerOptions): McpServer {
         id: z.string().min(1).optional().describe("A tracker key such as PROJ-14, or GH-42 for a GitHub issue."),
         branch: z.string().min(1).optional().describe("Its git branch. Filled from the repo's naming pattern if set."),
         next: z.string().min(1).max(200).optional().describe("One line: the first action."),
+        goal: WorkItemSchema.shape.goal,
+        acceptance: WorkItemSchema.shape.acceptance,
+        sources: WorkItemSchema.shape.sources,
+        dependsOn: WorkItemSchema.shape.dependsOn,
       },
       annotations: WRITES,
     },
@@ -173,7 +177,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Update a work item",
       description:
-        "Record where work stands, so the next session resumes exactly there: the next action, the activity and step it stopped at, its branch or its title.",
+        "Record where work stands, so the next session resumes exactly there: the next action, the activity and step it stopped at, its branch or its title. It also sets the item's goal, acceptance criteria, sources and dependencies, replacing any given before.",
       inputSchema: {
         id: itemId,
         next: z.string().min(1).max(200).optional().describe("One line: the next action."),
@@ -183,6 +187,10 @@ export function createServer(options: ServerOptions): McpServer {
           .describe("The activity and step where work stopped."),
         branch: z.string().min(1).optional(),
         title: z.string().min(1).optional(),
+        goal: WorkItemSchema.shape.goal,
+        acceptance: WorkItemSchema.shape.acceptance,
+        sources: WorkItemSchema.shape.sources,
+        dependsOn: WorkItemSchema.shape.dependsOn,
       },
       annotations: { ...WRITES, idempotentHint: true },
     },

@@ -57,22 +57,42 @@ const ActivityProgress = z
     }
   });
 
+export const WorkItemIdSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "use letters, digits, dots, hyphens and underscores");
+
 export const WorkItemSchema = z
   .strictObject({
     $schema: z.string().optional(),
     version: z.literal(1),
-    id: z
-      .string()
-      .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "use letters, digits, dots, hyphens and underscores")
-      .describe(
-        "Also the file name. Tracker keys work as they are, such as PROJ-14; a GitHub issue #42 becomes GH-42.",
-      ),
+    id: WorkItemIdSchema.describe(
+      "Also the file name. Tracker keys work as they are, such as PROJ-14; a GitHub issue #42 becomes GH-42.",
+    ),
     title: z.string().min(1),
     kind: z.enum(["feature", "bug", "refactor", "migration", "gap", "discovery", "chore"]),
     stage: z.enum(["prepare", "build", "verify", "ship", "done", "cancelled"]),
     track: z.string().min(1).optional(),
     branch: z.string().min(1).optional(),
     gap: MapItemIdSchema.optional().describe("For kind gap: the map item this work fills."),
+    goal: z
+      .string()
+      .min(1)
+      .max(500)
+      .optional()
+      .describe("What done means for this item, in a sentence or two (RFC 0005)."),
+    acceptance: z
+      .array(z.string().min(1).max(300))
+      .max(20)
+      .optional()
+      .describe(
+        "Criteria a tester could check: given a situation, when something happens, then a result anyone can see.",
+      ),
+    sources: z
+      .array(Path)
+      .max(10)
+      .optional()
+      .describe("The spec, design, requirement or issue it implements: paths in the repository, or URLs."),
+    dependsOn: z.array(WorkItemIdSchema).max(20).optional().describe("Items that must reach ship before this one can."),
     activities: z.array(ActivityProgress).optional(),
     position: z
       .strictObject({ activity: z.enum(ACTIVITY_IDS), step: z.number().int().positive() })
@@ -113,6 +133,9 @@ export const WorkItemSchema = z
     }
     if (item.kind !== "gap" && item.gap !== undefined) {
       ctx.addIssue({ code: "custom", path: ["gap"], message: "only a gap work item names a map item" });
+    }
+    if (item.dependsOn?.includes(item.id) === true) {
+      ctx.addIssue({ code: "custom", path: ["dependsOn"], message: "a work item can't depend on itself" });
     }
   })
   .meta({
