@@ -13,6 +13,8 @@ metadata:
 
 Check the code in scope against every rule in [rules.md](references/rules.md), and record a report that proves what was checked. The report is the output: don't fix anything during the review.
 
+`next_work`, `project_map`, `standards_for_file` and `record_review` are tools of the peer-ai MCP server, listed with your other tools. They aren't shell commands: never run them with `npx`.
+
 Copy this checklist and tick it off as you go:
 
 ```
@@ -21,13 +23,13 @@ Copy this checklist and tick it off as you go:
 - [ ] 3. Rules: which apply to the files in scope
 - [ ] 4. Check: every rule against every item it applies to
 - [ ] 5. Report: written, with evidence for every line
-- [ ] 6. Record: accepted by the peer-ai `record_review` tool (always, even for a whole-project review)
+- [ ] 6. Record: accepted by the peer-ai MCP tool `record_review` (always, even for a whole-project review)
 ```
 
 ## 1. Scope
 
-- **A work item:** call the peer-ai `next_work` tool. Review what its branch changed (`git diff --name-only <base>...HEAD`), and read the unchanged code a rule depends on, such as the middleware that checks a changed route's permissions.
-- **The whole project:** every part on the map from the peer-ai `project_map` tool, except external and dormant ones.
+- **A work item:** call the peer-ai MCP tool `next_work`. Review what its branch changed (`git diff --name-only <base>...HEAD`), and read the unchanged code a rule depends on, such as the middleware that checks a changed route's permissions.
+- **The whole project:** every part on the map from the peer-ai MCP tool `project_map`, except external and dormant ones.
 
 Read these first where they exist, and list them in the report's `inputs`: the threat model, the architecture, and the rules the project has set aside (`standards.exceptions` in `peer-ai.config.json`).
 
@@ -56,7 +58,7 @@ Find routes where the framework registers them: a router, controller decorators 
 
 ## 3. Rules
 
-Call the peer-ai `standards_for_file` tool for the files in scope. For a whole project, one file from each part is enough. It returns the rules that apply at the project's stage and traits, with the stack profile's and the project's own.
+Call the peer-ai MCP tool `standards_for_file` for the files in scope. For a whole project, one file from each part is enough. It returns the rules that apply at the project's stage and traits, with the stack profile's and the project's own.
 
 Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the rules that don't apply here. The line says why.
 
@@ -92,6 +94,6 @@ Write the report as [report.md](references/report.md) describes, to `.peer-ai/re
 
 ## 6. Record
 
-You MUST finish with this step: a report Peer AI hasn't accepted isn't finished. Call the peer-ai `record_review` tool with the skill `security-review`, the report's path, and the work item's id when there is one. For a whole-project review, leave out the id: Peer AI checks the report the same way without recording it. If it refuses, fix what it names and call it again, until it accepts. Don't skip this step, even when you're sure the report is right.
+You MUST finish with this step: a report Peer AI hasn't accepted isn't finished. Call the peer-ai MCP tool `record_review` with the skill `security-review`, the report's path, and the work item's id when there is one. For a whole-project review, leave out the id: Peer AI checks the report the same way without recording it. If it refuses, fix what it names and call it again, until it accepts. Don't skip this step, even when you're sure the report is right.
 
 Then tell the person in a few lines: the result, each finding's severity and title, and what wasn't checked and why. Offer to turn the findings into work items.

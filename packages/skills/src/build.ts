@@ -75,7 +75,7 @@ export function rulesReference(domains: DomainId[], extra: string[] = []): strin
   const lines = [
     "# Rules",
     "",
-    "Generated from @peer-ai/standards. The peer-ai `standards_for_file` tool returns the rules that apply to a file, filtered by the project's stage and traits, with its stack profile's and add-on's rules too. Use this list to understand a rule; use the tool to know which apply.",
+    "Generated from @peer-ai/standards. The peer-ai MCP tool `standards_for_file` returns the rules that apply to a file, filtered by the project's stage and traits, with its stack profile's and add-on's rules too. Use this list to understand a rule; use the tool to know which apply.",
     "",
     "## Contents",
     "",

@@ -38,7 +38,7 @@ const BODY = [
   "",
   "Check SEC-01 on every route. The rules are in [rules.md](references/rules.md), the levels in [severity.md](references/severity.md) and the format in [report.md](references/report.md). How to check access: [access-control.md](references/access-control.md).",
   "",
-  "Record the report with the peer-ai `record_review` tool, then run `npx peer-ai check`.",
+  "Record the report with the peer-ai MCP tool `record_review`, then run `npx peer-ai check`.",
 ].join("\n");
 const OPENAI = [
   "interface:",
@@ -203,8 +203,13 @@ describe("validating a skill", () => {
     ],
     [
       "a tool that doesn't exist",
-      setSkillMd(FIELDS, `${BODY}\nCall the peer-ai \`review_code\` tool.`),
+      setSkillMd(FIELDS, `${BODY}\nCall the peer-ai MCP tool \`review_code\`.`),
       "the peer-ai tool review_code",
+    ],
+    [
+      "a tool named like a shell command",
+      setSkillMd(FIELDS, `${BODY}\nCall the peer-ai \`next_work\` tool.`),
+      "so it isn't mistaken for a shell command",
     ],
     [
       "a command that doesn't exist",
