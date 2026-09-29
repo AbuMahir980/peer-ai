@@ -17,6 +17,7 @@ import {
   formatDocumentRun,
   formatRun,
   loadSheet,
+  mappedDocument,
   otherDocuments,
   regradeDocument,
   scoreDocument,
@@ -439,6 +440,25 @@ describe("marking a document", () => {
     expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("requirements/Requirements.md");
     writeFileSync(join(dir, "docs", "requirements.md"), "# Changed\n");
     expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("docs/requirements.md");
+  });
+
+  it("finds a document wherever the project map finds it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-mapped-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(
+      join(dir, "peer-ai.config.json"),
+      JSON.stringify({
+        version: 1,
+        project: { name: "Plants", stage: "mvp" },
+        tracks: [{ id: "app", kind: "web", status: "active" }],
+      }),
+    );
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "notes.md"), "# Notes\n");
+    expect(mappedDocument(dir, "product-spec")).toBeUndefined();
+    writeFileSync(join(dir, "docs", "plant-watering-spec.md"), "# Spec\n");
+    expect(mappedDocument(dir, "product-spec")).toBe("docs/plant-watering-spec.md");
   });
 
   it("finds a document the skill named, in the folder the scenario gives", () => {
