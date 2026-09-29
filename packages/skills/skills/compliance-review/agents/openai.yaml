@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI compliance review"
+  short_description: "Personal data and card payments, followed end to end"
+  default_prompt: "Use ${{name}} to review how this product handles personal data and payments, and record the report."
