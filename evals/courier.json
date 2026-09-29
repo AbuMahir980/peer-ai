@@ -364,6 +364,45 @@
         }
       ],
       "found": "Not planted: raised by Peer AI's contract-check skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D30",
+      "title": "A customer can pay for any parcel, because the payment never checks the parcel is theirs",
+      "severity": "medium",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "def pay(payment: CardPayment, customer=Depends(current_customer), db=Depends(get_db)):"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D31",
+      "title": "A payment returns a body the contract doesn't describe",
+      "severity": "low",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "return {\"status\": \"paid\"}"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D32",
+      "title": "The API refuses parcels over 30 kg, which the contract doesn't say",
+      "severity": "low",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "weight_kg: float = Field(gt=0, le=30)"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
     }
   ],
   "documents": {

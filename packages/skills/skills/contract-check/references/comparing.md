@@ -8,8 +8,8 @@ What to compare for each route, and how to judge which side is wrong. Examples a
 |---------|-------------------|---------------|
 | Path and method | `POST /bookings` | The route registered on the handler |
 | Who may call it (SEC-02) | Its security scheme, or none for a public route | The sign-in check on the handler, or its absence |
-| Request | Each field, its type, and whether it's required | What the handler reads and validates |
-| Response | Each field, its name and case, and its type | What the handler returns, field by field |
+| Request | Each field, its type, its limits, such as a range or a length, and whether it's required | What the handler reads, and every limit it enforces |
+| Response | Each field, its name and case, and its type, or no body | What the handler returns, field by field |
 | Status codes | Each code, such as 201, 404 and 409 | Each code the handler can return |
 | Errors (API-04) | The one error shape | What an error really looks like |
 | Lists (API-05, API-07) | The list shape and its paging | Whether the handler pages, and how |
