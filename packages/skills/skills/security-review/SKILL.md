@@ -92,6 +92,6 @@ Write the report as [report.md](references/report.md) describes, to `.peer-ai/re
 
 ## 6. Record
 
-Call the peer-ai `record_review` tool with the work item's id, the skill `security-review`, and the report's path. If it refuses, fix what it names and record again, until it accepts.
+Call the peer-ai `record_review` tool with the skill `security-review`, the report's path, and the work item's id when there is one. For a whole-project review, leave out the id: Peer AI checks the report the same way without recording it. If it refuses, fix what it names and call it again, until it accepts. Don't skip this step, even when you're sure the report is right.
 
 Then tell the person in a few lines: the result, each finding's severity and title, and what wasn't checked and why. Offer to turn the findings into work items.

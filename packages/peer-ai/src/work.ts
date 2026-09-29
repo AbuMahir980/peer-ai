@@ -175,6 +175,64 @@ function readReport(root: string, path: string): Result<ReviewReport> {
  * Records a review. With a report, Peer AI works the result out from it and refuses a result the
  * report doesn't support (RFC 0002). Without one, the agent's result is recorded as unproven.
  */
+export interface CheckedReport {
+  skill: SkillId;
+  result: ReviewResult;
+  report: string;
+  summary: string;
+}
+
+/**
+ * Checks a review's report: that it's valid, is for this skill (and work item, when there is one),
+ * gives every rule the skill answers for a line (RFC 0004), and claims the result its findings and
+ * coverage support.
+ */
+export function checkReport(
+  root: string,
+  config: PeerAiConfig,
+  review: ReviewInput & { report: string },
+  workItem?: string,
+): Result<CheckedReport> {
+  const read = readReport(root, review.report);
+  if (!read.ok) return read;
+  const report = read.value;
+  if (report.skill !== review.skill) {
+    return failed(`The report is for ${report.skill}, not ${review.skill}.`);
+  }
+  if (workItem !== undefined && report.workItem !== undefined && report.workItem !== workItem) {
+    return failed(`The report is for work item ${report.workItem}, not ${workItem}.`);
+  }
+  // Silence is never an answer (RFC 0004): every rule the skill answers for gets a line, even
+  // one that doesn't apply here.
+  if (availableSkills().includes(review.skill)) {
+    const covered = new Set(report.coverage.map((line) => line.rule));
+    const missing = skillRuleIds(review.skill).filter((rule) => !covered.has(rule));
+    if (missing.length > 0) {
+      const shown =
+        missing.length > 12
+          ? `${missing.slice(0, 12).join(", ")} and ${String(missing.length - 12)} more`
+          : missing.join(", ");
+      return failed(
+        `The report leaves out ${String(missing.length)} of ${review.skill}'s rules: ${shown}. Give every rule a coverage line: mark one that doesn't apply as not-applicable, with the reason.`,
+      );
+    }
+  }
+  const blockOn = config.gates?.blockOn ?? "critical";
+  const worked = deriveResult(report, blockOn);
+  if (report.result !== worked) {
+    return failed(
+      `The report says ${report.result}, but its findings and coverage make it ${worked} (blocking level: ${blockOn}). Correct the report's result.`,
+    );
+  }
+  if (review.result !== undefined && review.result !== worked) {
+    return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
+  }
+  return {
+    ok: true,
+    value: { skill: review.skill, result: worked, report: review.report, summary: review.summary ?? report.summary },
+  };
+}
+
 export function recordReview(
   root: string,
   config: PeerAiConfig,
@@ -185,54 +243,16 @@ export function recordReview(
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
   const at = now.toISOString();
-  const summary = review.summary === undefined ? {} : { summary: review.summary };
   let entry: NonNullable<WorkItem["reviews"]>[number];
 
   if (review.report === undefined) {
     if (review.result === undefined) return failed("Give the review's result, or the report to work it out from.");
+    const summary = review.summary === undefined ? {} : { summary: review.summary };
     entry = { skill: review.skill, result: review.result, ...summary, unproven: true, at };
   } else {
-    const read = readReport(root, review.report);
-    if (!read.ok) return read;
-    const report = read.value;
-    if (report.skill !== review.skill) {
-      return failed(`The report is for ${report.skill}, not ${review.skill}.`);
-    }
-    if (report.workItem !== undefined && report.workItem !== id) {
-      return failed(`The report is for work item ${report.workItem}, not ${id}.`);
-    }
-    // Silence is never an answer (RFC 0004): every rule the skill answers for gets a line, even
-    // one that doesn't apply here.
-    if (availableSkills().includes(review.skill)) {
-      const covered = new Set(report.coverage.map((line) => line.rule));
-      const missing = skillRuleIds(review.skill).filter((rule) => !covered.has(rule));
-      if (missing.length > 0) {
-        const shown =
-          missing.length > 12
-            ? `${missing.slice(0, 12).join(", ")} and ${String(missing.length - 12)} more`
-            : missing.join(", ");
-        return failed(
-          `The report leaves out ${String(missing.length)} of ${review.skill}'s rules: ${shown}. Give every rule a coverage line: mark one that doesn't apply as not-applicable, with the reason.`,
-        );
-      }
-    }
-    const blockOn = config.gates?.blockOn ?? "critical";
-    const worked = deriveResult(report, blockOn);
-    if (report.result !== worked) {
-      return failed(
-        `The report says ${report.result}, but its findings and coverage make it ${worked} (blocking level: ${blockOn}). Correct the report's result.`,
-      );
-    }
-    if (review.result !== undefined && review.result !== worked) {
-      return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
-    }
-    entry = {
-      skill: review.skill,
-      result: worked,
-      report: review.report,
-      summary: review.summary ?? report.summary,
-      at,
-    };
+    const checked = checkReport(root, config, { ...review, report: review.report }, id);
+    if (!checked.ok) return checked;
+    entry = { ...checked.value, at };
   }
   const reviews = [...(loaded.value.reviews ?? []), entry];
   return save(root, config, { ...loaded.value, reviews, updatedAt: at });

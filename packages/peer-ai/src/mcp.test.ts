@@ -4,6 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { skillRuleIds } from "@peer-ai/skills";
 import { MCP_TOOL_IDS } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { evaluate } from "./check.ts";
@@ -137,6 +138,39 @@ describe("the MCP server", () => {
     expect(evaluate(root, config).checks.filter((check) => check.id === "gates")).toEqual([
       { id: "gates", status: "ok", message: "1 work item at ship or done, each verified and reviewed" },
     ]);
+  });
+
+  it("checks a whole-project review's report without a work item, and refuses one that skips a rule", async () => {
+    const root = shop();
+    const client = await connect(root);
+    const lines = skillRuleIds("security-review").map((rule) => ({
+      rule,
+      status: "not-applicable",
+      reason: "Nothing in this project is of its kind.",
+    }));
+    const report = (coverage: unknown[]) => ({
+      ...passingReport("ITEM-1"),
+      workItem: undefined,
+      skill: "security-review",
+      coverage,
+    });
+    const path = ".peer-ai/reports/project/security-review.json";
+    mkdirSync(join(root, ".peer-ai/reports/project"), { recursive: true });
+
+    writeFileSync(join(root, path), json(report(lines)));
+    expect((await call(client, "record_review", { skill: "security-review", report: path })).value()).toMatchObject({
+      skill: "security-review",
+      result: "pass",
+      recorded: false,
+    });
+
+    writeFileSync(join(root, path), json(report(lines.slice(1))));
+    const refused = await call(client, "record_review", { skill: "security-review", report: path });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain("The report leaves out 1 of security-review's rules");
+
+    const noReport = await call(client, "record_review", { skill: "security-review", result: "pass" });
+    expect(noReport.text).toBe("A review of the whole project needs its report: give the report's path.");
   });
 
   it("serves the map, the next work and the standards for a file", async () => {
