@@ -440,6 +440,19 @@ describe("marking a document", () => {
     expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("docs/requirements.md");
   });
 
+  it("finds a document the skill named, in the folder the scenario gives", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-written-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    expect(writtenDocument(dir, "docs/specs/", undefined)).toBeUndefined();
+    mkdirSync(join(dir, "specs"));
+    writeFileSync(join(dir, "specs", "cancel-a-pickup.md"), "# Spec\n");
+    expect(writtenDocument(dir, "docs/specs/", undefined)).toBe("specs/cancel-a-pickup.md");
+    mkdirSync(join(dir, "docs", "specs"), { recursive: true });
+    writeFileSync(join(dir, "docs", "specs", "cancel.md"), "# Spec\n");
+    expect(writtenDocument(dir, "docs/specs/", undefined)).toBe("docs/specs/cancel.md");
+  });
+
   it("grades an earlier run's document again from its copy", async () => {
     const sheet = loadSheet("refill");
     const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-regrade-"));

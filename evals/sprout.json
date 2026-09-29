@@ -11,7 +11,8 @@
     "accessibility-review": "Review Sprout for accessibility problems.",
     "design-review": "Review Sprout against its design system.",
     "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today.",
-    "threat-model": "Write a threat model for Sprout."
+    "threat-model": "Write a threat model for Sprout.",
+    "product-spec": "Write the spec for recording that a plant was watered."
   },
   "defects": [
     {
@@ -293,6 +294,54 @@
         {
           "id": "TP10",
           "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PP1",
+          "point": "Works with no connection: recording watering never needs the network, and it's kept on the device.",
+          "must": true
+        },
+        {
+          "id": "PP2",
+          "point": "Says \"today\" follows the person's own time zone, including around midnight.",
+          "must": true
+        },
+        {
+          "id": "PP3",
+          "point": "Gives acceptance criteria for recording watering, seeing it on the plant list, and undoing a mistake.",
+          "must": true
+        },
+        {
+          "id": "PP4",
+          "point": "Covers watering the same plant twice in a day."
+        },
+        {
+          "id": "PP5",
+          "point": "Shows watering in words or an icon with a label, not by colour alone."
+        },
+        {
+          "id": "PP6",
+          "point": "Can be done with a keyboard and a screen reader."
+        },
+        {
+          "id": "PP7",
+          "point": "Leaves syncing between devices out of scope."
+        },
+        {
+          "id": "PP8",
+          "point": "Asks or proposes whether past waterings are kept as a history, such as in the journal."
+        },
+        {
+          "id": "PP9",
+          "point": "Describes the plant list's states, such as no plants yet."
+        },
+        {
+          "id": "PP10",
+          "point": "Leaves tables, storage details and code to the system design."
         }
       ]
     }
