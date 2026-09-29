@@ -547,7 +547,7 @@
         },
         {
           "id": "EP3",
-          "point": "Plans the main journeys end to end with no connection (adding a plant, recording watering), and that nothing the person entered is lost.",
+          "point": "Plans the main journeys end to end with no connection, such as adding a plant, and that nothing the person entered is lost.",
           "must": true
         },
         {

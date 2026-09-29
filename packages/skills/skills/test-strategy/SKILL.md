@@ -59,7 +59,7 @@ Copy the [template](assets/test-strategy.md) and fill in every part. [levels.md]
 
 - **Names, not categories.** Each journey, rule and boundary by name, with the test that proves it, such as "Slot capacity: slots.test.ts:40 refuses a booking for a full slot", or "none yet". "Business rules are unit tested" is a wish, not a strategy.
 - **Check what the tests really do.** A test that exists but asserts nothing about its rule, or that no command ever runs, isn't coverage. Say so.
-- **Every part.** Each part of the product gets its tests, and the strategy says what runs for each. A part whose tests never run is a gap.
+- **Every part, every platform.** Each part of the product gets its tests, and the strategy says what runs for each. A part whose tests never run is a gap. A product that ships to several platforms, such as two phone systems or several browsers, runs its main journeys on each.
 - **Gaps as work.** Each missing or weak test is a gap: what it would prove, the level it belongs at, and the risk while it's missing, most serious first.
 - **Say where each fact came from:** a test file, the verify command, a document, or proposed by you.
 
