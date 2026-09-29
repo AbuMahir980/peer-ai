@@ -4,7 +4,7 @@
 |-------|-------|
 | Author | @AbuMahir980 |
 | Status | Draft |
-| Proposal issue | #NNN |
+| Proposal issue | #39 |
 
 ## Summary
 
