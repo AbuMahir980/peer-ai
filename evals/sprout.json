@@ -40,6 +40,10 @@
         {
           "file": "src/main.tsx",
           "match": "await db.open();"
+        },
+        {
+          "file": "src/db.ts",
+          "match": "export const db = new SproutDb();"
         }
       ]
     },
