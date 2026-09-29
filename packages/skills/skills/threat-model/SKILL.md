@@ -68,7 +68,7 @@ For each way in, ask what an attacker, or a mistake, could do through it. Walk t
 
 ## 5. Defences
 
-For each threat, find what stops it. Call the peer-ai MCP tool `standards_for_file` for the way in's file: the rule that answers the threat usually comes back, such as SEC-01 for another user's record. [rules.md](references/rules.md) has the rules.
+For each threat, find what stops it. Look as hard for defences that hold as for ones that are missing: in a working product, many threats are already stopped by something, such as a sign-in check on a route or a parameterised query. A model that lists only what's missing can't show what must be kept. Call the peer-ai MCP tool `standards_for_file` for the way in's file: the rule that answers the threat usually comes back, such as SEC-01 for another user's record. [rules.md](references/rules.md) has the rules.
 
 - **In place:** the file and line where the defence holds, such as "bookings.py:48 loads the booking with the caller's id". Read the code; a rule's name is not evidence.
 - **Missing:** say what's missing and where. It becomes work to do.
