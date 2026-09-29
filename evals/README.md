@@ -262,6 +262,13 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **The hand-written API types were named where one is written.** The second run with the skill put them at the tracking page's own `Tracking` type, and the sheet only accepted the shared request helper. Both are fair, so the sheet now accepts either.
 
+- **2026-09-29, test-strategy with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, courier is ready at 8 of 9.** Without it, courier made 3 of 9 and wasn't ready: it said the web app's tests run on every change, which they don't, and never said which main journeys have no end-to-end test.
+  - **Sprout is ready by a person's reading, at 7 of 8.** The grader counted 4, marking as missing the midnight edge, the journeys with no connection and the update reaching people, all of which the strategy plans. Its one real miss: making photos smaller before they're stored.
+  - **Shelf isn't ready, in two runs.** The first made 8 of 10 by a person's reading but never said to run the main journeys on both iOS and Android. The skill then gained a line on running the main journeys on every platform the product ships to; the second run still didn't, dropped the penetration test that shelf's production stage calls for, and listed most gaps without the test that would close them: 2 of 10 by the grader, about 7 by a person, with two of four must-haves missed. Planning each gap's test, and every testing rule the stage switches on, is the work left for the next round of runs.
+- **What the runs changed:**
+  - **A point named a journey sprout doesn't have.** Sprout's strategy said, rightly, that nothing in the app records watering. The point now names adding a plant instead.
+
 ## Results
 
 Newest last.
@@ -432,3 +439,8 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.20 |
 | 2026-09-29 | split-bill | implement-ticket | Claude Code | sonnet | without | 5 of 8 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $0.43 |
 | 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.24 |
+| 2026-09-29 | courier | test-strategy | Claude Code | sonnet | used | 8 of 9 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $0.92 |
+| 2026-09-29 | shelf | test-strategy | Claude Code | sonnet | used | 6 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $1.03 |
+| 2026-09-29 | sprout | test-strategy | Claude Code | sonnet | used | 4 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $1.25 |
+| 2026-09-29 | courier | test-strategy | Claude Code | sonnet | without | 3 of 9 | 2 of 4 | Accepted | Not ready | Claude Code, haiku | $0.91 |
+| 2026-09-29 | shelf | test-strategy | Claude Code | sonnet | used | 2 of 10 | 1 of 4 | Accepted | Not ready | Claude Code, haiku | $1.20 |
