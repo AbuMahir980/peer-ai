@@ -198,6 +198,14 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, performance-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready:** courier 3 of 3, shelf 2 of 2, and sprout 3 of 3 after the fixes below, each covering all 12 rules. Without it, courier found 2 of 3 and wasn't ready: it missed the parcels looked up by customer with no index.
+  - **The baseline raised one problem that isn't on the sheet,** and a person judged it fair but outside the rules: every request opens a new database connection, with no pool. It called it high; at this stage it's minor. No rule covers connection pooling yet.
+  - **The first baseline stopped at a prompt** to approve installing the skills, which a baseline shouldn't be asked to do. The runner no longer tells a baseline to install them, and the second one ran through.
+- **What the runs changed:**
+  - **Apps never got the reliability rules.** The first sprout run saw that the service worker always serves its first copy, then marked REL-09 not applicable, because `standards_for_file` didn't return it. The tool now gives web, mobile, desktop and extension apps the reliability rules, offline ones included.
+  - **A problem the code shows is a finding, whether or not its rule applies yet.** The skill already said so for rules from a later stage. It now says the same for a trait the project hasn't set, since projects often forget one. The next sprout run found the service worker problem.
+
 ## Results
 
 Newest last.
@@ -250,6 +258,11 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $1.02 |
+| 2026-09-29 | shelf | performance-review | Claude Code | sonnet | used | 2 of 2 | 12 of 12 | 0 | Ready | $1.43 |
+| 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 2 of 3 | 12 of 12 | 0 | Not ready | $1.15 |
+| 2026-09-29 | courier | performance-review | Claude Code | sonnet | without | 2 of 3 | 12 of 12 | 1 | Not ready | $1.27 |
+| 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $0.92 |
 
 ## Document results
 
