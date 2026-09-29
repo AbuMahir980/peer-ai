@@ -69,6 +69,7 @@ Hold every part to this bar:
 - **Say what depends on what,** and the direction it may never go (ARC-06): features don't depend on each other, and business rules depend on nothing.
 - **One owner for each area and each store** (ARC-02, ARC-08), and one source of truth for each contract (API-02) and for the database's structure (DATA-01).
 - **Tie choices to needs.** Each part of the design that exists because of a need, such as a law or a scale, says which.
+- **When updating, keep every rule and decision the document already states,** even where the code breaks it; the break goes under Risks. Change or drop one only when a person asks you to, and say under Sources what changed and why.
 - **Say where each statement came from:** a document, a person, or the code.
 - **No invented facts.** Hosting, vendors and scale that nobody decided are options or questions, never settled.
 
