@@ -340,6 +340,32 @@
       "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
     },
     {
+      "id": "S25",
+      "title": "The librarian's question field has no label, only a placeholder",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "<TextInput value={question} onChangeText={setQuestion} placeholder=\"What should I read next?\" />"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S26",
+      "title": "The Ask the librarian button is smaller than a finger can reliably tap",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "<Pressable onPress={() => void ask()}>"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review skill on 2026-09-29, and judged real."
+    },
+    {
       "id": "S27",
       "title": "The app has no way to make people on an unsafe version update",
       "severity": "medium",
