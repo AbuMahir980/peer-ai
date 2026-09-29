@@ -21,6 +21,7 @@ import {
   otherDocuments,
   regradeDocument,
   scoreDocument,
+  workItemsDocument,
   writtenDocument,
   type ResolvedDefect,
   score,
@@ -547,6 +548,28 @@ describe("marking a document", () => {
     );
     expect(attempts).toBe(2);
     expect(result.score.graded).toBe(true);
+  });
+
+  it("writes out the work items a work skill created, for the grader", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-work-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    expect(workItemsDocument(dir)).toBeUndefined();
+    mkdirSync(join(dir, ".peer-ai", "work"), { recursive: true });
+    const workItem = (id: string, fields: Record<string, unknown>) => {
+      writeFileSync(join(dir, ".peer-ai", "work", `${id}.json`), JSON.stringify({ id, kind: "feature", ...fields }));
+    };
+    workItem("CR-10", {
+      title: "Refund a cancelled pickup",
+      dependsOn: ["CR-9"],
+      acceptance: ["Given…, then one refund."],
+    });
+    workItem("CR-9", { title: "Cancel a pickup", goal: "A customer cancels their own pickup." });
+    const text = workItemsDocument(dir) ?? "";
+    expect(text.indexOf("## CR-9: Cancel a pickup")).toBeLessThan(text.indexOf("## CR-10"));
+    expect(text).toContain("- Goal: A customer cancels their own pickup.");
+    expect(text).toContain("- Acceptance criteria:\n  - Given…, then one refund.");
+    expect(text).toContain("- Depends on: CR-9");
   });
 
   it("notices when the run leaves the document as it was", async () => {

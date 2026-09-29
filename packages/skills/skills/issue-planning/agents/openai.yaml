@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI issue planning"
+  short_description: "Small work items with criteria, sources and order"
+  default_prompt: "Use ${{name}} to plan this work as small work items, each with its acceptance criteria and dependencies."

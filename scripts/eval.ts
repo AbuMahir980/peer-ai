@@ -531,7 +531,11 @@ export function scoreDocument(
   const reasons: string[] = [];
   if (!written) reasons.push(`it wrote no document at ${scenario.path}`);
   else {
-    if (check !== undefined && !check.ready) reasons.push("check_document didn't accept it");
+    if (check !== undefined && !check.ready) {
+      reasons.push(
+        SKILL_KINDS[skill] === "work" ? "peer-ai check found problems in the plan" : "check_document didn't accept it",
+      );
+    }
     if (grades === undefined) reasons.push("the grader gave no valid grades");
     const musts = points.filter((point) => point.must);
     const missed = musts.filter((point) => !point.met).length;
@@ -630,16 +634,24 @@ export async function markDocument(
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const path = document ?? writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
+  // A work skill's output is the work items it created, written out as a document for the grader,
+  // and checked by peer-ai check instead of check_document.
+  const work = SKILL_KINDS[skill] === "work";
+  const plan = work ? workItemsDocument(dir) : undefined;
+  const path = work
+    ? plan === undefined
+      ? undefined
+      : WORK_FOLDER
+    : (document ?? writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill));
   if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
-  const check = checkDocumentIn(dir, skill, path);
+  const check = work ? checkWorkIn(dir) : checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
   rmSync(gradeDir, { recursive: true, force: true });
   mkdirSync(gradeDir, { recursive: true });
   const also = otherDocuments(dir, path).map(
     (file) => `\n\n---\n\n# Also written: ${file}\n\n${readFileSync(join(dir, file), "utf8")}`,
   );
-  writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8") + also.join(""));
+  writeFileSync(join(gradeDir, "document.md"), (plan ?? readFileSync(join(dir, path), "utf8")) + also.join(""));
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
   // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
@@ -650,6 +662,70 @@ export async function markDocument(
     grades = readGrades(gradeDir);
   }
   return { ...scoreDocument(skill, scenario, true, check, grades), path };
+}
+
+const WORK_FOLDER = ".peer-ai/work/";
+
+/** The work items a run created or changed, written out as a document for the grader, or undefined for none. */
+export function workItemsDocument(dir: string): string | undefined {
+  let changed: string[];
+  try {
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter((file) => file.startsWith(WORK_FOLDER) && file.endsWith(".json"));
+  } catch {
+    return undefined;
+  }
+  const items = changed
+    .flatMap((file) => {
+      try {
+        return [JSON.parse(readFileSync(join(dir, file), "utf8")) as Record<string, unknown>];
+      } catch {
+        return [];
+      }
+    })
+    .sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+  if (items.length === 0) return undefined;
+  const list = (value: unknown) => (Array.isArray(value) ? value.map((entry) => `  - ${String(entry)}`) : []);
+  const text = (value: unknown) => (typeof value === "string" ? value : "–");
+  const needs = (value: unknown) =>
+    Array.isArray(value) && value.length > 0 ? value.map(String).join(", ") : "nothing";
+  const sections = items.map((item) =>
+    [
+      `## ${text(item.id)}: ${text(item.title)}`,
+      "",
+      `- Kind: ${text(item.kind)}; part: ${text(item.track)}; stage: ${text(item.stage)}`,
+      `- Goal: ${text(item.goal)}`,
+      "- Acceptance criteria:",
+      ...list(item.acceptance),
+      "- Sources:",
+      ...list(item.sources),
+      `- Depends on: ${needs(item.dependsOn)}`,
+      `- Next: ${text(item.next)}`,
+    ].join("\n"),
+  );
+  return `# Work items\n\n${sections.join("\n\n")}\n`;
+}
+
+/** peer-ai check's verdict on the work items in the copy: valid, with dependencies that exist and no loop. */
+function checkWorkIn(dir: string): NonNullable<DocumentScore["check"]> {
+  let out: string;
+  try {
+    out = execFileSync(process.execPath, [CLI, "check", "--json"], { cwd: dir, encoding: "utf8" });
+  } catch (error) {
+    const { stdout } = error as { stdout?: string | Buffer };
+    out = stdout === undefined ? "" : stdout.toString();
+  }
+  try {
+    const verdict = JSON.parse(out) as { checks: { id: string; status: string; message: string }[] };
+    const problems = verdict.checks
+      .filter((check) => check.status === "fail" && ["work-items", "plans"].includes(check.id))
+      .map((check) => check.message);
+    return { ready: problems.length === 0, problems };
+  } catch {
+    return { ready: false, problems: ["peer-ai check gave no verdict"] };
+  }
 }
 
 /** A file's text, or undefined for a folder or nothing at all. */
@@ -902,9 +978,8 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
     }
     const check = marked.check;
     if (check !== undefined) {
-      lines.push(
-        check.ready ? "check_document accepted it." : `check_document refused it: ${check.problems.join(" ")}`,
-      );
+      const checker = SKILL_KINDS[marked.skill] === "work" ? "peer-ai check" : "check_document";
+      lines.push(check.ready ? `${checker} accepted it.` : `${checker} refused it: ${check.problems.join(" ")}`);
     }
   }
   const cost = run.tool.costUsd === undefined ? "" : ` · $${run.tool.costUsd.toFixed(2)}`;
@@ -986,7 +1061,7 @@ if (invokedDirectly) {
     if (values.record === true) recordDocument(sheet, tool, result);
     allReady &&= result.score.ready;
   }
-  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] === "document"; i++) {
+  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] !== "review"; i++) {
     const grader = {
       tool: graderTool,
       ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
@@ -997,7 +1072,7 @@ if (invokedDirectly) {
     if (values.record === true) recordDocument(sheet, tool, result);
     allReady &&= result.score.ready;
   }
-  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] !== "document"; i++) {
+  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] === "review"; i++) {
     const result = await evaluate(sheet, skill, tool, runTool, into(), options);
     console.log(formatRun(sheet, tool, result, i, runs).join("\n"));
     if (i < runs) console.log("");

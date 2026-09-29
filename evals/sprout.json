@@ -15,7 +15,8 @@
     "product-spec": "Write the spec for recording that a plant was watered.",
     "system-design": "People will be able to record that a plant was watered. Design how it's built.",
     "data-modelling": "Write down Sprout's data model: what it keeps on the device.",
-    "design-system": "Write down Sprout's design system from its tokens and screens."
+    "design-system": "Write down Sprout's design system from its tokens and screens.",
+    "issue-planning": "Plan the work for recording that a plant was watered. This is the spec we agreed:\n\n\"A person marks a plant watered from the plant list, with or without a connection. The list shows 'Watered today', where today is in the person's own time zone. A mistaken tap can be undone. Each watering is kept as a dated entry in the journal. Syncing between devices is out of scope.\""
   },
   "defects": [
     {
@@ -465,6 +466,38 @@
         {
           "id": "YP8",
           "point": "Marks proposals, such as new tokens, as proposed rather than decided."
+        }
+      ]
+    },
+    "issue-planning": {
+      "path": ".peer-ai/work/",
+      "points": [
+        {
+          "id": "IP1",
+          "point": "Plans the change to the data kept on the device as its own item or criterion, keeping everything already there, and has the screen's work depend on it where it must.",
+          "must": true
+        },
+        {
+          "id": "IP2",
+          "point": "Gives the items acceptance criteria from the spec: working offline, today in the person's own time zone, undoing a mistake, and a dated journal entry.",
+          "must": true
+        },
+        {
+          "id": "IP3",
+          "point": "Plans nothing for syncing between devices.",
+          "must": true
+        },
+        {
+          "id": "IP4",
+          "point": "Notices that today's date is worked out in UTC now, and plans to fix it."
+        },
+        {
+          "id": "IP5",
+          "point": "Records a dependency only where one item must ship before another."
+        },
+        {
+          "id": "IP6",
+          "point": "Gives each item a goal and a first action."
         }
       ]
     }
