@@ -334,6 +334,32 @@
           "match": "completion = client.chat.completions.create("
         }
       ]
+    },
+    {
+      "id": "D26",
+      "title": "A failed booking shows the person nothing",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/BookPickup.tsx",
+          "match": "async function submit(event?: FormEvent) {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D27",
+      "title": "A failed tracking lookup leaves the page on Loading for ever, with no message",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "void api<Tracking>(`/parcels/track/${code}`).then(setParcel);"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review skill on 2026-09-29, and judged real."
     }
   ],
   "documents": {
