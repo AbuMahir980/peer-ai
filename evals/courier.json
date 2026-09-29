@@ -8,7 +8,8 @@
     "accessibility-review": "Review Courier's web app for accessibility problems.",
     "data-migration-review": "Review Courier's database migrations.",
     "performance-review": "Review Courier's API and database for performance problems.",
-    "reliability-review": "Review Courier's API for reliability problems."
+    "reliability-review": "Review Courier's API for reliability problems.",
+    "ai-feature-review": "Review Courier's support assistant, which uses an AI model."
   },
   "defects": [
     {
@@ -16,21 +17,37 @@
       "title": "The session signing key is written in the code",
       "severity": "critical",
       "skills": ["security-review", "code-review"],
-      "locations": [{ "file": "services/api/app/auth.py", "match": "SECRET_KEY = \"courier-signing-key-2026\"" }]
+      "locations": [
+        {
+          "file": "services/api/app/auth.py",
+          "match": "SECRET_KEY = \"courier-signing-key-2026\""
+        }
+      ]
     },
     {
       "id": "D2",
       "title": "Any website may call the API with a signed-in customer's credentials",
       "severity": "medium",
       "skills": ["security-review"],
-      "locations": [{ "file": "services/api/app/main.py", "match": "allow_origins=[\"*\"],", "lines": 2 }]
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "match": "allow_origins=[\"*\"],",
+          "lines": 2
+        }
+      ]
     },
     {
       "id": "D3",
       "title": "The status filter is pasted into SQL, so it can be used for SQL injection",
       "severity": "critical",
       "skills": ["security-review", "code-review"],
-      "locations": [{ "file": "services/api/app/routes/parcels.py", "match": "query += f\" AND status = '{status}'\"" }]
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "query += f\" AND status = '{status}'\""
+        }
+      ]
     },
     {
       "id": "D4",
@@ -63,7 +80,10 @@
       "severity": "high",
       "skills": ["contract-check", "code-review"],
       "locations": [
-        { "file": "services/api/app/routes/parcels.py", "match": "\"recipientName\": parcel[\"recipient_name\"]}" }
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"recipientName\": parcel[\"recipient_name\"]}"
+        }
       ]
     },
     {
@@ -96,12 +116,20 @@
       "severity": "critical",
       "skills": ["security-review", "compliance-review", "contract-check", "data-modelling"],
       "locations": [
-        { "file": "services/api/app/routes/payments.py", "match": "    card_number: str", "lines": 3 },
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    card_number: str",
+          "lines": 3
+        },
         {
           "file": "services/api/app/routes/payments.py",
           "match": "\"INSERT INTO payments (parcel_id, customer_id, card_number, expiry, cvv, amount_pence) VALUES (%s, %s, %s, %s, %s, %s)\","
         },
-        { "file": "services/api/migrations/0001_init.sql", "match": "  card_number TEXT NOT NULL,", "lines": 3 }
+        {
+          "file": "services/api/migrations/0001_init.sql",
+          "match": "  card_number TEXT NOT NULL,",
+          "lines": 3
+        }
       ]
     },
     {
@@ -109,7 +137,12 @@
       "title": "The customer's browser decides how much to pay",
       "severity": "high",
       "skills": ["security-review", "code-review"],
-      "locations": [{ "file": "services/api/app/routes/payments.py", "match": "    amount_pence: int" }]
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    amount_pence: int"
+        }
+      ]
     },
     {
       "id": "D11",
@@ -141,7 +174,10 @@
       "severity": "critical",
       "skills": ["data-migration-review", "code-review"],
       "locations": [
-        { "file": "services/api/migrations/0002_delivery_notes.sql", "match": "ALTER TABLE parcels DROP COLUMN notes;" }
+        {
+          "file": "services/api/migrations/0002_delivery_notes.sql",
+          "match": "ALTER TABLE parcels DROP COLUMN notes;"
+        }
       ]
     },
     {
@@ -149,7 +185,12 @@
       "title": "Prices are worked out in pounds as decimals, while the API charges whole pence",
       "severity": "medium",
       "skills": ["code-review"],
-      "locations": [{ "file": "apps/web/src/lib/price.ts", "match": "return 3.5 + weightKg * 0.85;" }]
+      "locations": [
+        {
+          "file": "apps/web/src/lib/price.ts",
+          "match": "return 3.5 + weightKg * 0.85;"
+        }
+      ]
     },
     {
       "id": "D15",
@@ -181,7 +222,11 @@
       "severity": "medium",
       "skills": ["accessibility-review"],
       "locations": [
-        { "file": "apps/web/src/pages/BookPickup.tsx", "match": "<input placeholder=\"Weight (kg)\"", "lines": 9 }
+        {
+          "file": "apps/web/src/pages/BookPickup.tsx",
+          "match": "<input placeholder=\"Weight (kg)\"",
+          "lines": 9
+        }
       ]
     },
     {
@@ -190,7 +235,10 @@
       "severity": "medium",
       "skills": ["security-review"],
       "locations": [
-        { "file": "services/api/app/auth.py", "match": "serializer = URLSafeSerializer(SECRET_KEY, salt=\"session\")" }
+        {
+          "file": "services/api/app/auth.py",
+          "match": "serializer = URLSafeSerializer(SECRET_KEY, salt=\"session\")"
+        }
       ],
       "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
     },
@@ -203,6 +251,78 @@
         {
           "file": "apps/web/src/pages/BookPickup.tsx",
           "match": "<div className=\"button\" onClick={() => void submit()}>"
+        }
+      ]
+    },
+    {
+      "id": "D20",
+      "title": "The customer's parcel notes are pasted into the assistant's instructions, so a note can change what it does",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "system = INSTRUCTIONS + \"\\nNotes the customer left on this parcel: \" + parcel[\"notes\"]"
+        }
+      ]
+    },
+    {
+      "id": "D21",
+      "title": "The assistant cancels any parcel the model names, without the customer confirming",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "db.execute(\"UPDATE parcels SET status = 'cancelled' WHERE id = %s\", (arguments[\"parcel_id\"],))"
+        }
+      ]
+    },
+    {
+      "id": "D22",
+      "title": "A staff discount code is written into the assistant's instructions, where anyone can get the model to repeat it",
+      "severity": "medium",
+      "skills": ["ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "If the customer is unhappy, offer the staff discount code STAFF-TREAT-50"
+        }
+      ]
+    },
+    {
+      "id": "D23",
+      "title": "The recipient's name, phone and address go to the AI provider, though a question about the parcel doesn't need them",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review", "compliance-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "json.dumps(dict(parcel), default=str)"
+        }
+      ]
+    },
+    {
+      "id": "D24",
+      "title": "The date the model suggests is written to the database without checking it's a real date in the future",
+      "severity": "high",
+      "skills": ["ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "db.execute(\"UPDATE parcels SET pickup_date = %s WHERE id = %s\", (arguments[\"date\"], parcel[\"id\"]))"
+        }
+      ]
+    },
+    {
+      "id": "D25",
+      "title": "The model call has no timeout, no size limit and no limit per customer",
+      "severity": "medium",
+      "skills": ["ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "completion = client.chat.completions.create("
         }
       ]
     }

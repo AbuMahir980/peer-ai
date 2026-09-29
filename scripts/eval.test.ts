@@ -197,14 +197,14 @@ describe("running an eval", () => {
 
     const printed = formatRun(sheet, "claude-code", result, 1, 1).join("\n");
     expect(printed).toMatch(
-      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 10 problems on the answer sheet:/,
+      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 14 problems on the answer sheet:/,
     );
     expect(printed).toContain(
       "\n  D3   critical services/api/app/routes/parcels.py:55  The status filter is pasted into SQL",
     );
     expect(printed).toContain("Invalid report .peer-ai/reports/project/broken.json:");
     expect(printed).toContain("30 turns · 12 s · $1.50");
-    expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 5 high problems/);
+    expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 8 high problems/);
   });
 
   it("installs the skill, asks in plain words, and notices whether the tool used it", async () => {

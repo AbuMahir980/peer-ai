@@ -5,6 +5,7 @@
     "name": "Shelf",
     "description": "Borrow books from neighbours, and lend yours.",
     "stage": "production",
+    "traits": ["ai-features"],
     "origin": "existing",
     "team": "team"
   },
