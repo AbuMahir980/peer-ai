@@ -158,6 +158,9 @@ export const LEGACY_MARKERS = ["peer-ai/shared/00-setup.md", "peer-ai/phase-conf
 export const TEST_FILE =
   /(^|\/)(tests?|Tests|__tests__|integration_test|spec|e2e)\/|(^|\/)[^/]+\.Tests?\/|[._-](test|spec)\.[cm]?[jt]sx?$|_test\.(go|dart|py|exs)$|(^|\/)test_[^/]+\.py$|_spec\.rb$|(Tests?|Spec)\.(swift|kt|java|cs|php)$/;
 
+// A written test strategy: a start on the tests item, never a substitute for tests.
+const TEST_STRATEGY = /(^|\/)docs\/[^/]*test[-_]?strategy[^/]*\.md$/i;
+
 interface Context {
   root: string;
   files: string[];
@@ -450,14 +453,19 @@ const RULES: Record<KnownMapItemId, Rule> = {
 
   tests: (ctx) => {
     const testFiles = matching(ctx, TEST_FILE);
+    const strategy = matching(ctx, TEST_STRATEGY);
+    const noTests: ItemResult =
+      strategy.length > 0
+        ? { status: "partial", evidence: evidence(strategy), note: "A test strategy, but no tests yet." }
+        : { status: "missing" };
     const parts = ctx.tracks.filter(
       (track) => track.kind !== "infrastructure" && ["active", "frozen"].includes(track.status),
     );
-    if (parts.length === 0) return testFiles.length > 0 ? present(evidence(testFiles)) : { status: "missing" };
+    if (parts.length === 0) return testFiles.length > 0 ? present(evidence(testFiles)) : noTests;
     const inside = (track: Track) =>
       testFiles.filter((file) => track.path === undefined || file.startsWith(`${track.path}/`));
     const tested = parts.filter((track) => inside(track).length > 0);
-    if (tested.length === 0) return { status: "missing" };
+    if (tested.length === 0) return noTests;
     if (tested.length === parts.length) return present(trackEvidence(tested));
     const untested = parts.filter((track) => !tested.includes(track)).map((track) => track.id);
     return {

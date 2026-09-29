@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI test strategy"
+  short_description: "What to test, at which level, and what's missing"
+  default_prompt: "Use ${{name}} to write down how this product is tested, with the gaps as work to do."
