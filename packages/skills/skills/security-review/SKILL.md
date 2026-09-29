@@ -21,7 +21,7 @@ Copy this checklist and tick it off as you go:
 - [ ] 3. Rules: which apply to the files in scope
 - [ ] 4. Check: every rule against every item it applies to
 - [ ] 5. Report: written, with evidence for every line
-- [ ] 6. Record: accepted by Peer AI
+- [ ] 6. Record: accepted by the peer-ai `record_review` tool (always, even for a whole-project review)
 ```
 
 ## 1. Scope
@@ -92,6 +92,6 @@ Write the report as [report.md](references/report.md) describes, to `.peer-ai/re
 
 ## 6. Record
 
-Call the peer-ai `record_review` tool with the skill `security-review`, the report's path, and the work item's id when there is one. For a whole-project review, leave out the id: Peer AI checks the report the same way without recording it. If it refuses, fix what it names and call it again, until it accepts. Don't skip this step, even when you're sure the report is right.
+You MUST finish with this step: a report Peer AI hasn't accepted isn't finished. Call the peer-ai `record_review` tool with the skill `security-review`, the report's path, and the work item's id when there is one. For a whole-project review, leave out the id: Peer AI checks the report the same way without recording it. If it refuses, fix what it names and call it again, until it accepts. Don't skip this step, even when you're sure the report is right.
 
 Then tell the person in a few lines: the result, each finding's severity and title, and what wasn't checked and why. Offer to turn the findings into work items.

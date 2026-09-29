@@ -258,11 +258,19 @@ export function ruleCoverage(reports: ReviewReport[], skill: SkillId): { covered
 
 function run(command: string, args: string[], cwd: string, log: string): Promise<string> {
   return new Promise((resolvePromise, reject) => {
-    execFile(command, args, { cwd, maxBuffer: 256 * 1024 * 1024, timeout: 30 * 60 * 1000 }, (error, stdout, stderr) => {
-      writeFileSync(log, `${stdout}\n${stderr}`);
-      if (error) reject(new Error(`${command} failed: ${error.message}. The log is at ${log}.`));
-      else resolvePromise(stdout);
-    });
+    const child = execFile(
+      command,
+      args,
+      { cwd, maxBuffer: 256 * 1024 * 1024, timeout: 30 * 60 * 1000 },
+      (error, stdout, stderr) => {
+        writeFileSync(log, `${stdout}\n${stderr}`);
+        if (error) reject(new Error(`${command} failed: ${error.message}. The log is at ${log}.`));
+        else resolvePromise(stdout);
+      },
+    );
+    // Nothing is typed in. Codex reads its prompt from input as well when input is left open, and
+    // waits for it to end, so close it at once.
+    child.stdin?.end();
   });
 }
 
