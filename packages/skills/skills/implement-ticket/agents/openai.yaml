@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI implement a ticket"
+  short_description: "Build a work item: tests first, verify, review, ship"
+  default_prompt: "Use ${{name}} to build this work item, with a test for every acceptance criterion."
