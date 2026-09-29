@@ -1,0 +1,127 @@
+{
+  "fixture": "courier",
+  "setup": {
+    "peer-ai.config.json": {
+      "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/config.schema.json",
+      "version": 1,
+      "project": {
+        "name": "Courier",
+        "description": "Book a parcel pickup, pay for it, and track it to the door.",
+        "stage": "production",
+        "traits": ["money", "ai-features"],
+        "origin": "existing",
+        "team": "team"
+      },
+      "tools": ["claude-code", "codex", "cursor"],
+      "tracks": [
+        {
+          "id": "web",
+          "kind": "web",
+          "path": "apps/web",
+          "status": "active"
+        },
+        {
+          "id": "api",
+          "kind": "backend",
+          "path": "services/api",
+          "status": "active"
+        }
+      ],
+      "apis": [
+        {
+          "id": "courier-api",
+          "kind": "http",
+          "providedBy": "api",
+          "contract": {
+            "source": "openapi",
+            "location": "services/api/openapi.json"
+          }
+        }
+      ],
+      "tracker": {
+        "kind": "none",
+        "ticketPrefix": "CR"
+      },
+      "commands": {
+        "verify": "python3 -m pytest services/api -q"
+      },
+      "compliance": {
+        "jurisdictions": ["GB"],
+        "industries": ["logistics", "payments"]
+      }
+    },
+    ".github/workflows/ci.yml": "name: CI\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - uses: actions/setup-python@v6\n        with:\n          python-version: \"3.13\"\n      - run: pip install -r services/api/requirements.txt\n      - run: python3 -m pytest services/api -q\n        continue-on-error: true\n",
+    "services/api/migrations/0004_collection_window.sql": "-- Customers choose a two-hour window for the driver to arrive.\nALTER TABLE parcels ADD COLUMN collection_window TEXT NOT NULL;\n",
+    "docs/releases/launch.md": "# Launch: Courier goes live\n\n## Steps\n\n1. Put the site into maintenance mode.\n2. Run the migrations against the production database.\n3. Deploy the API and the web app from main.\n4. Take the site out of maintenance mode.\n\nWe tried the whole release on Sam's laptop, with test data, and it worked.\n\n## If something goes wrong\n\nRedeploy the previous images.\n",
+    "services/api/.env.production": "ENVIRONMENT=production\nDEBUG=true\nLOG_LEVEL=info\n"
+  },
+  "prompts": {
+    "release-readiness": "Courier launches tomorrow. Is the release ready?"
+  },
+  "defects": [
+    {
+      "id": "RC1",
+      "title": "The API's tests are allowed to fail, so a failing release still passes CI",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "match": "continue-on-error: true"
+        }
+      ]
+    },
+    {
+      "id": "RC2",
+      "title": "The new required column has no default: the migration fails on existing parcels, and the version running now can't book a pickup once it's applied, so redeploying it isn't a way back",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "services/api/migrations/0004_collection_window.sql",
+          "match": "ALTER TABLE parcels ADD COLUMN collection_window TEXT NOT NULL;"
+        },
+        {
+          "file": "docs/releases/launch.md",
+          "match": "Redeploy the previous images."
+        }
+      ]
+    },
+    {
+      "id": "RC3",
+      "title": "The migrations run against production with no backup taken first",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "docs/releases/launch.md",
+          "match": "2. Run the migrations against the production database."
+        }
+      ]
+    },
+    {
+      "id": "RC4",
+      "title": "The release was tried only on a laptop, not in a staging environment like production",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "docs/releases/launch.md",
+          "match": "We tried the whole release on Sam's laptop, with test data, and it worked."
+        }
+      ]
+    },
+    {
+      "id": "RC5",
+      "title": "Debug mode is switched on in production's settings",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "services/api/.env.production",
+          "match": "DEBUG=true"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "fixture": "split-bill",
+  "setup": {
+    "package.json": {
+      "name": "split-bill",
+      "version": "1.3.0",
+      "description": "Splits a bill between people, to the cent.",
+      "type": "module",
+      "scripts": {
+        "test": "node --test"
+      },
+      "engines": {
+        "node": ">=24"
+      }
+    },
+    "src/split.ts": "export interface Bill {\n  totalCents: number;\n  people: number;\n  tipPercent?: number;\n}\n\n/**\n * Splits a bill between people, in cents, with an optional tip. The shares always add up to the\n * total: when it doesn't divide evenly, the first people pay one cent more.\n */\nexport function split({ totalCents, people, tipPercent = 0 }: Bill): number[] {\n  if (!Number.isInteger(totalCents) || totalCents < 0) {\n    throw new RangeError(\"totalCents must be a whole number of cents, 0 or more\");\n  }\n  if (!Number.isInteger(people) || people < 1) {\n    throw new RangeError(\"people must be a whole number, 1 or more\");\n  }\n  if (!Number.isInteger(tipPercent) || tipPercent < 0 || tipPercent > 100) {\n    throw new RangeError(\"tipPercent must be a whole number from 0 to 100\");\n  }\n  const total = totalCents + Math.round((totalCents * tipPercent) / 100);\n  const base = Math.floor(total / people);\n  const remainder = total - base * people;\n  return Array.from({ length: people }, (_, i) => base + (i < remainder ? 1 : 0));\n}\n",
+    "src/split.test.ts": "import assert from \"node:assert/strict\";\nimport { describe, it } from \"node:test\";\nimport { split } from \"./split.ts\";\n\ndescribe(\"split\", () => {\n  it(\"divides an even bill equally\", () => {\n    assert.deepEqual(split({ totalCents: 3000, people: 3 }), [1000, 1000, 1000]);\n  });\n\n  it(\"adds a tip before splitting\", () => {\n    assert.deepEqual(split({ totalCents: 1000, people: 3, tipPercent: 10 }), [367, 367, 366]);\n  });\n});\n",
+    "CHANGELOG.md": "# Changelog\n\n## 1.3.0\n\n- Adds an optional tip, as a whole percentage.\n\n## 1.2.0\n\n- Refuses fractions of a cent.\n",
+    ".github/workflows/publish.yml": "name: Publish\n\non:\n  push:\n\njobs:\n  publish:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - uses: actions/setup-node@v5\n        with:\n          node-version: 24\n          registry-url: https://registry.npmjs.org\n      - run: npm publish\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}\n",
+    ".peer-ai/work/SB-1.json": {
+      "version": 1,
+      "id": "SB-1",
+      "title": "Add an optional tip",
+      "kind": "feature",
+      "stage": "verify",
+      "track": "core",
+      "goal": "A bill can be split with an optional tip, given as a whole percentage.",
+      "acceptance": [
+        "Given a bill of 1000 cents, 3 people and a 10% tip, when it's split, then the shares add up to 1100 cents.",
+        "Given no tip, when a bill is split, then the shares are exactly what they are today."
+      ],
+      "sources": ["docs/requirements.md#backlog"],
+      "lastVerify": {
+        "result": "fail",
+        "at": "2026-09-28T16:00:00.000Z"
+      },
+      "reviews": [
+        {
+          "skill": "code-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SB-1/code-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        }
+      ],
+      "requiredReviews": [
+        {
+          "skill": "code-review",
+          "reason": "it changes code"
+        },
+        {
+          "skill": "security-review",
+          "reason": "it changes code, at the mvp stage"
+        },
+        {
+          "skill": "qa-acceptance",
+          "reason": "its work item has acceptance criteria, which must all hold before it ships"
+        }
+      ],
+      "next": "Publish 1.3.0.",
+      "updatedAt": "2026-09-28T16:00:00.000Z"
+    }
+  },
+  "prompts": {
+    "release-readiness": "We're about to publish split-bill 1.3.0. Is it ready?"
+  },
+  "defects": [
+    {
+      "id": "RL1",
+      "title": "split now takes one object instead of two numbers, which breaks every existing caller, yet it's released as a minor version",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"version\": \"1.3.0\""
+        },
+        {
+          "file": "src/split.ts",
+          "match": "export function split({ totalCents, people, tipPercent = 0 }: Bill): number[] {"
+        },
+        {
+          "file": "CHANGELOG.md",
+          "match": "## 1.3.0",
+          "lines": 3
+        }
+      ]
+    },
+    {
+      "id": "RL2",
+      "title": "Every push to any branch publishes to npm, with no tests before it",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".github/workflows/publish.yml",
+          "match": "  push:\n",
+          "lines": 1
+        },
+        {
+          "file": ".github/workflows/publish.yml",
+          "match": "- run: npm publish"
+        }
+      ]
+    },
+    {
+      "id": "RL3",
+      "title": "SB-1 is in the release, but its last verify failed and its security and QA reviews were never done",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".peer-ai/work/SB-1.json",
+          "whole": true
+        }
+      ],
+      "rules": ["REQ-05", "DEL-04"]
+    }
+  ]
+}

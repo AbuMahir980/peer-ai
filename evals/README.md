@@ -17,6 +17,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`courier-infra.json`](courier-infra.json) | `courier`, with its cloud infrastructure in Terraform | 7 | – |
 | [`courier-kubernetes.json`](courier-kubernetes.json) | `courier`, deployed on Kubernetes | 5 | – |
 | [`sprout-hosting.json`](sprout-hosting.json) | `sprout`, with its container, web server and deploy workflow | 5 | – |
+| [`shelf-release.json`](shelf-release.json) | `shelf`, with release 3.5.0 about to go to the stores | 4 | – |
+| [`courier-launch.json`](courier-launch.json) | `courier`, about to launch in production | 5 | – |
+| [`split-bill-release.json`](split-bill-release.json) | `split-bill`, with version 1.3.0 about to be published | 3 | – |
 
 ## Running one
 
