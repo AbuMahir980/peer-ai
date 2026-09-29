@@ -16,6 +16,7 @@ import {
   formatDocumentRun,
   formatRun,
   loadSheet,
+  regradeDocument,
   scoreDocument,
   type ResolvedDefect,
   score,
@@ -421,6 +422,32 @@ describe("marking a document", () => {
     expect(printed).toContain(
       "check_document refused it: Add the missing parts, each under its own heading: People and their problems",
     );
+  });
+
+  it("grades an earlier run's document again from its copy", async () => {
+    const sheet = loadSheet("refill");
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-regrade-"));
+    made.push(dir, `${dir}-grades`, `${dir}-grades.log`);
+    mkdirSync(join(dir, ".agents", "skills", "peer-ai-requirements-analysis"), { recursive: true });
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Requirements: Refill\n");
+    writeFileSync(`${dir}.log`, "exec cat .agents/skills/peer-ai-requirements-analysis/SKILL.md");
+    made.push(`${dir}.log`);
+    const result = await regradeDocument(
+      sheet,
+      "requirements-analysis",
+      dir,
+      (_tool, gradeDir) => {
+        writeFileSync(join(gradeDir, "grades.json"), "not json");
+        return Promise.resolve();
+      },
+      { tool: "claude-code", model: "strong-model" },
+    );
+    expect(result).toMatchObject({ baseline: false, skillUsed: true, regraded: true });
+    expect(result.score).toMatchObject({ written: true, graded: false });
+    const printed = formatDocumentRun(sheet, "codex", result, 1, 1).join("\n");
+    expect(printed).toContain("Graded by Claude Code (strong-model)");
+    expect(printed).toContain(`Graded again from the copy in ${dir}`);
   });
 
   it("notices when the run leaves the document as it was", async () => {
