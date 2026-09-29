@@ -142,9 +142,75 @@ A test fails the build if any skill breaks these rules. They come from the speci
 
 v0's checklists, and the defects found on real projects (logged in `legacy/v0/docs/peer-ai-feedback.md`), become two things: the "how to check" references, and the planted defects in the evals. Nothing else carries over: not its wording, its role-play, its model switching or its phase instructions.
 
-### 8. Order of work
+### 8. The right skill runs without anyone naming it
 
-1. **The format, proven on three skills.** The `@peer-ai/skills` package, build and validation test, `check_document`, and render support, plus security-review, ai-feature-review and code-review. All three already have fixture projects, so the format is proven end to end before 26 more skills are written.
+Nobody should need to remember 29 skill names. There are four ways a skill starts, and the first two mean a person never has to name one.
+
+**1. Peer AI says which skill comes next.** Every tool is told to start each session with `next_work`. Two cases:
+
+- **The project has a gap and no open work.** `next_work` lists each gap together with the skill that fills it. For example, a new MVP with no architecture document gets "architecture: missing, use the architecture skill".
+- **A work item is open.** `next_work` returns its step and the skills that step needs.
+
+The map items and their skills:
+
+| Map item | Skill |
+|----------|-------|
+| requirements | requirements-analysis |
+| architecture | architecture |
+| threat-model | threat-model |
+| specs | product-spec, then system-design |
+| api-contract | api-design |
+| data-model | data-modelling |
+| data-inventory, dpia | compliance-review |
+| design | design-system |
+| tests | test-strategy |
+| load-testing | performance-review |
+| infrastructure | infrastructure-review |
+| observability, slos | observability-review |
+| runbooks | incident-response |
+| docs | documentation |
+
+standards, ci and environments have no skill of their own. `next_work` says what to set up for them instead. The table lives in `@peer-ai/workflow` beside the map items, and a test makes sure every skill it names exists.
+
+**2. Peer AI works out which reviews a change needs, and the gate holds it to them.** When a work item reaches verify, Peer AI reads what the change touched (its files against the base branch, and the parts they belong to) and lists the reviews it requires, each with its reason:
+
+| Review | Required when the change... |
+|--------|-----------------------------|
+| code-review | changes any code |
+| security-review | changes code, at MVP or production |
+| accessibility-review | changes a screen in a web, mobile or desktop part |
+| design-review | changes a screen, in a project with a design on its map |
+| contract-check | changes the API contract, or a part that provides or uses an API |
+| data-migration-review | adds or changes a migration |
+| dependency-review | changes a dependency file or lockfile |
+| compliance-review | changes where personal data is stored, sent or logged |
+| ai-feature-review | changes code that calls an AI model, in a project with the ai-features trait |
+| infrastructure-review | changes infrastructure as code or deployment config |
+| release-readiness | is about to ship, at production |
+
+The file patterns are the ones `assess` already uses for migrations, dependency files, schemas and infrastructure. What happens when a required review is missing depends on the stage, following the same grading RFC 0002 uses for unproven reviews:
+
+| Stage | Missing required review |
+|-------|-------------------------|
+| Prototype | Listed as a suggestion |
+| MVP | A warning |
+| Production | `peer-ai check` refuses to ship the work item |
+
+A project can require more reviews, or drop one with a written reason, in its config. The AI can always add a review it judges useful.
+
+**3. The tool matches what a person says.** Every tool keeps each skill's description in view. When someone asks "is the login safe?", the tool picks security-review on its own.
+
+**4. By name**, for anyone who wants a particular skill, such as `/security-review` in Claude Code.
+
+The surface this adds:
+
+- `next_work` returns a `skill` for each gap, and `reviews` (skill, required, reason) for a work item at verify.
+- `peer-ai check` enforces required reviews by stage, as in the table above.
+- The config gains a way to add or drop a required review, with a reason. Its exact key is settled in the first batch and follows RFC 0001's `activities` section.
+
+### 9. Order of work
+
+1. **The format, proven on three skills.** The `@peer-ai/skills` package, build and validation test, `check_document`, render support, and the skill routing in section 8, plus security-review, ai-feature-review and code-review. All three already have fixture projects, so the format is proven end to end before 26 more skills are written.
 2. **Plan:** the nine plan skills.
 3. **Build and verify:** implement-ticket and the remaining verify skills.
 4. **Ship and operate.**
@@ -156,14 +222,17 @@ This is a minor change. It adds:
 
 - the new `@peer-ai/skills` package;
 - the `check_document` MCP tool and `peer-ai check-document` command;
-- skill folders written by `peer-ai render`.
+- skill folders written by `peer-ai render`;
+- a skill for each gap, and the reviews a work item needs, in what `next_work` returns;
+- a config entry to add or drop a required review.
 
-Nothing existing changes, including the skill ids. Projects on v0 are unaffected until they migrate.
+One existing behaviour changes: `peer-ai check` starts enforcing required reviews, so at production a work item that could ship before may now be refused until its reviews are done. No project runs 1.0 yet, so nobody is affected. The skill ids don't change, and projects on v0 are unaffected until they migrate.
 
 ## Drawbacks
 
 - **A fresh clone needs one command** (`peer-ai render`) before skills appear as files. The MCP server and the instructions block work without it.
 - **Evals cost money.** A full pass of every skill, on two tools and two models, costs a few hundred dollars. Full runs happen per batch and before a release, not on every change.
+- **Security review runs on every code change at MVP and production.** That costs time and tokens. The review's scope is the change, so a small change gets a small review, and a project can drop the requirement with a written reason.
 - **A grader model can be wrong.** That is why a person spot-checks document and work evals.
 - **Tools differ in the details.** Optional fields such as `allowed-tools` are experimental in the standard, so skills don't depend on them.
 
