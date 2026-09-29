@@ -172,6 +172,11 @@ describe("assess", () => {
     expect(statusOf(project({ "docs/architecture.md": "# Architecture" })).architecture).toBe("present");
   });
 
+  it("finds a design system written down", () => {
+    const status = statusOf(project({ "web/package.json": "{}", "docs/design-system.md": "# Design system" }));
+    expect(status.design).toBe("present");
+  });
+
   it("finds a data model written down before any migration exists", () => {
     expect(statusOf(project({ "docs/data-model.md": "# Data model" }))["data-model"]).toBe("present");
   });

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI design system"
+  short_description: "Tokens, components, states and accessibility rules"
+  default_prompt: "Use ${{name}} to write down this product's design system, with the problems the screens show."

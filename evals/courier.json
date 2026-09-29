@@ -16,7 +16,8 @@
     "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it.",
     "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built.",
     "api-design": "Write down Courier's API design from the code and its contract.",
-    "data-modelling": "Write down Courier's data model from its migrations."
+    "data-modelling": "Write down Courier's data model from its migrations.",
+    "design-system": "Courier has no design system yet. Write one from its web app's screens."
   },
   "defects": [
     {
@@ -692,6 +693,46 @@
           "id": "MC9",
           "point": "Names the migrations folder as the one source of the database's structure.",
           "must": true
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YC1",
+          "point": "Proposes a starting set of tokens from what the screens already use, and marks it as proposed for a designer or the person to decide.",
+          "must": true
+        },
+        {
+          "id": "YC2",
+          "point": "Finds that a parcel's status is shown only by colour, and requires words or an icon too.",
+          "must": true
+        },
+        {
+          "id": "YC3",
+          "point": "Finds that the Book button isn't a real button, so a keyboard can't use it.",
+          "must": true
+        },
+        {
+          "id": "YC4",
+          "point": "Finds that the booking form's fields have placeholders but no labels."
+        },
+        {
+          "id": "YC5",
+          "point": "Gives contrast ratios for the status colours, or asks for them to be checked."
+        },
+        {
+          "id": "YC6",
+          "point": "Lists the shared components the screens need, such as a button, a field and a status badge, with their states."
+        },
+        {
+          "id": "YC7",
+          "point": "Says the danger colour means one thing."
+        },
+        {
+          "id": "YC8",
+          "point": "Invents no designs or brand the code doesn't show."
         }
       ]
     }

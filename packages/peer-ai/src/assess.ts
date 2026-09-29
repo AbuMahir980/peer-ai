@@ -392,7 +392,7 @@ const RULES: Record<KnownMapItemId, Rule> = {
     }
     const files = matching(
       ctx,
-      /(^|\/)(design|designs|design_handoff[^/]*|mockups?|figma)\/|(^|\/)(design-)?tokens\.(json|ts|js|css)$/i,
+      /(^|\/)(design|designs|design_handoff[^/]*|mockups?|figma)\/|(^|\/)(design-)?tokens\.(json|ts|js|css)$|(^|\/)docs\/[^/]*design[-_]?system[^/]*\.md$/i,
     );
     if (files.length > 0)
       return present(evidence(files, /^(.*\/)?(design|designs|design_handoff[^/]*|mockups?|figma)\//i));
