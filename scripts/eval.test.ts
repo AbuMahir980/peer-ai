@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { availableSkills, skillRuleIds } from "@peer-ai/skills";
-import { SKILL_IDS, validateReport, type ReviewReport } from "@peer-ai/workflow";
+import { SKILL_IDS, WorkItemSchema, validateReport, type ReviewReport } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   DOCUMENT_RESULTS,
@@ -21,6 +21,9 @@ import {
   otherDocuments,
   regradeDocument,
   scoreDocument,
+  changeIn,
+  finalMessage,
+  setUp,
   workItemsDocument,
   writtenDocument,
   type ResolvedDefect,
@@ -570,9 +573,59 @@ describe("marking a document", () => {
     workItem("CR-9", { title: "Cancel a pickup", goal: "A customer cancels their own pickup." });
     const text = workItemsDocument(dir) ?? "";
     expect(text.indexOf("## CR-9: Cancel a pickup")).toBeLessThan(text.indexOf("## CR-10"));
+    expect(text).toContain("Created or changed by this run.");
     expect(text).toContain("- Goal: A customer cancels their own pickup.");
     expect(text).toContain("- Acceptance criteria:\n  - Given…, then one refund.");
     expect(text).toContain("- Depends on: CR-9");
+    expect(text).toContain("- Last verify: none");
+    expect(text).toContain("- Reviews recorded:\n  - none");
+  });
+
+  it("sets up a scenario in the copy, and shows the grader only what the run changed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-setup-"));
+    made.push(dir);
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", ...args], { cwd: dir });
+    git("init", "-q");
+    writeFileSync(join(dir, "split.ts"), "export const split = 1;\n");
+    git("add", "-A");
+    git("commit", "-q", "-m", "fixture");
+    setUp(dir, { ".peer-ai/work/SB-1.json": { id: "SB-1" }, "notes.md": "# Notes\n" });
+    expect(readFileSync(join(dir, ".peer-ai/work/SB-1.json"), "utf8")).toBe('{\n  "id": "SB-1"\n}\n');
+    expect(changeIn(dir)).toBe("");
+    writeFileSync(join(dir, "split.ts"), "export const split = 2;\n");
+    writeFileSync(join(dir, "tip.test.ts"), "test();\n");
+    writeFileSync(join(dir, ".peer-ai/work/SB-1.json"), '{ "id": "SB-1", "stage": "ship" }\n');
+    const change = changeIn(dir);
+    expect(change).toContain("+export const split = 2;");
+    expect(change).toContain("tip.test.ts");
+    expect(change).not.toContain(".peer-ai");
+  });
+
+  it("reads what a run told the person at the end, from Claude Code's or Codex's log", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-final-"));
+    made.push(dir);
+    const claude = join(dir, "claude.log");
+    writeFileSync(claude, '{"type":"assistant"}\n{"type":"result","result":"SB-2 waits on SB-1."}\n');
+    const codex = join(dir, "codex.log");
+    writeFileSync(
+      codex,
+      '{"type":"item.completed","item":{"type":"agent_message","text":"First."}}\nnoise\n{"type":"item.completed","item":{"type":"agent_message","text":"Done."}}\n',
+    );
+    expect(finalMessage(claude)).toBe("SB-2 waits on SB-1.");
+    expect(finalMessage(codex)).toBe("Done.");
+    expect(finalMessage(join(dir, "none.log"))).toBeUndefined();
+  });
+
+  it("keeps every scenario's set-up work items valid", () => {
+    for (const name of sheets()) {
+      for (const scenario of Object.values(loadSheet(name).documents ?? {})) {
+        for (const [path, content] of Object.entries(scenario.setup ?? {})) {
+          if (path.startsWith(".peer-ai/work/"))
+            expect(WorkItemSchema.safeParse(content).success, `${name} ${path}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("notices when the run leaves the document as it was", async () => {
