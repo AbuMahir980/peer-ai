@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI security review"
+  short_description: "Security review that proves every rule was checked"
+  default_prompt: "Use $peer-ai-security-review to review this change for security problems and record the report."

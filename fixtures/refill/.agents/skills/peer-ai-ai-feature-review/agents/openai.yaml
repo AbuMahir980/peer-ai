@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI AI feature review"
+  short_description: "Review AI features against the OWASP LLM Top 10"
+  default_prompt: "Use $peer-ai-ai-feature-review to review this change's AI feature and record the report."
