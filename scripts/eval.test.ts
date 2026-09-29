@@ -451,6 +451,11 @@ describe("marking a document", () => {
     mkdirSync(join(dir, "docs", "specs"), { recursive: true });
     writeFileSync(join(dir, "docs", "specs", "cancel.md"), "# Spec\n");
     expect(writtenDocument(dir, "docs/specs/", undefined)).toBe("docs/specs/cancel.md");
+    expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBeUndefined();
+    writeFileSync(join(dir, "specs", "cancel-design.md"), "# Design\n");
+    expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBe("specs/cancel-design.md");
+    writeFileSync(join(dir, "docs", "specs", "cancel-design.md"), "# Design\n");
+    expect(writtenDocument(dir, "docs/specs/*-design.md", undefined)).toBe("docs/specs/cancel-design.md");
   });
 
   it("grades an earlier run's document again from its copy", async () => {

@@ -13,7 +13,8 @@
     "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\"",
     "threat-model": "Write a threat model for Courier.",
     "architecture": "Courier's architecture document is out of date. Bring it up to date with the code.",
-    "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it."
+    "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it.",
+    "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built."
   },
   "defects": [
     {
@@ -547,6 +548,55 @@
         {
           "id": "PC11",
           "point": "Leaves tables, endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DC1",
+          "point": "Checks on the server that the pickup belongs to the customer asking, for that record.",
+          "must": true
+        },
+        {
+          "id": "DC2",
+          "point": "Makes a cancel sent twice, from a retry or two devices, refund only once, such as with an idempotency key or a database guarantee.",
+          "must": true
+        },
+        {
+          "id": "DC3",
+          "point": "Stops a pickup being cancelled after it's collected, even when collection and cancelling happen at the same moment, such as with a lock or a conditional update.",
+          "must": true
+        },
+        {
+          "id": "DC4",
+          "point": "Gives the refund call a timeout, and says what happens and what the customer sees when it fails or hangs."
+        },
+        {
+          "id": "DC5",
+          "point": "Verifies any payment provider webhook before acting on it."
+        },
+        {
+          "id": "DC6",
+          "point": "Keeps existing data and clients working: any migration keeps what's stored, and the API changes by adding."
+        },
+        {
+          "id": "DC7",
+          "point": "Has the assistant's cancel go through the same place as the customer's, since one module owns parcels."
+        },
+        {
+          "id": "DC8",
+          "point": "Names the tests that prove it, including two cancels at once and another customer's parcel.",
+          "must": true
+        },
+        {
+          "id": "DC9",
+          "point": "Names the files, tables and routes that change, not only \"the backend\"."
+        },
+        {
+          "id": "DC10",
+          "point": "Keeps money as whole pence, never decimals."
         }
       ]
     }

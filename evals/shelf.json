@@ -12,7 +12,8 @@
     "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model.",
     "threat-model": "Write a threat model for Shelf.",
     "architecture": "Bring Shelf's architecture document up to date with the code.",
-    "product-spec": "Readers want to extend a loan by a week. Write the spec for it."
+    "product-spec": "Readers want to extend a loan by a week. Write the spec for it.",
+    "system-design": "Readers will be able to extend a loan by a week. Design how it's built."
   },
   "defects": [
     {
@@ -480,6 +481,46 @@
         {
           "id": "PS10",
           "point": "Leaves tables, endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DS1",
+          "point": "Treats the API as another repository's: writes the contract change the app needs as a request to its owners, and doesn't design the API's insides.",
+          "must": true
+        },
+        {
+          "id": "DS2",
+          "point": "Says what the app does when the request fails, hangs or there's no connection, with a timeout.",
+          "must": true
+        },
+        {
+          "id": "DS3",
+          "point": "Builds the new screen in the newer TypeScript features, not the legacy half, reaching the API through one helper."
+        },
+        {
+          "id": "DS4",
+          "point": "Handles pressing extend twice, so the loan is extended once."
+        },
+        {
+          "id": "DS5",
+          "point": "Checks on the server that the loan belongs to the reader asking, as part of the request to the API's owners."
+        },
+        {
+          "id": "DS6",
+          "point": "Names the tests that prove it, including a failed request and a double press.",
+          "must": true
+        },
+        {
+          "id": "DS7",
+          "point": "Says how the loan's new due date reaches the screen, such as refreshing the loans the app holds."
+        },
+        {
+          "id": "DS8",
+          "point": "Names the files that change in the app."
         }
       ]
     }

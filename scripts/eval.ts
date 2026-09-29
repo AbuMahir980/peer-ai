@@ -69,7 +69,7 @@ const DocumentScenario = z.strictObject({
     .string()
     .min(1)
     .describe(
-      "Where the document should be written, relative to the project root, or a folder ending in / when the skill names the file, such as docs/specs/.",
+      "Where the document should be written, relative to the project root. When the skill names the file, a folder ending in /, such as docs/specs/, or a pattern with * for the name, such as docs/specs/*-design.md.",
     ),
   points: z.array(Point).min(3),
 });
@@ -655,11 +655,18 @@ export function writtenDocument(dir: string, expected: string, before: string | 
   } catch {
     return undefined;
   }
-  if (expected.endsWith("/")) {
-    const folder = expected.split("/").at(-2) ?? "";
+  if (expected.endsWith("/") || expected.includes("*")) {
+    // A pattern: * stands for the name the skill chose, such as docs/specs/*-design.md.
+    const pattern = expected.endsWith("/") ? `${expected}*.md` : expected;
+    const [folder = "", name = ""] = [pattern.split("/").at(-2), pattern.split("/").at(-1)];
+    const glob = (text: string) =>
+      new RegExp(`^${text.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("*", "[^/]*")}$`);
+    const whole = glob(pattern);
+    const base = glob(name);
     const markdown = changed.filter((file) => file.endsWith(".md") && !file.startsWith(".peer-ai/"));
     return (
-      markdown.find((file) => file.startsWith(expected)) ?? markdown.find((file) => file.split("/").includes(folder))
+      markdown.find((file) => whole.test(file)) ??
+      markdown.find((file) => file.split("/").includes(folder) && base.test(file.split("/").at(-1) ?? ""))
     );
   }
   const name = expected.split("/").at(-1)?.toLowerCase();
