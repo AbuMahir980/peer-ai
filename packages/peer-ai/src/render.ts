@@ -2,13 +2,16 @@
 // the same way. Instructions go in a marked block inside the project's own files (AGENTS.md,
 // CLAUDE.md, GEMINI.md, Copilot's instructions), and only that block is ever rewritten. Cursor gets
 // a rule file of its own. The MCP server is registered in each tool's project config, next to
-// whatever else is there. Running it twice changes nothing, and --check reports drift for CI.
+// whatever else is there. Peer AI's skills are written where each tool reads them, under a peer-ai-
+// prefix, and left out of git: they're rebuilt from the installed version (RFC 0004). Running it
+// twice changes nothing, and --check reports drift for CI.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { SKILL_NAME_PREFIX, availableSkills, loadSkill, readSkillFiles, renderedName } from "@peer-ai/skills";
 import type { PeerAiConfig, ToolId } from "@peer-ai/workflow";
 import { loadConfig } from "./assess.ts";
-import { count, fail, formatChecks, ok, skip, type Check } from "./checks.ts";
+import { count, fail, formatChecks, ok, plural, skip, type Check } from "./checks.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
@@ -27,8 +30,20 @@ export interface Planned {
   note?: string;
 }
 
+/** What render does to one skill's folder. */
+export interface PlannedSkill {
+  /** The folder, such as .claude/skills/peer-ai-security-review. */
+  path: string;
+  action: "create" | "update" | "unchanged" | "remove";
+  /** Every file the folder should hold, by its path inside the folder. */
+  files: Map<string, string>;
+  /** Files in the folder that shouldn't be there any more. */
+  stale: string[];
+}
+
 export interface RenderPlan {
   files: Planned[];
+  skills: PlannedSkill[];
   /** Steps render can't take inside the project, such as a tool that keeps servers in the user's own config. */
   manual: string[];
 }
@@ -69,6 +84,7 @@ export function instructions(config: PeerAiConfig): string {
     "- Before editing a file, call `standards_for_file` and follow what it returns.",
     "- Record progress with `update_work_item`, so the next session resumes where this one stopped.",
     "- Verify with `run_verify`. Never report a verify result yourself.",
+    "- Peer AI's skills are named `peer-ai-…`, such as `peer-ai-security-review`. Use them for reviews, and follow them step by step. If none are installed, run `npx peer-ai render`.",
     "- For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.",
     "- Don't edit the files in `.peer-ai/` by hand. The tools keep them valid.",
   ];
@@ -109,24 +125,42 @@ export function instructions(config: PeerAiConfig): string {
 
 const block = (body: string) => `${START}\n${GENERATED}\n\n${body}\n${END}`;
 
-/** The file with its marked block written or replaced, and nothing outside the block touched. */
-function withBlock(path: string, existing: string | undefined, body: string): Planned {
-  const wanted = block(body);
+const IGNORE_START = "# peer-ai:start";
+const IGNORE_END = "# peer-ai:end";
+
+interface Markers {
+  start: string;
+  end: string;
+  /** The whole block, markers included. */
+  block: string;
+}
+
+/**
+ * The file with its marked block written or replaced, and nothing outside the block touched. The
+ * markers default to the instructions block; .gitignore uses its own.
+ */
+function withBlock(
+  path: string,
+  existing: string | undefined,
+  body: string,
+  markers: Markers = { start: START, end: END, block: block(body) },
+): Planned {
+  const wanted = markers.block;
   if (existing === undefined) return { path, action: "create", content: `${wanted}\n` };
-  const start = existing.indexOf(START);
-  if (start === -1) {
+  const from = existing.indexOf(markers.start);
+  if (from === -1) {
     const separator = existing === "" ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
     return { path, action: "update", content: `${existing}${separator}${wanted}\n` };
   }
-  const end = existing.indexOf(END, start);
-  if (end === -1) {
+  const to = existing.indexOf(markers.end, from);
+  if (to === -1) {
     return {
       path,
       action: "refused",
-      note: `It has ${START} but no ${END} after it. Add the end marker, or remove the start marker, then render again.`,
+      note: `It has ${markers.start} but no ${markers.end} after it. Add the end marker, or remove the start marker, then render again.`,
     };
   }
-  const content = `${existing.slice(0, start)}${wanted}${existing.slice(end + END.length)}`;
+  const content = `${existing.slice(0, from)}${wanted}${existing.slice(to + markers.end.length)}`;
   return { path, action: content === existing ? "unchanged" : "update", content };
 }
 
@@ -183,6 +217,63 @@ function toolFile(root: string, path: string, body: string, agentsRendered: bool
   return withBlock(path, existing, body);
 }
 
+/**
+ * Where the tools in the config read skills. Codex, Cursor, Copilot and Gemini CLI read the shared
+ * .agents/skills; Claude Code reads .claude/skills, which Cursor and Copilot also read. So each
+ * skill is written as few times as the tools allow, and not at all when no tool is listed.
+ */
+export function skillFolders(tools: ToolId[]): string[] {
+  const folders = tools.includes("claude-code") ? [".claude/skills"] : [];
+  const needsShared = tools.some((tool) => tool === "codex" || tool === "gemini-cli" || tool === "other");
+  const readsEither = tools.some((tool) => tool === "cursor" || tool === "copilot");
+  if (needsShared || (readsEither && folders.length === 0)) folders.push(".agents/skills");
+  return folders;
+}
+
+const SKILL_HOMES = [".claude/skills", ".agents/skills"];
+
+const isDirectory = (path: string) => statSync(path, { throwIfNoEntry: false })?.isDirectory() === true;
+
+/**
+ * Every Peer AI skill in each folder its tools read, and every Peer AI skill that shouldn't be
+ * there any more: one this version no longer has, or one in a folder no listed tool reads.
+ */
+function planSkills(root: string, tools: ToolId[]): PlannedSkill[] {
+  const folders = skillFolders(tools);
+  const planned: PlannedSkill[] = [];
+  for (const home of SKILL_HOMES) {
+    const wanted = folders.includes(home) ? availableSkills() : [];
+    for (const id of wanted) {
+      const name = renderedName(id);
+      const path = `${home}/${name}`;
+      const files = loadSkill(id, { name });
+      const existing = isDirectory(join(root, path)) ? readSkillFiles(join(root, path)) : undefined;
+      const stale = existing === undefined ? [] : [...existing.keys()].filter((file) => !files.has(file));
+      const same =
+        existing !== undefined && stale.length === 0 && [...files].every(([file, text]) => existing.get(file) === text);
+      planned.push({ path, action: existing === undefined ? "create" : same ? "unchanged" : "update", files, stale });
+    }
+    const names = new Set(wanted.map(renderedName));
+    const present = isDirectory(join(root, home)) ? readdirSync(join(root, home)) : [];
+    for (const entry of present.filter((entry) => entry.startsWith(SKILL_NAME_PREFIX) && !names.has(entry))) {
+      planned.push({ path: `${home}/${entry}`, action: "remove", files: new Map(), stale: [] });
+    }
+  }
+  return planned;
+}
+
+/** Keeps the rendered skills out of git, in a marked block of .gitignore. */
+function ignoreSkills(root: string, folders: string[]): Planned {
+  const lines = [
+    IGNORE_START,
+    "# Generated by peer-ai render. Peer AI's skills are rebuilt from the installed version: run peer-ai render after cloning.",
+    ...folders.map((folder) => `/${folder}/${SKILL_NAME_PREFIX}*/`),
+    IGNORE_END,
+  ];
+  const markers = { start: IGNORE_START, end: IGNORE_END, block: lines.join("\n") };
+  return withBlock(".gitignore", readText(root, ".gitignore"), "", markers);
+}
+
 export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   const tools: ToolId[] = config.tools ?? [];
   const body = instructions(config);
@@ -235,7 +326,9 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
       `For another tool, point it at AGENTS.md, and register the MCP server as: ${server.command} ${server.args.join(" ")}`,
     );
   }
-  return { files, manual };
+  const skills = planSkills(root, tools);
+  if (skills.some((skill) => skill.action !== "remove")) files.push(ignoreSkills(root, skillFolders(tools)));
+  return { files, skills, manual };
 }
 
 function write(root: string, planned: Planned): void {
@@ -243,6 +336,40 @@ function write(root: string, planned: Planned): void {
   const full = join(root, planned.path);
   mkdirSync(dirname(full), { recursive: true });
   writeFileSync(full, planned.content);
+}
+
+function writeSkill(root: string, skill: PlannedSkill): void {
+  const folder = join(root, skill.path);
+  if (skill.action === "remove") {
+    rmSync(folder, { recursive: true, force: true });
+    return;
+  }
+  for (const file of skill.stale) unlinkSync(join(folder, file));
+  for (const [file, text] of skill.files) {
+    mkdirSync(dirname(join(folder, file)), { recursive: true });
+    writeFileSync(join(folder, file), text);
+  }
+}
+
+/** One line per skills folder, rather than one per file. */
+function skillChecks(skills: PlannedSkill[]): Check[] {
+  const homes = [...new Set(skills.map((skill) => skill.path.slice(0, skill.path.lastIndexOf("/"))))];
+  return homes.map((home) => {
+    const here = skills.filter((skill) => skill.path.startsWith(`${home}/`));
+    const changed = here.filter((skill) => skill.action !== "unchanged");
+    const names = (action: PlannedSkill["action"]) =>
+      here.filter((skill) => skill.action === action).map((skill) => skill.path.slice(home.length + 1));
+    if (changed.length === 0) return ok("render", `${home}/: ${plural(here.length, "skill")}, up to date.`);
+    const parts = [
+      ["written", [...names("create"), ...names("update")]],
+      ["removed", names("remove")],
+    ] as const;
+    const summary = parts
+      .filter(([, list]) => list.length > 0)
+      .map(([verb, list]) => `${verb} ${list.join(", ")}`)
+      .join("; ");
+    return ok("render", `${home}/: ${summary}.`);
+  });
 }
 
 function toCheck(planned: Planned, checking: boolean): Check {
@@ -279,8 +406,16 @@ export function runRender(options: RenderOptions, out: Output): number {
     return 2;
   }
   const plan = planRender(options.cwd, config);
-  if (!options.check) for (const planned of plan.files) if (planned.action !== "refused") write(options.cwd, planned);
-  const checks = plan.files.map((planned) => toCheck(planned, options.check));
+  if (!options.check) {
+    for (const planned of plan.files) if (planned.action !== "refused") write(options.cwd, planned);
+    for (const skill of plan.skills) if (skill.action !== "unchanged") writeSkill(options.cwd, skill);
+  }
+  // --check is for CI, which sees only what's committed. The skills never are, so it leaves them out;
+  // peer-ai doctor reports missing skills on a person's machine.
+  const checks = [
+    ...plan.files.map((planned) => toCheck(planned, options.check)),
+    ...(options.check ? [] : skillChecks(plan.skills)),
+  ];
   if ((config.tools ?? []).length === 0) {
     checks.push(skip("render", `No AI tools are listed in ${CONFIG_FILE}, so only AGENTS.md was written.`));
   }
@@ -292,6 +427,10 @@ export function runRender(options: RenderOptions, out: Output): number {
   out.log("");
   if (options.check) out.log(failures === 0 ? "Everything is up to date." : "Out of date: run peer-ai render.");
   else if (failures > 0) out.log("Some files couldn't be changed; see above.");
-  else out.log("Done. Commit these files, so every clone and every tool gets them.");
+  else if (plan.skills.some((skill) => skill.action !== "remove")) {
+    out.log(
+      "Done. Commit these files, so every clone and every tool gets them. The skills stay out of git: run peer-ai render after cloning.",
+    );
+  } else out.log("Done. Commit these files, so every clone and every tool gets them.");
   return failures === 0 ? 0 : 1;
 }

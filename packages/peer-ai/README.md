@@ -129,18 +129,32 @@ pnpm peer-ai render
 
 The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules. The server serves the detail when it's needed, rather than every rule on every turn.
 
+### Skills
+
+Render writes Peer AI's skills where the listed tools read them, each named `peer-ai-<skill>`, such as `peer-ai-security-review`. The prefix means a Peer AI skill never replaces one of a tool's own, such as Claude Code's `/code-review`.
+
+| Folder | Read by | Written when the config lists |
+|--------|---------|-------------------------------|
+| `.claude/skills/` | Claude Code, Cursor, GitHub Copilot | Claude Code |
+| `.agents/skills/` | Codex, Cursor, GitHub Copilot, Gemini CLI | Codex, Gemini CLI or another tool; or Cursor or Copilot without Claude Code |
+
+- **They stay out of git.** They're rebuilt from the installed version, so a version bump stays a one-line change. Render adds them to `.gitignore` in a marked block.
+- **After cloning,** run `peer-ai render` to write them. In a Node project, a `prepare` script can do it on install. `peer-ai doctor` warns when they're missing or out of date.
+- **Only its own skills.** Render replaces and removes only folders named `peer-ai-…`. A skill of your own sits beside them untouched.
+- **Cloud sessions.** Claude Code's cloud sessions load only the skills committed to the repository, so run `peer-ai render` in the environment's setup.
+
 What render changes, and what it leaves alone:
 
 - **A block, not the file.** It writes between `<!-- peer-ai:start -->` and `<!-- peer-ai:end -->`, and never touches anything outside them. A file without the block gets it at the end.
 - **One server entry, not the config.** It adds or updates the `peer-ai` entry and keeps every other server and setting. It refuses a file it can't read as plain JSON, such as one with comments, and prints the entry to add by hand.
 - **The pinned version.** When `package.json` has `peer-ai` in its dependencies, tools start that copy; otherwise they start this exact version with `npx`.
-- **Nothing twice.** A second run changes nothing. `peer-ai doctor` warns when these files no longer match the config.
+- **Nothing twice.** A second run changes nothing. `peer-ai doctor` warns when these files or the skills no longer match the config.
 
 ### Options
 
 | Option | What it does |
 |--------|--------------|
-| `--check` | Change nothing, and fail when a file is out of date. For CI. |
+| `--check` | Change nothing, and fail when a committed file is out of date. For CI. It leaves the skills out, since CI never has them. |
 
 ### Exit codes
 
@@ -161,7 +175,7 @@ pnpm peer-ai doctor
 | Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |
 | Files the config names | A contract, design, standards document, data inventory, checklist or input that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
 | AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
-| What render writes | Instructions or MCP registrations that no longer match the config |
+| What render writes | Instructions or MCP registrations that no longer match the config, or skills that are missing or out of date |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |

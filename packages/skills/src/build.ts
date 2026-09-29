@@ -1,12 +1,13 @@
 // Builds a skill from its source folder into the files a tool reads. A skill's own files are kept
 // as they are, and three kinds of reference are generated so they can never drift:
-// - rules.md, from @peer-ai/standards, for the domains the skill names in metadata.peer-ai-domains;
+// - rules.md, from @peer-ai/standards: the domains in metadata.peer-ai-domains, and single rules from
+//   other domains in metadata.peer-ai-rules;
 // - severity.md and report.md, shared by every review skill, from shared/.
 // The skill is written under the name the caller chooses, and openai.yaml's {{name}} is filled in.
 
 import { readFileSync } from "node:fs";
 import { CORE_RULES, DOMAIN_INFO, type Rule } from "@peer-ai/standards";
-import { SKILL_KINDS, type DomainId, type SkillId } from "@peer-ai/workflow";
+import { DOMAIN_IDS, SKILL_KINDS, type DomainId, type SkillId } from "@peer-ai/workflow";
 import { parseSkillMd, type SkillFiles } from "./skill.ts";
 
 const SHARED = new URL("../shared/", import.meta.url);
@@ -14,6 +15,12 @@ const shared = (file: string) => readFileSync(new URL(file, SHARED), "utf8");
 
 const STAGE: Record<Rule["stage"], string> = { prototype: "prototype", mvp: "MVP", production: "production" };
 const CHECK: Record<Rule["check"], string> = { auto: "a tool", "ai-review": "AI review", person: "a person" };
+
+/** Rendered skills carry this prefix, so they never replace a tool's own skill of the same name. */
+export const SKILL_NAME_PREFIX = "peer-ai-";
+
+/** The name a skill is written under in a project, such as peer-ai-security-review. */
+export const renderedName = (id: SkillId): string => `${SKILL_NAME_PREFIX}${id}`;
 
 export interface BuildOptions {
   /** The name the skill is written under, such as peer-ai-security-review. Defaults to its id. */
@@ -29,9 +36,13 @@ export function buildSkill(id: SkillId, source: SkillFiles, options: BuildOption
 
   const parsed = parseSkillMd(skillMd);
   const metadata = parsed.ok ? (parsed.value.frontmatter.metadata as Record<string, unknown> | undefined) : undefined;
-  const domains = typeof metadata?.["peer-ai-domains"] === "string" ? metadata["peer-ai-domains"].split(/\s+/) : [];
-  const known = domains.filter((domain): domain is DomainId => domain in DOMAIN_INFO);
-  if (known.length > 0) files.set("references/rules.md", rulesReference(known));
+  const words = (key: string) => {
+    const value = metadata?.[key];
+    return typeof value === "string" ? value.split(/\s+/).filter((word) => word !== "") : [];
+  };
+  const domains = words("peer-ai-domains").filter((domain): domain is DomainId => domain in DOMAIN_INFO);
+  const extra = words("peer-ai-rules");
+  if (domains.length + extra.length > 0) files.set("references/rules.md", rulesReference(domains, extra));
   if (SKILL_KINDS[id] === "review") {
     files.set("references/severity.md", shared("severity.md"));
     files.set("references/report.md", shared("report.md"));
@@ -41,12 +52,13 @@ export function buildSkill(id: SkillId, source: SkillFiles, options: BuildOption
   return files;
 }
 
-/** The core rules for some domains, grouped by domain, as a reference a skill reads on demand. */
-export function rulesReference(domains: DomainId[]): string {
-  const groups = domains.map((domain) => ({
-    domain,
-    rules: CORE_RULES.filter((rule) => rule.domain === domain),
-  }));
+/** The rules a skill checks, as a reference it reads on demand: whole domains, then single rules, by domain. */
+export function rulesReference(domains: DomainId[], extra: string[] = []): string {
+  const chosen = CORE_RULES.filter((rule) => domains.includes(rule.domain) || extra.includes(rule.id));
+  const order = [...domains, ...DOMAIN_IDS.filter((domain) => !domains.includes(domain))];
+  const groups = order
+    .map((domain) => ({ domain, rules: chosen.filter((rule) => rule.domain === domain) }))
+    .filter((group) => group.rules.length > 0);
   const lines = [
     "# Rules",
     "",
@@ -55,8 +67,9 @@ export function rulesReference(domains: DomainId[]): string {
     "## Contents",
     "",
     ...groups.map(({ domain, rules }) => {
-      const span = rules.length === 0 ? "" : `: ${rules[0]?.id ?? ""} to ${rules.at(-1)?.id ?? ""}`;
-      return `- ${DOMAIN_INFO[domain].title}${span}`;
+      const ids = rules.map((rule) => rule.id);
+      const whole = domains.includes(domain) && ids.length > 1;
+      return `- ${DOMAIN_INFO[domain].title}: ${whole ? `${ids[0] ?? ""} to ${ids.at(-1) ?? ""}` : ids.join(", ")}`;
     }),
   ];
   for (const { domain, rules } of groups) {

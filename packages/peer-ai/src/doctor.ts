@@ -166,13 +166,14 @@ function checkTools(root: string, config: PeerAiConfig): Check {
 
 /** What render writes for the AI tools still matches the config. */
 function checkRendered(root: string, config: PeerAiConfig): Check {
-  const stale = planRender(root, config).files.filter((file) => file.action !== "unchanged");
-  if (stale.length === 0) return ok("render", "The AI tools' instructions and MCP registrations are up to date");
-  return warn(
-    "render",
-    `Out of date for the AI tools: ${stale.map((file) => file.path).join(", ")}.`,
-    "Run peer-ai render.",
-  );
+  const plan = planRender(root, config);
+  const stale = [
+    ...plan.files.filter((file) => file.action !== "unchanged").map((file) => file.path),
+    ...plan.skills.filter((skill) => skill.action !== "unchanged").map((skill) => `${skill.path}/`),
+  ];
+  if (stale.length === 0)
+    return ok("render", "The AI tools' instructions, MCP registrations and skills are up to date");
+  return warn("render", `Out of date for the AI tools: ${stale.join(", ")}.`, "Run peer-ai render.");
 }
 
 /** The config's CI setting matches the repository, so Peer AI never adds a second pipeline. */
