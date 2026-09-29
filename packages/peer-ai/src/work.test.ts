@@ -337,7 +337,7 @@ describe("next work", () => {
           "load-testing",
         ],
         // Only the skills written so far; see routing.test.ts.
-        useSkill: { requirements: "peer-ai-requirements-analysis" },
+        useSkill: { requirements: "peer-ai-requirements-analysis", "threat-model": "peer-ai-threat-model" },
       },
     });
   });

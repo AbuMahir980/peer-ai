@@ -9,7 +9,8 @@
     "performance-review": "Review the Shelf app for performance problems.",
     "reliability-review": "Review the Shelf app for reliability problems.",
     "design-review": "Review the Shelf app against its design system.",
-    "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model."
+    "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model.",
+    "threat-model": "Write a threat model for Shelf."
   },
   "defects": [
     {
@@ -332,5 +333,61 @@
       ],
       "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
     }
-  ]
+  ],
+  "documents": {
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TS1",
+          "point": "Lists the ways in, including signing in, scanning a QR code, finding books nearby, the librarian, and the calls the app makes to the API and to analytics.",
+          "must": true
+        },
+        {
+          "id": "TS2",
+          "point": "Names what's worth protecting, including readers' accounts, their location and what they've borrowed.",
+          "must": true
+        },
+        {
+          "id": "TS3",
+          "point": "Finds that a secret is built into the app, or that the app talks to the API over plain HTTP, and marks it missing.",
+          "must": true
+        },
+        {
+          "id": "TS4",
+          "point": "Finds that signing in writes the password to the device log, or that the session token is kept in unencrypted storage."
+        },
+        {
+          "id": "TS5",
+          "point": "Finds that a link in a QR code can open any web page inside the app."
+        },
+        {
+          "id": "TS6",
+          "point": "Finds that the reader's exact location goes to analytics or to the librarian when it isn't needed."
+        },
+        {
+          "id": "TS7",
+          "point": "Finds that catalogue descriptions from the partner reach the librarian's instructions, or that the librarian's reply can reserve a book without the reader confirming."
+        },
+        {
+          "id": "TS8",
+          "point": "Treats the API as run in another repository, and marks the defences that live there as not checked rather than in place.",
+          "must": true
+        },
+        {
+          "id": "TS9",
+          "point": "Backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TS10",
+          "point": "Considers a lost or shared phone."
+        },
+        {
+          "id": "TS11",
+          "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    }
+  }
 }
