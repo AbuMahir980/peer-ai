@@ -47,7 +47,7 @@ List, with where each is defined:
 
 ## 3. Try it
 
-Where you can run commands, follow your own setup steps in a clean copy, as a newcomer would, and fix the README until they work. Where you can't, check each command against where it's defined, such as a script in a dependency file or the verify command, and each setting against the code that reads it. Mark any step you couldn't confirm as not tried.
+Where you're free to run commands, follow your own setup steps in a clean copy, as a newcomer would, and fix the README until they work. Where you can't, or running them would need someone's permission, don't stop to ask: check each command against where it's defined, such as a script in a dependency file or the verify command, and each setting against the code that reads it. Mark any step you couldn't confirm as not tried.
 
 A step that can't work as the project stands is a problem to report, not to hide.
 
