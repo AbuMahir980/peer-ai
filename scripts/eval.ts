@@ -605,19 +605,38 @@ export async function markDocument(
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const target = join(dir, scenario.path);
-  const after = existsSync(target) ? readFileSync(target, "utf8") : undefined;
-  const written = after !== undefined && after !== before;
-  if (!written) return scoreDocument(skill, scenario, false, undefined, undefined);
-  const check = checkDocumentIn(dir, skill, scenario.path);
+  const path = writtenDocument(dir, scenario.path, before);
+  if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
+  const check = checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
   rmSync(gradeDir, { recursive: true, force: true });
   mkdirSync(gradeDir, { recursive: true });
-  writeFileSync(join(gradeDir, "document.md"), after);
+  writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8"));
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
   await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
-  return scoreDocument(skill, scenario, true, check, readGrades(gradeDir));
+  return { ...scoreDocument(skill, scenario, true, check, readGrades(gradeDir)), path };
+}
+
+/**
+ * Where the run wrote its document: the expected path when it changed there, or else a new or
+ * changed file of the same name elsewhere in the copy, such as requirements/requirements.md for
+ * docs/requirements.md. The project map finds a document by its name, so either counts.
+ */
+export function writtenDocument(dir: string, expected: string, before: string | undefined): string | undefined {
+  const target = join(dir, expected);
+  if (existsSync(target) && readFileSync(target, "utf8") !== before) return expected;
+  let changed: string[];
+  try {
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter((line) => line !== "");
+  } catch {
+    return undefined;
+  }
+  const name = expected.split("/").at(-1)?.toLowerCase();
+  return changed.find((file) => file !== expected && file.split("/").at(-1)?.toLowerCase() === name);
 }
 
 /** One run of a document skill: a fresh copy, the tool given the prompt, and the document graded. */
@@ -768,6 +787,10 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
     `${sheet.fixture} · ${marked.skill} · ${TOOL_NAMES[tool]}${model} · ${describeSkill(run)} · run ${String(index)} of ${String(of)}`,
     "",
   ];
+  const expected = sheet.documents?.[marked.skill]?.path;
+  if (marked.written && expected !== undefined && marked.path !== expected) {
+    lines.push(`Written to ${marked.path}, not ${expected}.`);
+  }
   if (marked.written) {
     const met = marked.points.filter((point) => point.met).length;
     const musts = marked.points.filter((point) => point.must);

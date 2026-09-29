@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,6 +19,7 @@ import {
   loadSheet,
   regradeDocument,
   scoreDocument,
+  writtenDocument,
   type ResolvedDefect,
   score,
   type Sheet,
@@ -422,6 +424,20 @@ describe("marking a document", () => {
     expect(printed).toContain(
       "check_document refused it: Add the missing parts, each under its own heading: People and their problems",
     );
+  });
+
+  it("finds a document written under the same name elsewhere, and ignores one left as it was", () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-written-"));
+    made.push(dir);
+    execFileSync("git", ["init", "-q"], { cwd: dir });
+    mkdirSync(join(dir, "docs"));
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Old\n");
+    expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBeUndefined();
+    mkdirSync(join(dir, "requirements"));
+    writeFileSync(join(dir, "requirements", "Requirements.md"), "# New\n");
+    expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("requirements/Requirements.md");
+    writeFileSync(join(dir, "docs", "requirements.md"), "# Changed\n");
+    expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("docs/requirements.md");
   });
 
   it("grades an earlier run's document again from its copy", async () => {
