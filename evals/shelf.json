@@ -16,7 +16,8 @@
     "system-design": "Readers will be able to extend a loan by a week. Design how it's built.",
     "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs.",
     "design-system": "Write down Shelf's design system from its tokens and screens.",
-    "issue-planning": "Readers want to extend a loan by a week. Plan the work. This is the spec we agreed:\n\n\"A reader can extend their own loan by a week, once, unless someone has reserved the book. The lender is told about the extension. With no connection, the Extend button says it needs one. The Shelf API, in its own repository, needs a new endpoint for this.\""
+    "issue-planning": "Readers want to extend a loan by a week. Plan the work. This is the spec we agreed:\n\n\"A reader can extend their own loan by a week, once, unless someone has reserved the book. The lender is told about the extension. With no connection, the Extend button says it needs one. The Shelf API, in its own repository, needs a new endpoint for this.\"",
+    "dependency-review": "Review the Shelf app's dependencies."
   },
   "defects": [
     {
@@ -394,6 +395,92 @@
         }
       ],
       "found": "Not planted: raised by Peer AI's design-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S29",
+      "title": "The app has no lockfile, so the packages it depends on can change from one install to the next",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-01"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "S30",
+      "title": "Nothing checks the dependencies for known vulnerabilities",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-03"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "S31",
+      "title": "The older screens use @react-native-community/async-storage, which moved to a new name and gets no more fixes",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"@react-native-community/async-storage\": \"1.12.1\","
+        },
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "import AsyncStorage from \"@react-native-community/async-storage\";"
+        }
+      ]
+    },
+    {
+      "id": "S32",
+      "title": "The partner SDK is a private package with a name anyone can claim on the public registry, installed through a registry that also serves public packages",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"shelf-partner-sdk\": \"2.3.0\""
+        },
+        {
+          "file": ".npmrc",
+          "match": "registry=https://packages.shelf.example/npm/"
+        }
+      ]
+    },
+    {
+      "id": "S33",
+      "title": "There's no list of the app's dependencies, though it ships to people's phones",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-10"],
+      "found": "Not planted: raised by Peer AI's dependency-review skill on 2026-09-29, and judged real."
     }
   ],
   "documents": {
