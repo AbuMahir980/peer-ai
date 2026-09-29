@@ -2,7 +2,11 @@
 // answer sheet lives in evals/<fixture>.json, outside the fixture, so the tool under test works on
 // a copy that never contains the answers.
 //
-//   node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--runs <n>] [--record]
+// By default the copy has Peer AI's skills, rendered as a person's render would, and the tool is
+// asked in plain words. --baseline runs without them, to measure what a skill adds.
+//
+//   node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>]
+//     [--baseline] [--runs <n>] [--record]
 
 import { execFile } from "node:child_process";
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -10,6 +14,7 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
 import { SEVERITIES, SKILL_IDS, validateReport, type ReviewReport, type SkillId } from "@peer-ai/workflow";
 import { z } from "zod";
 import { localServer, prepareFixture } from "./fixture.ts";
@@ -215,18 +220,40 @@ export interface ToolRun {
   turns?: number;
   costUsd?: number;
 }
-export type ToolRunner = (tool: Tool, dir: string, prompt: string, log: string) => Promise<ToolRun>;
+export type ToolRunner = (tool: Tool, dir: string, prompt: string, log: string, model?: string) => Promise<ToolRun>;
 
 const TOOL_NAMES: Record<Tool, string> = { "claude-code": "Claude Code", codex: "Codex" };
 
-/** Until Peer AI's skills serve it, the runner tells the tool where the report format is. */
-export function evalPrompt(sheet: Sheet, skill: SkillId): string {
+/**
+ * The request, in plain words. With the skill installed that's all the tool gets: the skill carries
+ * the report format. The baseline, without the skill, is also told where the format is.
+ */
+export function evalPrompt(sheet: Sheet, skill: SkillId, baseline = false): string {
   const ask = sheet.prompts[skill];
   if (ask === undefined) {
     const known = Object.keys(sheet.prompts).join(", ");
     throw new Error(`evals/${sheet.fixture}.json has no prompt for ${skill}. It has: ${known}.`);
   }
+  if (!baseline) return ask;
   return `${ask}\n\nWrite the review's report as JSON in .peer-ai/reports/, following the format in .peer-ai/review-report.schema.json.`;
+}
+
+/**
+ * Whether the tool opened the skill: Claude Code's Skill tool naming it, or any tool reading its
+ * SKILL.md. The skill's name also appears in lists of what's installed, so that alone doesn't count.
+ */
+export function usedSkill(log: string, skill: SkillId): boolean {
+  const name = renderedName(skill);
+  return log.includes(`${name}/SKILL.md`) || new RegExp(`"skill"\\s*:\\s*"${name}"`).test(log);
+}
+
+/** How many of the rules a skill answers for its reports covered, with at least one line each. */
+export function ruleCoverage(reports: ReviewReport[], skill: SkillId): { covered: number; of: number } {
+  const rules = skillRuleIds(skill);
+  const seen = new Set(
+    reports.filter((report) => report.skill === skill).flatMap((report) => report.coverage.map((line) => line.rule)),
+  );
+  return { covered: rules.filter((rule) => seen.has(rule)).length, of: rules.length };
 }
 
 function run(command: string, args: string[], cwd: string, log: string): Promise<string> {
@@ -240,7 +267,7 @@ function run(command: string, args: string[], cwd: string, log: string): Promise
 }
 
 /** Runs a real AI tool headless on the copy, with only the peer-ai server and its own file tools. */
-export const runTool: ToolRunner = async (tool, dir, prompt, log) => {
+export const runTool: ToolRunner = async (tool, dir, prompt, log, model) => {
   const started = Date.now();
   const server = localServer();
   if (tool === "claude-code") {
@@ -249,6 +276,7 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log) => {
       [
         "-p",
         prompt,
+        ...(model === undefined ? [] : ["--model", model]),
         "--mcp-config",
         ".mcp.json",
         "--strict-mcp-config",
@@ -256,16 +284,24 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log) => {
         "acceptEdits",
         "--allowedTools",
         "mcp__peer-ai",
+        "Skill",
         "Bash(git:*)",
+        // Every event, so the log shows which tools and skills the run used.
         "--output-format",
-        "json",
+        "stream-json",
+        "--verbose",
         "--max-turns",
-        "80",
+        "120",
       ],
       dir,
       log,
     );
-    const result = JSON.parse(out) as { num_turns?: number; total_cost_usd?: number };
+    const last = out
+      .trim()
+      .split("\n")
+      .reverse()
+      .find((line) => line.includes('"type":"result"'));
+    const result = (last === undefined ? {} : JSON.parse(last)) as { num_turns?: number; total_cost_usd?: number };
     return {
       seconds: (Date.now() - started) / 1000,
       ...(result.num_turns === undefined ? {} : { turns: result.num_turns }),
@@ -291,6 +327,7 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log) => {
       `mcp_servers.peer-ai.args=${JSON.stringify(server.args)}`,
       "-c",
       'mcp_servers.peer-ai.tools.run_verify.approval_mode="approve"',
+      ...(model === undefined ? [] : ["-m", model]),
       prompt,
     ],
     dir,
@@ -299,11 +336,24 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log) => {
   return { seconds: (Date.now() - started) / 1000 };
 };
 
+export interface EvalOptions {
+  /** Run without Peer AI's skills, to measure what a skill adds. */
+  baseline?: boolean;
+  /** The model to ask for, such as a fast one and a strong one; otherwise the tool's default. */
+  model?: string;
+}
+
 export interface EvalRun {
   dir: string;
   score: Score;
   collected: CollectedReports;
   tool: ToolRun;
+  baseline: boolean;
+  model?: string;
+  /** With the skill installed: whether the tool opened it. */
+  skillUsed?: boolean;
+  /** How many of the skill's rules the reports covered. */
+  coverage: { covered: number; of: number };
 }
 
 /** One run: a fresh copy, the tool given the prompt, and its reports marked. */
@@ -313,24 +363,45 @@ export async function evaluate(
   tool: Tool,
   runner: ToolRunner = runTool,
   into?: string,
+  options: EvalOptions = {},
 ): Promise<EvalRun> {
-  const prompt = evalPrompt(sheet, skill);
-  const dir = prepareFixture(sheet.fixture, into);
-  mkdirSync(join(dir, ".peer-ai"), { recursive: true });
-  copyFileSync(REPORT_SCHEMA, join(dir, ".peer-ai", "review-report.schema.json"));
+  const baseline = options.baseline === true;
+  if (!baseline && !availableSkills().includes(skill)) {
+    throw new Error(`There's no ${skill} skill yet. Run with --baseline to measure the review without one.`);
+  }
+  const prompt = evalPrompt(sheet, skill, baseline);
+  const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
+  if (baseline) {
+    mkdirSync(join(dir, ".peer-ai"), { recursive: true });
+    copyFileSync(REPORT_SCHEMA, join(dir, ".peer-ai", "review-report.schema.json"));
+  }
   const log = `${dir}.log`;
-  const toolRun = await runner(tool, dir, prompt, log);
+  const toolRun = await runner(tool, dir, prompt, log, options.model);
   const collected = collectReports(dir);
-  return { dir, score: score(sheet, skill, collected.reports), collected, tool: toolRun };
+  const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
+  return {
+    dir,
+    score: score(sheet, skill, collected.reports),
+    collected,
+    tool: toolRun,
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
+    coverage: ruleCoverage(collected.reports, skill),
+  };
 }
+
+const describeSkill = (run: EvalRun) =>
+  run.baseline ? "without the skill" : run.skillUsed === true ? "with the skill" : "skill installed, not used";
 
 const where = (span: Span | undefined) => (span === undefined ? "" : `${span.file}:${String(span.line)}`);
 
 export function formatRun(sheet: Sheet, tool: Tool, run: EvalRun, index: number, of: number): string[] {
   const { score: marked, collected } = run;
   const found = marked.expected.filter(({ foundBy }) => foundBy.length > 0).length;
+  const model = run.model === undefined ? "" : ` (${run.model})`;
   const lines = [
-    `${sheet.fixture} · ${marked.skill} · ${TOOL_NAMES[tool]} · run ${String(index)} of ${String(of)}`,
+    `${sheet.fixture} · ${marked.skill} · ${TOOL_NAMES[tool]}${model} · ${describeSkill(run)} · run ${String(index)} of ${String(of)}`,
     "",
     `Found ${String(found)} of ${String(marked.expected.length)} problems on the answer sheet:`,
     `  ${SEVERITIES.filter((s) => marked.bySeverity[s].of > 0)
@@ -352,6 +423,7 @@ export function formatRun(sheet: Sheet, tool: Tool, run: EvalRun, index: number,
     }
   }
   for (const bad of collected.invalid) lines.push(`Invalid report ${bad.path}: ${bad.errors.slice(0, 3).join("; ")}`);
+  lines.push(`Covered ${String(run.coverage.covered)} of the skill's ${String(run.coverage.of)} rules.`);
   const cost = run.tool.costUsd === undefined ? "" : ` · $${run.tool.costUsd.toFixed(2)}`;
   const turns = run.tool.turns === undefined ? "" : `${String(run.tool.turns)} turns · `;
   lines.push(`${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`);
@@ -378,9 +450,12 @@ function record(sheet: Sheet, tool: Tool, run: EvalRun): void {
   const found = marked.expected.filter(({ foundBy }) => foundBy.length > 0).length;
   const date = new Date().toISOString().slice(0, 10);
   const cost = run.tool.costUsd === undefined ? "–" : `$${run.tool.costUsd.toFixed(2)}`;
+  const model = run.model ?? "default";
+  const skillColumn = run.baseline ? "without" : run.skillUsed === true ? "used" : "not used";
+  const rules = `${String(run.coverage.covered)} of ${String(run.coverage.of)}`;
   appendResult(
     join(EVALS, "README.md"),
-    `| ${date} | ${sheet.fixture} | ${marked.skill} | ${TOOL_NAMES[tool]} | ${String(found)} of ${String(marked.expected.length)} | ${String(marked.unmatched.length)} | ${marked.ready ? "Ready" : "Not ready"} | ${cost} |`,
+    `| ${date} | ${sheet.fixture} | ${marked.skill} | ${TOOL_NAMES[tool]} | ${model} | ${skillColumn} | ${String(found)} of ${String(marked.expected.length)} | ${rules} | ${String(marked.unmatched.length)} | ${marked.ready ? "Ready" : "Not ready"} | ${cost} |`,
   );
 }
 
@@ -391,6 +466,8 @@ if (invokedDirectly) {
     options: {
       skill: { type: "string" },
       tool: { type: "string", default: "claude-code" },
+      model: { type: "string" },
+      baseline: { type: "boolean" },
       runs: { type: "string", default: "1" },
       record: { type: "boolean" },
     },
@@ -400,7 +477,7 @@ if (invokedDirectly) {
   const tool = values.tool as Tool;
   if (name === undefined || skill === undefined || !(["claude-code", "codex"] as string[]).includes(tool)) {
     console.error(
-      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--runs <n>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
+      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--baseline] [--runs <n>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
     );
     process.exit(2);
   }
@@ -414,6 +491,10 @@ if (invokedDirectly) {
       tool,
       runTool,
       join(tmpdir(), `peer-ai-eval-${name}-${skill}-${String(Date.now())}`),
+      {
+        baseline: values.baseline === true,
+        ...(values.model === undefined ? {} : { model: values.model }),
+      },
     );
     console.log(formatRun(sheet, tool, result, i, runs).join("\n"));
     if (i < runs) console.log("");

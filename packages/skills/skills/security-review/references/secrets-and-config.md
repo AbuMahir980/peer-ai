@@ -1,6 +1,6 @@
 # Secrets and configuration
 
-SEC-10, SEC-11, SEC-26, PRIV-01, PRIV-02, REL-04, REL-05 and DEL-07.
+SEC-10, SEC-11, SEC-26, REL-04, REL-05 and DEL-07.
 
 ## SEC-10: no secret in code
 
@@ -39,23 +39,6 @@ Keys designed to be public are not secrets: a payment provider's publishable key
 - a secret is fixed in code or in a built artefact;
 - there's no list;
 - a secret that may have leaked is still in use.
-
-## PRIV-01: no secrets or personal data in logs
-
-**Fail** when a log call writes any of:
-
-- a request body or headers;
-- a whole user object;
-- a token, a password or payment details;
-- personal fields.
-
-**Pass** evidence: a redaction filter in the logging layer that every logger goes through, and log calls that pass specific safe fields.
-
-## PRIV-02: no real personal data in the repository
-
-**Fail** on fixtures, seeds, screenshots or tests holding data that is evidently real, such as addresses at real companies' domains or real phone numbers.
-
-When you can't tell whether data is real, mark the line `not-checked` and say so. Don't guess.
 
 ## REL-04: configuration fails closed
 

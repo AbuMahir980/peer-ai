@@ -14,15 +14,24 @@ An eval tests whether a review finds the problems it should. Each practice proje
 node scripts/eval.ts courier --skill security-review
 ```
 
-It makes a fresh copy of the project, asks the AI tool for the review in plain words, collects the report the tool writes, and marks it against the answer sheet. Add `--tool codex` to use Codex, `--runs 2` to run it twice, and `--record` to add the result to the table below. Each run uses about $1 to $3 of the tool's usage.
+It makes a fresh copy of the project with Peer AI's skills installed, as `peer-ai render` would, asks the AI tool for the review in plain words, collects the report the tool writes, and marks it against the answer sheet. The copy's log shows whether the tool used the skill.
+
+| Option | What it does |
+|--------|--------------|
+| `--tool codex` | Use Codex instead of Claude Code |
+| `--model <model>` | Ask for a model, such as a fast one and a strong one. RFC 0004 asks for both on each tool. |
+| `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
+| `--runs 2` | Run it twice |
+| `--record` | Add the result to the table below |
+
+Each run uses about $1 to $3 of the tool's usage.
 
 ## How a review is marked
 
 - A planted problem counts as **found** when the report names a problem within three lines of it, at a severity no more than one level away.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
-
-Until Peer AI's own review skills exist, the runner also tells the tool where the report format is. The skills will carry it themselves.
+- **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
 
 ## Each answer sheet
 
@@ -43,8 +52,10 @@ A planted problem is found in its file by a short piece of the exact code, not b
 
 Newest last.
 
-| Date | Project | Review | Tool | Found | Not on the sheet | Result | Cost |
-|------|---------|--------|------|-------|------------------|--------|------|
-| 2026-09-28 | courier | security-review | Claude Code | 9 of 9 | 6 | Ready | $2.49 |
-| 2026-09-28 | shelf | security-review | Claude Code | 7 of 7 | 4 | Ready | $2.24 |
-| 2026-09-28 | sprout | ai-feature-review | Claude Code | 5 of 5 | 4 | Ready | $1.70 |
+The Skill column says whether the run had the skill: without it (a baseline), used, or installed but not used.
+
+| Date | Project | Review | Tool | Model | Skill | Found | Rules covered | Not on the sheet | Result | Cost |
+|------|---------|--------|------|-------|-------|-------|---------------|------------------|--------|------|
+| 2026-09-28 | courier | security-review | Claude Code | default | without | 9 of 9 | – | 6 | Ready | $2.49 |
+| 2026-09-28 | shelf | security-review | Claude Code | default | without | 7 of 7 | – | 4 | Ready | $2.24 |
+| 2026-09-28 | sprout | ai-feature-review | Claude Code | default | without | 5 of 5 | – | 4 | Ready | $1.70 |

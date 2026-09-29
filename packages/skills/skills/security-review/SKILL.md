@@ -1,12 +1,12 @@
 ---
 name: security-review
-description: Reviews code for security holes against Peer AI's OWASP-based rules, and proves each rule was checked. Use for a security review or audit, or when a change touches sign-in, permissions, input, uploads or secrets. Not for general code review.
+description: Reviews code for security holes and personal-data leaks against Peer AI's OWASP-based rules, proving each was checked. Use for a security review or audit, or when changing sign-in, permissions, input, secrets or personal data. Not for code review.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
   peer-ai-kind: review
-  peer-ai-domains: security
-  peer-ai-rules: PRIV-01 PRIV-02 REL-03 REL-04 REL-05 DEL-07 TEST-08 MOB-01 MOB-02 MOB-03 MOB-04
+  peer-ai-domains: security privacy-compliance
+  peer-ai-rules: REL-03 REL-04 REL-05 DEL-07 TEST-08 MOB-01 MOB-02 MOB-03 MOB-04 MOB-05 AI-01 AI-03 AI-04 AI-06
 ---
 
 # Security review
@@ -46,6 +46,8 @@ List everything an attacker can reach and everything worth protecting. Take it f
 | `screen` | `screen:sign-in` | Screens that handle sign-in, payment, uploads or personal data |
 | `link` | `link:app://item` | Deep links and app links into a phone app |
 | `upload` | `upload:avatar` | Every place a file comes in |
+| `permission` | `permission:location` | Each device permission a phone app asks for |
+| `service` | `service:analytics` | Each outside service that receives personal data: analytics, AI models, payment providers |
 | `secret` | `secret:PAYMENT_API_KEY` | Each secret the code reads |
 | `store` | `store:customers` | Tables, buckets and on-device stores holding personal or sensitive data |
 | `config` | `config:cors` | CORS, headers, TLS, session and cookie settings |
@@ -66,11 +68,13 @@ Work through each group. Its reference says what to look for, what counts as evi
 |-------|-----------|
 | SEC-01 to SEC-04, SEC-14, SEC-21: who may do what | [access-control.md](references/access-control.md) |
 | SEC-05 to SEC-09, SEC-22: what comes in and what goes out | [input-and-output.md](references/input-and-output.md) |
-| SEC-10, SEC-11, SEC-26, PRIV-01, PRIV-02, REL-04, REL-05, DEL-07: secrets and configuration | [secrets-and-config.md](references/secrets-and-config.md) |
+| SEC-10, SEC-11, SEC-26, REL-04, REL-05, DEL-07: secrets and configuration | [secrets-and-config.md](references/secrets-and-config.md) |
+| PRIV-01 to PRIV-06: personal data | [personal-data.md](references/personal-data.md) |
 | SEC-12, SEC-13, SEC-24, REL-03: guessing, abuse and security logs | [abuse-and-logging.md](references/abuse-and-logging.md) |
 | SEC-15 to SEC-20, SEC-23: transport, browsers and files | [transport-and-files.md](references/transport-and-files.md) |
 | SEC-25, TEST-08: the threat model and abuse tests | [threat-model-and-tests.md](references/threat-model-and-tests.md) |
-| MOB-01 to MOB-04: phone apps | [mobile.md](references/mobile.md) |
+| MOB-01 to MOB-05: phone apps | [mobile.md](references/mobile.md) |
+| AI-01, AI-03, AI-04, AI-06: features that use AI models | [ai-features.md](references/ai-features.md) |
 
 Hold every line to this bar:
 
