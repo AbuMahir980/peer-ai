@@ -1,0 +1,91 @@
+{
+  "fixture": "split-bill",
+  "setup": {
+    ".peer-ai/work/SB-1.json": {
+      "version": 1,
+      "id": "SB-1",
+      "title": "Add an optional tip",
+      "kind": "feature",
+      "stage": "verify",
+      "track": "core",
+      "goal": "A bill can be split with an optional tip, given as a whole percentage, and the shares still add up to the cent.",
+      "acceptance": [
+        "Given a bill of 1000 cents, 3 people and a 10% tip, when it's split, then the shares add up to 1100 cents.",
+        "Given a tip that isn't a whole cent, when it's split, then the tip is rounded half up to the nearest cent before splitting.",
+        "Given no tip, or a tip of 0%, when a bill is split, then the shares are exactly what they are today.",
+        "Given a tip below 0% or above 100%, or not a whole number, when a bill is split, then it's refused with a clear message."
+      ],
+      "sources": ["docs/requirements.md#backlog"],
+      "next": "Check the item against its acceptance criteria before it ships.",
+      "updatedAt": "2026-09-29T09:00:00.000Z"
+    },
+    "src/split.ts": "/**\n * Splits a bill between people, in cents. The shares always add up to the total: when it doesn't\n * divide evenly, the first people pay one cent more.\n */\nexport function split(totalCents: number, people: number, tipPercent = 0, serviceCents = 0): number[] {\n  if (!Number.isInteger(totalCents) || totalCents < 0) {\n    throw new RangeError(\"totalCents must be a whole number of cents, 0 or more\");\n  }\n  if (!Number.isInteger(people) || people < 1) {\n    throw new RangeError(\"people must be a whole number, 1 or more\");\n  }\n  if (!Number.isInteger(tipPercent) || tipPercent < 0) {\n    throw new RangeError(\"tipPercent must be a whole number, 0 or more\");\n  }\n  const tipCents = Math.floor((totalCents * tipPercent) / 100);\n  const grandTotal = totalCents + tipCents + serviceCents;\n  const base = Math.floor(grandTotal / people);\n  const remainder = grandTotal - base * people;\n  return Array.from({ length: people }, (_, i) => base + (i < remainder ? 1 : 0));\n}\n",
+    "src/split.test.ts": "import assert from \"node:assert/strict\";\nimport { describe, it } from \"node:test\";\nimport { split } from \"./split.ts\";\n\ndescribe(\"split\", () => {\n  it(\"divides an even bill equally\", () => {\n    assert.deepEqual(split(3000, 3), [1000, 1000, 1000]);\n  });\n\n  it(\"gives the leftover cents to the first people, so nothing is lost\", () => {\n    assert.deepEqual(split(1000, 3), [334, 333, 333]);\n  });\n\n  it(\"rejects fractions of a cent and nobody to pay\", () => {\n    assert.throws(() => split(10.5, 2), RangeError);\n    assert.throws(() => split(1000, 0), RangeError);\n  });\n\n  it(\"adds a tip on top of the bill before splitting\", () => {\n    assert.deepEqual(split(1000, 3, 10), [367, 367, 366]);\n  });\n\n  it(\"rounds a tip that isn't a whole cent\", () => {\n    assert.deepEqual(split(2000, 4, 15), [575, 575, 575, 575]);\n  });\n\n  it(\"splits exactly as today when there's no tip\", () => {\n    assert.deepEqual(split(1000, 3), [334, 333, 333]);\n  });\n});\n"
+  },
+  "prompts": {
+    "qa-acceptance": "SB-1 is built. Check it against its acceptance criteria before it ships."
+  },
+  "defects": [
+    {
+      "id": "QT1",
+      "title": "The tip is rounded down, not half up to the nearest cent",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.ts",
+          "match": "const tipCents = Math.floor((totalCents * tipPercent) / 100);"
+        }
+      ]
+    },
+    {
+      "id": "QT2",
+      "title": "A tip above 100% isn't refused",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.ts",
+          "match": "if (!Number.isInteger(tipPercent) || tipPercent < 0) {"
+        }
+      ]
+    },
+    {
+      "id": "QT3",
+      "title": "A service charge was added, which SB-1 doesn't ask for, and it isn't checked at all",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.ts",
+          "match": "export function split(totalCents: number, people: number, tipPercent = 0, serviceCents = 0): number[] {"
+        }
+      ]
+    },
+    {
+      "id": "QT4",
+      "title": "The rounding test uses a tip that's already a whole number of cents, so it passes whatever the rounding does",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.test.ts",
+          "match": "assert.deepEqual(split(2000, 4, 15), [575, 575, 575, 575]);"
+        }
+      ]
+    },
+    {
+      "id": "QT5",
+      "title": "No test covers refusing a tip below 0%, above 100% or not a whole number",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.test.ts",
+          "whole": true
+        }
+      ],
+      "rules": ["REQ-02", "TEST-02", "TEST-03"]
+    }
+  ]
+}

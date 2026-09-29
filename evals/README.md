@@ -11,6 +11,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
 | [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
 | [`split-bill-waiting.json`](split-bill-waiting.json) | `split-bill` | – | implement-ticket: an item waiting on another |
+| [`split-bill-qa-tip.json`](split-bill-qa-tip.json) | `split-bill`, with a tip already built | 5 | – |
+| [`split-bill-qa-uneven.json`](split-bill-qa-uneven.json) | `split-bill`, with uneven splits already built | 5 | – |
+| [`courier-qa-move.json`](courier-qa-move.json) | `courier`, with moving a pickup already built | 5 | – |
 
 ## Running one
 
@@ -286,6 +289,13 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What the runs changed:**
   - **A point named a journey sprout doesn't have.** Sprout's strategy said, rightly, that nothing in the app records watering. The point now names adding a plant instead.
 
+- **2026-09-29, qa-acceptance with Claude Code on Sonnet, on three items already built, and on the tip without it.** Each scenario writes a work item at verify and its code into the copy before the run: split-bill's tip, split-bill's uneven splits, and courier's moving a pickup. Behind tests that all pass, each hides what a tester should catch: a criterion the code doesn't meet, a refusal the criteria list that the code allows, a test whose values can't tell right from wrong, a criterion with no test, and something built that nobody asked for:
+  - **With the skill, all three are ready:** 5 of 5 each, covering all 9 rules. Without it, the tip found 4 of 5 and wasn't ready: it missed that the rounding test uses a tip that needs no rounding, so it passes whatever the rounding does.
+  - **An unmet criterion is reported at its rule's severity,** medium for the testing rules; the sheets mark the worst ones high, and they're found one level away. Whether a feature that fails its agreed criteria deserves a rule of its own, at high, is a question for a person.
+- **What the runs changed:**
+  - **The runner sets up review scenarios too:** an answer sheet's `setup` files are written into the copy and committed before the run, as for documents, and planted problems can be in them. The shared practice projects stay as they are.
+  - **Before any run, the checking guide gave away four of its own answers,** such as a rounding test whose value needs no rounding, and whose clock the code uses. Each was rewritten as the general rule.
+
 ## Results
 
 Newest last.
@@ -379,6 +389,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | shelf | security-review | Claude Code | sonnet | used | 10 of 11 | 47 of 47 | 5 | Not ready | $1.76 |
 | 2026-09-29 | shelf | code-review | Claude Code | sonnet | used | 12 of 13 | 67 of 67 | 4 | Ready | $1.93 |
 | 2026-09-29 | courier | ai-feature-review | Claude Code | sonnet | used | 6 of 6 | 14 of 14 | 1 | Ready | $1.11 |
+| 2026-09-29 | split-bill-qa-tip | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 1 | Ready | $0.87 |
+| 2026-09-29 | split-bill-qa-uneven | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 0 | Ready | $1.12 |
+| 2026-09-29 | courier-qa-move | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 0 | Ready | $1.01 |
+| 2026-09-29 | split-bill-qa-tip | qa-acceptance | Claude Code | sonnet | without | 4 of 5 | 9 of 9 | 0 | Not ready | $1.20 |
 
 ## Document results
 

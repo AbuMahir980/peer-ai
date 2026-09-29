@@ -85,6 +85,12 @@ const Point = z.strictObject({
   must: z.boolean().optional().describe("The document isn't ready without it."),
 });
 
+const Setup = z
+  .record(z.string().min(1), z.union([z.string(), z.record(z.string(), z.unknown())]))
+  .describe(
+    "Files written into the copy and committed before the run, such as a planned work item. An object is written as JSON.",
+  );
+
 const DocumentScenario = z.strictObject({
   path: z
     .string()
@@ -93,17 +99,15 @@ const DocumentScenario = z.strictObject({
       "Where the document should be written, relative to the project root. When the skill names the file, a folder ending in /, such as docs/specs/, or a pattern with * for the name, such as docs/specs/*-design.md.",
     ),
   points: z.array(Point).min(3),
-  setup: z
-    .record(z.string().min(1), z.union([z.string(), z.record(z.string(), z.unknown())]))
-    .optional()
-    .describe(
-      "Files written into the copy and committed before the run, such as a planned work item. An object is written as JSON.",
-    ),
+  setup: Setup.optional(),
   diff: z.boolean().optional().describe("Give the grader the change the run made to the code, as a diff."),
 });
 
 export const SheetSchema = z.strictObject({
   fixture: z.string().min(1),
+  setup: Setup.optional().describe(
+    "For reviews: files written into the copy before the run, such as a feature already built. Planted problems can be in them.",
+  ),
   prompts: z.partialRecord(z.enum(SKILL_IDS), z.string().min(1)),
   defects: z.array(Defect),
   documents: z
@@ -126,6 +130,7 @@ export type ResolvedDefect = z.output<typeof Defect> & { spans: Span[] };
 
 export interface Sheet {
   fixture: string;
+  setup?: z.output<typeof Setup>;
   prompts: Partial<Record<SkillId, string>>;
   defects: ResolvedDefect[];
   documents?: Partial<Record<SkillId, DocumentScenario>>;
@@ -148,14 +153,22 @@ export function loadSheet(name: string): Sheet {
     );
   }
   const root = join(REPO, "fixtures", parsed.data.fixture);
+  const { setup } = parsed.data;
+  // A planted problem can be in a file the scenario writes, or in the practice project itself.
+  const contents = (file: string): string | undefined => {
+    const written = setup?.[file];
+    if (written !== undefined) return typeof written === "string" ? written : `${JSON.stringify(written, null, 2)}\n`;
+    const path = join(root, file);
+    return existsSync(path) && statSync(path).isFile() ? readFileSync(path, "utf8") : undefined;
+  };
   const defects = parsed.data.defects.map((defect) => ({
     ...defect,
     spans: defect.locations.map((location): Span => {
-      const file = join(root, location.file);
-      if (!existsSync(file))
+      const text = contents(location.file);
+      if (text === undefined && !existsSync(join(root, location.file)))
         throw new Error(`${defect.id}: fixtures/${parsed.data.fixture}/${location.file} doesn't exist.`);
       if (location.match === undefined) return { file: location.file, line: 1, endLine: 1, whole: true };
-      const text = readFileSync(file, "utf8");
+      if (text === undefined) throw new Error(`${defect.id}: ${location.file} is a folder, not a file.`);
       const first = text.indexOf(location.match);
       if (first === -1 || text.includes(location.match, first + 1)) {
         throw new Error(
@@ -170,6 +183,7 @@ export function loadSheet(name: string): Sheet {
   const { documents } = parsed.data;
   return {
     fixture: parsed.data.fixture,
+    ...(setup === undefined ? {} : { setup }),
     prompts: parsed.data.prompts,
     defects,
     ...(documents === undefined ? {} : { documents }),
@@ -486,6 +500,7 @@ export async function evaluate(
   }
   const prompt = evalPrompt(sheet, skill, baseline);
   const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
+  if (sheet.setup !== undefined) setUp(dir, sheet.setup);
   if (baseline) {
     mkdirSync(join(dir, ".peer-ai"), { recursive: true });
     copyFileSync(REPORT_SCHEMA, join(dir, ".peer-ai", "review-report.schema.json"));
