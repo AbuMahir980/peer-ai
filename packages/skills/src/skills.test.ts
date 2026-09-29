@@ -217,6 +217,13 @@ describe("validating a skill", () => {
     expect(problemsWith(change).join("\n")).toContain(expected);
   });
 
+  it("stays fast on text full of unclosed links", () => {
+    const hostile = `${"](!".repeat(50_000)}`;
+    const started = performance.now();
+    problemsWith(setSkillMd(FIELDS, `${BODY}\n${hostile}`));
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
   it("keeps all the descriptions within Codex's budget together", () => {
     const full = (count: number) => Array.from({ length: count }, () => "x".repeat(LIMITS.description));
     expect(checkDescriptionBudget(full(29))).toEqual([]);

@@ -38,7 +38,9 @@ const NOT_IN_A_SKILL = ["README.md", "CHANGELOG.md", "INSTALLATION_GUIDE.md", "Q
 const RULE_ID = /\b([A-Z]{2,5})-\d{2,}\b/g;
 const TOOL = /peer-ai `([a-z_]+)`/g;
 const COMMAND = /`(?:npx )?peer-ai ([a-z][a-z-]*)/g;
-const LINK = /\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+// A link's target stops at the next ], ( or ), and both parts have a length limit, so a long run of
+// unclosed links can't make the search slow.
+const LINK = /\]\(([^()\]\s]{1,500})(?:\s+"[^"\n]{0,200}")?\)/g;
 
 export interface Expectations {
   /** The name the skill is written under, which is also its folder's name. */
