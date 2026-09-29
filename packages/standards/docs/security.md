@@ -112,9 +112,9 @@ Errors shown to the client are generic and actionable: no stack traces, file pat
 
 ## SEC-10 · No secret in code, ever
 
-Keys, passwords and tokens never live in code or in the repository. They come from a secrets manager or the environment, and secret scanning runs in CI, confirmed to have actually run.
+Keys, passwords and tokens never live in code or in the repository. They come from a secrets manager or the environment.
 
-**Why:** A secret in a repository is readable by everyone who can ever read the repository, and a crashed scanner reports the same "nothing found" as a clean one.
+**Why:** A secret in a repository is readable by everyone who can ever read the repository, including from its history after the file is deleted.
 
 **Ask:** Does this change put a key, password or token in code or the repository?
 
@@ -313,3 +313,15 @@ A list names each of the project's secrets, where it lives and how to replace it
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | Always | [OWASP ASVS 5.0, 13.1.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md); [OWASP ASVS 5.0, 13.3.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md) |
+
+## SEC-27 · Secret scanning runs on every change
+
+A secret scanner checks every change before it merges, and the repository's history once, and fails the build when it finds a secret. It's confirmed to have actually run.
+
+**Why:** Secrets slip in by accident: a key pasted in to test something, an .env file added by mistake. A scanner catches them before they spread, and a crashed scanner reports the same "nothing found" as a clean one. A missing scanner is a gap in the safety net, not a leak, so it ranks below a secret actually in the code (SEC-10).
+
+**Ask:** Does every change pass a secret scan that fails the build when it finds a secret?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | A tool | Medium | Always | – |

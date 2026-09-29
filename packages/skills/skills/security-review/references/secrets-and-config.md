@@ -1,6 +1,6 @@
 # Secrets and configuration
 
-SEC-10, SEC-11, SEC-26, REL-04, REL-05 and DEL-07.
+SEC-10, SEC-11, SEC-26, SEC-27, REL-04, REL-05 and DEL-07.
 
 ## SEC-10: no secret in code
 
@@ -13,9 +13,21 @@ SEC-10, SEC-11, SEC-26, REL-04, REL-05 and DEL-07.
 
 Placeholder values in an example file are fine.
 
-**Pass** evidence: secrets come from the environment or a secrets manager, and CI runs secret scanning. Name the step.
+**Pass** evidence: secrets come from the environment or a secrets manager, and no secret appears in the files in scope.
 
 A secret removed from the code but still in the history has leaked. Report it under SEC-26: it must be replaced.
+
+## SEC-27: secret scanning runs on every change
+
+**Pass** evidence: the CI step that runs a secret scanner on every change and fails the build when it finds one. Name the step.
+
+**Fail** when:
+
+- there's no secret scanning;
+- it only reports and doesn't fail the build;
+- it doesn't run on every change.
+
+Keep the two apart. A missing scanner is SEC-27, medium: a gap in the safety net. A secret actually in the repository is SEC-10, critical. Don't report a missing scanner as SEC-10.
 
 ## SEC-11: nothing secret built into what ships
 

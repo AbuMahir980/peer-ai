@@ -21,7 +21,7 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Data](data.md) | 5 |
 | [Performance and caching](performance.md) | 7 |
 | [Reliability](reliability.md) | 9 |
-| [Security](security.md) | 26 |
+| [Security](security.md) | 27 |
 | [Privacy and compliance](privacy-compliance.md) | 6 |
 | [Testing](testing.md) | 11 |
 | [Delivery](delivery.md) | 8 |

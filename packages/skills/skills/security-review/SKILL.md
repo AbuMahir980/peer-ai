@@ -68,7 +68,7 @@ Work through each group. Its reference says what to look for, what counts as evi
 |-------|-----------|
 | SEC-01 to SEC-04, SEC-14, SEC-21: who may do what | [access-control.md](references/access-control.md) |
 | SEC-05 to SEC-09, SEC-22: what comes in and what goes out | [input-and-output.md](references/input-and-output.md) |
-| SEC-10, SEC-11, SEC-26, REL-04, REL-05, DEL-07: secrets and configuration | [secrets-and-config.md](references/secrets-and-config.md) |
+| SEC-10, SEC-11, SEC-26, SEC-27, REL-04, REL-05, DEL-07: secrets and configuration | [secrets-and-config.md](references/secrets-and-config.md) |
 | PRIV-01 to PRIV-06: personal data | [personal-data.md](references/personal-data.md) |
 | SEC-12, SEC-13, SEC-24, REL-03: guessing, abuse and security logs | [abuse-and-logging.md](references/abuse-and-logging.md) |
 | SEC-15 to SEC-20, SEC-23: transport, browsers and files | [transport-and-files.md](references/transport-and-files.md) |
