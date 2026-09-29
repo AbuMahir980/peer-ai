@@ -5,7 +5,7 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { TOOL_IDS, type ToolId } from "@peer-ai/workflow";
+import { CLI_COMMAND_IDS, TOOL_IDS, type CliCommandId, type ToolId } from "@peer-ai/workflow";
 import { runAssess } from "./assess.ts";
 import { runCheck } from "./check.ts";
 import { runDoctor } from "./doctor.ts";
@@ -140,7 +140,7 @@ async function mcp(args: string[], io: Io): Promise<number> {
   return 0;
 }
 
-const COMMANDS: Record<string, (args: string[], io: Io) => number | Promise<number>> = {
+const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promise<number>> = {
   init,
   assess,
   render,
@@ -148,6 +148,8 @@ const COMMANDS: Record<string, (args: string[], io: Io) => number | Promise<numb
   check,
   mcp,
 };
+
+const isCommand = (value: string): value is CliCommandId => (CLI_COMMAND_IDS as readonly string[]).includes(value);
 
 export async function main(argv: string[], io: Io): Promise<number> {
   const [command, ...rest] = argv;
@@ -159,7 +161,7 @@ export async function main(argv: string[], io: Io): Promise<number> {
     io.out.log(VERSION);
     return 0;
   }
-  const run = COMMANDS[command];
+  const run = isCommand(command) ? COMMANDS[command] : undefined;
   if (run === undefined) {
     io.out.error(`Unknown command "${command}". Run peer-ai --help to see the commands.`);
     return 2;

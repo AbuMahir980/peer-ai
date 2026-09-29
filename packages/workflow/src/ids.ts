@@ -54,6 +54,58 @@ export const SKILL_IDS = [
 ] as const;
 export type SkillId = (typeof SKILL_IDS)[number];
 
+/** What a skill produces (RFC 0004): a review report, a document, or changes to work items. */
+export type SkillKind = "review" | "document" | "work";
+
+export const SKILL_KINDS: Record<SkillId, SkillKind> = {
+  "requirements-analysis": "document",
+  "product-spec": "document",
+  architecture: "document",
+  "system-design": "document",
+  "api-design": "document",
+  "data-modelling": "document",
+  "threat-model": "document",
+  "design-system": "document",
+  "issue-planning": "work",
+  "implement-ticket": "work",
+  "code-review": "review",
+  "security-review": "review",
+  "contract-check": "review",
+  "accessibility-review": "review",
+  "design-review": "review",
+  "performance-review": "review",
+  "reliability-review": "review",
+  "data-migration-review": "review",
+  "dependency-review": "review",
+  "compliance-review": "review",
+  "test-strategy": "document",
+  "qa-acceptance": "review",
+  "ai-feature-review": "review",
+  "release-readiness": "review",
+  "infrastructure-review": "review",
+  "observability-review": "review",
+  "incident-response": "work",
+  documentation: "document",
+  "tech-debt-triage": "work",
+};
+
+/** The tools Peer AI's MCP server offers, in the order it lists them. Skills name them. */
+export const MCP_TOOL_IDS = [
+  "project_map",
+  "next_work",
+  "standards_for_file",
+  "create_work_item",
+  "update_work_item",
+  "run_verify",
+  "record_review",
+  "advance_work_item",
+] as const;
+export type McpToolId = (typeof MCP_TOOL_IDS)[number];
+
+/** The peer-ai commands. Skills name them. */
+export const CLI_COMMAND_IDS = ["init", "assess", "render", "doctor", "check", "mcp"] as const;
+export type CliCommandId = (typeof CLI_COMMAND_IDS)[number];
+
 /** AI tools Peer AI renders instructions for. */
 export const TOOL_IDS = ["claude-code", "codex", "cursor", "copilot", "gemini-cli", "other"] as const;
 export type ToolId = (typeof TOOL_IDS)[number];
