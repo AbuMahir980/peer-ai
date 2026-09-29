@@ -249,7 +249,7 @@ One existing behaviour changes: `peer-ai check` starts enforcing required review
 
 ## Amendments
 
-**30 September 2026: rendered names and folders.** Checking how each tool reads skills changed three details of section 5:
+**29 September 2026: rendered names and folders.** Checking how each tool reads skills changed three details of section 5:
 
 - **Names.** A skill is written into a project as `peer-ai-<id>`, such as `peer-ai-security-review`, in a folder of the same name. Its id stays its name everywhere else: in config, in reports and on work items. Two reasons:
   - Claude Code lets a project skill with the same name replace its own bundled `/code-review`.
@@ -262,7 +262,7 @@ One existing behaviour changes: `peer-ai check` starts enforcing required review
   - `render` writes each skill to as few of these as the listed tools need, and to none when no tool is listed.
 - **Cloud sessions.** Claude Code's cloud sessions load only the skills committed to `.claude/skills/`. A project that keeps its skills out of git has none there, unless its setup runs `peer-ai render`. This adds weight to the open question above.
 
-**30 September 2026: skills in the cloud.** People use AI tools in a terminal, in desktop apps and in the cloud. Tools on a person's machine read the skills `render` wrote. Cloud agents start from a fresh clone, so each gets a setup step that writes the skills before it starts: `peer-ai render --skills --quiet`, which touches nothing committed.
+**29 September 2026: skills in the cloud.** People use AI tools in a terminal, in desktop apps and in the cloud. Tools on a person's machine read the skills `render` wrote. Cloud agents start from a fresh clone, so each gets a setup step that writes the skills before it starts: `peer-ai render --skills --quiet`, which touches nothing committed.
 
 | Tool | Where the setup step lives |
 |------|----------------------------|
@@ -279,4 +279,4 @@ As a last resort, a project can set `skills.commit` to `true`:
 
 This answers the open question above.
 
-**30 September 2026: checking a report from a shell.** In the evals, a fast model reached for shell commands and never called the MCP tools, so its reports went unchecked. `peer-ai check-report <file>` makes the same checks as `record_review` and records nothing. Every review skill names it as the fallback when the MCP tools aren't available. `record_review` also checks a whole-project review's report when given no work item.
+**29 September 2026: checking a report from a shell.** In the evals, a fast model reached for shell commands and never called the MCP tools, so its reports went unchecked. `peer-ai check-report <file>` makes the same checks as `record_review` and records nothing. Every review skill names it as the fallback when the MCP tools aren't available. `record_review` also checks a whole-project review's report when given no work item.
