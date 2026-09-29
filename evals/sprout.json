@@ -9,7 +9,8 @@
     "reliability-review": "Review Sprout for reliability problems.",
     "performance-review": "Review Sprout for performance problems.",
     "accessibility-review": "Review Sprout for accessibility problems.",
-    "design-review": "Review Sprout against its design system."
+    "design-review": "Review Sprout against its design system.",
+    "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today."
   },
   "defects": [
     {
@@ -189,5 +190,61 @@
         }
       ]
     }
-  ]
+  ],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "SR1",
+          "point": "Keeps every existing requirement: working with no connection without losing data, updates reaching everyone, identification sending only the photo and saying so first, advice shown as a suggestion with pet and child safety left to an expert, keyboard and screen reader use, and Nigeria's NDPA.",
+          "must": true
+        },
+        {
+          "id": "SR2",
+          "point": "Describes what the app does today with acceptance criteria, including adding a plant with a name, a room and a photo, and putting plants in order; and treats the journal, watering and plant identification, which are in the code but not reachable from the app's screens, as unclear or as questions.",
+          "must": true
+        },
+        {
+          "id": "SR3",
+          "point": "Marks what it worked out from the code as coming from the code, apart from what someone stated.",
+          "must": true
+        },
+        {
+          "id": "SR4",
+          "point": "Puts syncing between devices out of scope, or leaves it unclear, rather than in scope.",
+          "must": true
+        },
+        {
+          "id": "SR5",
+          "point": "Names the plant identification service as a dependency run by someone else."
+        },
+        {
+          "id": "SR6",
+          "point": "Notes that a photo can carry where it was taken, or show people, so sending \"only the photo\" needs care."
+        },
+        {
+          "id": "SR7",
+          "point": "Asks how much a person may keep, such as how many plants and photos, or what happens when the device runs short of space."
+        },
+        {
+          "id": "SR8",
+          "point": "Asks which browsers or devices it must work on."
+        },
+        {
+          "id": "SR9",
+          "point": "Names the personal data it keeps, such as photos and notes, and that photos go to another company for identification."
+        },
+        {
+          "id": "SR10",
+          "point": "Writes acceptance criteria a tester could check, each with a result anyone can see, not words like \"easy\" or \"fast\"."
+        },
+        {
+          "id": "SR11",
+          "point": "Invents no numbers: any count of users, plants or photos, or any storage limit, that nobody gave is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    }
+  }
 }

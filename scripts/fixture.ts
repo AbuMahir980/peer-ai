@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
-const CLI = join(REPO, "packages/peer-ai/src/cli.ts");
+export const CLI = join(REPO, "packages/peer-ai/src/cli.ts");
 
 /** Where each tool registers MCP servers in a project, and the key they sit under. */
 const REGISTRATIONS: [path: string, key: string][] = [

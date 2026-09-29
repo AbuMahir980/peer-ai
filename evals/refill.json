@@ -1,0 +1,72 @@
+{
+  "fixture": "refill",
+  "prompts": {
+    "requirements-analysis": "Write the requirements for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
+  },
+  "defects": [],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "F1",
+          "point": "Names patients, pharmacists at partner pharmacies, and riders as the people it's for, with the problem or need of each, or a question where the brief doesn't say.",
+          "must": true
+        },
+        {
+          "id": "F2",
+          "point": "Gives acceptance criteria for uploading a prescription, the pharmacist's check, paying, delivery, and refill reminders.",
+          "must": true
+        },
+        {
+          "id": "F3",
+          "point": "Puts video calls with a doctor out of scope, for later.",
+          "must": true
+        },
+        {
+          "id": "F4",
+          "point": "Says the product handles health data, such as prescriptions and medicines, and treats it as especially sensitive.",
+          "must": true
+        },
+        {
+          "id": "F5",
+          "point": "Names both places it operates, Nigeria and Kenya, and leaves which laws apply as a question for someone qualified, rather than a conclusion.",
+          "must": true
+        },
+        {
+          "id": "F6",
+          "point": "Suggests at least three of these traits or equivalents: money for card and mobile money, uploads for prescription photos, several audiences for patients, pharmacists and riders, safety-critical for medicines, and real time or location for riders."
+        },
+        {
+          "id": "F7",
+          "point": "Asks what happens when a pharmacist rejects a prescription, including whether the patient is charged."
+        },
+        {
+          "id": "F8",
+          "point": "Asks which medicines may be delivered, or what rules the pharmacist's check must follow, as a question for a pharmacist or regulator."
+        },
+        {
+          "id": "F9",
+          "point": "Treats \"within the day\" as needing a definition, such as a cut-off time, or asks what it means."
+        },
+        {
+          "id": "F10",
+          "point": "Asks how many patients, orders or pharmacies to expect, instead of giving numbers."
+        },
+        {
+          "id": "F11",
+          "point": "Lists the partner pharmacies and the card and mobile money payment providers as dependencies."
+        },
+        {
+          "id": "F12",
+          "point": "Says it was written from the founder's brief."
+        },
+        {
+          "id": "F13",
+          "point": "Invents no numbers: any count of patients, orders or pharmacies, or any delivery time, that the brief didn't give is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    }
+  }
+}

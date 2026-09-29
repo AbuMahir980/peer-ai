@@ -1,12 +1,13 @@
 # Evals
 
-An eval tests whether a review finds the problems it should. Each practice project in [`fixtures/`](../fixtures/) has problems planted in it on purpose, and its answer sheet lives here, outside the project, so the AI tool under test never sees the answers. The design is in [RFC 0002](../rfcs/0002-review-reports-and-evals.md).
+An eval tests whether a review finds the problems it should, and whether a document skill writes what a good document contains. Each practice project in [`fixtures/`](../fixtures/) has problems planted in it on purpose, and its answer sheet lives here, outside the project, so the AI tool under test never sees the answers. The design is in [RFC 0002](../rfcs/0002-review-reports-and-evals.md) and [RFC 0004](../rfcs/0004-how-a-skill-is-written.md).
 
-| Answer sheet | Practice project | Planted problems |
-|--------------|------------------|------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 19: 18 planted, and 1 a review found that nobody planted |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 18: 16 planted, and 2 that reviews found and nobody planted |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 |
+| Answer sheet | Practice project | Planted problems | Document scenarios |
+|--------------|------------------|------------------|--------------------|
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | – |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code |
+| [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief |
 
 ## Running one
 
@@ -21,8 +22,10 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--tool codex` | Use Codex instead of Claude Code |
 | `--model <model>` | Ask for a model, such as a fast one and a strong one. RFC 0004 asks for both on each tool. |
 | `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
+| `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
+| `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
 | `--runs 2` | Run it twice |
-| `--record` | Add the result to the table below |
+| `--record` | Add the result to the tables below |
 
 Each run uses about $1 to $3 of the tool's usage.
 
@@ -32,6 +35,21 @@ Each run uses about $1 to $3 of the tool's usage.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
 - **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
+
+## How a document is marked
+
+```bash
+node scripts/eval.ts refill --skill requirements-analysis
+```
+
+A document skill's scenario is a prompt, such as a founder's brief, and the points a good document makes of it. After the run:
+
+- **`check_document`** checks the document against the skill's template.
+- **A grader,** a second run of an AI tool, reads only the document and the points. For each point it says whether the document makes it, with a quote. It never sees the project or the first run.
+- **A person reads the quotes,** because a grader can be wrong. A wrong grade is corrected in the notes below.
+- A document is **ready** when `check_document` accepts it, it makes every point marked as one it must make, and at least 80% of all its points.
+
+A baseline, without the skill, can't follow a template it doesn't have, so `check_document` refuses it. Compare the points it makes instead.
 
 ## Each answer sheet
 
@@ -92,6 +110,21 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **One was real and nobody had planted it:** shelf's request helper for its newer features has no timeout, so a slow API leaves a screen waiting. code-review raised it too. It's now S24 on the answer sheet, for code-review and reliability-review. The code-review rows above were marked before it was added, against 11 problems.
   - **Courier's "no tests of the assistant's behaviour, or of attacks on it"** (AI-08) is real under the rules, and is about how the project is run rather than planted code, like SEC-25 and TEST-08 before.
 
+- **2026-09-29, requirements-analysis with Codex, on refill, courier and sprout, with the skill and without.** A second Codex run graded each document; a person read every grade, and the corrections are below. The first six rows were graded again against the final points:
+  - **With the skill, all three are ready:** refill 13 of 13, and courier 11 of 11 and sprout 11 of 11 after the fixes below. Without it: 10 of 13, 7 of 11 and 8 of 11, none ready.
+  - **Without the skill, Codex put an extra idea into the agreed scope:** the loyalty scheme the operations lead added to their message. It also dropped sprout's existing requirements.
+  - **The baselines still followed the template,** because Peer AI's MCP server was connected and `check_document` named the parts they were missing. As with the reviews, "without" measures the skill, not Peer AI as a whole.
+- **What the runs changed:**
+  - **Existing requirements were weakened.** On sprout, with and without the skill, Codex turned requirements such as "nothing may ever be lost" into intentions, because the code doesn't meet them yet. The skill now keeps every requirement a person decided, and reports the gap. The next run kept them all.
+  - **A feature nobody wrote down was missed.** Courier's code has a support assistant its requirements don't mention. The skill now compares the code with the requirements both ways, and the next run asked about it.
+  - **An extra idea was treated as agreed.** One courier run put the loyalty scheme in scope. The skill now says an idea added to a request isn't agreed until someone decides, and the point accepts "unclear" as well as "out of scope".
+  - **A run stopped to wait.** One courier run asked its questions, then waited for answers nobody would give, and wrote nothing. The skill now writes the document with its questions in it, and asks at hand-over. The next run made every point.
+  - **The runner:** Codex wouldn't grade outside a git repository until told it's fine; `--regrade` grades an earlier run's copy again; and a document written under the same name elsewhere, such as `requirements/requirements.md`, is found.
+- **What people judged in those runs:**
+  - **Two points were wrong about the projects,** and were rewritten before the re-grade. Sprout's journal, watering and plant identification are in the code but not reachable from any screen, so "describes what the app does today" can't expect them as working features. Three "invents no numbers" points now say plainly that figures from the brief are allowed.
+  - **The grader was wrong once:** in the second courier run it counted "about ten minutes", from the operations lead's message, as an invented figure. A person counts that run 10 of 11; it still isn't ready, because of the loyalty scheme.
+  - **The grader varies:** refill with the skill was graded 12 and then 13 of 13 on the same document, over whether it asked if a patient is charged when a prescription is rejected.
+
 ## Results
 
 Newest last.
@@ -144,3 +177,20 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+
+## Document results
+
+Newest last. **Points** is how many of the scenario's points the grader found in the document, and **Must-haves** how many of those it must make. **Check** is whether `check_document` accepted it.
+
+| Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
+|------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
+| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 13 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 10 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | refill | requirements-analysis | Codex | default | without | 10 of 13 | 6 of 6 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | without | 7 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | without | 8 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | No document | – | – | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |

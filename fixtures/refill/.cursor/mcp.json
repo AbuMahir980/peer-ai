@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "peer-ai": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "peer-ai@0.0.0",
+        "mcp"
+      ]
+    }
+  }
+}

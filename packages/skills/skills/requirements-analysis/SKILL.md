@@ -21,7 +21,7 @@ Copy this checklist and tick it off as you go:
 ```
 - [ ] 1. Sources: the person's words, what the project already has, and the code
 - [ ] 2. Inventory: every group of people, feature, need and fact, with its source
-- [ ] 3. Questions: what only a person can answer, asked together
+- [ ] 3. Questions: what only a person can answer, written down to ask
 - [ ] 4. Write: the template filled in, against the rules
 - [ ] 5. Check: accepted by the peer-ai MCP tool `check_document`
 - [ ] 6. Hand over: what's open, and what switches on rules
@@ -32,7 +32,7 @@ Copy this checklist and tick it off as you go:
 Read everything there is before writing anything:
 
 - **The person's words:** a brief, an email, notes or messages they've shared. For something new, if they've shared nothing, ask for everything they have first.
-- **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update: keep everything in it that's still true. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
+- **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
 - **The code,** when the product exists: its screens, routes and jobs show what it does today, and what it does that nobody wrote down.
 - **A single feature:** the work item from the peer-ai MCP tool `next_work`, and the requirements it changes.
 
@@ -50,9 +50,14 @@ List what you found before you write. Give each item its source: the brief, a na
 
 Mark each item **stated**, when someone said it, or **inferred**, when you worked it out from the code or by reasoning. Only what's stated is a requirement. An inferred item is written as inferred, and becomes a question.
 
+Compare the code with the existing requirements both ways, even when you were asked about one change:
+
+- **In the code, not in the requirements:** a feature nobody wrote down, such as an assistant or an export. List it as inferred, with its file, and ask whether it's meant to be there.
+- **In the requirements, not in the code:** a requirement the code doesn't meet yet. It stays a requirement. Note the gap under Open questions or as work to do.
+
 ## 3. Questions
 
-Turn everything unclear into concrete questions: "Can a customer move a booking, and until when?", not "What about changes?". If the person is there, ask them all at once and wait. Whatever stays unanswered goes under Open questions, with who can answer it. Where work can't wait for the answer, add an assumption, and what changes if it's wrong.
+Turn everything unclear into concrete questions: "Can a customer move a booking, and until when?", not "What about changes?". Don't stop to wait for answers: write the document with each question under Open questions, with who can answer it, and an assumption where work can't wait, with what changes if it's wrong. Ask the person the questions when you hand over; their answers update the document.
 
 ## 4. Write
 
@@ -61,13 +66,13 @@ Copy the [template](assets/requirements.md) and fill in every part. The rules ar
 - **REQ-01:** each group of people, and the problem it has today.
 - **REQ-02:** every feature in scope has acceptance criteria a tester could check: given a situation, when something happens, then a result anyone can see. "Fast", "easy" and "secure" need a number or a check.
 - **REQ-03:** the needs, with numbers where someone gave them, and a question where nobody has.
-- **REQ-04:** only what someone agreed is in scope. Ideas beyond it are out of scope, for the backlog. What could go either way is unclear.
+- **REQ-04:** only what someone agreed is in scope. An extra idea added to a request, such as "while you're at it, could we also…", isn't agreed yet: it's unclear, or out of scope for the backlog, until whoever decides scope says yes. What could go either way is unclear.
 
 Hold every part to this bar:
 
 - **Say where each statement came from,** such as "(brief)", "(Ada, 3 March)", "(from the code: bookings/routes.ts)" or "(assumed)".
 - **Say what, not how.** Requirements say what the product must do and why. How it's built belongs to the architecture and the specs, which come next.
-- **When updating,** keep what's still true, change what isn't, and say under Sources what changed and why.
+- **When updating,** keep every existing requirement. A requirement is a decision someone made: code that doesn't meet it yet is a gap to report, never a reason to weaken it or call it an intention. Change or drop one only when a person asks you to, and say under Sources what changed and why.
 - **Cite only real rules:** those in rules.md, or returned by the peer-ai MCP tool `standards_for_file`.
 - **Anything only a lawyer or a regulator can settle** is an open question for them, not a conclusion.
 
