@@ -19,6 +19,7 @@ import {
   type WorkItem,
 } from "@peer-ai/workflow";
 import { NEXT_STAGE, assess, gaps } from "./assess.ts";
+import { availableSkills, skillRuleIds } from "@peer-ai/skills";
 import { gateWorkItem } from "./check.ts";
 import type { Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
@@ -198,6 +199,21 @@ export function recordReview(
     }
     if (report.workItem !== undefined && report.workItem !== id) {
       return failed(`The report is for work item ${report.workItem}, not ${id}.`);
+    }
+    // Silence is never an answer (RFC 0004): every rule the skill answers for gets a line, even
+    // one that doesn't apply here.
+    if (availableSkills().includes(review.skill)) {
+      const covered = new Set(report.coverage.map((line) => line.rule));
+      const missing = skillRuleIds(review.skill).filter((rule) => !covered.has(rule));
+      if (missing.length > 0) {
+        const shown =
+          missing.length > 12
+            ? `${missing.slice(0, 12).join(", ")} and ${String(missing.length - 12)} more`
+            : missing.join(", ");
+        return failed(
+          `The report leaves out ${String(missing.length)} of ${review.skill}'s rules: ${shown}. Give every rule a coverage line: mark one that doesn't apply as not-applicable, with the reason.`,
+        );
+      }
     }
     const blockOn = config.gates?.blockOn ?? "critical";
     const worked = deriveResult(report, blockOn);

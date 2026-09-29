@@ -267,7 +267,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
 | `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
-| `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support. A review recorded without a report is marked unproven. |
+| `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support. A review recorded without a report is marked unproven. A report that leaves out any of the skill's rules is refused: every rule gets a line, even one that doesn't apply. |
 | `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. |
 
 Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.

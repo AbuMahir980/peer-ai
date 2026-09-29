@@ -210,7 +210,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Record a review",
       description:
-        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format) and pass its path: Peer AI checks the report and works out pass, fail or incomplete from it. A review recorded without a report is marked unproven. Record failed and incomplete reviews too.",
+        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format) and pass its path: Peer AI checks the report, including that every rule the skill answers for has a coverage line, and works out pass, fail or incomplete from it. A review recorded without a report is marked unproven. Record failed and incomplete reviews too.",
       inputSchema: {
         id: itemId,
         skill: z.enum(SKILL_IDS),
