@@ -4,9 +4,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 32: 24 planted, and 8 that reviews found and nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 28: 21 planted, and 7 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 16: 14 planted, and 2 that reviews found and nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 36: 25 planted, and 11 found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 33: 23 planted, and 10 found that nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 20: 16 planted, and 4 found that nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
 | [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
@@ -37,6 +37,7 @@ Each run uses about $1 to $3 of the tool's usage.
 ## How a review is marked
 
 - A planted problem counts as **found** when the report names a problem within three lines of it, at a severity no more than one level away.
+- A problem with a **whole file, or the whole project**, such as a missing lockfile, counts as found by a finding on that file or on the project (`.`) that cites one of the problem's rules, with or without a line.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
 - **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
@@ -262,6 +263,15 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **The hand-written API types were named where one is written.** The second run with the skill put them at the tracking page's own `Tracking` type, and the sheet only accepted the shared request helper. Both are fair, so the sheet now accepts either.
 
+- **2026-09-29, dependency-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it.** Its problems are partly planted (a look-alike package name, an abandoned package, a private package open to dependency confusion, a licence that doesn't fit, a version range) and partly true of the projects already: none has a lockfile, nothing checks their dependencies for vulnerabilities, and pinned versions of vite, vitest, requests and pytest have advisories published in 2025 and 2026. An eval run can't reach an advisory database, so the skill says so and checks whether anything checks automatically, rather than judging versions from memory:
+  - **With the skill, all three are ready:** courier 4 of 4, shelf 5 of 5 and sprout 4 of 4, each covering all 8 rules. Without it, courier found 3 of 4 and wasn't ready.
+  - **Shelf's run raised a real problem nobody planted:** an app shipped to people's phones, at the production stage, with no list of its dependencies (DEL-10). It's now S33, and the count includes it.
+  - **Without the skill, the review cited the wrong rules:** a missing lockfile as DEL-02, pytest in production as a licence problem, and undeclared packages as vulnerabilities. It never named the look-alike package as one, though it noticed the package doesn't exist.
+- **What the runs changed:**
+  - **Findings about a whole file or the project had no line,** such as "no lockfile" at `package.json`, or "nothing checks for vulnerabilities" at `.`, so the scorer couldn't count them. Such a problem is now marked on the sheet as being with the whole file or project, with its rules, and counts as found by a finding there that cites one of them. The first counts were courier 4 of 4, shelf 3 of 4 and sprout 3 of 4.
+- **What people judged in those runs:**
+  - **The baseline's count is right for the wrong items.** By the rules it cited, it missed the lockfile and found the missing vulnerability check. A person reads it the other way round: it found the missing lockfile, and its nearest point to the vulnerability check was "no update tooling", at low. Either way it's 3 of 4, and not ready.
+
 - **2026-09-29, test-strategy with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
   - **With the skill, courier is ready at 8 of 9.** Without it, courier made 3 of 9 and wasn't ready: it said the web app's tests run on every change, which they don't, and never said which main journeys have no end-to-end test.
   - **Sprout is ready by a person's reading, at 7 of 8.** The grader counted 4, marking as missing the midnight edge, the journeys with no connection and the update reaching people, all of which the strategy plans. Its one real miss: making photos smaller before they're stored.
@@ -355,6 +365,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | contract-check | Claude Code | sonnet | used | 6 of 8 | 12 of 12 | 0 | Ready | $1.26 |
 | 2026-09-29 | courier | contract-check | Claude Code | sonnet | without | 6 of 8 | 12 of 12 | 0 | Not ready | $1.75 |
 | 2026-09-29 | courier | contract-check | Claude Code | sonnet | used | 7 of 8 | 12 of 12 | 0 | Ready | $1.13 |
+| 2026-09-29 | courier | dependency-review | Claude Code | sonnet | used | 4 of 4 | 8 of 8 | 0 | Ready | $1.22 |
+| 2026-09-29 | shelf | dependency-review | Claude Code | sonnet | used | 5 of 5 | 8 of 8 | 0 | Ready | $1.44 |
+| 2026-09-29 | sprout | dependency-review | Claude Code | sonnet | used | 4 of 4 | 8 of 8 | 0 | Ready | $1.01 |
+| 2026-09-29 | courier | dependency-review | Claude Code | sonnet | without | 3 of 4 | 8 of 8 | 4 | Not ready | $1.26 |
 
 ## Document results
 

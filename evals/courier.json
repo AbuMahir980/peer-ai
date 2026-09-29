@@ -20,6 +20,7 @@
     "design-system": "Courier has no design system yet. Write one from its web app's screens.",
     "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\"",
     "design-review": "Review the design of Courier's web app screens.",
+    "dependency-review": "Review Courier's dependencies.",
     "test-strategy": "Write Courier's test strategy."
   },
   "defects": [
@@ -435,6 +436,75 @@
         }
       ],
       "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D33",
+      "title": "Neither the web app nor the API has a lockfile, so the packages they depend on can change from one install to the next",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "apps/web/package.json",
+          "whole": true
+        },
+        {
+          "file": "services/api/requirements.txt",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-01"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "D34",
+      "title": "Nothing checks the dependencies for known vulnerabilities, and the pinned vite, requests and pytest have published ones",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "apps/web/package.json",
+          "whole": true
+        },
+        {
+          "file": "services/api/requirements.txt",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-03"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "D35",
+      "title": "pytest, a test tool, is installed in production with the API",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "services/api/requirements.txt",
+          "match": "pytest==8.4.2"
+        }
+      ],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "D36",
+      "title": "python3-dateutil is a look-alike of python-dateutil, not the real package",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "services/api/requirements.txt",
+          "match": "python3-dateutil==2.8.2"
+        }
+      ]
     }
   ],
   "documents": {

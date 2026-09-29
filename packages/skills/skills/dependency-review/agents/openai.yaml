@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI dependency review"
+  short_description: "Every dependency: versions, sources, licences and risk"
+  default_prompt: "Use ${{name}} to review this project's dependencies and record the report."
