@@ -11,7 +11,8 @@
     "reliability-review": "Review Courier's API for reliability problems.",
     "ai-feature-review": "Review Courier's support assistant, which uses an AI model.",
     "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\"",
-    "threat-model": "Write a threat model for Courier."
+    "threat-model": "Write a threat model for Courier.",
+    "architecture": "Courier's architecture document is out of date. Bring it up to date with the code."
   },
   "defects": [
     {
@@ -443,6 +444,55 @@
         {
           "id": "TC13",
           "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AC1",
+          "point": "Keeps what the document already decides: the web app reaches the API only through the contract, each request is authenticated with a signed session token, each route module owns one resource, and database changes are migrations that never lose data.",
+          "must": true
+        },
+        {
+          "id": "AC2",
+          "point": "Adds the parts the document is missing: the support assistant with its AI provider, and card payments.",
+          "must": true
+        },
+        {
+          "id": "AC3",
+          "point": "Notes that the assistant changes parcels itself, although the parcels module owns them, and treats it as a problem or a question, not as the new rule.",
+          "must": true
+        },
+        {
+          "id": "AC4",
+          "point": "Names where the data lives and the one way the code reaches the database."
+        },
+        {
+          "id": "AC5",
+          "point": "States which parts may depend on which, in a direction a reviewer could check."
+        },
+        {
+          "id": "AC6",
+          "point": "Names the API contract file as the one source of truth for what the API offers."
+        },
+        {
+          "id": "AC7",
+          "point": "Marks what it worked out from the code as coming from the code."
+        },
+        {
+          "id": "AC8",
+          "point": "Records a decision the code shows but nobody recorded, such as using an AI provider or a geocoding service, or lists it as one to record."
+        },
+        {
+          "id": "AC9",
+          "point": "Ties the design to needs from the requirements, such as UK GDPR or keeping recipients' details private."
+        },
+        {
+          "id": "AC10",
+          "point": "Invents no parts, hosting or services the code doesn't show; anything it can't see is a question.",
+          "must": true
         }
       ]
     }
