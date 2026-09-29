@@ -16,7 +16,7 @@ Examples are from a made-up bicycle repair booking service. Frameworks and stora
 
 - **Look at:** each `migration` and `device-version` that removes, renames or reshapes a table, column or key.
 - **Pass:** the data moves first, in its own step, and the old place goes only once nothing reads it: add, copy, switch, then remove.
-- **Fail:** a column dropped in the same step that adds its replacement; a browser database version that sets an old store to be deleted without copying it into the new one; an app that reads a new storage key and never moves the old key's data across.
+- **Fail:** anything removed, renamed or moved before its data is copied, wherever the data lives: a server database, a database in the browser or on the phone, a file, or a key-value store. Check every kind of storage the project uses; each has its own quiet way to lose data, such as a version upgrade that deletes what it no longer declares.
 - **Look for readers:** a migration that drops a column the code still reads breaks the code too. Name both.
 
 ## DATA-01 and DATA-02: migrations are the truth
