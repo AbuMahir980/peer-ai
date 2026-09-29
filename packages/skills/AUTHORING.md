@@ -132,6 +132,8 @@ A document skill writes from a Markdown template in `assets/`, such as `assets/r
 - `{{Placeholders}}` say what goes there. The check fails a document that still holds one.
 - Headings match without regard to case, numbering or a trailing colon, so "2. Features:" matches "Features".
 - The check also fails an empty part, and a rule id that doesn't exist. Whether the content is any good is for the evals and the people who read it.
+- A document skill that updates a document keeps every statement already in it that a person decided, even where the code doesn't match. The mismatch is reported; the statement changes only when a person says so. Evals of requirements-analysis and architecture showed models quietly dropping or softening such statements to fit the code.
+- A document skill never stops to wait for answers. It writes the document with its questions and assumptions recorded, and asks at hand-over. In a headless eval, a skill that waited wrote nothing.
 
 ## Evals come first
 
