@@ -1,8 +1,11 @@
 import type { RuleInput } from "../rule.ts";
 
-// Environments, access to production, backups, logs, metrics and alerts. Keeping environments
-// apart and controlling access to production are what audits such as PCI DSS and ISO 27001 check;
-// Peer AI grades them by stage so a prototype isn't held to production's bar.
+// Environments, access to production, backups, logs, metrics, alerts and incidents. Keeping
+// environments apart and controlling access to production are what audits such as PCI DSS and
+// ISO 27001 check; Peer AI grades them by stage so a prototype isn't held to production's bar.
+
+const ASVS = "OWASP ASVS 5.0";
+const V16 = "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md";
 
 export const operations = [
   {
@@ -114,5 +117,43 @@ export const operations = [
     stage: "production",
     check: "ai-review",
     severity: "medium",
+  },
+  {
+    id: "OPS-11",
+    domain: "operations",
+    title: "There's a plan for a security incident",
+    rule: "A short written plan says what happens in a security incident: who leads, how an attacker's access is cut off, which secrets are replaced, how the system gets back to a known good state, and who tells affected people and regulators within the law's deadline. Afterwards, a review records what happened and what will stop it happening again.",
+    why: "Under pressure, people make worse decisions and lose hours working out who does what. Data protection laws such as the GDPR give as little as 72 hours to tell the regulator.",
+    ask: "Is there a written incident plan, and does this change add something it should cover, such as a new secret or a new store of personal data?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "medium",
+  },
+  {
+    id: "OPS-12",
+    domain: "operations",
+    title: "Security logs can't be changed by an attacker",
+    rule: "Security logs are sent to a separate system as they're written, where the app can add to them but can't change or delete them, and only the people who need them can read them.",
+    why: "Someone who breaks in often tries to erase their tracks next. Logs kept only on the server they broke into can't be trusted afterwards.",
+    ask: "Does this change keep security logs anywhere the app, or someone who breaks into it, could change or delete them?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "medium",
+    sources: [
+      { name: ASVS, ref: "16.4.2, level 2", url: V16 },
+      { name: ASVS, ref: "16.4.3, level 2", url: V16 },
+    ],
+  },
+  {
+    id: "OPS-13",
+    domain: "operations",
+    title: "Signs of attack raise an alert",
+    rule: "Security logs are watched for signs of attack, such as a burst of failed sign-ins, many refused permission checks for one account, repeated hits on a rate limit, or an admin action at an unusual time. Each raises an alert that reaches a person and says what to do.",
+    why: "Without anyone watching, an attack is found weeks later, often by someone outside. One caught in minutes does far less harm.",
+    ask: "Does this change add a security event that should raise an alert, and does it?",
+    stage: "production",
+    check: "ai-review",
+    severity: "medium",
+    sources: [{ name: ASVS, ref: "16.4.3, level 2", url: V16 }],
   },
 ] satisfies RuleInput[];

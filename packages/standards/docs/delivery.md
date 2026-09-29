@@ -26,11 +26,11 @@ A new dependency comes with a reason in the pull request: what it does, why noth
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Low | Always | – |
 
-## DEL-03 · Known vulnerabilities in dependencies are fixed in a set time
+## DEL-03 · Dependencies are watched for vulnerabilities, and each is fixed in a set time
 
-Dependencies are checked for known vulnerabilities on every change, and each is fixed within a set time for its severity.
+Dependencies are checked for known vulnerabilities on every change and at least daily, and each vulnerability is fixed within a set time for its severity.
 
-**Why:** Most attacks on software use vulnerabilities that were already public, in components nobody updated.
+**Why:** Most attacks on software use vulnerabilities that were already public, in components nobody updated. New ones are published every day about code that's already running, so checking only when something changes misses them.
 
 **Ask:** Does this change leave a dependency with a known vulnerability past its time to fix?
 
@@ -85,3 +85,15 @@ Production gets only what the product needs to run: no test code, sample code, d
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | Always | [OWASP ASVS 5.0, 15.2.3, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md) |
+
+## DEL-08 · The running app is scanned before it's released
+
+Before a release reaches production, a scanner tests the running app in staging from the outside, the way an attacker would. Every finding is fixed or recorded as an accepted risk. The scan runs only against the project's own staging, never production or anyone else's system.
+
+**Why:** Code scanning reads the code. It can't see a server that's set up wrongly, a debug page left switched on or a missing security header. Only testing the running app finds those.
+
+**Ask:** Was the running app scanned in staging before this release, and is every finding fixed or accepted?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | A tool | Medium | Always | – |

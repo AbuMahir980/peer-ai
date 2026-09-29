@@ -1,0 +1,5 @@
+---
+"@peer-ai/standards": minor
+---
+
+Add ten rules and strengthen three, so the security standards cover the whole lifecycle: design, build, testing, the pipeline, running, watching for attacks and recovering from one. New: only modern TLS with strong ciphers and trusted certificates (SEC-23), security events logged (SEC-24), the threat model updated when a change adds a way in (SEC-25), every secret replaceable quickly (SEC-26), the running app scanned in staging before release (DEL-08), a written plan for a security incident (OPS-11), security logs an attacker can't change (OPS-12), alerts on signs of attack (OPS-13), a penetration test before launch and every year (TEST-10), and fuzz tests for any parser the project writes (TEST-11). Strengthened: DEL-03 checks dependencies daily as well as on every change; TEST-08's abuse tests cover more attacks and repeat every fixed one; AI-08's examples include attacks such as prompt injection. The core now has 184 rules and 76 checked citations.

@@ -1,6 +1,6 @@
 import type { RuleInput } from "../rule.ts";
 
-// What's tested, and how tests stay trustworthy.
+// What's tested, including testing for security, and how tests stay trustworthy.
 
 export const testing = [
   {
@@ -83,10 +83,10 @@ export const testing = [
   {
     id: "TEST-08",
     domain: "testing",
-    title: "Security-sensitive endpoints have abuse tests",
-    rule: "Endpoints that handle sign-in, permissions, money or input that reaches a database have tests that send malicious input, such as injection attempts and other people's ids, and check it's rejected. They run against the project's own app, never a live system.",
-    why: "Security holes don't show up in tests that only send what a well-behaved client would send.",
-    ask: "Do the security-sensitive endpoints in this change have tests that send malicious input?",
+    title: "Security-sensitive code has abuse tests",
+    rule: "Code that handles sign-in, permissions, money, uploads or input that reaches a database has tests that attack it: injection attempts, other people's ids, missing, expired or tampered tokens, oversized input and going past rate limits. Each test checks the attack is refused. A fixed vulnerability gets a test that repeats the attack. The tests run against the project's own app, never a live system.",
+    why: "Security holes don't show up in tests that only send what a well-behaved client would send, and a fixed hole with no test can quietly open again.",
+    ask: "Does the security-sensitive code in this change have tests that attack it and check the attack is refused?",
     stage: "mvp",
     check: "ai-review",
     severity: "medium",
@@ -101,5 +101,27 @@ export const testing = [
     stage: "mvp",
     check: "ai-review",
     severity: "low",
+  },
+  {
+    id: "TEST-10",
+    domain: "testing",
+    title: "A skilled attacker tests the product before launch and every year",
+    rule: "Before the product first reaches production, after big changes to who uses it or how it's reached, and at least once a year, someone skilled who didn't build it tests it as an attacker would: a penetration test, within agreed limits and only against the project's own systems. Every finding is fixed or accepted as a risk by a named person.",
+    why: "Automated tests and scanners find the known kinds of problem. A skilled person finds the ones particular to your product, such as two small flaws that together open a big one.",
+    ask: "When was the last penetration test, and is every finding fixed or accepted?",
+    stage: "production",
+    check: "person",
+    severity: "medium",
+  },
+  {
+    id: "TEST-11",
+    domain: "testing",
+    title: "A parser you write is fuzz-tested",
+    rule: "Code the project writes itself to read files or formats from outside, such as an import, a file format or a message protocol, is fuzz-tested: fed large amounts of random and broken input to check it never crashes, hangs or runs out of memory.",
+    why: "Broken files are a classic way in, and nobody writes by hand the millions of strange inputs a fuzzer tries. Well-known parsing libraries are fuzzed by their makers; your own code isn't.",
+    ask: "Does this change add code that reads an outside format, and is it fuzz-tested?",
+    stage: "production",
+    check: "ai-review",
+    severity: "medium",
   },
 ] satisfies RuleInput[];
