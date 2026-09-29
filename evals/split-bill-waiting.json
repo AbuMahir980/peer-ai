@@ -67,7 +67,7 @@
         },
         {
           "id": "KW5",
-          "point": "Any work done on SB-2 is covered by tests of its acceptance criteria, and the existing tests are unchanged."
+          "point": "Any code written for SB-2 is covered by tests of its acceptance criteria, and the existing tests are unchanged. A run that wrote no code for SB-2 makes this point."
         }
       ]
     }
