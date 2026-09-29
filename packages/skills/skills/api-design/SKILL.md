@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: Designs or updates an API (who may call each endpoint, typed requests and responses, one error shape, paging, safe retries, and changes that keep clients working), with the contract as its one source of truth. Use when adding or changing an API.
+description: Designs, documents or updates an API (who may call each endpoint, typed requests and responses, one error shape, paging, safe retries, changes that keep clients working). Use when an API is planned, changed or undocumented, contract or not.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -45,7 +45,7 @@ List every endpoint or message, from the code and the contract, with its file:
 | Kind | For example |
 |------|-------------|
 | `endpoint` | Each route: method, path, and the handler's file |
-| `caller` | Each client that calls it: an app, a partner, another service, anyone with a link |
+| `caller` | Each client that calls it: an app, a partner, another service, or anyone, for a public endpoint |
 | `schema` | Each request and response shape, and where it's defined |
 | `webhook` | Each call another service makes to this API |
 
@@ -74,7 +74,7 @@ Copy the [template](assets/api-contract.md) and fill in every part. The rules ar
 
 - **A contract written by hand:** update it too, in the same change, so it stays the source of truth.
 - **A contract generated from the code:** design here, and let the build generate it once the code is written. Say so under "Where the contract lives".
-- **Say where each decision came from,** and mark each choice nobody has made yet as proposed.
+- **Say where each decision came from,** and mark each choice nobody has made yet as proposed. Don't stop to wait for answers: write what you recommend, put the question under Open questions, and ask the person when you hand over. Their answers update the design.
 
 ## 6. Check
 

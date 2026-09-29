@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Writes or updates the design system (tokens from one place, shared components with all their states, and the accessibility every screen keeps), from the designs and the code. Use when setting up a product's design, or when screens drift from it.
+description: Writes or updates the design system (tokens from one place, shared components with all their states, and the accessibility every screen keeps), from the code alone or with designs. Use when a product has none yet, or when screens drift from it.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -64,8 +64,8 @@ Check contrast by working it out from the token values; say which pairs fail and
 Copy the [template](assets/design-system.md) and fill in every part.
 
 - **Describe what is,** and list each problem the code shows, such as a stray colour or a component missing its focus state, under Problems, most serious first. Never write a problem into the system as if it were a rule.
-- **Values, not adjectives:** "`colour-muted` #666666 on white, 5.7 to 1", not "subtle grey".
-- **Say where each fact came from:** the designs, the token file, a screen, or proposed by you.
+- **Values, not adjectives:** "`colour-link` #1a5fb4 on `colour-surface` #ffffff, 6.3 to 1", not "subtle grey".
+- **Say where each fact came from:** the designs, the token file, a screen, or proposed by you. Don't stop to wait for answers: mark what you propose as proposed, put each question under Open questions, and ask the person when you hand over. Their answers update the document.
 
 ## 5. Check
 

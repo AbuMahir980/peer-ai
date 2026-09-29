@@ -33,8 +33,6 @@ CODE-01 to CODE-15. Size and nesting limits come from the stack profile, through
 - **CODE-15:** edge cases give the right answer. For every unit, try the edges of what it can receive:
   - dates near midnight, in another time zone, and across a change to daylight saving;
   - an empty list, and a very long one;
-  - two equal values competing for one place, such as the same position or the same time;
+  - two equal values competing for one place, such as two bookings for the same slot;
   - the first and the last item;
   - zero and negative numbers.
-
-  A calculation done in UTC but shown as local time is the classic case.

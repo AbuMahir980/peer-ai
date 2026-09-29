@@ -11,13 +11,13 @@ Other guarantees worth the database's help:
 
 - `NOT NULL` for what must always be there;
 - a foreign key for every link, with what happens on delete;
-- `CHECK (deposit_pence >= 0)` for amounts that can't be negative;
+- `CHECK (deposit_amount >= 0)` for amounts that can't be negative;
 - a fixed list of allowed values for a status, such as an enum or a check.
 
 ## Money (MONEY-01, MONEY-02, MONEY-06, MONEY-12)
 
 - **Badly:** `deposit NUMERIC(8,2)`, and a copy of it on the shop's report table.
-- **Well:** `deposit_pence INTEGER NOT NULL CHECK (deposit_pence >= 0)` and `currency CHAR(3) NOT NULL`, on the booking only. A refund is its own record with its direction, never a negative deposit.
+- **Well:** `deposit_amount INTEGER NOT NULL CHECK (deposit_amount >= 0)`, in the currency's smallest unit, and `currency CHAR(3) NOT NULL`, on the booking only. A refund is its own record with its direction, never a negative deposit.
 - A payment keeps the provider's reference, never the card number or security code.
 
 ## Safety-critical data (SAFE-02, SAFE-03)
@@ -47,4 +47,4 @@ Dropping or renaming in one step loses data, or breaks code still running the ol
 
 ## On a device
 
-A browser or phone database changes with a version number. Each new version upgrades the data already there: a store that's renamed is copied across before the old one is removed.
+Data kept on a device follows the same rule: each app update keeps what's already there (DATA-03).

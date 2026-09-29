@@ -63,6 +63,8 @@ Silence is never an answer: a rule left out of coverage makes the report invalid
 | `evidence` | What shows the problem is real |
 | `fix` | A suggested fix |
 
+Each finding is one problem, at the place it happens. Two problems are two findings, each with its own rule, even when one leads to the other or they sit on the same screen.
+
 ## The result
 
 Peer AI works out the result from the report, and the report must say the same:

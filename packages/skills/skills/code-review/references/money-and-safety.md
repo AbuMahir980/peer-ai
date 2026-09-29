@@ -4,7 +4,7 @@ MONEY-01 to MONEY-12 apply only to projects with the money trait, and SAFE-01 to
 
 ## Money
 
-- **MONEY-01:** money is a whole number in the smallest unit. Fail any decimal or float touching money, even for display, and any mix of pounds and pence.
+- **MONEY-01:** money is a whole number in the smallest unit. Fail any decimal or float touching money, even for display, and any place where two parts use different units for the same amount.
 - **MONEY-02:** each amount has one authoritative field. Fail a decision made from a mirror copy.
 - **MONEY-03:** rounding, splitting, conversion and commission each have one implementation.
 - **MONEY-04:** every amount shown goes through one formatting function.

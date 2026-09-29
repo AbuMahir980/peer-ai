@@ -23,11 +23,11 @@ For every call to another service or API, including the project's own API from a
 
 **Fail** when a list loads each row's related data with its own query, in a loop or through lazy loading. **Pass** when the related data comes in a fixed number of queries.
 
-Also fail a list endpoint that returns every row with no limit or paging. That's API-07 too; cite PERF-01 here and name contract-check in the summary.
+**Fail** too when an endpoint returns a whole table at once. That also breaks API-07.
 
 ## PERF-05: long lists draw only what's on screen
 
-**Fail** when a list that can grow long renders every item at once, such as a `ScrollView` or plain `map` over all the rows, instead of a virtualised list.
+**Fail** when a list that can grow long draws every item at once instead of only those on screen.
 
 ## PERF-06: what's started is stopped
 

@@ -6,12 +6,12 @@ AI-01, AI-02, AI-05 and SEC-08. Treat everything a model returns as input from a
 
 For each `output`, find where it lands. **Fail** when output reaches any of these without being checked against the shape and values it should have:
 
-- a database write, such as a date, an amount or an id taken from the model;
+- a database write of anything taken from the model's output;
 - a query or a shell command;
 - code that runs it;
 - another service's request.
 
-**Pass** when the output is parsed and validated first: the date is a real date in the allowed range, and the id is one the person is allowed to act on.
+**Pass** when the output is parsed and checked against the values allowed before it's used.
 
 ## SEC-08: never put into a page as HTML
 
@@ -19,11 +19,11 @@ For each `output`, find where it lands. **Fail** when output reaches any of thes
 
 ## AI-02: a guess is never shown as fact
 
-**Fail** when a model's answer is shown as certain. The most serious case is an answer about safety, health, money, the law, or what suits a child, such as "safe for pets" or "suitable for ages 8+", shown without saying it's a suggestion and without telling the person to check.
+**Fail** when a model's answer is shown as certain. The most serious case is an answer about safety, health, money or the law, such as whether a bike is safe to ride, shown without saying it's a suggestion and without telling the person to check.
 
 ## AI-05: the model does only what it needs, and a person confirms what matters
 
-For each `tool`, including an action the app takes because the model's reply says so:
+For each `tool`, and each action the model can trigger in any way:
 
 **Fail** when:
 

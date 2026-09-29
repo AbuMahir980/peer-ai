@@ -6,7 +6,7 @@ FE-01 to FE-09. These apply to web, mobile and desktop parts. For other parts, e
 
 **Fail** when data from the server is copied into a screen's own state and goes stale.
 
-**Fail** too when data loads once and never reloads when what it depends on changes, such as a list that ignores a change of account.
+**Fail** too when data loads once and never reloads when what it depends on changes, such as a booking screen that still shows the last booking after the cyclist opens another.
 
 ## FE-02: derived values are calculated, never stored
 
@@ -18,8 +18,6 @@ FE-01 to FE-09. These apply to web, mobile and desktop parts. For other parts, e
 
 - app-wide state is split across several stores;
 - local state is pushed into a global store.
-
-**Fail** too when state in a store is changed in place instead of replaced, so the screen doesn't update.
 
 ## FE-04: values aren't passed through layers that don't use them
 

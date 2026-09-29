@@ -40,7 +40,7 @@ Where each kind of way in shows in the code. Frameworks are examples; the stack 
 
 ## AI models
 
-- What can reach the model's instructions: what people type, and what's stored, such as notes or descriptions someone else wrote.
+- What can reach the model's instructions: what people type, and stored text someone else wrote, such as a review of a shop.
 - What the model's output can do: show HTML, call a tool, write to the database, spend money.
 
 ## On the device

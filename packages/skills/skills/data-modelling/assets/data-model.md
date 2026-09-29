@@ -40,7 +40,7 @@
 
 ## Problems
 
-{{Where the stored data breaks the rules today, such as card data kept or a migration that lost data, most serious first. "None" when there are none.}}
+{{Where the stored data breaks the rules today, such as an amount that can go negative, or a link with no foreign key, most serious first. "None" when there are none.}}
 
 ## Changes (optional)
 
