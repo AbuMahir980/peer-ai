@@ -12,7 +12,8 @@
     "design-review": "Review Sprout against its design system.",
     "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today.",
     "threat-model": "Write a threat model for Sprout.",
-    "product-spec": "Write the spec for recording that a plant was watered."
+    "product-spec": "Write the spec for recording that a plant was watered.",
+    "system-design": "People will be able to record that a plant was watered. Design how it's built."
   },
   "defects": [
     {
@@ -342,6 +343,46 @@
         {
           "id": "PP10",
           "point": "Leaves database tables, storage details, API endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DP1",
+          "point": "Keeps every plant, photo and note already on the device when the stored data changes, with a version upgrade that moves it.",
+          "must": true
+        },
+        {
+          "id": "DP2",
+          "point": "Works out \"today\" in the person's own time zone, not UTC.",
+          "must": true
+        },
+        {
+          "id": "DP3",
+          "point": "Needs no network to record watering."
+        },
+        {
+          "id": "DP4",
+          "point": "Says whether waterings are kept as a history, and where."
+        },
+        {
+          "id": "DP5",
+          "point": "Names the tests that prove it, including an upgrade from the current data and a watering just before midnight.",
+          "must": true
+        },
+        {
+          "id": "DP6",
+          "point": "Names the files and stores that change."
+        },
+        {
+          "id": "DP7",
+          "point": "Handles recording watering twice in a day without a duplicate or an error."
+        },
+        {
+          "id": "DP8",
+          "point": "Leaves syncing between devices for later, without blocking it."
         }
       ]
     }

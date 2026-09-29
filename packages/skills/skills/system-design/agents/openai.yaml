@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI system design"
+  short_description: "How a feature is built, and how it holds up"
+  default_prompt: "Use ${{name}} to design how this feature is built across the system before it's written."

@@ -4,9 +4,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. |
 
 ## Running one
@@ -24,6 +24,7 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
 | `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
 | `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
+| `--document <path>` | With `--regrade`: the document to grade, when the run saved it where neither the scenario nor the project map finds it |
 | `--runs 2` | Run it twice |
 | `--record` | Add the result to the tables below |
 
@@ -159,6 +160,16 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The grader is strict about storage:** it counted "the data stays on the device" as a storage detail in sprout's last run. A person would count that point as made.
   - **One re-grade lost its grades:** the grader said it wrote them, and the file wasn't there. It was graded again.
 
+- **2026-09-29, system-design with Codex, on courier, shelf and sprout, with the skill and without.** Every row was graded against the final points:
+  - **With the skill:** courier 10 of 10 and shelf 7 of 8, both ready, after the fixes below. Sprout's run made 7 of 8, missing the test for a watering just before midnight.
+  - **Without the skill, no design was saved where the project map finds a spec:** each went to `docs/<feature>-design.md`, so the gap stayed open. Graded where they were saved, with `--document`, they made 7 of 10, 5 of 8 and 7 of 8, none ready. Shelf's baseline designed the other repository's API from the inside.
+- **What the runs changed:**
+  - **Another path to the same data.** Courier's first design didn't route the assistant's cancel through the parcels module. The skill now finds every existing path that does the same thing, and routes them through the data's one owner. The next courier run made every point.
+  - **Another repository's insides.** Two of shelf's designs were graded as describing the other repository's transactions and locks, the second after the skill said not to. The rule now sits where the template invites a design, in the Data, Two at once and Failures parts, and asks for guarantees instead. The next shelf run was ready.
+  - **The runner:** `--document` grades a file a run saved where nothing else finds it, and a grader that writes no valid grades is asked once more. Two baselines' grades were lost to that before the fix.
+- **What people judged in those runs:**
+  - **The grader varies:** sprout's first run was graded 8 of 8, and 7 of 8 when graded again.
+
 ## Results
 
 Newest last.
@@ -254,3 +265,12 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | shelf | product-spec | Codex | default | used | 10 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
 | 2026-09-29 | sprout | product-spec | Codex | default | used | 9 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | sprout | product-spec | Codex | default | used | 8 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | system-design | Codex | default | used | 9 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | system-design | Codex | default | used | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | system-design | Codex | default | without | 7 of 10 | 4 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | without | 5 of 8 | 1 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | system-design | Codex | default | without | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | system-design | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 3 of 3 | Accepted | Ready | Codex | – |

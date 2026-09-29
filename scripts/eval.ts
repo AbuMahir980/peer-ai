@@ -77,7 +77,7 @@ const DocumentScenario = z.strictObject({
     .string()
     .min(1)
     .describe(
-      "Where the document should be written, relative to the project root, or a folder ending in / when the skill names the file, such as docs/specs/.",
+      "Where the document should be written, relative to the project root. When the skill names the file, a folder ending in /, such as docs/specs/, or a pattern with * for the name, such as docs/specs/*-design.md.",
     ),
   points: z.array(Point).min(3),
 });
@@ -420,6 +420,8 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log, model) => {
 };
 
 export interface EvalOptions {
+  /** For a re-grade: the document to grade, when the run saved it where neither the scenario nor the map finds it. */
+  document?: string;
   /** Run without Peer AI's skills, to measure what a skill adds. */
   baseline?: boolean;
   /** The model to ask for, such as a fast one and a strong one; otherwise the tool's default. */
@@ -484,7 +486,7 @@ export const GRADE_PROMPT = `Grade a document against a list of points. document
 
 For each point, decide whether the document makes it: clearly and in substance, not by mentioning a word in passing. Judge only from what the document says.
 
-Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Change no other file.`;
+Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Escape any double quotes inside a quote, and check that grades.json parses as JSON. Change no other file.`;
 
 /** The grades the grader wrote, or undefined when it wrote none that are valid. */
 export function readGrades(dir: string): Grade[] | undefined {
@@ -624,10 +626,11 @@ export async function markDocument(
   before: string | undefined,
   grade: GraderRunner,
   grader: GraderOptions,
+  document?: string,
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const path = writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
+  const path = document ?? writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
   if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
   const check = checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
@@ -639,8 +642,14 @@ export async function markDocument(
   writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8") + also.join(""));
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
-  await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
-  return { ...scoreDocument(skill, scenario, true, check, readGrades(gradeDir)), path };
+  // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
+  let grades: Grade[] | undefined;
+  for (let attempt = 1; attempt <= 2 && grades === undefined; attempt++) {
+    rmSync(join(gradeDir, "grades.json"), { force: true });
+    await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}${attempt === 1 ? "" : "-2"}.log`, grader.model);
+    grades = readGrades(gradeDir);
+  }
+  return { ...scoreDocument(skill, scenario, true, check, grades), path };
 }
 
 /** A file's text, or undefined for a folder or nothing at all. */
@@ -709,11 +718,18 @@ export function writtenDocument(dir: string, expected: string, before: string | 
   } catch {
     return undefined;
   }
-  if (expected.endsWith("/")) {
-    const folder = expected.split("/").at(-2) ?? "";
+  if (expected.endsWith("/") || expected.includes("*")) {
+    // A pattern: * stands for the name the skill chose, such as docs/specs/*-design.md.
+    const pattern = expected.endsWith("/") ? `${expected}*.md` : expected;
+    const [folder = "", name = ""] = [pattern.split("/").at(-2), pattern.split("/").at(-1)];
+    const glob = (text: string) =>
+      new RegExp(`^${text.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("*", "[^/]*")}$`);
+    const whole = glob(pattern);
+    const base = glob(name);
     const markdown = changed.filter((file) => file.endsWith(".md") && !file.startsWith(".peer-ai/"));
     return (
-      markdown.find((file) => file.startsWith(expected)) ?? markdown.find((file) => file.split("/").includes(folder))
+      markdown.find((file) => whole.test(file)) ??
+      markdown.find((file) => file.split("/").includes(folder) && base.test(file.split("/").at(-1) ?? ""))
     );
   }
   const name = expected.split("/").at(-1)?.toLowerCase();
@@ -776,7 +792,7 @@ export async function regradeDocument(
   const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
   return {
     dir,
-    score: await markDocument(sheet, skill, dir, before, grade, grader),
+    score: await markDocument(sheet, skill, dir, before, grade, grader, options.document),
     tool: { seconds: 0 },
     baseline,
     ...(options.model === undefined ? {} : { model: options.model }),
@@ -867,7 +883,8 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
     "",
   ];
   const expected = sheet.documents?.[marked.skill]?.path;
-  if (marked.written && expected !== undefined && marked.path !== expected) {
+  const pattern = expected !== undefined && (expected.endsWith("/") || expected.includes("*"));
+  if (marked.written && expected !== undefined && !pattern && marked.path !== expected) {
     lines.push(`Written to ${marked.path}, not ${expected}.`);
   }
   if (marked.written) {
@@ -931,6 +948,7 @@ if (invokedDirectly) {
       grader: { type: "string", default: "codex" },
       "grader-model": { type: "string" },
       regrade: { type: "string" },
+      document: { type: "string" },
     },
   });
   const [name] = positionals;
@@ -940,7 +958,7 @@ if (invokedDirectly) {
   const tools: string[] = ["claude-code", "codex"];
   if (name === undefined || skill === undefined || !tools.includes(tool) || !tools.includes(graderTool)) {
     console.error(
-      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
+      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy> [--document <path>]] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
     );
     process.exit(2);
   }
@@ -960,7 +978,10 @@ if (invokedDirectly) {
       tool: graderTool,
       ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
     };
-    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, options);
+    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, {
+      ...options,
+      ...(values.document === undefined ? {} : { document: values.document }),
+    });
     console.log(formatDocumentRun(sheet, tool, result, 1, 1).join("\n"));
     if (values.record === true) recordDocument(sheet, tool, result);
     allReady &&= result.score.ready;
