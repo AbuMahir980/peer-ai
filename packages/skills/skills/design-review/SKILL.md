@@ -1,6 +1,6 @@
 ---
 name: design-review
-description: Reviews screens against the design system and the designs (tokens, shared components and their states, meaning, contrast and text size), proving each rule was checked. Use when a change adds or changes a screen, or before a design sign-off.
+description: Reviews screens for design quality (tokens, shared components and their states, meaning, contrast, text size), against the design system when there is one, proving each rule was checked. Use when a screen changes, or before a design sign-off.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -30,7 +30,7 @@ Copy this checklist and tick it off as you go:
 - **A work item:** call the peer-ai MCP tool `next_work`. Review the screens and components its branch changed (`git diff --name-only <base>...HEAD`).
 - **The whole project:** every screen in the parts on the map from the peer-ai MCP tool `project_map` that have a user interface, older screens included.
 
-Read these first, and list them in the report's `inputs`: `design` in `peer-ai.config.json` (where the designs and tokens are, and whether the designs are authoritative), the design system document, and the token file. With no design system at all, say so at the top of the summary, and suggest the design-system skill.
+Read these first, and list them in the report's `inputs`: `design` in `peer-ai.config.json` (where the designs and tokens are, and whether the designs are authoritative), the design system document, and the token file. With no design system at all, review anyway: most rules, such as colour alone, contrast and text size, need only the code. Say so at the top of the summary, and suggest the design-system skill. Don't stop to ask.
 
 ## 2. Inventory
 
