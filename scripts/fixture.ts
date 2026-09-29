@@ -70,16 +70,20 @@ export function prepareFixture(name: string, into?: string, options: PrepareOpti
     writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
   }
 
-  // Claude Code's hook writes the skills with a published peer-ai; point it at this checkout too.
+  // Claude Code's hook writes the skills with a published peer-ai. With --skills, point it at this
+  // checkout; without, take it out, so a run meant to be without skills stays that way.
   const settingsFile = join(target, ".claude/settings.json");
   if (existsSync(settingsFile)) {
+    const hook = /npx (?:-y )?peer-ai(?:@\S+)? render --skills/;
+    const settings = JSON.parse(readFileSync(settingsFile, "utf8")) as { hooks?: { SessionStart?: unknown[] } };
+    const starts = settings.hooks?.SessionStart;
+    if (options.skills !== true && settings.hooks !== undefined && Array.isArray(starts)) {
+      settings.hooks.SessionStart = starts.filter((group) => !hook.test(JSON.stringify(group)));
+    }
     const local = `${process.execPath} ${CLI} render --skills`;
-    const text = readFileSync(settingsFile, "utf8");
-    const settings = JSON.parse(text) as unknown;
     const pointed = JSON.stringify(
       settings,
-      (_key, value: unknown) =>
-        typeof value === "string" ? value.replace(/npx (?:-y )?peer-ai(?:@\S+)? render --skills/, local) : value,
+      (_key, value: unknown) => (typeof value === "string" ? value.replace(hook, local) : value),
       2,
     );
     writeFileSync(settingsFile, `${pointed}\n`);
