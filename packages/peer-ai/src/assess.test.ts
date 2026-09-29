@@ -254,6 +254,25 @@ describe("assess", () => {
     expect(items["api-contract"]).toMatchObject({ status: "missing" });
   });
 
+  it("counts a written test strategy as a start on the tests, never as tests", () => {
+    const planned = assess(
+      project({ "apps/web/package.json": json({}), "docs/test-strategy.md": "# Test strategy\n" }),
+      undefined,
+      "mvp",
+    );
+    expect(planned.items.tests).toMatchObject({
+      status: "partial",
+      evidence: ["docs/test-strategy.md"],
+      note: "A test strategy, but no tests yet.",
+    });
+    const tested = assess(
+      project({ "docs/test-strategy.md": "# Test strategy\n", "src/cart.test.ts": "" }),
+      undefined,
+      "mvp",
+    );
+    expect(tested.items.tests).toMatchObject({ status: "present", evidence: ["src/cart.test.ts"] });
+  });
+
   it("uses the config's parts, APIs, environments and design when there is one", () => {
     const root = project({
       "peer-ai.config.json": json({
