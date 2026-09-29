@@ -66,7 +66,7 @@ Copy the [template](assets/requirements.md) and fill in every part. The rules ar
 - **REQ-01:** each group of people, and the problem it has today.
 - **REQ-02:** every feature in scope has acceptance criteria a tester could check: given a situation, when something happens, then a result anyone can see. "Fast", "easy" and "secure" need a number or a check.
 - **REQ-03:** the needs, with numbers where someone gave them, and a question where nobody has.
-- **REQ-04:** only what someone agreed is in scope. Ideas beyond it are out of scope, for the backlog. What could go either way is unclear.
+- **REQ-04:** only what someone agreed is in scope. An extra idea added to a request, such as "while you're at it, could we also…", isn't agreed yet: it's unclear, or out of scope for the backlog, until whoever decides scope says yes. What could go either way is unclear.
 
 Hold every part to this bar:
 
