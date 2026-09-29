@@ -30,7 +30,8 @@ Copy this checklist and tick it off as you go:
 - **What to plan:** the spec or design the person names, such as `docs/specs/<feature>.md` and its system design, or the requirements. Read all of it: the acceptance criteria come from here.
 - **The gaps:** when the person asks to plan what the project still needs, call the peer-ai MCP tool `next_work`. With nothing open, it lists the gaps for the stage and the skill that fills each.
 - **What's already open:** `next_work` lists every open work item. Read them first, so nothing is planned twice.
-- **The parts:** call the peer-ai MCP tool `project_map`, and read `tracks` in `peer-ai.config.json`. Each item names the part it changes.
+- **The parts:** call the peer-ai MCP tool `project_map`, and read `tracks` in `peer-ai.config.json`. Each item names the part it changes. The architecture says where new code goes, such as the newer half of a project being rebuilt: say so in the items it affects.
+- **The code each slice touches.** Read it before slicing. It shows prerequisites the spec doesn't mention: a change to stored data, such as a migration or an upgrade to data kept on a device; a contract change; or existing code that breaks a criterion, such as a date worked out in the wrong time zone. Each becomes its own item, or a criterion of the slice that needs it.
 
 With nothing to plan from, such as a feature nobody has specified, say so, and suggest the product spec first.
 
