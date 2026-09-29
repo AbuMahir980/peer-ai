@@ -19,7 +19,8 @@
     "issue-planning": "Plan the work for recording that a plant was watered. This is the spec we agreed:\n\n\"A person marks a plant watered from the plant list, with or without a connection. The list shows 'Watered today', where today is in the person's own time zone. A mistaken tap can be undone. Each watering is kept as a dated entry in the journal. Syncing between devices is out of scope.\"",
     "dependency-review": "Review Sprout's dependencies.",
     "test-strategy": "Write Sprout's test strategy.",
-    "documentation": "Sprout needs a README that gets a new contributor from a fresh clone to a running app. Write it."
+    "documentation": "Sprout needs a README that gets a new contributor from a fresh clone to a running app. Write it.",
+    "tech-debt-triage": "Triage Sprout's technical debt. What should we fix, and in what order?"
   },
   "defects": [
     {
@@ -667,6 +668,43 @@
         {
           "id": "NP7",
           "point": "Links to the requirements and the architecture rather than copying them."
+        }
+      ]
+    },
+    "tech-debt-triage": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "points": [
+        {
+          "id": "TP1",
+          "point": "Raises the update that deletes people's journal entries as a fix to make now, not debt.",
+          "must": true
+        },
+        {
+          "id": "TP2",
+          "point": "Names the lack of tests as debt, and why it's risky when the device holds the only copy of people's data.",
+          "must": true
+        },
+        {
+          "id": "TP3",
+          "point": "Creates work items for the top of the list, each with a goal and acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "TP4",
+          "point": "Raises the plant identification key built into the app people download as a fix, not debt."
+        },
+        {
+          "id": "TP5",
+          "point": "Notes the dependency versions with published vulnerabilities, and that there's no lockfile."
+        },
+        {
+          "id": "TP6",
+          "point": "Keeps a register of the rest, each with what it costs, what it risks and its size."
+        },
+        {
+          "id": "TP7",
+          "point": "Changes no code: the output is a plan."
         }
       ]
     }

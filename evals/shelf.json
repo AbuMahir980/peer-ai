@@ -19,7 +19,8 @@
     "issue-planning": "Readers want to extend a loan by a week. Plan the work. This is the spec we agreed:\n\n\"A reader can extend their own loan by a week, once, unless someone has reserved the book. The lender is told about the extension. With no connection, the Extend button says it needs one. The Shelf API, in its own repository, needs a new endpoint for this.\"",
     "dependency-review": "Review the Shelf app's dependencies.",
     "test-strategy": "Write a test strategy for the Shelf app.",
-    "documentation": "New people joining the Shelf team struggle to get started. Write the README they need."
+    "documentation": "New people joining the Shelf team struggle to get started. Write the README they need.",
+    "tech-debt-triage": "Triage the Shelf app's technical debt. What should we fix, and in what order?"
   },
   "defects": [
     {
@@ -866,6 +867,43 @@
         {
           "id": "NS7",
           "point": "Links to the requirements and the architecture rather than copying them."
+        }
+      ]
+    },
+    "tech-debt-triage": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "points": [
+        {
+          "id": "TS1",
+          "point": "Names the half-finished rebuild as the biggest debt, the older JavaScript screens beside the newer TypeScript features, and plans finishing it in slices that each ship.",
+          "must": true
+        },
+        {
+          "id": "TS2",
+          "point": "Raises problems hurting readers now as fixes, such as the password written to the device log, and saved books lost on updating to 3.4.",
+          "must": true
+        },
+        {
+          "id": "TS3",
+          "point": "Creates work items for the top of the list, each with a goal and acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "TS4",
+          "point": "Notes that the older screens use an abandoned storage package that the newer code has replaced."
+        },
+        {
+          "id": "TS5",
+          "point": "Notes there's one test in the whole app, in the older half."
+        },
+        {
+          "id": "TS6",
+          "point": "Keeps a register of the rest, each with what it costs, what it risks and its size."
+        },
+        {
+          "id": "TS7",
+          "point": "Changes no code: the output is a plan."
         }
       ]
     }

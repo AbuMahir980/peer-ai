@@ -22,7 +22,8 @@
     "design-review": "Review the design of Courier's web app screens.",
     "dependency-review": "Review Courier's dependencies.",
     "test-strategy": "Write Courier's test strategy.",
-    "documentation": "Courier's README is too thin for new people joining the team. Write it properly."
+    "documentation": "Courier's README is too thin for new people joining the team. Write it properly.",
+    "tech-debt-triage": "Triage Courier's technical debt. What should we fix, and in what order?"
   },
   "defects": [
     {
@@ -1028,6 +1029,43 @@
         {
           "id": "NC7",
           "point": "Links to the requirements, the architecture and the API contract rather than copying them."
+        }
+      ]
+    },
+    "tech-debt-triage": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "points": [
+        {
+          "id": "TC1",
+          "point": "Raises at least the card details stored on Courier's own server and the SQL built from pasted-in text as fixes to make now, not debt to schedule.",
+          "must": true
+        },
+        {
+          "id": "TC2",
+          "point": "Ranks the debt by what it costs and risks, most costly first, not by what's easiest.",
+          "must": true
+        },
+        {
+          "id": "TC3",
+          "point": "Creates work items for the top of the list, each with a goal and acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "TC4",
+          "point": "Finds that prices are worked out in two places, in pounds as decimals in the web app and in pence in the API."
+        },
+        {
+          "id": "TC5",
+          "point": "Finds that the verify command never runs the web app's tests, and that the API's tests use a stand-in database that ignores queries."
+        },
+        {
+          "id": "TC6",
+          "point": "Keeps a register of the rest, each with what it costs, what it risks and its size."
+        },
+        {
+          "id": "TC7",
+          "point": "Changes no code: the output is a plan."
         }
       ]
     }
