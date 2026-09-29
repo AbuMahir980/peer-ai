@@ -338,6 +338,19 @@
         }
       ],
       "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S27",
+      "title": "The app has no way to make people on an unsafe version update",
+      "severity": "medium",
+      "skills": ["data-migration-review"],
+      "locations": [
+        {
+          "file": "app.json",
+          "match": "\"expo\": {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's data-migration-review skill on 2026-09-29, and judged real."
     }
   ],
   "documents": {

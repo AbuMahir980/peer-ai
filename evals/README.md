@@ -5,7 +5,7 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
 | [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 25: 21 planted, and 4 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 
@@ -198,6 +198,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, data-migration-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready, twice:** courier 1 of 1, shelf 2 of 2 and sprout 1 of 1, each covering all 9 rules. Without it, courier found 1 of 1 too.
+  - **Both shelf runs raised a real problem nobody planted:** the app has no way to make people on an unsafe version update (MOB-06), so a version that loses saved books can't be retired. It's now S27 on the answer sheet, and the counts include it.
+- **What the runs changed:**
+  - **The guide named the planted problems.** Its example failures were a column dropped with its replacement, a browser database version that deletes an old store, and a new storage key with no move: the three planted problems, almost word for word. That makes an eval measure the answers, not the skill. The guide now states the rule for every kind of storage instead, and the second runs, with that guide, found every problem again.
+
 ## Results
 
 Newest last.
@@ -250,6 +256,13 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.81 |
+| 2026-09-29 | shelf | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $1.02 |
+| 2026-09-29 | sprout | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.88 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | without | 1 of 1 | 9 of 9 | 0 | Ready | $0.90 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.68 |
+| 2026-09-29 | shelf | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $0.84 |
+| 2026-09-29 | sprout | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.86 |
 
 ## Document results
 
