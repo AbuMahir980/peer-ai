@@ -52,7 +52,7 @@ List everything whose cost grows with use, from the code, with an id, a kind and
 
 Call the peer-ai MCP tool `standards_for_file` for the files in scope. It returns the rules that apply at the project's stage, with the stack profile's numbers, such as the largest page size.
 
-Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the ones that don't apply here. A rule that applies from a later stage, such as PERF-02 from production, is `not-applicable` with that reason; a problem it describes that the code already shows, such as a list filtered on a column with no index, is still a finding, saying the rule applies fully from that stage.
+Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the ones that don't apply here. A rule that applies from a later stage, such as PERF-02 from production, or only with a trait the project hasn't set, such as `offline`, is `not-applicable` with that reason. Either way, a problem it describes that the code already shows, such as a list filtered on a column with no index or a service worker that never updates, is still a finding, saying when the rule applies in full.
 
 ## 4. Check
 
