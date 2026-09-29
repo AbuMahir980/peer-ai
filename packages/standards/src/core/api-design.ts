@@ -7,7 +7,7 @@ export const apiDesign = [
     id: "API-01",
     domain: "api-design",
     title: "Requests and responses are typed schemas",
-    rule: "Every request and response body is a typed schema, not a loose dictionary. The schema is the contract.",
+    rule: "Every request and response body is a typed schema, not a loose map or dictionary. The schema is the contract.",
     why: "A loose response becomes a loose client type, in every app that uses the API, at once.",
     ask: "Is every request and response body in this change a typed schema?",
     stage: "mvp",

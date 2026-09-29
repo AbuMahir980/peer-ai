@@ -52,7 +52,7 @@ Business rules, calculations and validation live in plain code, with no database
 
 ## ARC-05 · Business logic doesn't know how it's called
 
-Business logic never deals in HTTP: no status codes, no request objects, no HTTP errors. It raises its own errors, and the layer that received the request translates them.
+Business logic never deals in HTTP: no status codes, no request objects, no HTTP errors. It raises or returns its own errors, and the layer that received the request translates them.
 
 **Why:** Logic that knows about HTTP can't be reused by a background job, a script or a different interface.
 

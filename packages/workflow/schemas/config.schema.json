@@ -493,7 +493,7 @@
           "type": "boolean"
         },
         "profiles": {
-          "description": "Stack profiles, such as react or python-fastapi.",
+          "description": "Stack profiles, such as react, express or python-fastapi.",
           "type": "array",
           "items": {
             "type": "string",

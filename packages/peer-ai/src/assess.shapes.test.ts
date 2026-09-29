@@ -67,8 +67,8 @@ describe("assess on every project shape", () => {
 
   it("checks tests service by service, and doesn't ask a retiring service for them", () => {
     const result = assessed("microservices", {
-      "services/orders/tests/test_orders.py": "",
-      "services/orders/pyproject.toml": "",
+      "services/orders/orders_test.go": "",
+      "services/orders/go.mod": "module example.test/orders\n",
       "infra/main.tf": "",
     });
     expect(result.items.tests).toMatchObject({

@@ -95,18 +95,22 @@ export const NEXT_STAGE: Record<Stage, Stage | undefined> = {
 
 const UI_KINDS = ["web", "mobile", "desktop", "extension"];
 const MANIFEST =
-  /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|pubspec\.yaml|Gemfile|go\.mod|composer\.json|build\.gradle(\.kts)?|pom\.xml)$/;
+  /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|pubspec\.yaml|Gemfile|go\.mod|Cargo\.toml|composer\.json|build\.gradle(\.kts)?|pom\.xml|[^/]+\.csproj|Directory\.Packages\.props|Package\.swift|Podfile|mix\.exs)$/;
+// Where a project describes its data: migrations and schema files, and the model or entity
+// classes that ORMs in any language read, such as models/order.py, app/Models/Order.php,
+// Entities/Order.cs or order.entity.ts.
 const SCHEMA_FILE =
-  /(^|\/)(migrations?|alembic|prisma|drizzle|supabase|db|database)\/.*\.(sql|py|ts|js|rb|prisma)$|\.sql$|schema\.prisma$|(^|\/)models?\.py$|(^|\/)models\/[^/]+\.py$|\.entity\.ts$/i;
+  /(^|\/)(migrations?|migrate|alembic|prisma|drizzle|supabase|db|database)\/.*\.(sql|prisma|py|ts|js|rb|php|cs|go|java|kt|rs|exs?)$|\.sql$|schema\.prisma$|(^|\/)(models?|entities|entity|schemas?)\/[^/]+\.(py|ts|js|rb|php|cs|go|java|kt|rs|swift|ex)$|(^|\/)models?\.(py|ts|js|go|rs)$|\.(entity|model|schema)\.[cm]?[jt]s$/i;
 // Field names are matched as whole words, where an underscore also separates words, so a prefixed
-// name such as recipient_phone counts but iphone doesn't.
+// name such as recipient_phone counts but iphone doesn't. camelCase names are split into words
+// first (see snakeCase), so recipientPhone and phoneNumber count too.
 const PERSONAL_FIELD =
   /(?<![a-z0-9])(email|phone(?:_number)?|mobile_number|date_of_birth|dob|birth_?date|home_address|address(?:_line_?\d)?|post_?code|zip_?code|bvn|nin|ssn|national_id|passport(?:_number)?|ip_address|latitude|longitude)(?![a-z0-9])/gi;
 const CARD_FIELD = /(?<![a-z0-9])(card_?number|card_no|pan|cvv2?|cvc|card_expiry)(?![a-z0-9])/gi;
 const PAYMENT_PROVIDER =
   /\b(stripe|paystack|flutterwave|braintree|adyen|razorpay|paypal|squareup|mollie|monnify|interswitch)\b/gi;
 const OBSERVABILITY =
-  /(@sentry\/[\w-]+|\bsentry[\w-]*|@opentelemetry\/[\w-]+|\bopentelemetry[\w-]*|\bdd-trace\b|\bdatadog\b|\bnewrelic\b|\bprom-client\b|\bprometheus[\w-]*|\bstructlog\b|\bpino\b|\bwinston\b|\bloguru\b|\blogfire\b)/gi;
+  /(@sentry\/[\w-]+|\bsentry[\w-]*|@opentelemetry\/[\w-]+|\bopentelemetry[\w-]*|\bdd-trace\b|\bdatadog\b|\bnewrelic\b|\bprom-client\b|\bprometheus[\w-]*|\bpino\b|\bwinston\b|\bstructlog\b|\bloguru\b|\blogfire\b|go\.uber\.org\/zap|\bzerolog\b|\bmicrometer[\w-]*|\bserilog[\w.]*|\bmonolog\b|\blograge\b|\btracing-subscriber\b)/gi;
 const LOCAL_SCHEMA_FILE = /(^|\/)(db|database|schema|storage|store|models?)\.(ts|tsx|js|mjs)$/i;
 const LOCAL_SCHEMA = /\.stores\(\s*\{|indexedDB\.open\(|\bopenDB\(|\bappSchema\(|CREATE TABLE/;
 const INFRASTRUCTURE_AS_CODE =
@@ -116,7 +120,7 @@ const INFRASTRUCTURE_AS_CODE =
 export const LEGACY_PLAYBOOK = "peer-ai/";
 export const LEGACY_MARKERS = ["peer-ai/shared/00-setup.md", "peer-ai/phase-config.json"];
 const TEST_FILE =
-  /(^|\/)(tests?|__tests__|integration_test|spec|e2e)\/|[._-](test|spec)\.[cm]?[jt]sx?$|_test\.(go|dart|py)$|(^|\/)test_[^/]+\.py$|Tests?\.(swift|kt|java)$/;
+  /(^|\/)(tests?|Tests|__tests__|integration_test|spec|e2e)\/|(^|\/)[^/]+\.Tests?\/|[._-](test|spec)\.[cm]?[jt]sx?$|_test\.(go|dart|py|exs)$|(^|\/)test_[^/]+\.py$|_spec\.rb$|(Tests?|Spec)\.(swift|kt|java|cs|php)$/;
 
 interface Context {
   root: string;
@@ -139,10 +143,19 @@ function evidence(files: string[], collapseTo?: RegExp): string[] {
   return unique(shown).sort().slice(0, 5);
 }
 
-function scan(ctx: Context, files: string[], pattern: RegExp): Finding[] {
+/**
+ * Splits camelCase and PascalCase names into words the way snake_case already is, so phoneNumber
+ * reads as phone_Number and IPAddress as IP_Address. A lone leading "i", as in iPhone, stays part
+ * of its word.
+ */
+export function snakeCase(text: string): string {
+  return text.replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").replace(/(?<=[a-z0-9])(?<!(?:^|[^A-Za-z0-9])i)(?=[A-Z])/g, "_");
+}
+
+function scan(ctx: Context, files: string[], pattern: RegExp, prepare = (text: string) => text): Finding[] {
   const found = new Map<string, string>();
   for (const file of files) {
-    for (const match of ctx.read(file).matchAll(pattern)) {
+    for (const match of prepare(ctx.read(file)).matchAll(pattern)) {
       const name = match[1]?.toLowerCase() ?? match[0].toLowerCase();
       if (!found.has(name)) found.set(name, file);
     }
@@ -154,8 +167,8 @@ export function collectSignals(ctx: Context): Signals {
   const schemaFiles = matching(ctx, SCHEMA_FILE);
   const manifests = matching(ctx, MANIFEST);
   return {
-    personalData: scan(ctx, schemaFiles, PERSONAL_FIELD),
-    cardData: scan(ctx, schemaFiles, CARD_FIELD),
+    personalData: scan(ctx, schemaFiles, PERSONAL_FIELD, snakeCase),
+    cardData: scan(ctx, schemaFiles, CARD_FIELD, snakeCase),
     paymentProviders: scan(ctx, manifests, PAYMENT_PROVIDER).map((finding) => finding.name),
   };
 }
@@ -239,18 +252,21 @@ const RULES: Record<KnownMapItemId, Rule> = {
     }
     return {
       status: "missing",
-      note: "No contract file found. Frameworks such as FastAPI generate one at runtime: commit it, or set its location in peer-ai.config.json.",
+      note: "No contract file found. Frameworks such as NestJS, FastAPI and ASP.NET Core can generate one: commit it, or set its location in peer-ai.config.json.",
     };
   },
 
   "data-model": (ctx) => {
     const files = matching(
       ctx,
-      /(^|\/)(migrations?|alembic|drizzle)\/|schema\.prisma$|(^|\/)db\/schema\.(rb|sql)$|(^|\/)supabase\/migrations\//i,
+      /(^|\/)(migrations?|alembic|drizzle)\/|(^|\/)db\/migrate\/|schema\.prisma$|(^|\/)db\/schema\.(rb|sql)$|(^|\/)supabase\/migrations\//i,
     );
     if (files.length > 0) {
       return present(
-        evidence(files, /^(.*\/)?(migrations?|alembic|drizzle|supabase\/migrations)\/|^.*schema\.(prisma|rb|sql)$/i),
+        evidence(
+          files,
+          /^(.*\/)?(migrations?|alembic|drizzle|supabase\/migrations|db\/migrate)\/|^.*schema\.(prisma|rb|sql)$/i,
+        ),
       );
     }
     // An offline-first or mobile app keeps its database on the device, defined in code rather than
@@ -319,7 +335,7 @@ const RULES: Record<KnownMapItemId, Rule> = {
     if (documents.length + written.length > 0) return present(evidence([...documents, ...written]));
     const linting = matching(
       ctx,
-      /(^|\/)(eslint\.config\.[cm]?[jt]s|\.eslintrc[^/]*|biome\.jsonc?|ruff\.toml|\.golangci\.ya?ml|analysis_options\.yaml|\.rubocop\.yml|detekt\.yml)$/,
+      /(^|\/)(eslint\.config\.[cm]?[jt]s|\.eslintrc[^/]*|biome\.jsonc?|ruff\.toml|\.flake8|\.pylintrc|\.golangci\.ya?ml|analysis_options\.yaml|\.rubocop\.yml|detekt\.yml|checkstyle[^/]*\.xml|\.swiftlint\.ya?ml|phpstan\.neon(\.dist)?|\.php-cs-fixer(\.dist)?\.php|clippy\.toml|\.credo\.exs)$/,
     );
     if (linting.length > 0) {
       return {
