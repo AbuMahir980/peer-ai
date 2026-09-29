@@ -275,6 +275,13 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **The baseline's count is right for the wrong items.** By the rules it cited, it missed the lockfile and found the missing vulnerability check. A person reads it the other way round: it found the missing lockfile, and its nearest point to the vulnerability check was "no update tooling", at low. Either way it's 3 of 4, and not ready.
 
+- **2026-09-29, qa-acceptance with Claude Code on Sonnet, on three items already built, and on the tip without it.** Each scenario writes a work item at verify and its code into the copy before the run: split-bill's tip, split-bill's uneven splits, and courier's moving a pickup. Behind tests that all pass, each hides what a tester should catch: a criterion the code doesn't meet, a refusal the criteria list that the code allows, a test whose values can't tell right from wrong, a criterion with no test, and something built that nobody asked for:
+  - **With the skill, all three are ready:** 5 of 5 each, covering all 9 rules. Without it, the tip found 4 of 5 and wasn't ready: it missed that the rounding test uses a tip that needs no rounding, so it passes whatever the rounding does.
+  - **An unmet criterion is reported at its rule's severity,** medium for the testing rules; the sheets mark the worst ones high, and they're found one level away. Whether a feature that fails its agreed criteria deserves a rule of its own, at high, is a question for a person.
+- **What the runs changed:**
+  - **The runner sets up review scenarios too:** an answer sheet's `setup` files are written into the copy and committed before the run, as for documents, and planted problems can be in them. The shared practice projects stay as they are.
+  - **Before any run, the checking guide gave away four of its own answers,** such as a rounding test whose value needs no rounding, and whose clock the code uses. Each was rewritten as the general rule.
+
 ## Results
 
 Newest last.
@@ -365,6 +372,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | shelf | dependency-review | Claude Code | sonnet | used | 5 of 5 | 8 of 8 | 0 | Ready | $1.44 |
 | 2026-09-29 | sprout | dependency-review | Claude Code | sonnet | used | 4 of 4 | 8 of 8 | 0 | Ready | $1.01 |
 | 2026-09-29 | courier | dependency-review | Claude Code | sonnet | without | 3 of 4 | 8 of 8 | 4 | Not ready | $1.26 |
+| 2026-09-29 | split-bill-qa-tip | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 1 | Ready | $0.87 |
+| 2026-09-29 | split-bill-qa-uneven | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 0 | Ready | $1.12 |
+| 2026-09-29 | courier-qa-move | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 0 | Ready | $1.01 |
+| 2026-09-29 | split-bill-qa-tip | qa-acceptance | Claude Code | sonnet | without | 4 of 5 | 9 of 9 | 0 | Not ready | $1.20 |
 
 ## Document results
 
