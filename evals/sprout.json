@@ -13,7 +13,8 @@
     "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today.",
     "threat-model": "Write a threat model for Sprout.",
     "product-spec": "Write the spec for recording that a plant was watered.",
-    "system-design": "People will be able to record that a plant was watered. Design how it's built."
+    "system-design": "People will be able to record that a plant was watered. Design how it's built.",
+    "data-modelling": "Write down Sprout's data model: what it keeps on the device."
   },
   "defects": [
     {
@@ -383,6 +384,46 @@
         {
           "id": "DP8",
           "point": "Leaves syncing between devices for later, without blocking it."
+        }
+      ]
+    },
+    "data-modelling": {
+      "path": "docs/data-model.md",
+      "points": [
+        {
+          "id": "MP1",
+          "point": "Lists plants and journal entries with their fields, from the device database's code.",
+          "must": true
+        },
+        {
+          "id": "MP2",
+          "point": "Finds that version 2 renames the entries store to journal without moving what's in it, so existing journal notes are lost, and treats it as a problem.",
+          "must": true
+        },
+        {
+          "id": "MP3",
+          "point": "Notes that the device holds the only copy of people's plants, photos and notes, and what that means for keeping it safe.",
+          "must": true
+        },
+        {
+          "id": "MP4",
+          "point": "Marks photos as possibly personal, since they can show people or where they were taken."
+        },
+        {
+          "id": "MP5",
+          "point": "Notes that two plants can end up with the same position, and that nothing in the store prevents it."
+        },
+        {
+          "id": "MP6",
+          "point": "Says how a future change keeps existing data, with a version upgrade that moves it."
+        },
+        {
+          "id": "MP7",
+          "point": "Asks how long data is kept, or how a person deletes a plant with its photo and notes."
+        },
+        {
+          "id": "MP8",
+          "point": "Leaves syncing between devices out, as not built yet."
         }
       ]
     }

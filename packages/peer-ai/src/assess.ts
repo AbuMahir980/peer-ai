@@ -333,10 +333,12 @@ const RULES: Record<KnownMapItemId, Rule> = {
       ctx,
       /(^|\/)(migrations?|alembic|drizzle)\/|(^|\/)db\/migrate\/|schema\.prisma$|(^|\/)db\/schema\.(rb|sql)$|(^|\/)supabase\/migrations\//i,
     );
-    if (files.length > 0) {
+    // A written data model counts too, such as one designed before any migration exists.
+    const written = matching(ctx, /(^|\/)docs\/[^/]*data[-_]?model[^/]*\.md$/i);
+    if (files.length + written.length > 0) {
       return present(
         evidence(
-          files,
+          [...files, ...written],
           /^(.*\/)?(migrations?|alembic|drizzle|supabase\/migrations|db\/migrate)\/|^.*schema\.(prisma|rb|sql)$/i,
         ),
       );
