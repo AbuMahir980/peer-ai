@@ -68,9 +68,9 @@ For each personal or sensitive field: why the product needs it (PRIV-03), who ca
 
 Copy the [template](assets/data-model.md) and fill in every part.
 
-- **Describe what is,** from the migrations, and mark each problem the code shows, such as card data stored or a migration that lost data, under Problems, most serious first. Never describe a problem as the intended design.
+- **Describe what is,** from the migrations, and mark each problem the code shows, such as an amount that can go negative, or a link with no foreign key, under Problems, most serious first. Never describe a problem as the intended design.
 - **Changes:** for each field or table to add or change, write the migration's steps and how existing data is kept: add, copy, switch, then remove (DATA-03). A model change ships with its migration (DATA-02).
-- **Say where each fact came from,** and mark each choice nobody has made as proposed.
+- **Say where each fact came from,** and mark each choice nobody has made as proposed. Don't stop to wait for answers: put each question under Open questions, with who can decide, and ask the person when you hand over. Their answers update the document.
 
 ## 6. Check
 

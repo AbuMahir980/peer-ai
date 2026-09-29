@@ -22,7 +22,7 @@ Six kinds of threat, often called STRIDE. Walk each for every way in; most ways 
 
 - Changing a price or an amount the client sends, and the server trusting it.
 - A query built by pasting in input.
-- Stored text, such as a note someone else wrote, steering an AI model.
+- Stored text someone else wrote, such as a review of a shop, steering an AI model.
 - Rules: MONEY-05, SEC-05, SEC-07, AI-04.
 
 ## Repudiation: denying you did it

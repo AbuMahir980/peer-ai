@@ -23,7 +23,7 @@ Examples from a made-up bicycle repair booking service. The formats are examples
 
 ## Money and dates
 
-- `"deposit": { "amount": 1500, "currency": "GBP" }`: pence, never 15.00 (MONEY-01).
+- `"deposit": { "amount": 1500, "currency": "EUR" }`: a whole number in the smallest unit, never 15.00 (MONEY-01).
 - `"starts_at": "2026-03-05T09:30:00+00:00"`: one format, with a time zone. A date with no time, such as a birthday, is a plain date.
 
 ## Safe retries (SYS-01, MONEY-08)
@@ -34,13 +34,13 @@ Examples from a made-up bicycle repair booking service. The formats are examples
 ## Who may call (SEC-01 to SEC-03)
 
 - Not "signed-in users" but "the cyclist who owns the booking, or a mechanic at its shop".
-- Public endpoints are marked public, with what they may show. A link anyone can guess shows nothing personal.
+- Public endpoints are marked public, and list each field they return.
 
 ## Changing a field (API-06)
 
-1. Add `deposit_pence` beside `deposit`.
-2. Clients move to `deposit_pence`; the contract marks `deposit` as deprecated, with a date.
-3. Remove `deposit` once no client version in use reads it.
+1. Add `mechanic_id` beside `mechanic`.
+2. Clients move to `mechanic_id`; the contract marks `mechanic` as deprecated, with a date.
+3. Remove `mechanic` once no client version in use reads it.
 
 ## Nothing sensitive in a URL (SEC-22)
 

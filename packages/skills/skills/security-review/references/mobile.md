@@ -6,13 +6,13 @@ MOB-01 to MOB-05. These apply only to mobile parts. For other parts, each is `no
 
 **Fail** when session tokens, keys or other sensitive data are kept in ordinary storage, such as:
 
-- AsyncStorage;
 - SharedPreferences;
 - UserDefaults;
+- a storage library that doesn't encrypt;
 - plain files;
 - an unencrypted database.
 
-**Pass** when they're kept in the platform's secure storage: the Keychain or the Keystore, directly or through a wrapper such as `expo-secure-store` or `flutter_secure_storage`.
+**Pass** when they're kept in the platform's secure storage: the Keychain or the Keystore, directly or through a library that wraps them.
 
 ## MOB-02: nothing sensitive leaks from the phone
 

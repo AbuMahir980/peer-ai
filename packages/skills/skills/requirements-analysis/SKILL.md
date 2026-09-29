@@ -31,7 +31,7 @@ Copy this checklist and tick it off as you go:
 
 Read everything there is before writing anything:
 
-- **The person's words:** a brief, an email, notes or messages they've shared. For something new, if they've shared nothing, ask for everything they have first.
+- **The person's words:** a brief, an email, notes or messages they've shared. Only when there's nothing at all to go on, no words and no code, ask for what they have first. Otherwise write from what there is, and ask for more when you hand over.
 - **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
 - **The code,** when the product exists: its screens, routes and jobs show what it does today, and what it does that nobody wrote down.
 - **A single feature:** the work item from the peer-ai MCP tool `next_work`, and the requirements it changes.
@@ -52,12 +52,12 @@ Mark each item **stated**, when someone said it, or **inferred**, when you worke
 
 Compare the code with the existing requirements both ways, even when you were asked about one change:
 
-- **In the code, not in the requirements:** a feature nobody wrote down, such as an assistant or an export. List it as inferred, with its file, and ask whether it's meant to be there.
+- **In the code, not in the requirements:** a feature nobody wrote down, such as a staff-only refund button. List it as inferred, with its file, and ask whether it's meant to be there.
 - **In the requirements, not in the code:** a requirement the code doesn't meet yet. It stays a requirement. Note the gap under Open questions or as work to do.
 
 ## 3. Questions
 
-Turn everything unclear into concrete questions: "Can a customer move a booking, and until when?", not "What about changes?". Don't stop to wait for answers: write the document with each question under Open questions, with who can answer it, and an assumption where work can't wait, with what changes if it's wrong. Ask the person the questions when you hand over; their answers update the document.
+Turn everything unclear into concrete questions: "Can a cyclist bring a second bike on one booking?", not "What about bookings?". Don't stop to wait for answers: write the document with each question under Open questions, with who can answer it, and an assumption where work can't wait, with what changes if it's wrong. Ask the person the questions when you hand over; their answers update the document.
 
 ## 4. Write
 
@@ -66,7 +66,7 @@ Copy the [template](assets/requirements.md) and fill in every part. The rules ar
 - **REQ-01:** each group of people, and the problem it has today.
 - **REQ-02:** every feature in scope has acceptance criteria a tester could check: given a situation, when something happens, then a result anyone can see. "Fast", "easy" and "secure" need a number or a check.
 - **REQ-03:** the needs, with numbers where someone gave them, and a question where nobody has.
-- **REQ-04:** only what someone agreed is in scope. An extra idea added to a request, such as "while you're at it, could we also…", isn't agreed yet: it's unclear, or out of scope for the backlog, until whoever decides scope says yes. What could go either way is unclear.
+- **REQ-04:** only what someone agreed is in scope. An idea mentioned on top of a request, such as a parts shop, isn't agreed until whoever decides scope says yes. What could go either way is unclear.
 
 Hold every part to this bar:
 
@@ -86,6 +86,6 @@ Tell the person, in a few lines:
 
 - where the document is, and what changed;
 - the open questions only they, or someone they know, can answer;
-- the facts that switch on rules, as changes to `peer-ai.config.json`, such as the trait `money` or `"compliance": { "jurisdictions": ["NG"] }`. Offer to make them; don't change the config without asking.
+- the facts that switch on rules, as changes to `peer-ai.config.json`, such as the trait `money` or `"compliance": { "jurisdictions": ["eu"] }`. Offer to make them; don't change the config without asking.
 
 The usual next steps are the architecture, and a product spec for each feature.

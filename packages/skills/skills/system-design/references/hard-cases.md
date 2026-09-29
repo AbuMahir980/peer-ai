@@ -21,13 +21,13 @@ Prefer a guarantee the database enforces over a check in code. When a lock is ne
 
 ## Nothing lost (DATA-03)
 
-- **Badly:** "Rename `notes` to `mechanic_notes`."
-- **Well:** "Add `mechanic_notes`, copy `notes` into it, switch reads and writes, then drop `notes` in a later release, after checking nothing reads it."
+- **Badly:** "Rename `slot` to `starts_at`."
+- **Well:** "Add `starts_at`, copy `slot` into it, switch reads and writes, then drop `slot` in a later release, after checking nothing reads it."
 
 ## Clients keep working (API-06)
 
-- **Badly:** "Change `deposit` from pounds to pence."
-- **Well:** "Add `deposit_pence` beside `deposit`. Clients move to it. Remove `deposit` once no client version in use reads it."
+- **Badly:** "Change `deposit` from a number to an amount with its currency."
+- **Well:** "Add `deposit_amount`, with its currency, beside `deposit`. Clients move to it. Remove `deposit` once no client version in use reads it."
 
 ## Tests that prove it (SYS-06, TEST-08)
 

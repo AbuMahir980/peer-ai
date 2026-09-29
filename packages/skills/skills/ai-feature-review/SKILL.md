@@ -1,6 +1,6 @@
 ---
 name: ai-feature-review
-description: Reviews features that use AI models (what's sent to a model, what can steer it, what its output can do, limits and tests) against the OWASP Top 10 for LLM apps, proving each rule was checked. Use when a change adds or changes an AI feature.
+description: Reviews features that use AI models (what's sent to a model, what can steer it, what its output can do, limits and tests) against the OWASP Top 10 for LLM apps, proving each rule was checked. Use when reviewing any AI feature, new or existing.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -41,10 +41,10 @@ For each model call, list what goes into it and where its output goes. Give each
 
 | Kind | Id, for example | Covers |
 |------|-----------------|--------|
-| `model-call` | `model-call:support-assistant` | Each place the code calls a model |
-| `instructions` | `instructions:support-assistant` | The model's instructions, and everything joined into them |
-| `input` | `input:parcel-details` | Each piece of data sent to the model, and whether it's personal |
-| `tool` | `tool:cancel_parcel` | Each action the model can take, directly or by what its reply says |
+| `model-call` | `model-call:repair-advice` | Each place the code calls a model |
+| `instructions` | `instructions:repair-advice` | The model's instructions, and everything joined into them |
+| `input` | `input:booking-details` | Each piece of data sent to the model, and whether it's personal |
+| `tool` | `tool:find_slots` | Each action the model can take or trigger, in any way |
 | `output` | `output:reply-shown` | Each place the model's output goes: a page, the database, a decision, another call |
 
 ## 3. Rules
@@ -65,7 +65,7 @@ Work through each group. Its reference says what to look for, what counts as evi
 
 Hold every line to this bar:
 
-- **A pass shows its evidence:** the file and line where the rule holds, such as "assistant.py:48 sends only the tracking status, not the recipient".
+- **A pass shows its evidence:** the file and line where the rule holds, such as "advice.ts:48 sends only the bike's make and the fault, not the cyclist's details".
 - **A failure is a finding:** the harm in plain words, the file and line, what shows it's real, and a fix. Its severity is its rule's, from [severity.md](references/severity.md).
 - **Every model call, not a sample.** Each rule is checked against each call, instruction, input, tool and output it applies to.
 - **Follow the data.** Trace each input from where it comes from to the model, and each output from the model to where it lands, so nothing slips through a helper.

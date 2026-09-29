@@ -14,17 +14,13 @@ BE-01, DATA-03, API-06, and SYS-01 to SYS-06.
 
 For every migration, and every change to how an app reads its stored data, including on a person's device:
 
-**Fail** when:
-
-- a table, column or storage key is dropped or renamed while code still reads it;
-- existing data isn't moved across to the new shape;
-- a new app version reads from a new key and never moves the old one across.
+**Fail** when a change removes, renames or reshapes stored data before what's already there has moved across, or while code still reads the old shape.
 
 **Pass** when the change adds, then migrates the data, then removes the old shape only once nothing reads it.
 
 ## API-06: changing a field breaks clients
 
-**Fail** when a response field is removed, renamed or retyped in one step. A field renamed in the code but not in the contract counts too: the contract and the response disagree.
+**Fail** when a response field is removed, renamed or retyped in one step.
 
 Adding a field is safe.
 

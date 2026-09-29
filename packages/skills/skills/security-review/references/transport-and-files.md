@@ -8,7 +8,7 @@ SEC-15 to SEC-20, and SEC-23.
 
 - a production `http://` URL to any service;
 - certificate checks switched off, such as `rejectUnauthorized: false`, `verify=False` or `InsecureSkipVerify`;
-- platform settings that allow unencrypted traffic, such as Android's `cleartextTrafficPermitted` or iOS's `NSAllowsArbitraryLoads`.
+- platform settings that allow unencrypted traffic, in the app's manifest or configuration.
 
 Local development addresses are not findings.
 

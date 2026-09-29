@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Reviews a change for bugs and maintainability (lost data, races, API breaks, slow queries, leaks and code quality) against Peer AI's rules, proving each was checked. Use when reviewing a change or pull request. Not a security audit.
+description: Reviews code for bugs and maintainability (lost data, races, API breaks, slow queries, leaks, code quality) against Peer AI's rules, proving each was checked. Use when reviewing a change, a pull request or a whole codebase. Not a security audit.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -31,7 +31,7 @@ Copy this checklist and tick it off as you go:
 - **A work item:** call the peer-ai MCP tool `next_work`. Review what its branch changed (`git diff --name-only <base>...HEAD`), and read the unchanged code each changed unit calls or is called by.
 - **The whole project:** every part on the map from the peer-ai MCP tool `project_map`, except external and dormant ones.
 
-Review everything in scope, older code included. A part that's half rebuilt, such as older JavaScript screens beside newer TypeScript features, is reviewed in both halves: bugs hide in the half nobody is changing.
+Review everything in scope, old code included: bugs hide in code nobody is changing.
 
 Read these first where they exist, and list them in the report's `inputs`: the architecture and its decision records, the API contract, the project's standards documents, and the rules it has set aside (`standards.exceptions` in `peer-ai.config.json`).
 
@@ -41,13 +41,13 @@ Start from the list of every source file in scope, such as `git ls-files` for ea
 
 | Kind | Id, for example | Covers |
 |------|-----------------|--------|
-| `function` | `function:priceFor` | Functions and methods with logic worth checking |
-| `component` | `component:BookList` | Screens and components |
-| `route` | `route:POST /parcels` | Endpoints and their handlers |
+| `function` | `function:slotsFor` | Functions and methods with logic worth checking |
+| `component` | `component:RepairQueue` | Screens and components |
+| `route` | `route:POST /bookings` | Endpoints and their handlers |
 | `job` | `job:send-reminders` | Background and scheduled work |
-| `migration` | `migration:0002_notes` | Database migrations, and changes to data stored on a device |
+| `migration` | `migration:0004_frames` | Database migrations, and changes to data stored on a device |
 | `contract` | `contract:openapi` | The API contract, and the types that come from it |
-| `test` | `test:pricing` | Test files |
+| `test` | `test:slots` | Test files |
 
 ## 3. Rules
 
@@ -77,7 +77,7 @@ A code review is not a security audit, but it never walks past a serious problem
 - a query or command built by pasting in input;
 - a record returned or changed without checking it belongs to the caller;
 - outside content put into a page as HTML;
-- personal data or a password written to a log;
+- a secret or personal detail written to a log;
 - plain HTTP, or certificate checks switched off;
 - a response that no longer matches the API contract;
 - the client deciding a price or a permission.
@@ -86,7 +86,7 @@ Report each as a finding that cites the rule it breaks. The peer-ai MCP tool `st
 
 ### The bar for every line
 
-- **A pass shows its evidence:** the file and line where the rule holds, such as "parcels.py:88 loads the list with one query joined to the customer". "Looks fine" isn't evidence.
+- **A pass shows its evidence:** the file and line where the rule holds, such as "bookings.py:88 loads the bookings with one query joined to the cyclist". "Looks fine" isn't evidence.
 - **A failure is a finding:** the harm in plain words, the file and line, what shows it's real, and a fix. Its severity is its rule's, from [severity.md](references/severity.md).
 - **Every unit, not a sample.** A rule about each function is checked on each function in scope.
 - **The project's numbers.** Size and depth limits come from the stack profile through `standards_for_file`, not from habit.

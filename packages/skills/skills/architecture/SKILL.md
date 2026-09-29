@@ -30,7 +30,7 @@ Copy this checklist and tick it off as you go:
 
 ## 1. Sources
 
-- **The needs:** the requirements, especially REQ-03's: who uses the product, how many people and how much data, where it operates and which laws apply, and how available it must be. They decide the architecture. Where they're missing, say so and ask; don't design for needs nobody stated.
+- **The needs:** the requirements, especially REQ-03's: who uses the product, how many people and how much data, where it operates and which laws apply, and how available it must be. They decide the architecture. Where they're missing, say so; don't design for needs nobody stated. Don't stop to wait for answers: write each as a question under Open questions, or as an assumption with what changes if it's wrong, and ask the person when you hand over. Their answers update the document.
 - **What the project has:** call the peer-ai MCP tool `project_map`. If its `architecture` item lists files, they're the documents to update, decision records included. Otherwise write to `docs/architecture.md`, and decision records to `docs/decisions/`. `peer-ai.config.json` lists the parts (`tracks`), the APIs between them and the stage.
 - **The code,** when the product exists: it shows what the architecture is, which may not be what the document says.
 
@@ -83,5 +83,6 @@ Tell the person, in a few lines:
 
 - where the architecture is, and what changed;
 - each proposed decision waiting for them, with your recommendation;
+- the open questions only they can answer;
 - each place the code breaks the architecture, as work to do;
 - what the usual next steps are: the API design, the data model and a threat model.

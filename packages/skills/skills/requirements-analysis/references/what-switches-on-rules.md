@@ -24,7 +24,7 @@ Health data, data about children and precise location carry extra duties in most
 
 ## Where it operates
 
-Each country or region where it has users goes in `compliance.jurisdictions`, as a code: `NG` for Nigeria, `GB` for the United Kingdom, `US-CA` for California, or `eu` for the European Union. The laws that follow are examples of what applies, such as Nigeria's NDPA or the EU's GDPR. Name them as questions for someone qualified to confirm, never as legal conclusions.
+Each country or region where it has users goes in `compliance.jurisdictions`, as a code: `US-CA` for California, `JP` for Japan, or `eu` for the European Union. The laws that follow are examples of what applies, such as California's CCPA or the EU's GDPR. Name them as questions for someone qualified to confirm, never as legal conclusions.
 
 ## Industries
 
