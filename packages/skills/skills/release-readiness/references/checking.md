@@ -30,7 +30,7 @@ For each `item`: its last verify passed after its last change, each required rev
 
 - **OPS-14, every release can be undone:** each `step` says how it's undone, and the way back has been tried. The previous version must still run after each step, on the data as the step leaves it.
 - **DATA-03, data changes in a safe order:** a change to stored data moves the data before anything is removed, so the previous version and the new one both work while the release rolls out: add, copy, switch, then remove, across releases. Take a backup before a data change that can't be undone (OPS-05).
-- **API-06, clients keep working:** an interface other people or apps already use, such as an API, a library's functions or a message format, keeps working for them. A change that breaks them is made in steps, or announced as breaking, the way its users expect, such as a new major version.
+- **API-06, clients keep working:** an interface other people or apps already use, such as an API, a library's functions or a message format, keeps working for them. Compare it with the version they have now, from the last release's tag or the history, and with what its documentation shows; judge the change by what breaks for them, not by how the new code reads. A change that breaks them is made in steps, or announced as breaking, the way its users expect, such as a new major version.
 - **MOB-06 (production), apps on people's devices:** a release can't take back an app already installed; the old version stays in use. The way back for a phone app is a switch on the server, or requiring an update, which the app must already support.
 
 ## Tried first: OPS-04, DEL-08, TEST-10
