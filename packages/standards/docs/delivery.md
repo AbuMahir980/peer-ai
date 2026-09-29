@@ -97,3 +97,51 @@ Before a release reaches production, a scanner tests the running app in staging 
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | A tool | Medium | Always | – |
+
+## DEL-09 · Packages come only from the registry you expect
+
+Every dependency, and everything it depends on, is installed from the registry the project expects. A name the project uses for its own private packages can't be served from a public registry instead.
+
+**Why:** If a private package's name is free on a public registry, anyone can publish a package under it with a higher version, and a build that looks in both places installs theirs. This is called dependency confusion.
+
+**Ask:** Could any dependency in this change be installed from a registry the project doesn't expect?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | High | Always | [OWASP ASVS 5.0, 15.2.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md); [OWASP ASVS 5.0, 15.1.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md) |
+
+## DEL-10 · There's a current list of every dependency
+
+The project keeps a list of every dependency it ships, direct and indirect, with its version and where it comes from, such as a software bill of materials, and updates it with every release.
+
+**Why:** When a vulnerability is announced, the first question is whether you use the affected package. Without a list, answering takes days; with one, it's a search.
+
+**Ask:** Is the list of dependencies up to date for this release?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | A tool | Medium | Always | [OWASP ASVS 5.0, 15.1.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md) |
+
+## DEL-11 · Every dependency's licence allows how the product uses it
+
+Each dependency's licence is known and allows how the product is used and distributed. A licence that would require publishing the product's own code, or that forbids commercial use, needs a person's decision before the dependency is added.
+
+**Why:** A licence is a legal agreement. One that doesn't fit can force a product to publish its code or stop selling it, and it's cheapest to catch before the code depends on it.
+
+**Ask:** Does this change add a dependency whose licence doesn't fit how the product is used?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | – |
+
+## DEL-12 · Risky dependencies are chosen on purpose
+
+A dependency that runs code when it's installed, is no longer maintained, or has a name one slip away from a better-known package is checked before it's added, and kept only with a written reason.
+
+**Why:** Attackers take over abandoned packages and publish look-alike names, and a package that runs code when it's installed runs it on every developer's machine and every build.
+
+**Ask:** Does this change add a dependency that runs code when installed, is no longer maintained, or looks like another package's name?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Production | AI review | High | Always | [OWASP ASVS 5.0, 15.1.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md) |

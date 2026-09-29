@@ -16,7 +16,8 @@
     "system-design": "People will be able to record that a plant was watered. Design how it's built.",
     "data-modelling": "Write down Sprout's data model: what it keeps on the device.",
     "design-system": "Write down Sprout's design system from its tokens and screens.",
-    "issue-planning": "Plan the work for recording that a plant was watered. This is the spec we agreed:\n\n\"A person marks a plant watered from the plant list, with or without a connection. The list shows 'Watered today', where today is in the person's own time zone. A mistaken tap can be undone. Each watering is kept as a dated entry in the journal. Syncing between devices is out of scope.\""
+    "issue-planning": "Plan the work for recording that a plant was watered. This is the spec we agreed:\n\n\"A person marks a plant watered from the plant list, with or without a connection. The list shows 'Watered today', where today is in the person's own time zone. A mistaken tap can be undone. Each watering is kept as a dated entry in the journal. Syncing between devices is out of scope.\"",
+    "dependency-review": "Review Sprout's dependencies."
   },
   "defects": [
     {
@@ -225,6 +226,66 @@
         }
       ],
       "found": "Not planted: raised by Peer AI's design-review skill and a baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "SP17",
+      "title": "The app has no lockfile, so the packages it depends on can change from one install to the next",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-01"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "SP18",
+      "title": "Nothing checks the dependencies for known vulnerabilities, and the pinned vite and vitest have published ones, one of them critical",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-03"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "SP19",
+      "title": "TinyMCE 7 is licensed under the GPL, which doesn't fit a product that isn't open source",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"tinymce\": \"7.9.1\""
+        }
+      ]
+    },
+    {
+      "id": "SP20",
+      "title": "The TinyMCE React wrapper is a version range, not an exact version",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"@tinymce/tinymce-react\": \"^6.3.0\","
+        }
+      ]
     }
   ],
   "documents": {

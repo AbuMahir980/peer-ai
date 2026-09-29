@@ -51,11 +51,19 @@ export const MEDIUM_BAR = 0.8;
 /** The share of its scenario's points a document must make to be ready to ship. */
 export const POINTS_BAR = 0.8;
 
-const Location = z.strictObject({
-  file: z.string().min(1),
-  match: z.string().min(1).describe("Exact text that appears once in the file, where the problem is."),
-  lines: z.number().int().positive().optional().describe("How many lines the problem covers from the match."),
-});
+const Location = z
+  .strictObject({
+    file: z.string().min(1).describe('The file, or "." for a problem with the whole project.'),
+    match: z.string().min(1).optional().describe("Exact text that appears once in the file, where the problem is."),
+    lines: z.number().int().positive().optional().describe("How many lines the problem covers from the match."),
+    whole: z
+      .literal(true)
+      .optional()
+      .describe("The problem is with the whole file, or the whole project, such as a missing lockfile."),
+  })
+  .refine((location) => (location.whole === true) !== (location.match !== undefined), {
+    message: "A location has either a match or whole: true, not both.",
+  });
 
 const Defect = z.strictObject({
   id: z.string().min(1),
@@ -64,6 +72,11 @@ const Defect = z.strictObject({
   skills: z.array(z.enum(SKILL_IDS)).min(1).describe("The reviews expected to find it."),
   locations: z.array(Location).min(1).describe("Where it shows. Finding it at any one of them counts."),
   found: z.string().min(1).optional().describe("For a problem nobody planted: which review first raised it."),
+  rules: z
+    .array(z.string().regex(/^[A-Z]+-\d{2}$/))
+    .min(1)
+    .optional()
+    .describe("The rules it breaks. A finding about a whole file or the project must cite one of them."),
 });
 
 const Point = z.strictObject({
@@ -105,6 +118,8 @@ export interface Span {
   file: string;
   line: number;
   endLine: number;
+  /** The problem is with the whole file, or with the project when the file is ".". */
+  whole?: true;
 }
 
 export type ResolvedDefect = z.output<typeof Defect> & { spans: Span[] };
@@ -135,10 +150,11 @@ export function loadSheet(name: string): Sheet {
   const root = join(REPO, "fixtures", parsed.data.fixture);
   const defects = parsed.data.defects.map((defect) => ({
     ...defect,
-    spans: defect.locations.map((location) => {
+    spans: defect.locations.map((location): Span => {
       const file = join(root, location.file);
       if (!existsSync(file))
         throw new Error(`${defect.id}: fixtures/${parsed.data.fixture}/${location.file} doesn't exist.`);
+      if (location.match === undefined) return { file: location.file, line: 1, endLine: 1, whole: true };
       const text = readFileSync(file, "utf8");
       const first = text.indexOf(location.match);
       if (first === -1 || text.includes(location.match, first + 1)) {
@@ -174,10 +190,17 @@ export interface Score {
   reasons: string[];
 }
 
-const normalise = (file: string) => file.replace(/^\.\//, "");
+const normalise = (file: string) => file.replace(/^\.\//, "").replace(/\/$/, "") || ".";
 
-/** How many lines separate a finding from a planted problem: 0 when they overlap. */
-function distance(finding: Finding, span: Span): number {
+/**
+ * How many lines separate a finding from a planted problem: 0 when they overlap. A problem with a
+ * whole file, or the whole project, is as near as can be to any finding on that file or project
+ * that cites one of its rules, with or without a line.
+ */
+function distance(finding: Finding, defect: ResolvedDefect, span: Span): number {
+  if (span.whole === true) {
+    return defect.rules === undefined || defect.rules.includes(finding.rule) ? 0 : Number.POSITIVE_INFINITY;
+  }
   const { line, endLine } = finding.location;
   if (line === undefined) return Number.POSITIVE_INFINITY;
   const end = endLine ?? line;
@@ -197,8 +220,8 @@ function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect
     if (gap > 1) continue;
     const lines = Math.min(
       ...defect.spans
-        .filter((span) => normalise(finding.location.file) === span.file)
-        .map((span) => distance(finding, span)),
+        .filter((span) => normalise(finding.location.file) === normalise(span.file))
+        .map((span) => distance(finding, defect, span)),
     );
     if (lines <= LINE_TOLERANCE) ranked.push({ defect, lines, gap });
   }
@@ -989,7 +1012,8 @@ export async function regradeDocument(
 const describeSkill = (run: { baseline: boolean; skillUsed?: boolean }) =>
   run.baseline ? "without the skill" : run.skillUsed === true ? "with the skill" : "skill installed, not used";
 
-const where = (span: Span | undefined) => (span === undefined ? "" : `${span.file}:${String(span.line)}`);
+const where = (span: Span | undefined) =>
+  span === undefined ? "" : span.whole === true ? span.file : `${span.file}:${String(span.line)}`;
 
 export function formatRun(sheet: Sheet, tool: Tool, run: EvalRun, index: number, of: number): string[] {
   const { score: marked, collected } = run;
