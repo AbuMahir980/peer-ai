@@ -325,3 +325,27 @@ A secret scanner checks every change before it merges, and the repository's hist
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | MVP | A tool | Medium | Always | – |
+
+## SEC-28 · Each service has only the access it needs
+
+Each service, job and part of the product reaches the others with an account of its own, allowed only what it needs: a service that reads one table can't drop the database, and none shares an administrator's account.
+
+**Why:** When one part is broken into, its account decides how far the attacker gets. An account that can do everything turns one weak part into the whole system.
+
+**Ask:** Does this change give a service, job or part more access than it needs, or a shared or administrator account?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | High | Always | [OWASP ASVS 5.0, 13.2.1, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md); [OWASP ASVS 5.0, 13.2.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md) |
+
+## SEC-29 · Nothing is public unless it's meant to be
+
+Storage, databases, queues, admin and monitoring pages, internal documentation and debug modes are reachable only by who needs them. Each thing open to the internet is open on purpose, and says so in the configuration.
+
+**Why:** A storage bucket or database left open to the internet is found by automated scanners within hours, and everything in it is exposed at once.
+
+**Ask:** Does this change make anything reachable from the internet that isn't meant to be, or switch on a debug mode in production?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Critical | Always | [OWASP ASVS 5.0, 13.4.5, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md); [OWASP ASVS 5.0, 13.4.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md) |
