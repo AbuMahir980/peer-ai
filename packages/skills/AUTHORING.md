@@ -10,6 +10,7 @@ How every skill in this package is written. It combines the [Agent Skills specif
 - The description
 - The body
 - References
+- Templates
 - Evals come first
 - Sources
 
@@ -23,6 +24,7 @@ A skill does a job and proves it: it builds an inventory, checks rules against i
 skills/<skill id>/
 ├── SKILL.md
 ├── references/      # read when a step needs them
+├── assets/          # a document skill's templates
 └── agents/
     └── openai.yaml  # Codex's name, blurb and starting prompt
 ```
@@ -51,6 +53,7 @@ metadata:
 - `license` is `MIT`. **Checked.**
 - `metadata.peer-ai-kind` is the kind RFC 0004 gives the skill: review, document or work. **Checked.**
 - `metadata.peer-ai-domains` lists the standards domains whose rules the skill checks, and `metadata.peer-ai-rules` lists single rules from other domains. Together they become `references/rules.md`, and they're the rules the skill's report must cover. **Checked.**
+- A document skill also has `metadata.peer-ai-templates`, naming its templates in `assets/` with the main one first, and `metadata.peer-ai-path`, where its main document is saved when the project doesn't have one yet. The project map must find a document saved there. **Checked.** Other kinds of skill have neither. **Checked.**
 - Leave out `allowed-tools`: it is experimental, and tools treat it differently.
 
 ## The description
@@ -70,7 +73,7 @@ It is the only part a tool reads before choosing a skill, so it decides whether 
 - Match freedom to risk: exact steps where a mistake is costly, such as recording the report, and clear criteria with examples where judgement is the point.
 - Name a tool as the peer-ai MCP tool `record_review`, and a command as `npx peer-ai check`. Both must exist. **Checked.** The words "MCP tool" matter: in an eval, a fast model read "the peer-ai `record_review` tool" as a shell command and ran it with `npx`. The older wording fails the build. Say once near the top that these are MCP tools, never shell commands.
 - Cite rules by id, such as SEC-01. Every core rule id must exist. **Checked.** Never copy a rule's text into the body: it lives in `references/rules.md`.
-- End with the validate step: hand the output to Peer AI's check, fix what it names, and repeat until it passes.
+- End with the validate step: hand the output to Peer AI's check, fix what it names, and repeat until it passes. A review skill hands its report to the peer-ai MCP tool `record_review`, and a document skill hands its document to the peer-ai MCP tool `check_document`. **Checked.**
 - No role-play, such as "You are a security engineer". **Checked.**
 - No request to switch models. **Checked.**
 - Nothing a capable model already knows. Ask of each paragraph whether it earns its tokens.
@@ -100,6 +103,35 @@ interface:
 - `short_description` is 25 to 64 characters. **Checked.**
 - `default_prompt` names the skill as `${{name}}`; the build fills in the name. **Checked.**
 - Quote every value.
+
+## Templates
+
+A document skill writes from a Markdown template in `assets/`, such as `assets/requirements.md`. The peer-ai MCP tool `check_document` compares the document with it.
+
+```markdown
+# Requirements: {{product or feature}}
+
+## Summary
+
+{{What is being built, for whom, and why.}}
+
+## Features
+
+### {{Feature}}
+
+{{What it does and for whom.}}
+
+## Notes (optional)
+
+{{Anything else.}}
+```
+
+- The template starts with the document's title, as a `# ` heading. **Checked.**
+- Each `## ` heading is a part of the document. A part is required unless its heading ends in "(optional)", which the document leaves out. There is at least one required part. **Checked.**
+- A heading that holds a `{{placeholder}}` starts a section the document repeats, such as one per feature, and isn't checked by name. Use `### ` for those, inside a required part.
+- `{{Placeholders}}` say what goes there. The check fails a document that still holds one.
+- Headings match without regard to case, numbering or a trailing colon, so "2. Features:" matches "Features".
+- The check also fails an empty part, and a rule id that doesn't exist. Whether the content is any good is for the evals and the people who read it.
 
 ## Evals come first
 

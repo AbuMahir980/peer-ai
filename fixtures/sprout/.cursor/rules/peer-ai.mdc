@@ -16,6 +16,7 @@ This project uses Peer AI at the mvp stage. Its MCP server, `peer-ai`, holds the
 - Verify with `run_verify`. Never report a verify result yourself.
 - Peer AI's skills are named `peer-ai-…`, such as `peer-ai-security-review`. `next_work` names the one to use for a gap, and the reviews a work item needs; follow each skill step by step. If none are installed, run `npx peer-ai render --skills`.
 - For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.
+- For every document a skill writes, such as the requirements, check it with `check_document` and fix what it names.
 - Don't edit the files in `.peer-ai/` by hand. The tools keep them valid.
 
 Parts of the project:

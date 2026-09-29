@@ -273,6 +273,22 @@ npx peer-ai check-report .peer-ai/reports/project/security-review.json
 
 Exit codes: `0` when the report passes, `1` when it doesn't, and `2` without a valid config or a report path.
 
+## `peer-ai check-document`
+
+Checks a document a Peer AI skill wrote, such as the requirements, the way the `check_document` tool does: every required part of the skill's template is there and filled in, no template text is left in, and every rule id it cites exists. It changes nothing. It's there for AI tools that work in a shell, and for CI.
+
+```bash
+npx peer-ai check-document docs/requirements.md --skill requirements-analysis
+```
+
+| Option | What it does |
+|--------|--------------|
+| `--skill <skill>` | The document skill that wrote it. Required. |
+| `--template <name>` | Which of the skill's templates it follows, when it has several. By default, the main one. |
+| `--json` | Print the result as JSON |
+
+Exit codes: `0` when the document is ready, `1` when it isn't or can't be checked, and `2` without a path or a skill.
+
 ## `peer-ai mcp`
 
 Starts the Peer AI MCP server over stdio. Any AI tool that supports MCP servers reaches the same project map, work items and gates through it, so a project behaves the same whichever tool a person uses.
@@ -298,6 +314,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
 | `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
 | `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support, or a report that leaves out any of the skill's rules. A review recorded without a report is marked unproven. For a review of the whole project, leave out the work item: Peer AI checks the report the same way and gives its result, without recording it. |
+| `check_document` | Checks a document a Peer AI skill wrote against the skill's template, and lists what to change: missing or empty parts, template text left in, and rule ids that don't exist. The skill fixes them and checks again, until the document is ready. |
 | `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. Moving to verify works out the reviews the change needs from the files it touched, and keeps them on the item. |
 
 Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.

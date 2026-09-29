@@ -280,3 +280,12 @@ As a last resort, a project can set `skills.commit` to `true`:
 This answers the open question above.
 
 **30 September 2026: checking a report from a shell.** In the evals, a fast model reached for shell commands and never called the MCP tools, so its reports went unchecked. `peer-ai check-report <file>` makes the same checks as `record_review` and records nothing. Every review skill names it as the fallback when the MCP tools aren't available. `record_review` also checks a whole-project review's report when given no work item.
+
+**29 September 2026: how a document is checked.** Section 3 left open what `check_document` compares a document with. It's the skill's template:
+
+- **Templates.** A document skill's templates are Markdown files in `assets/`, named in `metadata.peer-ai-templates` with the main one first. `metadata.peer-ai-path` says where the main document is saved when the project map doesn't list one, and a test checks that the map finds a document saved there.
+- **Parts.** Each `## ` heading in a template is a part of the document, required unless it ends in "(optional)". A heading holding a `{{placeholder}}` starts a section the document repeats, such as one per feature, and isn't checked by name.
+- **The check.** `check_document({ skill, path, template? })` names each required part that's missing or empty, each `{{placeholder}}` left in, and each rule id that doesn't exist. It refuses until there are none, so a skill fixes what it names and checks again. `peer-ai check-document <path> --skill <id>` does the same from a shell and in CI. Whether the content is any good is for the rubric evals and the people who read it.
+- **The instructions.** The block `render` writes tells agents to check every document a skill writes with `check_document`.
+
+requirements-analysis is the first document skill.

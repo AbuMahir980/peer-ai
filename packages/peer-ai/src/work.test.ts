@@ -336,8 +336,8 @@ describe("next work", () => {
           "runbooks",
           "load-testing",
         ],
-        // No skill that fills one of these gaps is written yet; see routing.test.ts.
-        useSkill: {},
+        // Only the skills written so far; see routing.test.ts.
+        useSkill: { requirements: "peer-ai-requirements-analysis" },
       },
     });
   });

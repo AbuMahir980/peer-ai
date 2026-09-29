@@ -11,6 +11,7 @@ import { ACTIVITY_IDS, MapItemIdSchema, SKILL_IDS, WorkItemSchema, type PeerAiCo
 import { z } from "zod";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
+import { checkDocumentFile } from "./document.ts";
 import { VERSION } from "./package-info.ts";
 import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
@@ -33,6 +34,7 @@ Start a session with next_work: it returns the work item for the current git bra
 Before editing a file, call standards_for_file and follow what it returns.
 Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself.
 Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
+Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
 Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.`;
 
@@ -241,6 +243,33 @@ export function createServer(options: ServerOptions): McpServer {
               },
             }
           : checked,
+      );
+    }),
+  );
+
+  server.registerTool(
+    "check_document",
+    {
+      title: "Check a document",
+      description:
+        "Check a document a Peer AI document skill wrote, such as requirements or a threat model, against the skill's template: every required part present and filled in, no template text left in, and only rule ids that exist. Write the document first and pass its path. When it isn't ready, it lists what to change: fix it and call check_document again, until it's ready.",
+      inputSchema: {
+        skill: z.enum(SKILL_IDS).describe("The document skill that wrote it, such as requirements-analysis."),
+        path: z.string().min(1).describe("The document's path, relative to the project root."),
+        template: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Which of the skill's templates it follows, when it has several. Defaults to the main one."),
+      },
+      annotations: READ_ONLY,
+    },
+    withProject((root, _config, input: { skill: string; path: string; template?: string | undefined }) => {
+      const checked = checkDocumentFile(root, input);
+      if (!checked.ok) return refuse(checked.error);
+      if (checked.value.ready) return reply(checked.value);
+      return refuse(
+        `${input.path} isn't ready yet. Fix these, then call check_document again:\n${checked.value.problems.map((problem) => `- ${problem}`).join("\n")}`,
       );
     }),
   );

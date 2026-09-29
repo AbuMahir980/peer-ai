@@ -8,7 +8,26 @@ import { SKILL_IDS, type SkillId } from "@peer-ai/workflow";
 import { buildSkill, ruleIdsFor, type BuildOptions } from "./build.ts";
 import { readSkillFiles, type SkillFiles } from "./skill.ts";
 
-export { SKILL_NAME_PREFIX, buildSkill, renderedName, ruleIdsFor, rulesReference, type BuildOptions } from "./build.ts";
+export {
+  SKILL_NAME_PREFIX,
+  buildSkill,
+  documentInfo,
+  renderedName,
+  ruleIdsFor,
+  rulesReference,
+  templatePath,
+  type BuildOptions,
+  type DocumentInfo,
+} from "./build.ts";
+export {
+  checkDocument,
+  describeProblems,
+  headingKey,
+  templateParts,
+  type DocumentProblems,
+  type RuleIds,
+  type TemplatePart,
+} from "./document.ts";
 export { parseSkillMd, readSkillFiles, type SkillDocument, type SkillFiles } from "./skill.ts";
 export { LIMITS, checkDescriptionBudget, validateSkill, type Expectations } from "./validate.ts";
 
