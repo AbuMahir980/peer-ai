@@ -141,7 +141,12 @@ describe("the MCP server", () => {
     const root = shop();
     const client = await connect(root);
     const map = (await call(client, "project_map")).value();
-    expect(map).toMatchObject({ project: "Shop", stage: "mvp", neededFor: { mvp: expect.any(Array) as unknown } });
+    expect(map).toMatchObject({
+      project: "Shop",
+      stage: "mvp",
+      neededFor: { mvp: expect.any(Array) as unknown },
+      suggestedTraits: [],
+    });
     expect(map.storedMap).toMatch(/^There is no \.peer-ai\/map\.json yet/);
     expect((await call(client, "next_work")).value()).toMatchObject({ open: [], gaps: { stage: "mvp" } });
 

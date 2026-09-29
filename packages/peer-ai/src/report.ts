@@ -3,6 +3,7 @@
 
 import { MAP_ITEM_IDS } from "@peer-ai/workflow";
 import { NEXT_STAGE, gaps, type Assessment, type ItemResult, type Status } from "./assess.ts";
+import { CONFIG_FILE } from "./detect.ts";
 import type { Stage } from "./init.ts";
 
 const SYMBOL: Record<Status, string> = { present: "✓", partial: "◐", missing: "✗", "not-applicable": "–" };
@@ -57,6 +58,14 @@ export function formatReport(assessment: Assessment, stage: Stage): string[] {
   if (inferred.length > 0) {
     lines.push("");
     lines.push(`Inferred from the code, not a document; check these: ${inferred.join(", ")}.`);
+  }
+
+  if (assessment.suggestedTraits.length > 0) {
+    lines.push("");
+    lines.push(
+      `Traits to consider, each switching on extra rules. Add the ones that fit to project.traits in ${CONFIG_FILE}:`,
+    );
+    for (const { trait, evidence } of assessment.suggestedTraits) lines.push(`  ${trait}: ${evidence}`);
   }
 
   const { personalData, cardData, paymentProviders } = assessment.signals;

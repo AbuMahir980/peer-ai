@@ -169,6 +169,59 @@ describe("assess", () => {
     expect(statusOf(project({ "db/migrate/20260101000000_create_orders.rb": "" }))["data-model"]).toBe("present");
   });
 
+  const traitProject = {
+    "apps/web/package.json": json({
+      dependencies: { react: "19.0.0", "socket.io-client": "4.8.0", "@anthropic-ai/sdk": "0.70.0" },
+    }),
+    "apps/web/public/sw.js": "",
+    "apps/mobile/package.json": json({ dependencies: { expo: "57.0.0", "expo-image-picker": "17.0.0" } }),
+    "services/api/requirements.txt": "fastapi\nstripe\n",
+    "services/api/models/menu_item.py": "tenant_id = Column(String)\nallergens = Column(String)\n",
+  };
+
+  it("suggests traits from what the code uses, each with its evidence", () => {
+    expect(assess(project(traitProject), undefined, "mvp").suggestedTraits).toEqual([
+      { trait: "money", evidence: "payment provider stripe" },
+      { trait: "safety-critical", evidence: "allergens in services/api/models/menu_item.py" },
+      { trait: "several-audiences", evidence: "2 apps (mobile, web) share a backend" },
+      { trait: "offline", evidence: "a service worker, apps/web/public/sw.js" },
+      { trait: "real-time", evidence: "socket.io-client in apps/web/package.json" },
+      { trait: "uploads", evidence: "expo-image-picker in apps/mobile/package.json" },
+      { trait: "ai-features", evidence: "@anthropic-ai/sdk in apps/web/package.json" },
+    ]);
+    expect(
+      assess(project({ "package.json": json({ dependencies: { react: "19.0.0" } }) }), undefined, "mvp"),
+    ).toMatchObject({
+      suggestedTraits: [],
+    });
+  });
+
+  it("leaves out traits the config declares, and prints the rest in the report", () => {
+    const root = project({
+      ...traitProject,
+      "peer-ai.config.json": json({
+        version: 1,
+        project: { name: "Menu", stage: "mvp", traits: ["money", "safety-critical", "ai-features"] },
+        tracks: [
+          { id: "web", kind: "web", path: "apps/web", status: "active" },
+          { id: "mobile", kind: "mobile", path: "apps/mobile", status: "active" },
+          { id: "api", kind: "backend", path: "services/api", status: "active" },
+        ],
+      }),
+    });
+    expect(assess(root, loadConfig(root).config, "mvp").suggestedTraits.map((suggestion) => suggestion.trait)).toEqual([
+      "several-audiences",
+      "offline",
+      "real-time",
+      "uploads",
+    ]);
+    const out = capture();
+    runAssess({ cwd: root, json: false, dryRun: true, now: NOW }, out, formatReport);
+    expect(out.text()).toContain(
+      "Traits to consider, each switching on extra rules. Add the ones that fit to project.traits in peer-ai.config.json:\n  several-audiences: 2 apps (web, mobile) share a backend\n",
+    );
+  });
+
   it("infers the architecture from the code when there is no document, and says so", () => {
     const root = project({
       "apps/web/package.json": json({ dependencies: { react: "19.0.0" } }),

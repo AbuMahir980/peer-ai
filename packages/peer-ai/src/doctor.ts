@@ -6,7 +6,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import { CORE_RULES } from "@peer-ai/standards";
+import { DOMAINS, type PeerAiConfig } from "@peer-ai/workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
 import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } from "./detect.ts";
@@ -188,6 +189,58 @@ function checkDelivery(root: string, config: PeerAiConfig): Check {
   return ok("delivery", pipeline === undefined ? "No CI pipeline yet" : `CI pipeline: ${pipeline}`);
 }
 
+const CORE_RULE_IDS = new Set(CORE_RULES.map((rule) => rule.id));
+const CORE_PREFIXES = new Set<string>(Object.values(DOMAINS));
+
+/**
+ * Every rule the project sets aside or changes, listed so nothing is switched off silently (RFC
+ * 0003). An id with a core prefix must be a core rule; other prefixes belong to stack profiles
+ * and project add-ons, which are listed as they are.
+ */
+export function checkStandards(config: PeerAiConfig, today: string): Check[] {
+  const exceptions = config.standards?.exceptions ?? [];
+  const overrides = Object.entries(config.standards?.overrides ?? {});
+  if (exceptions.length + overrides.length === 0) return [ok("standards", "No rules set aside or changed")];
+  const unknown = (rule: string) =>
+    CORE_PREFIXES.has(rule.split("-")[0] ?? "") && !CORE_RULE_IDS.has(rule)
+      ? warn(
+          "standards",
+          `${rule} isn't one of Peer AI's rules, so setting it aside or changing it does nothing.`,
+          `Check the rule id in ${CONFIG_FILE}. The rules are listed in @peer-ai/standards.`,
+        )
+      : undefined;
+  const seen = new Set<string>();
+  const listed = exceptions.map((exception): Check => {
+    const { rule, reason, decidedBy, until } = exception;
+    if (seen.has(rule)) {
+      return warn(
+        "standards",
+        `${rule} is set aside more than once.`,
+        "Keep one entry for it in standards.exceptions, with the decision that stands.",
+      );
+    }
+    seen.add(rule);
+    const problem = unknown(rule);
+    if (problem !== undefined) return problem;
+    if (until !== undefined && until < today) {
+      return warn(
+        "standards",
+        `The exception for ${rule} ended on ${until}, so the rule applies again.`,
+        "Remove it from standards.exceptions, or extend it with a new decision and a new date.",
+      );
+    }
+    return ok(
+      "standards",
+      `${rule} set aside: ${reason} (decided by ${decidedBy}${until === undefined ? "" : `, until ${until}`})`,
+    );
+  });
+  const changed = overrides.map(
+    ([rule, override]): Check =>
+      unknown(rule) ?? ok("standards", `${rule} changed to ${String(override.value)}: ${override.reason}`),
+  );
+  return [...listed, ...changed];
+}
+
 /** The map is valid, and still says what a fresh assessment would. */
 function checkMap(root: string, config: PeerAiConfig | undefined): Check {
   const read = readMap(root);
@@ -265,7 +318,11 @@ function checkLegacy(root: string): Check[] {
   ];
 }
 
-export function diagnose(root: string, nodeVersion: string = process.versions.node): Diagnosis {
+export function diagnose(
+  root: string,
+  nodeVersion: string = process.versions.node,
+  today: Date = new Date(),
+): Diagnosis {
   const { check: configCheck, config } = checkConfig(root);
   const needsConfig = (id: string, what: string): Check[] =>
     config === undefined ? [skip(id, `${what} not checked: ${NEEDS_CONFIG}`)] : [];
@@ -277,6 +334,9 @@ export function diagnose(root: string, nodeVersion: string = process.versions.no
     ...(config === undefined ? needsConfig("tools", "AI tools") : [checkTools(root, config)]),
     ...(config === undefined ? needsConfig("render", "What render writes") : [checkRendered(root, config)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
+    ...(config === undefined
+      ? needsConfig("standards", "Rules set aside")
+      : checkStandards(config, today.toISOString().slice(0, 10))),
     checkMap(root, config),
     ...checkWorkItems(root, config),
     checkGit(root),
