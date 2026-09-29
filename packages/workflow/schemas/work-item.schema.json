@@ -82,6 +82,40 @@
         }
       ]
     },
+    "goal": {
+      "description": "What done means for this item, in a sentence or two (RFC 0005).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "acceptance": {
+      "description": "Criteria a tester could check: given a situation, when something happens, then a result anyone can see.",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    },
+    "sources": {
+      "description": "The spec, design, requirement or issue it implements: paths in the repository, or URLs.",
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dependsOn": {
+      "description": "Items that must reach ship before this one can.",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      }
+    },
     "activities": {
       "type": "array",
       "items": {

@@ -13,7 +13,14 @@ export {
   type ReviewResult,
   type Severity,
 } from "./report.ts";
-export { MapItemIdSchema, MapSchema, WorkItemSchema, type ProjectMap, type WorkItem } from "./state.ts";
+export {
+  MapItemIdSchema,
+  MapSchema,
+  WorkItemIdSchema,
+  WorkItemSchema,
+  type ProjectMap,
+  type WorkItem,
+} from "./state.ts";
 
 export type Validation<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 

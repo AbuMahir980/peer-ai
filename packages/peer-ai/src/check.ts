@@ -39,11 +39,39 @@ function latestReviews(item: WorkItem): Review[] {
   return [...latest.values()];
 }
 
-export function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
+/**
+ * Whether a work item may be at ship or done. `items` are the project's other work items, for its
+ * dependencies (RFC 0005): an item can't ship before the items it depends on have.
+ */
+export function gateWorkItem(
+  item: WorkItem,
+  config: PeerAiConfig,
+  stage: Stage,
+  assessment: Assessment,
+  items: WorkItem[] = [],
+): Check[] {
   const checks: Check[] = [];
   const claim = `${item.id} is at ${item.stage}`;
   const backToBuild = "or move the item back to build.";
   const verifyCommand = config.commands?.verify ?? undefined;
+
+  for (const id of item.dependsOn ?? []) {
+    const dependency = items.find((other) => other.id === id);
+    if (dependency !== undefined && CLAIMS_VERIFIED.includes(dependency.stage)) continue;
+    checks.push(
+      fail(
+        "gates",
+        dependency === undefined
+          ? `${claim}, but it depends on ${id}, which isn't a work item.`
+          : dependency.stage === "cancelled"
+            ? `${claim}, but it depends on ${id}, which was cancelled.`
+            : `${claim}, but it depends on ${id}, which is only at ${dependency.stage}.`,
+        dependency?.stage === "cancelled" || dependency === undefined
+          ? `Remove ${id} from its dependsOn, ${backToBuild}`
+          : `Ship ${id} first, ${backToBuild}`,
+      ),
+    );
+  }
 
   if (item.lastVerify?.result === "fail") {
     checks.push(
@@ -112,7 +140,7 @@ export function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage,
 
 function checkGates(items: WorkItem[], config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
   const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage));
-  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment));
+  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, items));
   const failures = results.filter((check) => check.status === "fail");
   const warnings = results.filter((check) => check.status === "warn");
   if (failures.length > 0) return [...failures, ...warnings];
@@ -121,6 +149,52 @@ function checkGates(items: WorkItem[], config: PeerAiConfig, stage: Stage, asses
     ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`),
     ...warnings,
   ];
+}
+
+/** Every dependency names a work item that exists, and no items wait on each other in a loop (RFC 0005). */
+function checkDependencies(items: WorkItem[]): Check[] {
+  const ids = new Set(items.map((item) => item.id));
+  const problems: Check[] = [];
+  for (const item of items) {
+    for (const id of item.dependsOn ?? []) {
+      if (!ids.has(id)) {
+        problems.push(
+          fail("plans", `${item.id} depends on ${id}, which isn't a work item.`, `Remove ${id} from its dependsOn.`),
+        );
+      }
+    }
+  }
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const reported = new Set<string>();
+  for (const start of items) {
+    // Follow the dependencies depth first; meeting an item already on the path is a loop.
+    const path: string[] = [];
+    const visit = (id: string): string[] | undefined => {
+      if (path.includes(id)) return [...path.slice(path.indexOf(id)), id];
+      if (reported.has(id)) return undefined;
+      path.push(id);
+      for (const next of byId.get(id)?.dependsOn ?? []) {
+        const loop = visit(next);
+        if (loop !== undefined) return loop;
+      }
+      path.pop();
+      return undefined;
+    };
+    const loop = visit(start.id);
+    if (loop !== undefined && !loop.some((id) => reported.has(id))) {
+      for (const id of loop) reported.add(id);
+      problems.push(
+        fail(
+          "plans",
+          `Work items wait on each other in a loop: ${loop.join(" → ")}.`,
+          "Remove one of the dependencies.",
+        ),
+      );
+    }
+  }
+  if (problems.length > 0) return problems;
+  const planned = items.filter((item) => (item.dependsOn ?? []).length > 0).length;
+  return planned === 0 ? [] : [ok("plans", `${plural(planned, "work item")} with dependencies, each on a real item`)];
 }
 
 function checkVerifyCommand(config: PeerAiConfig, stage: Stage): Check[] {
@@ -168,6 +242,7 @@ export function evaluate(root: string, config: PeerAiConfig): Verdict {
     ...(trackFailures.length > 0 ? trackFailures : [ok("tracks", "Every track's folder exists")]),
     checkMap(root, assessment),
     ...checkWorkItems(root, config),
+    ...checkDependencies(items),
     ...checkGates(items, config, stage, assessment),
     ...checkVerifyCommand(config, stage),
     checkGapsTracked(assessment, stage, items),

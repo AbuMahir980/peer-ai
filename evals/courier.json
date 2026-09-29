@@ -17,7 +17,8 @@
     "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built.",
     "api-design": "Write down Courier's API design from the code and its contract.",
     "data-modelling": "Write down Courier's data model from its migrations.",
-    "design-system": "Courier has no design system yet. Write one from its web app's screens."
+    "design-system": "Courier has no design system yet. Write one from its web app's screens.",
+    "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\""
   },
   "defects": [
     {
@@ -733,6 +734,47 @@
         {
           "id": "YC8",
           "point": "Invents no designs or brand the code doesn't show."
+        }
+      ]
+    },
+    "issue-planning": {
+      "path": ".peer-ai/work/",
+      "points": [
+        {
+          "id": "IC1",
+          "point": "Splits the work into items that each deliver something a customer or support can use or check, rather than one item per layer, such as one for the database.",
+          "must": true
+        },
+        {
+          "id": "IC2",
+          "point": "Gives the items acceptance criteria from the spec, including a collected pickup being refused and a double cancel refunding once.",
+          "must": true
+        },
+        {
+          "id": "IC3",
+          "point": "Records a dependency only where one item must ship before another, such as the refund needing the cancel.",
+          "must": true
+        },
+        {
+          "id": "IC4",
+          "point": "Plans the assistant's cancel going through the same path as the customer's, as its own item or as a criterion."
+        },
+        {
+          "id": "IC5",
+          "point": "Plans what happens when the refund fails, with support told."
+        },
+        {
+          "id": "IC6",
+          "point": "Plans nothing for partial refunds or cancellation fees.",
+          "must": true
+        },
+        {
+          "id": "IC7",
+          "point": "Names the spec, or where it came from, as each item's source."
+        },
+        {
+          "id": "IC8",
+          "point": "Gives each item a goal and a first action."
         }
       ]
     }

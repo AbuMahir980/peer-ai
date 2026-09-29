@@ -4,9 +4,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 
 ## Running one
@@ -190,6 +190,14 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Without the skill, contrast was never worked out:** sprout's baseline found the stray grey but didn't say it's too pale, and neither sprout's nor shelf's gave contrast ratios. Courier's baseline listed no shared components with their states, and didn't pin the danger colour to one meaning.
   - **With the skill, each run found the planted problems its project has:** sprout's pale, off-token muted text and drag-only reordering; shelf's hard-coded colours, the unnamed return icon and text that ignores the reader's size; courier's status shown only by colour, the Book button a keyboard can't use, and fields without labels.
 
+- **2026-09-29, issue-planning with Codex, on courier, shelf and sprout, with the skill and without.** Work skills are graded like documents: the runner writes out the work items a run created, and `peer-ai check` stands in for `check_document`:
+  - **With the skill:** courier 8 of 8 and shelf 6 of 6 after the fix below, both ready; sprout 5 of 6. Without it: 6 of 8, 4 of 6 and 3 of 6, none ready.
+  - **Without the skill,** courier's plan opened with one large "cancel pickups" item, shelf's folded the change to the other repository's API into the app's item, and sprout's planned nothing for the data kept on the device.
+- **What the runs changed:**
+  - **The code and the architecture weren't read before slicing.** Sprout's first plan missed that today's date is worked out in UTC, and shelf's didn't say the new screen belongs in the newer TypeScript half. The skill now reads the code each slice touches, and the architecture, first. The next runs caught both.
+- **What people judged in those runs:**
+  - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
+
 ## Results
 
 Newest last.
@@ -245,7 +253,7 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 
 ## Document results
 
-Newest last. **Points** is how many of the scenario's points the grader found in the document, and **Must-haves** how many of those it must make. **Check** is whether `check_document` accepted it.
+Newest last. **Points** is how many of the scenario's points the grader found in the document, and **Must-haves** how many of those it must make. **Check** is whether `check_document` accepted it, or for a work skill, whether `peer-ai check` accepted its work items.
 
 | Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
 |------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
@@ -313,3 +321,11 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | design-system | Codex | default | without | 3 of 8 | 1 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | shelf | design-system | Codex | default | without | 6 of 8 | 3 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | courier | design-system | Codex | default | without | 6 of 8 | 3 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | issue-planning | Codex | default | used | 8 of 8 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | issue-planning | Codex | default | used | 5 of 6 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | issue-planning | Codex | default | used | 4 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | issue-planning | Codex | default | without | 6 of 8 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | issue-planning | Codex | default | without | 4 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | issue-planning | Codex | default | without | 3 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | issue-planning | Codex | default | used | 6 of 6 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | issue-planning | Codex | default | used | 5 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |

@@ -88,7 +88,7 @@ The examples show one project per shape:
 State is split across files so that parallel sessions never edit the same one:
 
 - **`.peer-ai/map.json`** records what `peer-ai assess` found: each item on the map as present, partial, missing or not applicable, with the evidence behind it. An item found by reading the code rather than a document is marked `inferred` until someone confirms it.
-- **`.peer-ai/work/<id>.json`** holds one file per work item: its kind, stage, the activities it has called, where work stopped, its last verify and reviews, and a one-line `next`.
+- **`.peer-ai/work/<id>.json`** holds one file per work item: its kind, stage, the activities it has called, where work stopped, its last verify and reviews, and a one-line `next`. It can also carry its plan (RFC 0005): a `goal`, `acceptance` criteria, the `sources` it implements, and the items it `dependsOn`, which must ship before it can.
 
 - **`.peer-ai/reports/<work item>/<skill>-<time>.json`** holds a review's report: what it looked at, what it read first, every rule it checked and how each went, and every problem it found, with file, line and evidence. See [RFC 0002](../../rfcs/0002-review-reports-and-evals.md).
 

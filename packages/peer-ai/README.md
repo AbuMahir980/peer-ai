@@ -228,6 +228,8 @@ pnpm peer-ai check
 | A production project's work item at `ship` or `done` has a review with no report | Without a report, the result is only the agent's word. For an MVP this is a warning; for a prototype it's allowed. |
 | A work item at `ship` or `done` is missing a review it needs | When an item reaches verify, Peer AI works out the reviews it needs from the files it touched, such as a security review for code at MVP or production. Missing one is a warning for an MVP and a failure in production. `activities.verify.reviews` in the config can require more, or skip one with a reason. |
 | A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
+| A work item at `ship` or `done` depends on an item that hasn't shipped | Changes land in the order they depend on (RFC 0005). Building before a dependency ships is fine. |
+| A work item depends on an item that doesn't exist, or items depend on each other in a loop | The plan can't be followed |
 
 It warns, and still passes, when:
 
@@ -308,10 +310,10 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | Tool | What it does |
 |------|--------------|
 | `project_map` | Each item on the project map with its evidence, what the stage still needs, compliance signals and traits to consider. It assesses afresh on every call, and says whether the committed map has fallen behind. |
-| `next_work` | The open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item. When nothing is open, the gaps the stage needs, with the Peer AI skill to use for each (`useSkill`). |
+| `next_work` | The open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship (`waiting`). When nothing is open, the gaps the stage needs, with the Peer AI skill to use for each (`useSkill`). |
 | `standards_for_file` | The track a file belongs to, the stack profiles, and the project's own standards documents and rules for that track |
-| `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |
-| `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
+| `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. It can carry its plan (RFC 0005): a goal, acceptance criteria, the sources it implements, and the items it depends on. |
+| `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there. It also sets the item's goal, acceptance criteria, sources and dependencies. |
 | `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
 | `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support, or a report that leaves out any of the skill's rules. A review recorded without a report is marked unproven. For a review of the whole project, leave out the work item: Peer AI checks the report the same way and gives its result, without recording it. |
 | `check_document` | Checks a document a Peer AI skill wrote against the skill's template, and lists what to change: missing or empty parts, template text left in, and rule ids that don't exist. The skill fixes them and checks again, until the document is ready. |

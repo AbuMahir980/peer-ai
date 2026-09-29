@@ -97,6 +97,10 @@ export interface NewWorkItem {
   gap?: string | undefined;
   branch?: string | undefined;
   next?: string | undefined;
+  goal?: string | undefined;
+  acceptance?: string[] | undefined;
+  sources?: string[] | undefined;
+  dependsOn?: string[] | undefined;
 }
 
 export function createWorkItem(root: string, config: PeerAiConfig, input: NewWorkItem, now: Date): Result<WorkItem> {
@@ -115,6 +119,7 @@ export function createWorkItem(root: string, config: PeerAiConfig, input: NewWor
     ...(track === undefined ? {} : { track }),
     ...(branch === undefined ? {} : { branch }),
     ...(input.gap === undefined ? {} : { gap: input.gap }),
+    ...defined({ goal: input.goal, acceptance: input.acceptance, sources: input.sources, dependsOn: input.dependsOn }),
     next: input.next ?? "Read what this item needs, then plan it.",
     updatedAt: now.toISOString(),
   } as WorkItem;
@@ -126,6 +131,10 @@ export interface WorkItemChanges {
   next?: string | undefined;
   branch?: string | undefined;
   position?: { activity: ActivityId; step: number } | undefined;
+  goal?: string | undefined;
+  acceptance?: string[] | undefined;
+  sources?: string[] | undefined;
+  dependsOn?: string[] | undefined;
 }
 
 /** The fields that have a value, so an undefined argument never erases a stored one. */
@@ -363,7 +372,8 @@ export function advanceWorkItem(
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
-    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage)).filter(
+    const others = readWorkItems(root).flatMap(({ item: other }) => (other.ok ? [other.value] : []));
+    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage), others).filter(
       (check) => check.status === "fail",
     );
     if (failures.length > 0) {
@@ -456,6 +466,8 @@ export interface NextWork {
   open: WorkItem[];
   /** The current item's required reviews, by the names their skills are installed under. */
   reviews?: ReturnType<typeof reviewsToDo>;
+  /** For each open item with unfinished dependencies, the items it's waiting for before it can ship (RFC 0005). */
+  waiting?: Record<string, string[]>;
   /**
    * When nothing is open: what the project's stage still needs, to start as gap work items, and
    * the skill to use for each gap that has one.
@@ -475,10 +487,21 @@ export function nextWork(root: string, config: PeerAiConfig): NextWork {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const current = branch === undefined ? undefined : open.find((item) => item.branch === branch);
   const reviews = current === undefined ? [] : reviewsToDo(current);
+  const shipped = new Set(
+    readWorkItems(root).flatMap(({ item }) =>
+      item.ok && (item.value.stage === "ship" || item.value.stage === "done") ? [item.value.id] : [],
+    ),
+  );
+  const waiting = Object.fromEntries(
+    open
+      .map((item) => [item.id, (item.dependsOn ?? []).filter((id) => !shipped.has(id))] as const)
+      .filter(([, unfinished]) => unfinished.length > 0),
+  );
   const result: NextWork = {
     ...(branch === undefined ? {} : { branch }),
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),
+    ...(Object.keys(waiting).length > 0 ? { waiting } : {}),
     open,
   };
   if (open.length > 0) return result;
