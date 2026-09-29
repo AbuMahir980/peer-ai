@@ -4,7 +4,7 @@ How services and clients agree on what they send each other.
 
 ## API-01 · Requests and responses are typed schemas
 
-Every request and response body is a typed schema, not a loose dictionary. The schema is the contract.
+Every request and response body is a typed schema, not a loose map or dictionary. The schema is the contract.
 
 **Why:** A loose response becomes a loose client type, in every app that uses the API, at once.
 

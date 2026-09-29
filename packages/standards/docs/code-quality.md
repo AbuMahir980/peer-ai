@@ -4,7 +4,7 @@ What makes code good in any language: naming, size, duplication, errors and type
 
 ## CODE-01 · Names say what things are
 
-A name says what the thing is: `amount_minor`, not `amt`; `profile_id`, not `pid`.
+A name says what the thing is, in the language's own style: `amountMinor` or `amount_minor`, not `amt`; `profileId` or `profile_id`, not `pid`.
 
 **Why:** Code is read far more often than it's written. An abbreviation saves the writer a second and costs every reader a guess.
 
@@ -16,9 +16,9 @@ A name says what the thing is: `amount_minor`, not `amt`; `profile_id`, not `pid
 
 ## CODE-02 · True-or-false values read as statements
 
-A true-or-false value is named as a statement: `is_published`, `has_error`, `can_book`.
+A true-or-false value is named as a statement, such as `isPublished`, `hasError` or `canBook` (or `is_published` where the language uses snake_case).
 
-**Why:** `if published` could mean a date, a flag or a count; `if is_published` can only mean one thing.
+**Why:** `published` could mean a date, a flag or a count; `isPublished` can only mean one thing.
 
 **Ask:** Does every true-or-false value in this change read as a statement?
 
@@ -160,7 +160,7 @@ When something has distinct states, such as loading, failed and ready, it's one 
 
 ## CODE-14 · Types are strict
 
-Where the language has types, they're strict. No escape-hatch type, such as `any`, where a real type exists: data of unknown shape is checked and narrowed.
+Where the language has types, they're strict. No escape-hatch type, such as TypeScript's `any` or Python's `Any`, where a real type exists: data of unknown shape is checked and narrowed.
 
 **Why:** An escape-hatch type switches the checks off exactly where the data is least trusted.
 

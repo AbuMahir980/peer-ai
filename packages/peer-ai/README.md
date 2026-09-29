@@ -16,9 +16,9 @@ It reads the repository first and works out what it can:
 
 | It finds | From |
 |----------|------|
-| The project's name and description | `package.json` or `pyproject.toml`, else the folder name |
+| The project's name and description | The project's own file, such as `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `composer.json`, `pubspec.yaml` or `settings.gradle`, else the folder name |
 | Whether the project is new or existing | Code and project files at the root |
-| Each part and its stack | The repository root and every folder under `apps/`, `packages/`, `services/` and `libs/`. It recognises JavaScript and TypeScript frameworks, Python, Flutter, Android, JVM, Go, Rust, Ruby and PHP. |
+| Each part and its stack | The repository root and every folder under `apps/`, `packages/`, `services/` and `libs/`. It recognises JavaScript and TypeScript frameworks (including Express, NestJS and Fastify backends), Python, Flutter, Android, the JVM, .NET, Swift, Go, Rust, Ruby, PHP and Elixir, and names the backend framework where there is one. |
 | Infrastructure as code | Its files, wherever they are: Terraform or OpenTofu, Pulumi, AWS CDK, Helm, Kustomize, Serverless, AWS SAM, CloudFormation, Bicep and Ansible. Folders such as `infra/`, `deploy/`, `k8s/` and `helm/` are searched up to five levels deep, and there Docker and Kubernetes files count too. A `docker-compose.yml` at the root is local development, not infrastructure. |
 | Where each part deploys | A platform's config file in that part's folder: Vercel, Netlify, Fly, Render, Railway, Cloudflare Workers, Firebase, AWS Amplify, Expo EAS, Serverless, Heroku, Google App Engine, fastlane, or a Dockerfile for a container |
 | Existing CI | GitHub Actions, GitLab CI, Jenkins, Bitbucket Pipelines, Azure Pipelines, CircleCI, Buildkite, Drone, Travis, Cloud Build, Codemagic and Bitrise. Peer AI then extends that pipeline and never adds a second one. |

@@ -48,6 +48,9 @@ const PROJECT_MARKERS = [
   "pom.xml",
   "build.gradle",
   "build.gradle.kts",
+  "Package.swift",
+  "Podfile",
+  "mix.exs",
   "src",
   "app",
   "lib",
@@ -94,6 +97,29 @@ const NODE_FRAMEWORKS: [dependency: string, tag: string, kind: TrackKind][] = [
   ["fastify", "fastify", "backend"],
   ["hono", "hono", "backend"],
   ["koa", "koa", "backend"],
+];
+
+// Backend frameworks in other languages, found by name in the project's dependency file. A
+// project whose frameworks aren't listed is still recognised by its language.
+const PYTHON_FRAMEWORKS = ["fastapi", "django", "flask"];
+const GO_FRAMEWORKS: [module: string, tag: string][] = [
+  ["github.com/gin-gonic/gin", "gin"],
+  ["github.com/labstack/echo", "echo"],
+  ["github.com/gofiber/fiber", "fiber"],
+  ["github.com/go-chi/chi", "chi"],
+];
+const RUST_FRAMEWORKS: [crate: string, tag: string][] = [
+  ["axum", "axum"],
+  ["actix-web", "actix"],
+  ["rocket", "rocket"],
+  ["warp", "warp"],
+];
+const JVM_FRAMEWORKS = ["spring", "ktor", "quarkus", "micronaut"];
+const RUBY_FRAMEWORKS = ["rails", "sinatra", "hanami"];
+const PHP_FRAMEWORKS: [dependency: string, tag: string][] = [
+  ["laravel", "laravel"],
+  ["symfony/framework-bundle", "symfony"],
+  ["slim/slim", "slim"],
 ];
 
 // Infrastructure as code, recognised by its files rather than by where it lives.
@@ -214,18 +240,23 @@ function detectNodeTrack(dir: string, inheritsTypescript: boolean): Found | unde
   return { kind, stack };
 }
 
+/** A backend when it depends on one of its language's frameworks, otherwise a library. */
+function byFramework(language: string, manifest: string, frameworks: [needle: string, tag: string][]): Found {
+  const framework = frameworks.find(([needle]) => manifest.includes(needle))?.[1];
+  return framework === undefined
+    ? { kind: "library", stack: [language] }
+    : { kind: "backend", stack: [language, framework] };
+}
+
+const named = (names: string[]): [string, string][] => names.map((name) => [name, name]);
+
 /** An application or library part, recognised by its language's project files. */
 function detectApp(dir: string, inheritsTypescript: boolean): Found | undefined {
   const node = detectNodeTrack(dir, inheritsTypescript);
   if (node !== undefined) return node;
 
   const python = `${readText(join(dir, "pyproject.toml"))}\n${readText(join(dir, "requirements.txt"))}`.toLowerCase();
-  if (python.trim() !== "") {
-    const framework = ["fastapi", "django", "flask"].find((name) => python.includes(name));
-    return framework === undefined
-      ? { kind: "library", stack: ["python"] }
-      : { kind: "backend", stack: ["python", framework] };
-  }
+  if (python.trim() !== "") return byFramework("python", python, named(PYTHON_FRAMEWORKS));
 
   const pubspec = readText(join(dir, "pubspec.yaml"));
   if (pubspec !== "") {
@@ -240,14 +271,46 @@ function detectApp(dir: string, inheritsTypescript: boolean): Found | undefined 
   if (gradle !== "" || maven !== "") {
     const language = existsSync(join(dir, "build.gradle.kts")) ? "kotlin" : "java";
     if (gradle.includes("com.android.application")) return { kind: "mobile", stack: ["kotlin", "android"] };
-    const spring = (gradle + maven).includes("spring");
-    return { kind: "backend", stack: spring ? [language, "spring"] : [language] };
+    const framework = JVM_FRAMEWORKS.find((name) => (gradle + maven).includes(name));
+    return { kind: "backend", stack: framework === undefined ? [language] : [language, framework] };
   }
 
-  if (existsSync(join(dir, "go.mod"))) return { kind: "backend", stack: ["go"] };
-  if (existsSync(join(dir, "Cargo.toml"))) return { kind: "other", stack: ["rust"] };
-  if (readText(join(dir, "Gemfile")).includes("rails")) return { kind: "backend", stack: ["ruby", "rails"] };
-  if (readText(join(dir, "composer.json")).includes("laravel")) return { kind: "backend", stack: ["php", "laravel"] };
+  const csproj = listDir(dir).find((file) => file.endsWith(".csproj"));
+  if (csproj !== undefined) {
+    const project = readText(join(dir, csproj));
+    if (project.includes("<UseMaui>true")) return { kind: "mobile", stack: ["csharp", "dotnet", "maui"] };
+    if (project.includes("Microsoft.NET.Sdk.BlazorWebAssembly")) {
+      return { kind: "web", stack: ["csharp", "dotnet", "blazor"] };
+    }
+    if (project.includes("Microsoft.NET.Sdk.Web")) return { kind: "backend", stack: ["csharp", "dotnet", "aspnet"] };
+    return { kind: "library", stack: ["csharp", "dotnet"] };
+  }
+
+  if (listDir(dir).some((file) => file.endsWith(".xcodeproj"))) return { kind: "mobile", stack: ["swift", "ios"] };
+  const swiftPackage = readText(join(dir, "Package.swift"));
+  if (swiftPackage !== "") return byFramework("swift", swiftPackage, [["vapor", "vapor"]]);
+
+  // A Go module is a backend even without a framework, since Go's own library serves HTTP.
+  const goMod = readText(join(dir, "go.mod"));
+  if (goMod !== "") {
+    const framework = GO_FRAMEWORKS.find(([module]) => goMod.includes(module))?.[1];
+    return { kind: "backend", stack: framework === undefined ? ["go"] : ["go", framework] };
+  }
+
+  const cargo = readText(join(dir, "Cargo.toml"));
+  if (cargo !== "") {
+    const framework = RUST_FRAMEWORKS.find(([crate]) => new RegExp(`^${crate}\\s*=`, "m").test(cargo))?.[1];
+    return framework === undefined
+      ? { kind: "other", stack: ["rust"] }
+      : { kind: "backend", stack: ["rust", framework] };
+  }
+
+  const gemfile = readText(join(dir, "Gemfile"));
+  if (gemfile !== "") return byFramework("ruby", gemfile, named(RUBY_FRAMEWORKS));
+  const composer = readText(join(dir, "composer.json"));
+  if (composer !== "") return byFramework("php", composer, PHP_FRAMEWORKS);
+  const mix = readText(join(dir, "mix.exs"));
+  if (mix !== "") return byFramework("elixir", mix, [[":phoenix", "phoenix"]]);
   return undefined;
 }
 
@@ -281,17 +344,42 @@ function withDeploy(track: Found, dir: string): Found {
 }
 
 function isWorkspaceRoot(root: string): boolean {
-  if (["pnpm-workspace.yaml", "turbo.json", "nx.json", "lerna.json"].some((file) => existsSync(join(root, file)))) {
-    return true;
-  }
+  const markers = ["pnpm-workspace.yaml", "turbo.json", "nx.json", "lerna.json", "go.work"];
+  if (markers.some((file) => existsSync(join(root, file)))) return true;
+  // A Cargo workspace root with no package of its own only groups the crates inside it.
+  const cargo = readText(join(root, "Cargo.toml"));
+  if (/^\[workspace\]/m.test(cargo) && !/^\[package\]/m.test(cargo)) return true;
   return readJson(join(root, "package.json"))?.workspaces !== undefined;
 }
 
+const tomlValue = (text: string, key: string): string | undefined =>
+  new RegExp(`^\\s*${key}\\s*=\\s*"([^"]+)"`, "m").exec(text)?.[1];
+
+/** The project's name from its own project file, in whichever language it's written. */
 export function detectName(root: string): string {
+  const text = (file: string) => readText(join(root, file));
   const pkgName = readJson(join(root, "package.json"))?.name;
-  if (typeof pkgName === "string" && pkgName !== "") return pkgName.replace(/^@[^/]+\//, "");
-  const pyName = /^\s*name\s*=\s*"([^"]+)"/m.exec(readText(join(root, "pyproject.toml")))?.[1];
-  return pyName ?? basename(root);
+  const composerName = readJson(join(root, "composer.json"))?.name;
+  const goModule = /^module\s+(\S+)/m.exec(text("go.mod"))?.[1]?.replace(/\/v\d+$/, "");
+  const candidates = [
+    typeof pkgName === "string" ? pkgName.replace(/^@[^/]+\//, "") : undefined,
+    tomlValue(text("pyproject.toml"), "name"),
+    tomlValue(text("Cargo.toml"), "name"),
+    goModule?.split("/").pop(),
+    typeof composerName === "string" ? composerName.split("/").pop() : undefined,
+    /^name:\s*["']?([\w-]+)/m.exec(text("pubspec.yaml"))?.[1],
+    /rootProject\.name\s*=\s*["']([^"']+)["']/.exec(text("settings.gradle.kts") + text("settings.gradle"))?.[1],
+  ];
+  return candidates.find((name) => name !== undefined && name !== "") ?? basename(root);
+}
+
+function detectDescription(root: string): string | undefined {
+  const description = readJson(join(root, "package.json"))?.description;
+  if (typeof description === "string" && description !== "") return description;
+  return (
+    tomlValue(readText(join(root, "pyproject.toml")), "description") ??
+    tomlValue(readText(join(root, "Cargo.toml")), "description")
+  );
 }
 
 export function detectTracks(root: string, projectName: string): DetectedTrack[] {
@@ -388,12 +476,12 @@ export function detectRepo(root: string): Detected["repo"] {
 export function detect(root: string): Detected {
   const name = detectName(root);
   const tracks = detectTracks(root, name);
-  const description = readJson(join(root, "package.json"))?.description;
+  const description = detectDescription(root);
   const delivery = detectDelivery(root);
   const existing = tracks.length > 0 || PROJECT_MARKERS.some((marker) => existsSync(join(root, marker)));
   return {
     name,
-    ...(typeof description === "string" && description !== "" ? { description } : {}),
+    ...(description === undefined ? {} : { description }),
     origin: existing ? "existing" : "new",
     tools: detectTools(root),
     repo: detectRepo(root),

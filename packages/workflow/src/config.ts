@@ -208,7 +208,7 @@ const StandardsDocument = z.strictObject({
 
 const Standards = z.strictObject({
   core: z.boolean().optional().describe("Apply Peer AI's core principles. Defaults to true."),
-  profiles: z.array(Slug).optional().describe("Stack profiles, such as react or python-fastapi."),
+  profiles: z.array(Slug).optional().describe("Stack profiles, such as react, express or python-fastapi."),
   documents: z.array(StandardsDocument).optional(),
   precedence: z
     .enum(["project", "core"])

@@ -7,8 +7,8 @@ const F1 = {
   severity: "high",
   status: "open",
   title: "Any signed-in user can read another user's order",
-  location: { file: "api/orders.py", line: 58, endLine: 61 },
-  evidence: "get_order loads the order by id and never checks that it belongs to the caller.",
+  location: { file: "api/orders.ts", line: 58, endLine: 61 },
+  evidence: "getOrder loads the order by id and never checks that it belongs to the caller.",
   fix: "Load the order by id and the caller's user id, and return 404 otherwise.",
 };
 
@@ -21,8 +21,8 @@ const example = () => ({
   scope: { base: "a1b2c3d", head: "e4f5a6b", tracks: ["api"] },
   inputs: ["docs/architecture.md", "docs/standards/api.md", "packs/ndpa"],
   inventory: [
-    { id: "route:GET /orders/{id}", kind: "route", location: { file: "api/orders.py", line: 58 } },
-    { id: "route:POST /orders", kind: "route", location: { file: "api/orders.py", line: 42 } },
+    { id: "route:GET /orders/{id}", kind: "route", location: { file: "api/orders.ts", line: 58 } },
+    { id: "route:POST /orders", kind: "route", location: { file: "api/orders.ts", line: 42 } },
   ],
   coverage: [
     { rule: "SEC-AUTHZ-01", item: "route:GET /orders/{id}", status: "fail", finding: "F1" },
@@ -30,7 +30,7 @@ const example = () => ({
       rule: "SEC-AUTHZ-01",
       item: "route:POST /orders",
       status: "pass",
-      evidence: "api/orders.py:43 takes the owner from the session",
+      evidence: "api/orders.ts:43 takes the owner from the session",
     },
     { rule: "SEC-RATE-01", status: "not-applicable", reason: "This change adds no public endpoint" },
     { rule: "SEC-LOG-03", status: "not-checked", reason: "Logging is set up in another repository" },
@@ -101,7 +101,7 @@ describe("the review report", () => {
     report.findings[0] = {
       ...F1,
       severity: "severe",
-      location: { file: "api/orders.py", endLine: 3 },
+      location: { file: "api/orders.ts", endLine: 3 },
     } as never;
     expect(errors(report)).toEqual(
       expect.arrayContaining([

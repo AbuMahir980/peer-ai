@@ -116,6 +116,59 @@ describe("assess", () => {
     expect(signals.cardData.map((finding) => finding.name)).toEqual(["pan"]);
   });
 
+  it("finds personal data in camelCase names too, as ORMs in most languages write them", () => {
+    const root = project({
+      "prisma/schema.prisma":
+        "model Parcel {\n  recipientPhone String\n  dateOfBirth DateTime\n  homeAddress String\n  iPhoneModel String\n  cardNumber String\n}\n",
+      "src/entities/customer.entity.ts": "@Column() emailAddress: string;\n@Column() IPAddress: string;\n",
+      "database/migrations/2026_01_01_create_couriers.php": "$table->string('national_id');\n",
+    });
+    const { signals } = assess(root, undefined, "mvp");
+    expect(signals.personalData.map((finding) => finding.name).sort()).toEqual([
+      "address",
+      "date_of_birth",
+      "email",
+      "home_address",
+      "ip_address",
+      "national_id",
+      "phone",
+    ]);
+    expect(signals.cardData.map((finding) => finding.name)).toEqual(["card_number"]);
+  });
+
+  it("finds data models, payment providers and monitoring in any language's files", () => {
+    const root = project({
+      "app/Models/Customer.php": "protected $fillable = ['email'];\n",
+      "Entities/Patient.cs": "public string PhoneNumber { get; set; }\n",
+      "Payments/Payments.csproj": '<PackageReference Include="Stripe.net" Version="48.0.0" />',
+      "Cargo.toml": '[dependencies]\ntracing-subscriber = "0.3"\n',
+    });
+    const { signals, items } = assess(root, undefined, "mvp");
+    expect(signals.personalData.map((finding) => finding.name).sort()).toEqual(["email", "phone_number"]);
+    expect(signals.paymentProviders).toEqual(["stripe"]);
+    expect(items.observability).toMatchObject({ status: "present", note: "Found: tracing-subscriber." });
+  });
+
+  it("finds tests named the way each language names them", () => {
+    for (const file of [
+      "src/Shop.Tests/OrderTests.cs",
+      "spec/order_spec.rb",
+      "app/order_spec.rb",
+      "tests/Unit/OrderTest.php",
+      "src/OrderTest.php",
+      "lib/order_test.exs",
+      "shared/OrderSpec.kt",
+      "Tests/NotesTests/NoteTests.swift",
+      "src/orders.test.ts",
+    ]) {
+      expect(statusOf(project({ [file]: "" })).tests, file).toBe("present");
+    }
+  });
+
+  it("finds a Rails data model in its migrations", () => {
+    expect(statusOf(project({ "db/migrate/20260101000000_create_orders.rb": "" }))["data-model"]).toBe("present");
+  });
+
   it("infers the architecture from the code when there is no document, and says so", () => {
     const root = project({
       "apps/web/package.json": json({ dependencies: { react: "19.0.0" } }),

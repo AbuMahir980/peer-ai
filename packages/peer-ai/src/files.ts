@@ -25,6 +25,9 @@ const SKIP_DIRS = new Set([
   ".dart_tool",
   ".gradle",
   "target",
+  "obj",
+  ".build",
+  "_build",
 ]);
 const MAX_FILES = 50_000;
 

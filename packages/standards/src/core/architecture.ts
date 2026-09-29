@@ -53,7 +53,7 @@ export const architecture = [
     id: "ARC-05",
     domain: "architecture",
     title: "Business logic doesn't know how it's called",
-    rule: "Business logic never deals in HTTP: no status codes, no request objects, no HTTP errors. It raises its own errors, and the layer that received the request translates them.",
+    rule: "Business logic never deals in HTTP: no status codes, no request objects, no HTTP errors. It raises or returns its own errors, and the layer that received the request translates them.",
     why: "Logic that knows about HTTP can't be reused by a background job, a script or a different interface.",
     ask: "Does any business logic in this change refer to HTTP?",
     stage: "mvp",

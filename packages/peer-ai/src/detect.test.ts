@@ -73,6 +73,99 @@ describe("detect", () => {
     });
   });
 
+  it("recognises Node backend frameworks", () => {
+    const root = project({
+      "services/gateway/package.json": pkg({ dependencies: { express: "5.1.0" } }),
+      "services/orders/package.json": pkg({
+        dependencies: { "@nestjs/core": "11.1.0", "@nestjs/platform-express": "11.1.0" },
+        devDependencies: { typescript: "6.0.0" },
+      }),
+      "services/search/package.json": pkg({ dependencies: { fastify: "5.4.0" } }),
+    });
+    const kinds = Object.fromEntries(detect(root).tracks.map((track) => [track.id, [track.kind, ...track.stack]]));
+    expect(kinds).toEqual({
+      gateway: ["backend", "javascript", "express"],
+      orders: ["backend", "typescript", "nest"],
+      search: ["backend", "javascript", "fastify"],
+    });
+  });
+
+  it("recognises a backend in any major language by its framework, and a library without one", () => {
+    const root = project({
+      "services/admin/composer.json": pkg({ require: { "symfony/framework-bundle": "7.3.0" } }),
+      "services/billing/build.gradle.kts": 'plugins { id("io.ktor.plugin") }\n',
+      "services/catalog/Cargo.toml": '[package]\nname = "catalog"\n\n[dependencies]\naxum = "0.8"\n',
+      "services/chat/mix.exs": 'defp deps do\n  [{:phoenix, "~> 1.8"}]\nend\n',
+      "services/ledger/Ledger.csproj": '<Project Sdk="Microsoft.NET.Sdk.Web"></Project>',
+      "services/notes/Package.swift":
+        'dependencies: [.package(url: "https://github.com/vapor/vapor.git", from: "4.0.0")]',
+      "services/orders/go.mod": "module example.test/orders\n\nrequire github.com/gin-gonic/gin v1.10.0\n",
+      "services/shop/Gemfile": 'source "https://rubygems.org"\ngem "sinatra"\n',
+      "services/importer/Cargo.toml": '[package]\nname = "importer"\n\n[dependencies]\nclap = "4"\n',
+      "packages/money/Gemfile": 'source "https://rubygems.org"\ngem "bigdecimal"\n',
+    });
+    const kinds = Object.fromEntries(detect(root).tracks.map((track) => [track.id, [track.kind, ...track.stack]]));
+    expect(kinds).toEqual({
+      admin: ["backend", "php", "symfony"],
+      billing: ["backend", "kotlin", "ktor"],
+      catalog: ["backend", "rust", "axum"],
+      chat: ["backend", "elixir", "phoenix"],
+      ledger: ["backend", "csharp", "dotnet", "aspnet"],
+      notes: ["backend", "swift", "vapor"],
+      orders: ["backend", "go", "gin"],
+      shop: ["backend", "ruby", "sinatra"],
+      importer: ["other", "rust"],
+      money: ["library", "ruby"],
+    });
+  });
+
+  it("recognises .NET web and mobile apps, and an iOS app by its Xcode project", () => {
+    const root = project({
+      "apps/portal/Portal.csproj": '<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly"></Project>',
+      "apps/field/Field.csproj":
+        '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><UseMaui>true</UseMaui></PropertyGroup></Project>',
+      "apps/notes/Notes.xcodeproj/project.pbxproj": "",
+      "packages/shared/Shared.csproj": '<Project Sdk="Microsoft.NET.Sdk"></Project>',
+    });
+    const kinds = Object.fromEntries(detect(root).tracks.map((track) => [track.id, [track.kind, ...track.stack]]));
+    expect(kinds).toEqual({
+      field: ["mobile", "csharp", "dotnet", "maui"],
+      notes: ["mobile", "swift", "ios"],
+      portal: ["web", "csharp", "dotnet", "blazor"],
+      shared: ["library", "csharp", "dotnet"],
+    });
+  });
+
+  it.each([
+    ["pyproject.toml", '[project]\nname = "courier-api"\n', "courier-api"],
+    ["Cargo.toml", '[package]\nname = "catalog"\nversion = "0.1.0"\n', "catalog"],
+    ["go.mod", "module github.com/example/orders/v2\n", "orders"],
+    ["composer.json", pkg({ name: "example/admin" }), "admin"],
+    ["pubspec.yaml", "name: shopper\n", "shopper"],
+    ["settings.gradle.kts", 'rootProject.name = "billing"\n', "billing"],
+  ])("names the project from %s", (file, content, name) => {
+    expect(detect(project({ [file]: content })).name).toBe(name);
+  });
+
+  it("reads the description from pyproject.toml or Cargo.toml when there's no package.json", () => {
+    const root = project({ "Cargo.toml": '[package]\nname = "catalog"\ndescription = "Product catalogue"\n' });
+    expect(detect(root).description).toBe("Product catalogue");
+  });
+
+  it("treats a Go or Cargo workspace root as a workspace, not an app", () => {
+    const go = project({
+      "go.work": "go 1.25\n\nuse ./services/orders\n",
+      "go.mod": "module example.test/tools\n",
+      "services/orders/go.mod": "module example.test/orders\n",
+    });
+    expect(detect(go).tracks.map((track) => track.id)).toEqual(["orders"]);
+    const cargo = project({
+      "Cargo.toml": '[workspace]\nmembers = ["services/*"]\n',
+      "services/catalog/Cargo.toml": '[package]\nname = "catalog"\n',
+    });
+    expect(detect(cargo).tracks.map((track) => track.id)).toEqual(["catalog"]);
+  });
+
   it("gives a part the TypeScript installed once at the monorepo root", () => {
     const root = project({
       "package.json": pkg({ private: true, workspaces: ["apps/*"], devDependencies: { typescript: "6.0.0" } }),

@@ -83,7 +83,7 @@ The 17 domains are:
 - infrastructure and operations
 - AI features
 
-The first stack profiles are TypeScript, React, React Native with Expo, Node, Python with FastAPI, PostgreSQL, Redis, Docker, Terraform and GitHub Actions.
+The first stack profiles are TypeScript, React, Next.js, React Native with Expo, Node with Express, NestJS and Fastify, Python with FastAPI, PostgreSQL, Redis, Docker, Terraform and GitHub Actions, plus a pipeline security profile. Other languages and frameworks follow the same pattern.
 
 **Rule packs for regulated products.** A rule pack is any outside rulebook a product must follow: a data protection law such as Nigeria's NDPA or the GDPR, an industry standard such as PCI DSS, a religious or cultural standard such as halal, labelling rules such as allergens, or a platform policy such as the App Store's. A project declares where it operates and what it does, and `compliance-review` checks every personal field, log line and third-party call against the packs that apply, with evidence a payment provider or regulator can read. Each rule cites its source. Packs reviewed by a qualified expert are marked verified, and anything only a lawyer or certifier can settle is flagged for them. The first packs are the NDPA, the GDPR, PCI DSS, and KYC and anti-money-laundering rules.
 

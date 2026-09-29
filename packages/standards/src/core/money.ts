@@ -7,7 +7,7 @@ export const money = [
     id: "MONEY-01",
     domain: "money",
     title: "Money is a whole number in the currency's smallest unit",
-    rule: "Money is stored and calculated as a whole number in the currency's smallest unit (pence, kobo, cents), and named for it, such as `amount_minor`. A decimal number touching money is a critical problem on sight, even for display.",
+    rule: "Money is stored and calculated as a whole number in the currency's smallest unit (pence, kobo, cents), and named for it, such as `amountMinor` or `amount_minor`. A decimal number touching money is a critical problem on sight, even for display.",
     why: "Decimal fractions can't hold most money amounts exactly. The errors are tiny, silent, and they add up.",
     ask: "Is any money held or calculated as a decimal number?",
     stage: "prototype",

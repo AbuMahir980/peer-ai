@@ -25,7 +25,7 @@
       "id": "api",
       "kind": "backend",
       "path": "apps/api",
-      "stack": ["typescript", "node"],
+      "stack": ["typescript", "node", "express"],
       "architecture": "layered",
       "deploy": { "target": "fly", "environments": ["staging", "production"] },
       "status": "active"
@@ -51,7 +51,7 @@
   "tracker": { "kind": "github", "ticketPrefix": "TAL", "project": "tallyho-team/tallyho" },
   "commands": { "verify": "pnpm verify" },
   "delivery": { "ci": "none" },
-  "standards": { "profiles": ["typescript", "react", "node"] },
+  "standards": { "profiles": ["typescript", "react", "node", "express"] },
   "compliance": { "jurisdictions": ["GB"], "packs": ["uk-gdpr"] },
   "models": { "policy": "tiers" }
 }
