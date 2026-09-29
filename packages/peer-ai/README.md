@@ -141,7 +141,18 @@ Render writes Peer AI's skills where the listed tools read them, each named `pee
 - **They stay out of git.** They're rebuilt from the installed version, so a version bump stays a one-line change. Render adds them to `.gitignore` in a marked block.
 - **After cloning,** run `peer-ai render` to write them. In a Node project, a `prepare` script can do it on install. `peer-ai doctor` warns when they're missing or out of date.
 - **Only its own skills.** Render replaces and removes only folders named `peer-ai-…`. A skill of your own sits beside them untouched.
-- **Cloud sessions.** Claude Code's cloud sessions load only the skills committed to the repository, so run `peer-ai render` in the environment's setup.
+- **Cloud agents** start from a fresh clone, so render gives each one a setup step that writes the skills before it starts: `peer-ai render --skills --quiet`, which touches nothing committed.
+
+| Tool | The setup step |
+|------|----------------|
+| Claude Code | A `SessionStart` hook in `.claude/settings.json`. It runs in cloud sessions and routines too, and keeps skills fresh on your machine after an upgrade. |
+| Cursor | Added to the `start` command in `.cursor/environment.json` |
+| GitHub Copilot | A step in `.github/workflows/copilot-setup-steps.yml`. An existing workflow is left to you, with the step to add. |
+| Codex | Codex cloud keeps its setup script in its own settings, so render prints the line to add there |
+
+Each edit keeps everything else in the file, and updates only Peer AI's own command.
+
+- **Committing them instead.** Set `"skills": { "commit": true }` for a tool that can't run a setup step. Render then commits the skills, marks them as generated in `.gitattributes` so pull requests fold them away, and `render --check` checks them too.
 
 What render changes, and what it leaves alone:
 
@@ -154,7 +165,9 @@ What render changes, and what it leaves alone:
 
 | Option | What it does |
 |--------|--------------|
-| `--check` | Change nothing, and fail when a committed file is out of date. For CI. It leaves the skills out, since CI never has them. |
+| `--check` | Change nothing, and fail when a committed file is out of date. For CI. It leaves the skills out, since CI never has them, unless the project commits them. |
+| `--skills` | Write only the skills, touching nothing committed. It's what each tool's setup step runs. |
+| `--quiet` | Print nothing unless something fails |
 
 ### Exit codes
 
@@ -213,6 +226,7 @@ pnpm peer-ai check
 | A work item at `ship` or `done` has no recorded verify, or its last verify failed | `commands.verify` runs before any work is called done. Without a verify command, only a recorded failure counts. |
 | A work item at `ship` or `done` has a review whose latest result failed, or is incomplete | A review that didn't check every rule hasn't passed. A later passing review from the same skill replaces an earlier failure. At the `prototype` stage, an incomplete review is allowed; a failed one never is. |
 | A production project's work item at `ship` or `done` has a review with no report | Without a report, the result is only the agent's word. For an MVP this is a warning; for a prototype it's allowed. |
+| A work item at `ship` or `done` is missing a review it needs | When an item reaches verify, Peer AI works out the reviews it needs from the files it touched, such as a security review for code at MVP or production. Missing one is a warning for an MVP and a failure in production. `activities.verify.reviews` in the config can require more, or skip one with a reason. |
 | A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
 
 It warns, and still passes, when:
@@ -262,13 +276,13 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | Tool | What it does |
 |------|--------------|
 | `project_map` | Each item on the project map with its evidence, what the stage still needs, compliance signals and traits to consider. It assesses afresh on every call, and says whether the committed map has fallen behind. |
-| `next_work` | The open work item for the current git branch, with where it stopped and its next action, and every other open item. When nothing is open, the gaps the stage needs. |
+| `next_work` | The open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item. When nothing is open, the gaps the stage needs, with the Peer AI skill to use for each (`useSkill`). |
 | `standards_for_file` | The track a file belongs to, the stack profiles, and the project's own standards documents and rules for that track |
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
 | `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
 | `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support. A review recorded without a report is marked unproven. A report that leaves out any of the skill's rules is refused: every rule gets a line, even one that doesn't apply. |
-| `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. |
+| `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. Moving to verify works out the reviews the change needs from the files it touched, and keeps them on the item. |
 
 Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.
 

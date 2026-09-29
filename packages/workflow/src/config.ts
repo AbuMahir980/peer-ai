@@ -273,9 +273,23 @@ const Capability = z.strictObject({
   notes: z.array(Note).optional(),
 });
 
+const ReviewChoices = z
+  .strictObject({
+    require: z
+      .array(z.enum(SKILL_IDS))
+      .optional()
+      .describe("Reviews every change needs, beyond the ones Peer AI works out from what it touched."),
+    skip: z
+      .array(z.strictObject({ skill: z.enum(SKILL_IDS), reason: Note }))
+      .optional()
+      .describe("Reviews this project doesn't need, each with the reason."),
+  })
+  .describe("For verify: add to or remove from the reviews each change needs (RFC 0004).");
+
 const Activity = z.strictObject({
   inputs: z.array(Path).optional().describe("Read these before anything else, and before asking the user anything."),
   notes: z.array(Note).optional().describe("Project-specific instructions for this activity."),
+  reviews: ReviewChoices.optional(),
 });
 
 const Models = z
@@ -298,6 +312,15 @@ const Models = z
       ctx.addIssue({ code: "custom", path: ["policy"], message: "model names are only used with the pinned policy" });
     }
   });
+
+const Skills = z.strictObject({
+  commit: z
+    .boolean()
+    .optional()
+    .describe(
+      "Commit the skills peer-ai render writes, for AI tools that can't run a setup step first. Defaults to false: they're rebuilt from the installed version and left out of git, and each tool's setup step writes them.",
+    ),
+});
 
 const Gates = z.strictObject({
   blockOn: z
@@ -324,6 +347,7 @@ const configShape = {
   version: z.literal(1),
   project: Project,
   tools: z.array(z.enum(TOOL_IDS)).min(1).optional(),
+  skills: Skills.optional(),
   design: Design.optional(),
   tracks: z.array(Track).min(1),
   apis: z.array(Api).optional(),

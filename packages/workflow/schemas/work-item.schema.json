@@ -259,6 +259,58 @@
         "additionalProperties": false
       }
     },
+    "requiredReviews": {
+      "description": "The reviews this work needs, worked out from what the change touched when it reached verify (RFC 0004).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "requirements-analysis",
+              "product-spec",
+              "architecture",
+              "system-design",
+              "api-design",
+              "data-modelling",
+              "threat-model",
+              "design-system",
+              "issue-planning",
+              "implement-ticket",
+              "code-review",
+              "security-review",
+              "contract-check",
+              "accessibility-review",
+              "design-review",
+              "performance-review",
+              "reliability-review",
+              "data-migration-review",
+              "dependency-review",
+              "compliance-review",
+              "test-strategy",
+              "qa-acceptance",
+              "ai-feature-review",
+              "release-readiness",
+              "infrastructure-review",
+              "observability-review",
+              "incident-response",
+              "documentation",
+              "tech-debt-triage"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "skill",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
     "reopened": {
       "description": "Earlier activities reopened for this item, such as a re-spec after a new decision.",
       "type": "array",

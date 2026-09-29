@@ -70,6 +70,21 @@ export function prepareFixture(name: string, into?: string, options: PrepareOpti
     writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
   }
 
+  // Claude Code's hook writes the skills with a published peer-ai; point it at this checkout too.
+  const settingsFile = join(target, ".claude/settings.json");
+  if (existsSync(settingsFile)) {
+    const local = `${process.execPath} ${CLI} render --skills`;
+    const text = readFileSync(settingsFile, "utf8");
+    const settings = JSON.parse(text) as unknown;
+    const pointed = JSON.stringify(
+      settings,
+      (_key, value: unknown) =>
+        typeof value === "string" ? value.replace(/npx (?:-y )?peer-ai(?:@\S+)? render --skills/, local) : value,
+      2,
+    );
+    writeFileSync(settingsFile, `${pointed}\n`);
+  }
+
   const git = (...args: string[]) => execFileSync("git", args, { cwd: target, stdio: "ignore" });
   git("init", "-q", "-b", "main");
   git("add", "-A");

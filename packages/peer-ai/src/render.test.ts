@@ -205,6 +205,86 @@ describe("render", () => {
     expect(existsSync(join(root, ".agents/skills/peer-ai-security-review"))).toBe(false);
   });
 
+  it("sets up each cloud agent to write the skills before it starts", () => {
+    const command = `npx -y peer-ai@${VERSION} render --skills --quiet`;
+    const root = project({ "peer-ai.config.json": config() });
+    const { text } = render(root);
+    expect(JSON.parse(read(root, ".claude/settings.json"))).toEqual({
+      hooks: { SessionStart: [{ matcher: "startup", hooks: [{ type: "command", command }] }] },
+    });
+    expect(JSON.parse(read(root, ".cursor/environment.json"))).toEqual({ start: command });
+    const workflow = read(root, ".github/workflows/copilot-setup-steps.yml");
+    expect(workflow).toContain("jobs:\n  copilot-setup-steps:\n    runs-on: ubuntu-latest\n");
+    expect(workflow).toContain(`      - run: ${command}\n`);
+    expect(workflow).toMatch(/uses: actions\/checkout@[0-9a-f]{40} #/);
+    expect(text).toContain(`Codex cloud keeps its setup script in the environment's settings`);
+    expect(text).toContain(command);
+    expect(render(root).text).toContain("✓ .claude/settings.json is up to date.");
+  });
+
+  it("adds to setup files that already exist, updates its own command, and refuses what it can't edit", () => {
+    const old = "npx -y peer-ai@0.0.1 render --skills --quiet";
+    const root = project({
+      "peer-ai.config.json": config({ tools: ["claude-code", "cursor", "copilot"] }),
+      ".claude/settings.json": json({
+        permissions: { allow: ["Bash(npm test)"] },
+        hooks: {
+          SessionStart: [
+            { hooks: [{ type: "command", command: "echo hello" }] },
+            { hooks: [{ type: "command", command: old }] },
+          ],
+        },
+      }),
+      ".cursor/environment.json": json({ install: "npm ci", start: "sudo service docker start" }),
+      ".github/workflows/copilot-setup-steps.yml": "jobs:\n  copilot-setup-steps:\n    steps:\n      - run: npm ci\n",
+    });
+    const { code, text } = render(root);
+    const command = `npx -y peer-ai@${VERSION} render --skills --quiet`;
+    const settings = JSON.parse(read(root, ".claude/settings.json")) as Record<string, unknown>;
+    expect(settings).toEqual({
+      permissions: { allow: ["Bash(npm test)"] },
+      hooks: {
+        SessionStart: [
+          { hooks: [{ type: "command", command: "echo hello" }] },
+          { hooks: [{ type: "command", command }] },
+        ],
+      },
+    });
+    expect(JSON.parse(read(root, ".cursor/environment.json"))).toEqual({
+      install: "npm ci",
+      start: `sudo service docker start && ${command}`,
+    });
+    expect(code).toBe(1);
+    expect(text).toContain("✗ .github/workflows/copilot-setup-steps.yml wasn't changed.");
+    expect(text).toContain(`add this step to its copilot-setup-steps job: - run: ${command}`);
+  });
+
+  it("writes only the skills, quietly, for a setup step", () => {
+    const root = project({ "peer-ai.config.json": config({ tools: ["claude-code"] }) });
+    const out = capture();
+    expect(runRender({ cwd: root, check: false, skills: true, quiet: true }, out)).toBe(0);
+    expect(out.text()).toBe("");
+    expect(existsSync(join(root, ".claude/skills/peer-ai-security-review/SKILL.md"))).toBe(true);
+    expect(existsSync(join(root, "CLAUDE.md"))).toBe(false);
+    expect(existsSync(join(root, ".gitignore"))).toBe(false);
+  });
+
+  it("commits the skills when the project asks, marking them as generated", () => {
+    const root = project({
+      "peer-ai.config.json": config({ tools: ["claude-code"], skills: { commit: true } }),
+      ".gitignore": "node_modules/\n\n# peer-ai:start\n/.claude/skills/peer-ai-*/\n# peer-ai:end\n",
+    });
+    const { text } = render(root);
+    expect(read(root, ".gitignore")).toBe("node_modules/\n\n");
+    expect(read(root, ".gitattributes")).toContain("/.claude/skills/peer-ai-*/** linguist-generated=true");
+    expect(text).toContain("Done. Commit these files, so every clone and every tool gets them.");
+    expect(text).not.toContain("The skills stay out of git");
+    writeFileSync(join(root, ".claude/skills/peer-ai-security-review/SKILL.md"), "edited");
+    const checked = render(root, true);
+    expect(checked.code).toBe(1);
+    expect(checked.text).toContain("✗ .claude/skills/peer-ai-security-review/ is out of date.");
+  });
+
   it("writes only AGENTS.md when no tools are listed, and says so", () => {
     const root = project({ "peer-ai.config.json": config({ tools: undefined }) });
     const { code, text } = render(root);

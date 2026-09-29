@@ -3,8 +3,10 @@
 // CLAUDE.md, GEMINI.md, Copilot's instructions), and only that block is ever rewritten. Cursor gets
 // a rule file of its own. The MCP server is registered in each tool's project config, next to
 // whatever else is there. Peer AI's skills are written where each tool reads them, under a peer-ai-
-// prefix, and left out of git: they're rebuilt from the installed version (RFC 0004). Running it
-// twice changes nothing, and --check reports drift for CI.
+// prefix, and left out of git: they're rebuilt from the installed version (RFC 0004). So that cloud
+// agents, which start from a fresh clone, have them too, each tool's setup step runs
+// `peer-ai render --skills` before the agent starts. Running it twice changes nothing, and --check
+// reports drift for CI.
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -58,6 +60,18 @@ export function serverCommand(root: string): { command: string; args: string[] }
     : { command: "npx", args: ["peer-ai", "mcp"] };
 }
 
+/**
+ * The command that writes only the skills, for a session or a cloud agent to run before it starts.
+ * It uses the same peer-ai the MCP server does: the project's pinned copy, or this exact version.
+ */
+export function skillsCommand(root: string): string {
+  const { command, args } = serverCommand(root);
+  return [command, ...args.slice(0, -1), "render", "--skills", "--quiet"].join(" ");
+}
+
+/** Recognises the skills command in a setup file, whichever version it names. */
+const SKILLS_COMMAND = /npx (?:-y )?peer-ai(?:@\S+)? render --skills(?: --quiet)?/;
+
 function readJson(path: string): unknown {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
@@ -84,7 +98,7 @@ export function instructions(config: PeerAiConfig): string {
     "- Before editing a file, call `standards_for_file` and follow what it returns.",
     "- Record progress with `update_work_item`, so the next session resumes where this one stopped.",
     "- Verify with `run_verify`. Never report a verify result yourself.",
-    "- Peer AI's skills are named `peer-ai-…`, such as `peer-ai-security-review`. Use them for reviews, and follow them step by step. If none are installed, run `npx peer-ai render`.",
+    "- Peer AI's skills are named `peer-ai-…`, such as `peer-ai-security-review`. `next_work` names the one to use for a gap, and the reviews a work item needs; follow each skill step by step. If none are installed, run `npx peer-ai render --skills`.",
     "- For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.",
     "- Don't edit the files in `.peer-ai/` by hand. The tools keep them valid.",
   ];
@@ -262,6 +276,147 @@ function planSkills(root: string, tools: ToolId[]): PlannedSkill[] {
   return planned;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** A JSON file changed by `change`, or refused when it isn't plain JSON, with what to add by hand. */
+function editJson(
+  root: string,
+  path: string,
+  create: Record<string, unknown>,
+  change: (current: Record<string, unknown>) => Record<string, unknown>,
+  byHand: string,
+): Planned {
+  const existing = readText(root, path);
+  if (existing === undefined) return { path, action: "create", content: `${JSON.stringify(create, null, 2)}\n` };
+  const parsed = readJson(join(root, path));
+  if (!isRecord(parsed)) {
+    return { path, action: "refused", note: `It isn't plain JSON (comments aren't supported here), so ${byHand}` };
+  }
+  const changed = change(parsed);
+  if (JSON.stringify(changed) === JSON.stringify(parsed)) return { path, action: "unchanged" };
+  return { path, action: "update", content: `${JSON.stringify(changed, null, 2)}\n` };
+}
+
+/**
+ * Claude Code runs a project's SessionStart hooks in every session, including cloud sessions,
+ * which start from a fresh clone. The hook writes the skills before the session begins.
+ */
+function claudeSessionHook(root: string, command: string): Planned {
+  const hook = { type: "command", command };
+  const entry = { matcher: "startup", hooks: [hook] };
+  return editJson(
+    root,
+    ".claude/settings.json",
+    { hooks: { SessionStart: [entry] } },
+    (settings) => {
+      const hooks = isRecord(settings.hooks) ? settings.hooks : {};
+      const groups: unknown[] = Array.isArray(hooks.SessionStart) ? hooks.SessionStart : [];
+      const isOurs = (item: unknown): item is Record<string, unknown> =>
+        isRecord(item) && typeof item.command === "string" && SKILLS_COMMAND.test(item.command);
+      const inGroup = (group: unknown): unknown[] => (isRecord(group) && Array.isArray(group.hooks) ? group.hooks : []);
+      const found = groups.some((group) => inGroup(group).some(isOurs));
+      const updated = groups.map((group) =>
+        isRecord(group) && Array.isArray(group.hooks)
+          ? { ...group, hooks: group.hooks.map((item: unknown) => (isOurs(item) ? { ...item, command } : item)) }
+          : group,
+      );
+      return { ...settings, hooks: { ...hooks, SessionStart: found ? updated : [...groups, entry] } };
+    },
+    `add a SessionStart hook that runs: ${command}`,
+  );
+}
+
+/** Cursor's cloud agents run the environment's start command each time an agent boots. */
+function cursorEnvironment(root: string, command: string): Planned {
+  return editJson(
+    root,
+    ".cursor/environment.json",
+    { start: command },
+    (environment) => {
+      const start = typeof environment.start === "string" ? environment.start : undefined;
+      const next =
+        start === undefined || start === ""
+          ? command
+          : SKILLS_COMMAND.test(start)
+            ? start.replace(SKILLS_COMMAND, command)
+            : `${start} && ${command}`;
+      return { ...environment, start: next };
+    },
+    `add to its "start" command: ${command}`,
+  );
+}
+
+const CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1";
+const SETUP_NODE = "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0";
+
+/**
+ * Copilot's cloud agent runs the copilot-setup-steps job before it starts. A workflow that already
+ * exists is left to its owner, with the step to add.
+ */
+function copilotSetupSteps(root: string, command: string): Planned {
+  const path = ".github/workflows/copilot-setup-steps.yml";
+  const existing = readText(root, path);
+  if (existing !== undefined) {
+    if (!SKILLS_COMMAND.test(existing)) {
+      return {
+        path,
+        action: "refused",
+        note: `It exists, so add this step to its copilot-setup-steps job: - run: ${command}`,
+      };
+    }
+    const content = existing.replace(SKILLS_COMMAND, command);
+    return { path, action: content === existing ? "unchanged" : "update", content };
+  }
+  const content = [
+    "# Prepares Copilot's cloud agent before it starts. Peer AI's step writes its skills, which stay",
+    "# out of git. Generated by peer-ai render; add your own steps after Peer AI's.",
+    "name: Copilot setup steps",
+    "on: workflow_dispatch",
+    "permissions:",
+    "  contents: read",
+    "jobs:",
+    "  copilot-setup-steps:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    `      - uses: ${CHECKOUT}`,
+    `      - uses: ${SETUP_NODE}`,
+    "        with:",
+    "          node-version: 24",
+    `      - run: ${command}`,
+    "",
+  ].join("\n");
+  return { path, action: "create", content };
+}
+
+const ATTRIBUTES_START = "# peer-ai:start";
+const ATTRIBUTES_END = "# peer-ai:end";
+
+/** The file with the marked block taken out, when it has one. */
+function withoutBlock(root: string, path: string, start: string, end: string): Planned | undefined {
+  const existing = readText(root, path);
+  if (existing === undefined) return undefined;
+  const from = existing.indexOf(start);
+  const to = from === -1 ? -1 : existing.indexOf(end, from);
+  if (from === -1 || to === -1) return { path, action: "unchanged" };
+  const content = `${existing.slice(0, from)}${existing.slice(to + end.length)}`
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\n+/, "");
+  return { path, action: "update", content };
+}
+
+/** Committed skills are marked as generated, so pull requests fold them away. */
+function markSkillsGenerated(root: string, folders: string[]): Planned {
+  const lines = [
+    ATTRIBUTES_START,
+    "# Generated by peer-ai render: Peer AI's skills, rebuilt from the installed version.",
+    ...folders.map((folder) => `/${folder}/${SKILL_NAME_PREFIX}*/** linguist-generated=true`),
+    ATTRIBUTES_END,
+  ];
+  const markers = { start: ATTRIBUTES_START, end: ATTRIBUTES_END, block: lines.join("\n") };
+  return withBlock(".gitattributes", readText(root, ".gitattributes"), "", markers);
+}
+
 /** Keeps the rendered skills out of git, in a marked block of .gitignore. */
 function ignoreSkills(root: string, folders: string[]): Planned {
   const lines = [
@@ -315,7 +470,14 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
     files.push(toolFile(root, "GEMINI.md", body, agents));
     files.push(withServer(root, ".gemini/settings.json", "mcpServers", server));
   }
+  const command = skillsCommand(root);
+  if (uses("claude-code")) files.push(claudeSessionHook(root, command));
+  if (uses("cursor")) files.push(cursorEnvironment(root, command));
+  if (uses("copilot")) files.push(copilotSetupSteps(root, command));
   if (uses("codex")) {
+    manual.push(
+      `Codex cloud keeps its setup script in the environment's settings, not the project. Add this line to it, so the skills and the MCP server are ready before the agent starts (its internet is off while it works): ${command}`,
+    );
     manual.push(
       `Codex keeps MCP servers in your own config, not the project's. Register it once: codex mcp add ${SERVER} -- ${server.command} ${server.args.join(" ")}`,
       `Codex asks before run_verify, because it runs the project's verify command. To allow it without asking, add to ~/.codex/config.toml: [mcp_servers.${SERVER}.tools.run_verify] approval_mode = "approve"`,
@@ -327,7 +489,14 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
     );
   }
   const skills = planSkills(root, tools);
-  if (skills.some((skill) => skill.action !== "remove")) files.push(ignoreSkills(root, skillFolders(tools)));
+  const folders = skillFolders(tools);
+  if (config.skills?.commit === true) {
+    const ignored = withoutBlock(root, ".gitignore", IGNORE_START, IGNORE_END);
+    if (ignored !== undefined) files.push(ignored);
+    if (folders.length > 0) files.push(markSkillsGenerated(root, folders));
+  } else if (skills.some((skill) => skill.action !== "remove")) {
+    files.push(ignoreSkills(root, folders));
+  }
   return { files, skills, manual };
 }
 
@@ -392,6 +561,10 @@ export interface RenderOptions {
   cwd: string;
   /** Change nothing; fail when a file is out of date. For CI. */
   check: boolean;
+  /** Write only the skills, touching nothing that's committed. What each tool's setup step runs. */
+  skills?: boolean;
+  /** Print nothing unless something fails. */
+  quiet?: boolean;
 }
 
 /** Exit code 0 when done or up to date; 1 when a file was refused, or out of date with --check; 2 without a valid config. */
@@ -406,28 +579,39 @@ export function runRender(options: RenderOptions, out: Output): number {
     return 2;
   }
   const plan = planRender(options.cwd, config);
+  if (options.skills === true) {
+    for (const skill of plan.skills) if (skill.action !== "unchanged") writeSkill(options.cwd, skill);
+    if (options.quiet !== true) for (const line of formatChecks(skillChecks(plan.skills))) out.log(line);
+    return 0;
+  }
+  const committed = config.skills?.commit === true;
   if (!options.check) {
     for (const planned of plan.files) if (planned.action !== "refused") write(options.cwd, planned);
     for (const skill of plan.skills) if (skill.action !== "unchanged") writeSkill(options.cwd, skill);
   }
-  // --check is for CI, which sees only what's committed. The skills never are, so it leaves them out;
-  // peer-ai doctor reports missing skills on a person's machine.
-  const checks = [
-    ...plan.files.map((planned) => toCheck(planned, options.check)),
-    ...(options.check ? [] : skillChecks(plan.skills)),
-  ];
+  // --check is for CI, which sees only what's committed. Skills usually aren't, so it leaves them
+  // out unless the project commits them; peer-ai doctor reports missing skills on a person's machine.
+  const skillLines = !options.check
+    ? skillChecks(plan.skills)
+    : committed
+      ? plan.skills
+          .filter((skill) => skill.action !== "unchanged")
+          .map((skill) => fail("render", `${skill.path}/ is out of date.`, "Run peer-ai render."))
+      : [];
+  const checks = [...plan.files.map((planned) => toCheck(planned, options.check)), ...skillLines];
   if ((config.tools ?? []).length === 0) {
     checks.push(skip("render", `No AI tools are listed in ${CONFIG_FILE}, so only AGENTS.md was written.`));
   }
+  const failures = count(checks, "fail");
+  if (options.quiet === true && failures === 0) return 0;
   out.log(`Peer AI render: ${config.project.name}`);
   out.log("");
   for (const line of formatChecks(checks)) out.log(line);
   for (const step of plan.manual) out.log(`  ! ${step}`);
-  const failures = count(checks, "fail");
   out.log("");
   if (options.check) out.log(failures === 0 ? "Everything is up to date." : "Out of date: run peer-ai render.");
   else if (failures > 0) out.log("Some files couldn't be changed; see above.");
-  else if (plan.skills.some((skill) => skill.action !== "remove")) {
+  else if (!committed && plan.skills.some((skill) => skill.action !== "remove")) {
     out.log(
       "Done. Commit these files, so every clone and every tool gets them. The skills stay out of git: run peer-ai render after cloning.",
     );
