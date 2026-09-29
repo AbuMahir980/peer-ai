@@ -202,7 +202,7 @@
         },
         {
           "id": "SR2",
-          "point": "Describes what the app does today, with acceptance criteria: adding a plant with a name, a room and a photo, putting plants in order, recording watering, keeping journal notes, and identifying a plant from a photo.",
+          "point": "Describes what the app does today with acceptance criteria, including adding a plant with a name, a room and a photo, and putting plants in order; and treats the journal, watering and plant identification, which are in the code but not reachable from the app's screens, as unclear or as questions.",
           "must": true
         },
         {

@@ -169,3 +169,6 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 
 | Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
 |------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
+| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 12 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 10 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |
