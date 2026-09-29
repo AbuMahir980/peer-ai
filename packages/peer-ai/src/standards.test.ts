@@ -32,6 +32,11 @@ describe("the rules for a file", () => {
     expect(ids(config({ traits: ["money"] }))).toContain("MONEY-01");
   });
 
+  it("include the offline rules for an app that works offline", () => {
+    expect(ids(config())).not.toContain("REL-09");
+    expect(ids(config({ traits: ["offline"] }))).toEqual(expect.arrayContaining(["REL-01", "REL-08", "REL-09"]));
+  });
+
   it("leave out a rule the project set aside, and say why", () => {
     const standards = standardsFor(
       config({}, { exceptions: [{ rule: "CODE-04", reason: "Generated code", decidedBy: "@maintainer" }] }),

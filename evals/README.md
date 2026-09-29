@@ -8,6 +8,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
+| [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
+| [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
+| [`split-bill-waiting.json`](split-bill-waiting.json) | `split-bill` | – | implement-ticket: an item waiting on another |
 
 ## Running one
 
@@ -25,6 +28,7 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
 | `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
 | `--document <path>` | With `--regrade`: the document to grade, when the run saved it where neither the scenario nor the project map finds it |
+| (scenario) `setup`, `diff` | A scenario can write files into the copy before the run, such as a planned work item, and give the grader the run's change as a diff |
 | `--runs 2` | Run it twice |
 | `--record` | Add the result to the tables below |
 
@@ -198,6 +202,16 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, implement-ticket on split-bill, with the skill and without.** The grader reads every work item, the run's change as a diff, and what the run told the person at the end. Codex ran the first scenario; Codex's usage then ran out, so Claude Code on Sonnet ran the rest. Claude Code on Haiku graded them all:
+  - **With the skill, all three scenarios are ready:** a planned item, a tip, 8 of 8; an unplanned request, uneven splits, 7 of 7; and an item waiting on another, 5 of 5. Without the skill, the tip made 5 of 8 and wasn't ready.
+  - **Without the skill, the tip was built and tested well, but never finished:** the item stopped at verify with no passing verify recorded, no code review, and nothing in the README about tips.
+  - **With the skill, the unplanned request got its own work item with criteria before the code,** and the tip, which the backlog also mentions, was left alone.
+- **What the runs changed:**
+  - **The grader couldn't see the whole picture.** At first it saw only the items a run changed, without their verify or reviews, so it marked the tip run 6 of 8 and the waiting run as writing nothing. The runner now shows every item, marked as changed or left as it was, with its last verify and reviews, and what the run told the person at the end. Graded again, the tip run made every point.
+  - **An item that couldn't be built yet didn't say why it stopped.** The waiting run rightly didn't build SB-2, which needs SB-1's tip, but left SB-2's next action as it was. The grader credited that as recording where SB-2 stands; a person counts it 4 of 5. The skill now sets the next action to what the item waits for. The next run did: SB-2's next action says to build SB-1 first, because SB-2 needs the tip in the code.
+- **What people judged in those runs:**
+  - **A point about work the run rightly didn't do.** The grader marked the second waiting run as missing "any work done on SB-2 is covered by tests", though it wrote no code. The point now says that writing no code makes it, and graded again, the run made all 5.
+
 - **2026-09-29, performance-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
   - **With the skill, all three are ready:** courier 3 of 3, shelf 2 of 2, and sprout 3 of 3 after the fixes below, each covering all 12 rules. Without it, courier found 2 of 3 and wasn't ready: it missed the parcels looked up by customer with no index.
   - **The baseline raised one problem that isn't on the sheet,** and a person judged it fair but outside the rules: every request opens a new database connection, with no pool. It called it high; at this stage it's minor. No rule covers connection pooling yet.
@@ -342,3 +356,8 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | issue-planning | Codex | default | without | 3 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | shelf | issue-planning | Codex | default | used | 6 of 6 | 3 of 3 | Accepted | Ready | Codex | – |
 | 2026-09-29 | sprout | issue-planning | Codex | default | used | 5 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | split-bill | implement-ticket | Codex | default | used | 8 of 8 | 4 of 4 | Accepted | Ready | Claude Code, haiku | – |
+| 2026-09-29 | split-bill-uneven | implement-ticket | Claude Code | sonnet | used | 7 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.58 |
+| 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.20 |
+| 2026-09-29 | split-bill | implement-ticket | Claude Code | sonnet | without | 5 of 8 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $0.43 |
+| 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.24 |
