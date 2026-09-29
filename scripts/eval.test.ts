@@ -220,6 +220,9 @@ describe("marking a review", () => {
     const otherRule = found(on("package.json", "DEL-11"));
     expect(otherRule.expected[0]?.foundBy).toHaveLength(0);
     expect(otherRule.unmatched).toHaveLength(1);
+    // A problem with the whole project can be named in any file that shows it, with its rule.
+    expect(found(on("docs/setup.md", "DEL-01")).expected[0]?.foundBy).toHaveLength(1);
+    expect(found(on("docs/setup.md", "DEL-11")).expected[0]?.foundBy).toHaveLength(0);
   });
 
   it("isn't ready without a report, or when too few medium problems are found", () => {
