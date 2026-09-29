@@ -38,7 +38,7 @@ const BODY = [
   "",
   "Check SEC-01 on every route. The rules are in [rules.md](references/rules.md), the levels in [severity.md](references/severity.md) and the format in [report.md](references/report.md). How to check access: [access-control.md](references/access-control.md).",
   "",
-  "Record the report with the peer-ai `record_review` tool, then run `npx peer-ai check`.",
+  "Record the report with the peer-ai MCP tool `record_review`, then run `npx peer-ai check`.",
 ].join("\n");
 const OPENAI = [
   "interface:",
@@ -86,7 +86,7 @@ describe("building a skill", () => {
   it("generates the rules for the skill's domains, with a table of contents", () => {
     const rules = rulesReference(["security", "privacy-compliance"]);
     expect(rules).toContain(
-      "## Contents\n\n- Security: SEC-01 to SEC-26\n- Privacy and compliance: PRIV-01 to PRIV-06",
+      "## Contents\n\n- Security: SEC-01 to SEC-27\n- Privacy and compliance: PRIV-01 to PRIV-06",
     );
     for (const rule of CORE_RULES.filter((rule) => ["security", "privacy-compliance"].includes(rule.domain))) {
       expect(rules).toContain(`### ${rule.id} ${rule.title}`);
@@ -98,7 +98,7 @@ describe("building a skill", () => {
 
   it("adds single rules from other domains, grouped under their own domain", () => {
     const rules = rulesReference(["security"], ["TEST-08", "PRIV-01"]);
-    expect(rules).toContain("- Security: SEC-01 to SEC-26\n- Privacy and compliance: PRIV-01\n- Testing: TEST-08\n");
+    expect(rules).toContain("- Security: SEC-01 to SEC-27\n- Privacy and compliance: PRIV-01\n- Testing: TEST-08\n");
     expect(rules).toContain("## Testing");
     expect(rules).not.toContain("### TEST-01");
   });
@@ -203,8 +203,13 @@ describe("validating a skill", () => {
     ],
     [
       "a tool that doesn't exist",
-      setSkillMd(FIELDS, `${BODY}\nCall the peer-ai \`review_code\` tool.`),
+      setSkillMd(FIELDS, `${BODY}\nCall the peer-ai MCP tool \`review_code\`.`),
       "the peer-ai tool review_code",
+    ],
+    [
+      "a tool named like a shell command",
+      setSkillMd(FIELDS, `${BODY}\nCall the peer-ai \`next_work\` tool.`),
+      "so it isn't mistaken for a shell command",
     ],
     [
       "a command that doesn't exist",

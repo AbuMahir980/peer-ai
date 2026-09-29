@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,8 +11,8 @@ afterEach(() => {
   for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-function prepared(name: string): string {
-  const target = prepareFixture(name);
+function prepared(name: string, options: { skills?: boolean } = {}): string {
+  const target = prepareFixture(name, undefined, options);
   made.push(target);
   return target;
 }
@@ -35,10 +35,14 @@ describe("fixtures", () => {
     expect(JSON.parse(readFileSync(join(target, ".mcp.json"), "utf8"))).toEqual({
       mcpServers: { "peer-ai": localServer() },
     });
+    // Without skills, the hook that would write them is taken out; with them, it starts this checkout.
+    expect(readFileSync(join(target, ".claude/settings.json"), "utf8")).not.toContain("render --skills");
     const [cli = ""] = localServer().args;
-    expect(readFileSync(join(target, ".claude/settings.json"), "utf8")).toContain(
+    const withSkills = prepared("split-bill", { skills: true });
+    expect(readFileSync(join(withSkills, ".claude/settings.json"), "utf8")).toContain(
       `"command": "${process.execPath} ${cli} render --skills --quiet"`,
     );
+    expect(existsSync(join(withSkills, ".claude/skills/peer-ai-security-review/SKILL.md"))).toBe(true);
     expect(execFileSync("git", ["log", "--oneline"], { cwd: target, encoding: "utf8" })).toMatch(
       /^[0-9a-f]+ The fixture as it starts\n$/,
     );

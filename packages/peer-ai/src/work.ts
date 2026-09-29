@@ -6,7 +6,9 @@
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { availableSkills, skillRuleIds } from "@peer-ai/skills";
 import {
+  SKILL_IDS,
   deriveResult,
   validateReport,
   validateWorkItem,
@@ -18,10 +20,11 @@ import {
   type SkillId,
   type WorkItem,
 } from "@peer-ai/workflow";
-import { NEXT_STAGE, assess, gaps } from "./assess.ts";
+import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
+import { CONFIG_FILE } from "./detect.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
-import type { Stage } from "./init.ts";
+import type { Output, Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
 
 export const WORK_ITEM_SCHEMA_URL =
@@ -174,6 +177,119 @@ function readReport(root: string, path: string): Result<ReviewReport> {
  * Records a review. With a report, Peer AI works the result out from it and refuses a result the
  * report doesn't support (RFC 0002). Without one, the agent's result is recorded as unproven.
  */
+export interface CheckedReport {
+  skill: SkillId;
+  result: ReviewResult;
+  report: string;
+  summary: string;
+}
+
+/**
+ * Checks a review's report: that it's valid, is for this skill (and work item, when there is one),
+ * gives every rule the skill answers for a line (RFC 0004), and claims the result its findings and
+ * coverage support.
+ */
+export function checkReport(
+  root: string,
+  config: PeerAiConfig,
+  review: ReviewInput & { report: string },
+  workItem?: string,
+): Result<CheckedReport> {
+  const read = readReport(root, review.report);
+  if (!read.ok) return read;
+  const report = read.value;
+  if (report.skill !== review.skill) {
+    return failed(`The report is for ${report.skill}, not ${review.skill}.`);
+  }
+  if (workItem !== undefined && report.workItem !== undefined && report.workItem !== workItem) {
+    return failed(`The report is for work item ${report.workItem}, not ${workItem}.`);
+  }
+  // Silence is never an answer (RFC 0004): every rule the skill answers for gets a line, even
+  // one that doesn't apply here.
+  if (availableSkills().includes(review.skill)) {
+    const covered = new Set(report.coverage.map((line) => line.rule));
+    const missing = skillRuleIds(review.skill).filter((rule) => !covered.has(rule));
+    if (missing.length > 0) {
+      const shown =
+        missing.length > 12
+          ? `${missing.slice(0, 12).join(", ")} and ${String(missing.length - 12)} more`
+          : missing.join(", ");
+      return failed(
+        `The report leaves out ${String(missing.length)} of ${review.skill}'s rules: ${shown}. Give every rule a coverage line: mark one that doesn't apply as not-applicable, with the reason.`,
+      );
+    }
+  }
+  const blockOn = config.gates?.blockOn ?? "critical";
+  const worked = deriveResult(report, blockOn);
+  if (report.result !== worked) {
+    return failed(
+      `The report says ${report.result}, but its findings and coverage make it ${worked} (blocking level: ${blockOn}). Correct the report's result.`,
+    );
+  }
+  if (review.result !== undefined && review.result !== worked) {
+    return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
+  }
+  return {
+    ok: true,
+    value: { skill: review.skill, result: worked, report: review.report, summary: review.summary ?? report.summary },
+  };
+}
+
+export interface CheckReportOptions {
+  cwd: string;
+  /** The report's path, relative to the project root. */
+  report: string;
+  /** The skill it's for. Defaults to the skill the report names. */
+  skill?: string | undefined;
+  /** The work item it's for, when there is one. */
+  workItem?: string | undefined;
+  json: boolean;
+}
+
+/**
+ * peer-ai check-report: the same checks as the record_review tool, for a model or a person that
+ * works in a shell. Exit code 0 when the report passes them; 1 when it doesn't; 2 without a config.
+ */
+export function runCheckReport(options: CheckReportOptions, out: Output): number {
+  const { config, errors } = loadConfig(options.cwd);
+  if (config === undefined) {
+    out.error(
+      errors === undefined ? `There is no ${CONFIG_FILE}. Run peer-ai init first.` : `${CONFIG_FILE} is not valid.`,
+    );
+    return 2;
+  }
+  let skill = options.skill;
+  if (skill === undefined) {
+    try {
+      const named = (JSON.parse(readFileSync(resolve(options.cwd, options.report), "utf8")) as { skill?: unknown })
+        .skill;
+      if (typeof named === "string") skill = named;
+    } catch {
+      // Unreadable or not JSON: checkReport says which.
+    }
+  }
+  if (skill === undefined || !(SKILL_IDS as readonly string[]).includes(skill)) {
+    const problem = `The report doesn't name one of Peer AI's skills as its "skill", such as "security-review": give it with --skill, and put it in the report.`;
+    if (options.json) out.log(JSON.stringify({ ok: false, error: problem }, null, 2));
+    else out.error(`✗ ${problem}`);
+    return 1;
+  }
+  const checked = checkReport(
+    options.cwd,
+    config,
+    { skill: skill as SkillId, report: options.report },
+    options.workItem,
+  );
+  if (options.json) {
+    out.log(JSON.stringify(checked.ok ? { ok: true, ...checked.value } : { ok: false, error: checked.error }, null, 2));
+  } else if (checked.ok) {
+    out.log(`✓ ${options.report} passes Peer AI's checks. Its result is ${checked.value.result}.`);
+  } else {
+    out.error(`✗ ${checked.error}`);
+  }
+  return checked.ok ? 0 : 1;
+}
+
 export function recordReview(
   root: string,
   config: PeerAiConfig,
@@ -184,39 +300,16 @@ export function recordReview(
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
   const at = now.toISOString();
-  const summary = review.summary === undefined ? {} : { summary: review.summary };
   let entry: NonNullable<WorkItem["reviews"]>[number];
 
   if (review.report === undefined) {
     if (review.result === undefined) return failed("Give the review's result, or the report to work it out from.");
+    const summary = review.summary === undefined ? {} : { summary: review.summary };
     entry = { skill: review.skill, result: review.result, ...summary, unproven: true, at };
   } else {
-    const read = readReport(root, review.report);
-    if (!read.ok) return read;
-    const report = read.value;
-    if (report.skill !== review.skill) {
-      return failed(`The report is for ${report.skill}, not ${review.skill}.`);
-    }
-    if (report.workItem !== undefined && report.workItem !== id) {
-      return failed(`The report is for work item ${report.workItem}, not ${id}.`);
-    }
-    const blockOn = config.gates?.blockOn ?? "critical";
-    const worked = deriveResult(report, blockOn);
-    if (report.result !== worked) {
-      return failed(
-        `The report says ${report.result}, but its findings and coverage make it ${worked} (blocking level: ${blockOn}). Correct the report's result.`,
-      );
-    }
-    if (review.result !== undefined && review.result !== worked) {
-      return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
-    }
-    entry = {
-      skill: review.skill,
-      result: worked,
-      report: review.report,
-      summary: review.summary ?? report.summary,
-      at,
-    };
+    const checked = checkReport(root, config, { ...review, report: review.report }, id);
+    if (!checked.ok) return checked;
+    entry = { ...checked.value, at };
   }
   const reviews = [...(loaded.value.reviews ?? []), entry];
   return save(root, config, { ...loaded.value, reviews, updatedAt: at });

@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PeerAiConfig } from "@peer-ai/workflow";
+import { skillRuleIds } from "@peer-ai/skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
 import { cleanUp, project } from "./test-helpers.ts";
@@ -159,6 +160,11 @@ describe("moving work items", () => {
 
 describe("recording reviews", () => {
   const REPORT = ".peer-ai/reports/SHOP-1/security-review.json";
+  // A report must give every one of the skill's rules a line; the rest don't apply to this change.
+  const failing = { rule: "SEC-01", item: "route:GET /orders/{id}", status: "fail", finding: "F1" };
+  const others = skillRuleIds("security-review")
+    .filter((rule) => rule !== "SEC-01")
+    .map((rule) => ({ rule, status: "not-applicable", reason: "Nothing in this change is of its kind." }));
   const report = (changes: Record<string, unknown> = {}) => ({
     version: 1,
     skill: "security-review",
@@ -167,11 +173,11 @@ describe("recording reviews", () => {
     scope: { tracks: ["api"] },
     inputs: ["docs/architecture.md"],
     inventory: [{ id: "route:GET /orders/{id}", kind: "route" }],
-    coverage: [{ rule: "SEC-AUTHZ-01", item: "route:GET /orders/{id}", status: "fail", finding: "F1" }],
+    coverage: [failing, ...others],
     findings: [
       {
         id: "F1",
-        rule: "SEC-AUTHZ-01",
+        rule: "SEC-01",
         severity: "high",
         status: "open",
         title: "Any signed-in user can read another user's order",
@@ -206,6 +212,14 @@ describe("recording reviews", () => {
     ]);
     const [strict, strictConfig] = withReport(report({ result: "fail" }), { ...SHOP, gates: { blockOn: "high" } });
     expect(value(record(strict, strictConfig, { report: REPORT })).reviews?.[0]?.result).toBe("fail");
+  });
+
+  it("refuses a report that leaves out any of the skill's rules", () => {
+    const [root, config] = withReport(report({ coverage: [failing, ...others.slice(3)] }));
+    const missing = others.slice(0, 3).map((line) => line.rule);
+    expect(error(record(root, config, { report: REPORT }))).toBe(
+      `The report leaves out 3 of security-review's rules: ${missing.join(", ")}. Give every rule a coverage line: mark one that doesn't apply as not-applicable, with the reason.`,
+    );
   });
 
   it("refuses a result the report doesn't support", () => {

@@ -278,3 +278,5 @@ As a last resort, a project can set `skills.commit` to `true`:
 - `render --check` then checks them too.
 
 This answers the open question above.
+
+**30 September 2026: checking a report from a shell.** In the evals, a fast model reached for shell commands and never called the MCP tools, so its reports went unchecked. `peer-ai check-report <file>` makes the same checks as `record_review` and records nothing. Every review skill names it as the fallback when the MCP tools aren't available. `record_review` also checks a whole-project review's report when given no work item.

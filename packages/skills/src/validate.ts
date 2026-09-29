@@ -36,7 +36,9 @@ const ROLE_PLAY = /\bYou are (a|an|the)\b/;
 const MODEL_SWITCH = /\bswitch(?:ing)? (?:to )?(?:a |an |the |your )?(?:[\w-]+ )?model\b/i;
 const NOT_IN_A_SKILL = ["README.md", "CHANGELOG.md", "INSTALLATION_GUIDE.md", "QUICK_REFERENCE.md"];
 const RULE_ID = /\b([A-Z]{2,5})-\d{2,}\b/g;
-const TOOL = /peer-ai `([a-z_]+)`/g;
+const TOOL = /peer-ai MCP tool `([a-z_]+)`/g;
+/** The older wording, which a fast model read as a shell command to run with npx. */
+const AMBIGUOUS_TOOL = /peer-ai `[a-z_]+` tool/;
 const COMMAND = /`(?:npx )?peer-ai ([a-z][a-z-]*)/g;
 // A link's target stops at the next ], ( or ), and both parts have a length limit, so a long run of
 // unclosed links can't make the search slow.
@@ -187,6 +189,9 @@ function checkMarkdown(path: string, text: string, files: SkillFiles, expect: Ex
     if (expect.corePrefixes.has(prefix) && !expect.ruleIds.has(id)) {
       problems.push(`${path}: names ${id}, which isn't one of Peer AI's rules.`);
     }
+  }
+  if (AMBIGUOUS_TOOL.test(text)) {
+    problems.push(`${path}: name a tool as "the peer-ai MCP tool \`name\`", so it isn't mistaken for a shell command.`);
   }
   for (const [, tool = ""] of text.matchAll(TOOL)) {
     if (!(MCP_TOOL_IDS as readonly string[]).includes(tool)) {

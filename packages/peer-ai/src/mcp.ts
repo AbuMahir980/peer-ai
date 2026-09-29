@@ -16,6 +16,7 @@ import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
 import {
   advanceWorkItem,
+  checkReport,
   createWorkItem,
   nextWork,
   recordReview,
@@ -210,9 +211,9 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Record a review",
       description:
-        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format) and pass its path: Peer AI checks the report and works out pass, fail or incomplete from it. A review recorded without a report is marked unproven. Record failed and incomplete reviews too.",
+        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format) and pass its path: Peer AI checks the report, including that every rule the skill answers for has a coverage line, and works out pass, fail or incomplete from it. If it refuses, fix what it names and call it again. A review recorded without a report is marked unproven. Record failed and incomplete reviews too. For a review of the whole project, which has no work item, leave out the id: Peer AI checks the report the same way and gives its result, without recording it anywhere.",
       inputSchema: {
-        id: itemId,
+        id: itemId.optional().describe("The work item reviewed. Leave it out for a review of the whole project."),
         skill: z.enum(SKILL_IDS),
         report: z.string().min(1).optional().describe("The review report's path, relative to the project root."),
         result: z
@@ -223,9 +224,25 @@ export function createServer(options: ServerOptions): McpServer {
       },
       annotations: WRITES,
     },
-    withProject((root, config, { id, ...review }: { id: string } & ReviewInput) =>
-      fromResult(recordReview(root, config, id, review, now())),
-    ),
+    withProject((root, config, { id, ...review }: { id?: string | undefined } & ReviewInput) => {
+      if (id !== undefined) return fromResult(recordReview(root, config, id, review, now()));
+      if (review.report === undefined) {
+        return refuse("A review of the whole project needs its report: give the report's path.");
+      }
+      const checked = checkReport(root, config, { ...review, report: review.report });
+      return fromResult(
+        checked.ok
+          ? {
+              ok: true,
+              value: {
+                ...checked.value,
+                recorded: false,
+                note: "The report is valid. A review of the whole project has no work item, so it isn't recorded; tell the person its result.",
+              },
+            }
+          : checked,
+      );
+    }),
   );
 
   server.registerTool(

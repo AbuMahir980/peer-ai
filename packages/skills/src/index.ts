@@ -5,10 +5,10 @@
 import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { SKILL_IDS, type SkillId } from "@peer-ai/workflow";
-import { buildSkill, type BuildOptions } from "./build.ts";
+import { buildSkill, ruleIdsFor, type BuildOptions } from "./build.ts";
 import { readSkillFiles, type SkillFiles } from "./skill.ts";
 
-export { SKILL_NAME_PREFIX, buildSkill, renderedName, rulesReference, type BuildOptions } from "./build.ts";
+export { SKILL_NAME_PREFIX, buildSkill, renderedName, ruleIdsFor, rulesReference, type BuildOptions } from "./build.ts";
 export { parseSkillMd, readSkillFiles, type SkillDocument, type SkillFiles } from "./skill.ts";
 export { LIMITS, checkDescriptionBudget, validateSkill, type Expectations } from "./validate.ts";
 
@@ -24,4 +24,9 @@ export function availableSkills(): SkillId[] {
 /** A skill, built and ready to write. */
 export function loadSkill(id: SkillId, options: BuildOptions = {}): SkillFiles {
   return buildSkill(id, readSkillFiles(`${SKILLS_DIR}${id}`), options);
+}
+
+/** The ids of the rules a skill answers for, which its report must cover. */
+export function skillRuleIds(id: SkillId): string[] {
+  return ruleIdsFor(readSkillFiles(`${SKILLS_DIR}${id}`));
 }

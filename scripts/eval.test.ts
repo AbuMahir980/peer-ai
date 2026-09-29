@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { skillRuleIds } from "@peer-ai/skills";
 import { validateReport, type ReviewReport } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -10,10 +11,11 @@ import {
   evaluate,
   formatRun,
   loadSheet,
-  score,
-  sheets,
   type ResolvedDefect,
+  score,
   type Sheet,
+  sheets,
+  usedSkill,
 } from "./eval.ts";
 
 const made: string[] = [];
@@ -168,25 +170,34 @@ describe("running an eval", () => {
   it("works on a copy without the answers, and marks the reports the tool writes", async () => {
     const sheet = loadSheet("courier");
     const d1 = sheet.defects[0]?.spans[0];
-    const result = await evaluate(sheet, "security-review", "claude-code", (_tool, dir, prompt) => {
-      made.push(dir, `${dir}.log`);
-      expect(existsSync(join(dir, "evals"))).toBe(false);
-      expect(existsSync(join(dir, ".peer-ai", "review-report.schema.json"))).toBe(true);
-      expect(prompt).toContain("Review Courier's web app and API for security problems.");
-      mkdirSync(join(dir, ".peer-ai", "reports", "project"), { recursive: true });
-      writeFileSync(
-        join(dir, ".peer-ai", "reports", "project", "security-review.json"),
-        JSON.stringify(report([finding(d1?.file ?? "", d1?.line ?? 0)])),
-      );
-      writeFileSync(join(dir, ".peer-ai", "reports", "project", "broken.json"), "{");
-      return Promise.resolve({ seconds: 12, turns: 30, costUsd: 1.5 });
-    });
+    const baseline = { baseline: true };
+    const result = await evaluate(
+      sheet,
+      "security-review",
+      "claude-code",
+      (_tool, dir, prompt) => {
+        made.push(dir, `${dir}.log`);
+        expect(existsSync(join(dir, "evals"))).toBe(false);
+        expect(existsSync(join(dir, ".peer-ai", "review-report.schema.json"))).toBe(true);
+        expect(prompt).toContain("Review Courier's web app and API for security problems.");
+        mkdirSync(join(dir, ".peer-ai", "reports", "project"), { recursive: true });
+        writeFileSync(
+          join(dir, ".peer-ai", "reports", "project", "security-review.json"),
+          JSON.stringify(report([finding(d1?.file ?? "", d1?.line ?? 0)])),
+        );
+        writeFileSync(join(dir, ".peer-ai", "reports", "project", "broken.json"), "{");
+        expect(existsSync(join(dir, ".claude", "skills", "peer-ai-security-review"))).toBe(false);
+        return Promise.resolve({ seconds: 12, turns: 30, costUsd: 1.5 });
+      },
+      undefined,
+      baseline,
+    );
     expect(result.score.expected.find(({ defect }) => defect.id === "D1")?.foundBy).toHaveLength(1);
     expect(result.collected.invalid.map((bad) => bad.path)).toEqual([".peer-ai/reports/project/broken.json"]);
 
     const printed = formatRun(sheet, "claude-code", result, 1, 1).join("\n");
     expect(printed).toMatch(
-      /^courier · security-review · Claude Code · run 1 of 1\n\nFound 1 of 10 problems on the answer sheet:/,
+      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 10 problems on the answer sheet:/,
     );
     expect(printed).toContain(
       "\n  D3   critical services/api/app/routes/parcels.py:55  The status filter is pasted into SQL",
@@ -194,6 +205,51 @@ describe("running an eval", () => {
     expect(printed).toContain("Invalid report .peer-ai/reports/project/broken.json:");
     expect(printed).toContain("30 turns · 12 s · $1.50");
     expect(printed).toMatch(/Not ready yet: it missed 2 critical problems; it missed 5 high problems/);
+  });
+
+  it("installs the skill, asks in plain words, and notices whether the tool used it", async () => {
+    const sheet = loadSheet("courier");
+    let log = "";
+    const result = await evaluate(
+      sheet,
+      "security-review",
+      "codex",
+      (_tool, dir, prompt, logPath, model) => {
+        made.push(dir, logPath);
+        expect(prompt).toBe("Review Courier's web app and API for security problems.");
+        expect(model).toBe("fast-model");
+        expect(existsSync(join(dir, ".peer-ai", "review-report.schema.json"))).toBe(false);
+        for (const home of [".claude", ".agents"]) {
+          expect(existsSync(join(dir, home, "skills", "peer-ai-security-review", "references", "rules.md"))).toBe(true);
+        }
+        mkdirSync(join(dir, ".peer-ai", "reports", "project"), { recursive: true });
+        const covered = report([]);
+        covered.coverage = [
+          { rule: "SEC-01", status: "pass", evidence: "orders.ts:43" },
+          { rule: "SEC-07", status: "pass", evidence: "orders.ts:12" },
+        ];
+        writeFileSync(join(dir, ".peer-ai", "reports", "project", "security-review.json"), JSON.stringify(covered));
+        log = "exec sed -n 1,200p .agents/skills/peer-ai-security-review/SKILL.md";
+        writeFileSync(logPath, log);
+        return Promise.resolve({ seconds: 5 });
+      },
+      undefined,
+      { model: "fast-model" },
+    );
+    expect(result).toMatchObject({ baseline: false, model: "fast-model", skillUsed: true });
+    expect(result.coverage).toEqual({ covered: 2, of: skillRuleIds("security-review").length });
+    expect(formatRun(sheet, "codex", result, 1, 1).join("\n")).toMatch(
+      /^courier · security-review · Codex \(fast-model\) · with the skill · run 1 of 1/,
+    );
+    expect(usedSkill('{"skills":["peer-ai-security-review"]}', "security-review")).toBe(false);
+    expect(usedSkill('{"name":"Skill","input":{"skill":"peer-ai-security-review"}}', "security-review")).toBe(true);
+    expect(log).toContain("SKILL.md");
+  });
+
+  it("refuses to run with a skill that doesn't exist yet", async () => {
+    await expect(
+      evaluate(loadSheet("courier"), "code-review", "claude-code", () => Promise.resolve({ seconds: 0 })),
+    ).rejects.toThrow(/There's no code-review skill yet. Run with --baseline/);
   });
 
   it("adds a result to the table only when the table is the last thing in the file", () => {

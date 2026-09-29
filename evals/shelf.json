@@ -240,6 +240,19 @@
         }
       ],
       "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
+    },
+    {
+      "id": "S18",
+      "title": "Signing out only forgets the token on the phone, so the session stays valid on the server",
+      "severity": "medium",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/auth/session.ts",
+          "match": "await AsyncStorage.removeItem(SESSION_KEY);"
+        }
+      ],
+      "found": "Not planted: first raised by Peer AI's security-review skill on 2026-09-29, and judged real."
     }
   ]
 }

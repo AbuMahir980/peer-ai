@@ -68,7 +68,7 @@ It is the only part a tool reads before choosing a skill, so it decides whether 
 - Under 500 lines, aiming for about 200. **Checked.**
 - Open with the workflow as a checklist to copy and tick off. Then give each step, in order.
 - Match freedom to risk: exact steps where a mistake is costly, such as recording the report, and clear criteria with examples where judgement is the point.
-- Name a tool as the peer-ai `record_review` tool, and a command as `npx peer-ai check`. Both must exist. **Checked.**
+- Name a tool as the peer-ai MCP tool `record_review`, and a command as `npx peer-ai check`. Both must exist. **Checked.** The words "MCP tool" matter: in an eval, a fast model read "the peer-ai `record_review` tool" as a shell command and ran it with `npx`. The older wording fails the build. Say once near the top that these are MCP tools, never shell commands.
 - Cite rules by id, such as SEC-01. Every core rule id must exist. **Checked.** Never copy a rule's text into the body: it lives in `references/rules.md`.
 - End with the validate step: hand the output to Peer AI's check, fix what it names, and repeat until it passes.
 - No role-play, such as "You are a security engineer". **Checked.**

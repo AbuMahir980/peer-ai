@@ -1,6 +1,6 @@
 # Phone apps
 
-MOB-01 to MOB-04. These apply only to mobile parts. For other parts, each is `not-applicable`.
+MOB-01 to MOB-05. These apply only to mobile parts. For other parts, each is `not-applicable`.
 
 ## MOB-01: sensitive data in secure storage
 
@@ -41,3 +41,13 @@ MOB-01 to MOB-04. These apply only to mobile parts. For other parts, each is `no
 - to navigate to any screen;
 - to load any URL;
 - to act on a record, such as "delete item 42", without a confirmation or a permission check.
+
+## MOB-05: permissions asked for when needed, at the least level
+
+**Fail** when:
+
+- the app asks for a permission at launch rather than when the feature that needs it is used;
+- it asks at a higher level than the feature needs, such as location all the time instead of while the app is in use;
+- the request doesn't say why.
+
+The evidence is the permission declaration, such as the app's manifest or `Info.plist` keys, and the code that requests it.

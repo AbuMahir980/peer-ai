@@ -15,6 +15,7 @@ import { VERSION } from "./package-info.ts";
 import { createTerminalPrompter, type Prompter } from "./prompter.ts";
 import { formatReport } from "./report.ts";
 import { runRender } from "./render.ts";
+import { runCheckReport } from "./work.ts";
 
 const STAGES: readonly Stage[] = ["prototype", "mvp", "production"];
 
@@ -26,6 +27,7 @@ Usage:
   peer-ai render [options]    Set up each AI tool in the config: instructions and the MCP server
   peer-ai doctor [options]    Check that Peer AI is set up correctly, and how to fix it
   peer-ai check [options]     The CI gate: fail when work claims more than its record shows
+  peer-ai check-report <file> Check a review's report, as the record_review tool does
   peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
 
 Options for init:
@@ -47,6 +49,11 @@ Options for render:
       --check                 Change nothing; fail when a file is out of date (for CI)
       --skills                Write only the skills (what each tool's setup step runs)
       --quiet                 Print nothing unless something fails
+
+Options for check-report:
+      --skill <skill>         The skill the report is for (default: the one it names)
+      --work-item <id>        The work item it's for, when there is one
+      --json                  Print the result as JSON
 
 Options for doctor and check:
       --json                  Print the checks as JSON
@@ -131,6 +138,24 @@ function check(args: string[], io: Io): number {
   return runCheck({ cwd: io.cwd, json: values.json === true }, io.out);
 }
 
+function checkReportCommand(args: string[], io: Io): number {
+  const { values, positionals } = parseArgs({
+    args,
+    strict: true,
+    allowPositionals: true,
+    options: { skill: { type: "string" }, "work-item": { type: "string" }, json: { type: "boolean" } },
+  });
+  const [report] = positionals;
+  if (report === undefined)
+    throw new TypeError(
+      "Give the report's path, such as peer-ai check-report .peer-ai/reports/project/security-review.json",
+    );
+  return runCheckReport(
+    { cwd: io.cwd, report, skill: values.skill, workItem: values["work-item"], json: values.json === true },
+    io.out,
+  );
+}
+
 function render(args: string[], io: Io): number {
   const { values } = parseArgs({
     args,
@@ -155,6 +180,7 @@ const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promis
   render,
   doctor,
   check,
+  "check-report": checkReportCommand,
   mcp,
 };
 

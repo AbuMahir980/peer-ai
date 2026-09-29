@@ -34,14 +34,7 @@ export function buildSkill(id: SkillId, source: SkillFiles, options: BuildOption
   if (skillMd === undefined) return files;
   files.set("SKILL.md", skillMd.replace(/^name: .*$/m, `name: ${name}`));
 
-  const parsed = parseSkillMd(skillMd);
-  const metadata = parsed.ok ? (parsed.value.frontmatter.metadata as Record<string, unknown> | undefined) : undefined;
-  const words = (key: string) => {
-    const value = metadata?.[key];
-    return typeof value === "string" ? value.split(/\s+/).filter((word) => word !== "") : [];
-  };
-  const domains = words("peer-ai-domains").filter((domain): domain is DomainId => domain in DOMAIN_INFO);
-  const extra = words("peer-ai-rules");
+  const { domains, extra } = ruleChoice(skillMd);
   if (domains.length + extra.length > 0) files.set("references/rules.md", rulesReference(domains, extra));
   if (SKILL_KINDS[id] === "review") {
     files.set("references/severity.md", shared("severity.md"));
@@ -50,6 +43,26 @@ export function buildSkill(id: SkillId, source: SkillFiles, options: BuildOption
   const openai = source.get("agents/openai.yaml");
   if (openai !== undefined) files.set("agents/openai.yaml", openai.replaceAll("{{name}}", name));
   return files;
+}
+
+/** The domains and single rules a skill's metadata names. */
+function ruleChoice(skillMd: string): { domains: DomainId[]; extra: string[] } {
+  const parsed = parseSkillMd(skillMd);
+  const metadata = parsed.ok ? (parsed.value.frontmatter.metadata as Record<string, unknown> | undefined) : undefined;
+  const words = (key: string) => {
+    const value = metadata?.[key];
+    return typeof value === "string" ? value.split(/\s+/).filter((word) => word !== "") : [];
+  };
+  return {
+    domains: words("peer-ai-domains").filter((domain): domain is DomainId => domain in DOMAIN_INFO),
+    extra: words("peer-ai-rules"),
+  };
+}
+
+/** The ids of the rules a skill answers for, which its report must cover. */
+export function ruleIdsFor(source: SkillFiles): string[] {
+  const { domains, extra } = ruleChoice(source.get("SKILL.md") ?? "");
+  return CORE_RULES.filter((rule) => domains.includes(rule.domain) || extra.includes(rule.id)).map((rule) => rule.id);
 }
 
 /** The rules a skill checks, as a reference it reads on demand: whole domains, then single rules, by domain. */
@@ -62,7 +75,7 @@ export function rulesReference(domains: DomainId[], extra: string[] = []): strin
   const lines = [
     "# Rules",
     "",
-    "Generated from @peer-ai/standards. The peer-ai `standards_for_file` tool returns the rules that apply to a file, filtered by the project's stage and traits, with its stack profile's and add-on's rules too. Use this list to understand a rule; use the tool to know which apply.",
+    "Generated from @peer-ai/standards. The peer-ai MCP tool `standards_for_file` returns the rules that apply to a file, filtered by the project's stage and traits, with its stack profile's and add-on's rules too. Use this list to understand a rule; use the tool to know which apply.",
     "",
     "## Contents",
     "",

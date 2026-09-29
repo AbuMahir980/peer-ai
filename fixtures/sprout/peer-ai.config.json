@@ -5,6 +5,7 @@
     "name": "Sprout",
     "description": "A plant-care journal that works offline.",
     "stage": "mvp",
+    "traits": ["offline", "ai-features"],
     "origin": "existing",
     "team": "solo"
   },
