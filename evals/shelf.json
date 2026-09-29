@@ -338,6 +338,19 @@
         }
       ],
       "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S28",
+      "title": "The librarian screen writes its colour and spacing as values instead of using the design tokens",
+      "severity": "low",
+      "skills": ["design-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "badge: { fontWeight: \"600\", color: \"#188038\" },"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's design-review skill on 2026-09-29, and judged real."
     }
   ],
   "documents": {
