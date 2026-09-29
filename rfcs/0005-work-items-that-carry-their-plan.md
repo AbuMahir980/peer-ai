@@ -3,12 +3,12 @@
 | Field | Value |
 |-------|-------|
 | Author | @AbuMahir980 |
-| Status | Draft |
+| Status | Accepted |
 | Proposal issue | #39 |
 
 ## Summary
 
-A work item gains four optional fields: its **goal**, its **acceptance criteria**, the **sources** it implements, such as a spec, and the items it **depends on**. The issue-planning skill uses them to turn a spec or a set of gaps into small work items that each say what done means. The build and review skills then work from the item itself, and `next_work` stops offering an item whose dependencies aren't ready.
+A work item gains four optional fields: its **goal**, its **acceptance criteria**, the **sources** it implements, such as a spec, and the items it **depends on**. The issue-planning skill uses them to turn a spec or a set of gaps into small work items that each say what done means. The build and review skills then work from the item itself, and an item can't ship before the items it depends on.
 
 ## Motivation
 
@@ -34,14 +34,14 @@ acceptance: z.array(z.string().min(1).max(300)).max(20).optional()
 sources: z.array(z.string().min(1)).max(10).optional()
   .describe("The spec, design, requirement or issue it implements: paths in the repository, or URLs."),
 dependsOn: z.array(WorkItemId).max(20).optional()
-  .describe("Items that must reach ship before this one starts building."),
+  .describe("Items that must reach ship before this one can."),
 ```
 
 ### 2. The tools
 
 - `create_work_item` and `update_work_item` accept the four fields.
-- `next_work` returns them for the current item, and marks an open item **blocked** while any item it depends on hasn't reached `ship`.
-- `advance_work_item` refuses to move an item to `build` while it's blocked, and names the items it's waiting for.
+- `next_work` returns them for the current item, and shows each open item's unfinished dependencies, so the agent can see the order.
+- `advance_work_item` refuses to move an item to `ship` while any item it depends on hasn't reached `ship`, and names them. Building before a dependency ships is allowed: parallel work on stacked branches is common, and the danger is merging out of order, not building early.
 - `peer-ai check` fails when `dependsOn` names an item that doesn't exist, or when items depend on each other in a loop.
 
 ### 3. The issue-planning skill
@@ -58,12 +58,12 @@ Its evals give a spec and grade the work items created, by the same grader and p
 
 ## Compatibility
 
-A minor change. The fields are optional and additive; existing work items and tools are unaffected until an item uses them. The one new refusal, moving a blocked item to `build`, applies only to items that declare dependencies.
+A minor change. The fields are optional and additive; existing work items and tools are unaffected until an item uses them. The one new refusal, moving an item to `ship` before the items it depends on, applies only to items that declare dependencies.
 
 ## Drawbacks
 
 - **More to keep current.** Criteria on an item can drift from the spec. `sources` makes the drift findable, and the reviews check the change against the spec as well.
-- **A dependency can block work that could safely start.** A person can remove the dependency, and `advance_work_item` says which one blocks.
+- **A dependency can hold back a change that could safely ship alone.** A person can remove the dependency, and `advance_work_item` names the one holding it back.
 
 ## Alternatives
 
@@ -73,3 +73,7 @@ A minor change. The fields are optional and additive; existing work items and to
 ## Open questions
 
 - Should `implement-ticket` record, for each criterion, the test that proves it? That belongs with the build skills, and may need its own field.
+
+## Decision
+
+Accepted on 29 September 2026, with one change from the draft: the dependency gate is at `ship`, not `build`. The same day, seven plan skills were built in parallel on stacked branches, each depending on the one before. A gate at `build` would have stopped that. The risk dependencies guard against is merging out of order.

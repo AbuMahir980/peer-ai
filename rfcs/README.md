@@ -30,7 +30,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0002](0002-review-reports-and-evals.md) | Review reports and evals | Accepted |
 | [0003](0003-how-a-standard-is-written.md) | How a standard is written | Accepted |
 | [0004](0004-how-a-skill-is-written.md) | How a skill is written | Accepted |
-| [0005](0005-work-items-that-carry-their-plan.md) | Work items that carry their plan | Draft |
+| [0005](0005-work-items-that-carry-their-plan.md) | Work items that carry their plan | Accepted |
 
 ## What carries weight
 
