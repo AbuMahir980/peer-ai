@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI code review"
+  short_description: "Code review that proves every rule was checked"
+  default_prompt: "Use ${{name}} to review this change for bugs and maintainability and record the report."
