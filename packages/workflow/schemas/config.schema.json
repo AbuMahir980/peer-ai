@@ -87,6 +87,16 @@
         ]
       }
     },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "description": "Commit the skills peer-ai render writes, for AI tools that can't run a setup step first. Defaults to false: they're rebuilt from the installed version and left out of git, and each tool's setup step writes them.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "design": {
       "type": "object",
       "properties": {

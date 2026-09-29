@@ -261,3 +261,20 @@ One existing behaviour changes: `peer-ai check` starts enforcing required review
   - Claude Code reads `.claude/skills/`, which Cursor and Copilot also read.
   - `render` writes each skill to as few of these as the listed tools need, and to none when no tool is listed.
 - **Cloud sessions.** Claude Code's cloud sessions load only the skills committed to `.claude/skills/`. A project that keeps its skills out of git has none there, unless its setup runs `peer-ai render`. This adds weight to the open question above.
+
+**30 September 2026: skills in the cloud.** People use AI tools in a terminal, in desktop apps and in the cloud. Tools on a person's machine read the skills `render` wrote. Cloud agents start from a fresh clone, so each gets a setup step that writes the skills before it starts: `peer-ai render --skills --quiet`, which touches nothing committed.
+
+| Tool | Where the setup step lives |
+|------|----------------------------|
+| Claude Code | A `SessionStart` hook in `.claude/settings.json`. It also runs in cloud sessions and routines, and keeps skills fresh on a person's machine after an upgrade. |
+| Cursor | The `start` command in `.cursor/environment.json`, which runs each time a cloud agent boots |
+| GitHub Copilot | A step in `.github/workflows/copilot-setup-steps.yml` |
+| Codex | Codex cloud keeps its setup script in its own settings, so `render` prints the line to add. That line also downloads Peer AI before the agent starts, since Codex cloud's internet is off while it works. |
+
+As a last resort, a project can set `skills.commit` to `true`:
+
+- `render` commits the skills instead;
+- it marks them as generated in `.gitattributes`, so pull requests fold them away;
+- `render --check` then checks them too.
+
+This answers the open question above.

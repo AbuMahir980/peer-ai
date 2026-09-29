@@ -35,6 +35,10 @@ describe("fixtures", () => {
     expect(JSON.parse(readFileSync(join(target, ".mcp.json"), "utf8"))).toEqual({
       mcpServers: { "peer-ai": localServer() },
     });
+    const [cli = ""] = localServer().args;
+    expect(readFileSync(join(target, ".claude/settings.json"), "utf8")).toContain(
+      `"command": "${process.execPath} ${cli} render --skills --quiet"`,
+    );
     expect(execFileSync("git", ["log", "--oneline"], { cwd: target, encoding: "utf8" })).toMatch(
       /^[0-9a-f]+ The fixture as it starts\n$/,
     );
