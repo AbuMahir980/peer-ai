@@ -284,7 +284,7 @@
         },
         {
           "id": "TP8",
-          "point": "Backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "point": "Marks at least one defence as in place where the app has one, and backs each defence it marks as in place with a file and line, not only a rule's name.",
           "must": true
         },
         {
