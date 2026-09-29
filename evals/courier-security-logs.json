@@ -111,6 +111,86 @@
         }
       ],
       "rules": ["OPS-13"]
+    },
+    {
+      "id": "OS5",
+      "title": "Booking writes the recipient's name, phone and addresses to the logs",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OS6",
+      "title": "Log lines are sentences built by pasting values together, not fields a search can filter on",
+      "severity": "low",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/audit.py",
+          "match": "audit.info(\"%s %s\", event, fields)"
+        },
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OS7",
+      "title": "Requests carry no id, so a failed request can't be followed through the logs",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-08"]
+    },
+    {
+      "id": "OS8",
+      "title": "There's no health or readiness check",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-10"]
+    },
+    {
+      "id": "OS9",
+      "title": "There are no written targets for booking, paying or tracking",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-15"]
     }
   ]
 }

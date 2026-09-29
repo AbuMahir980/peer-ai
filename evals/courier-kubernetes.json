@@ -71,6 +71,42 @@
           "match": "DATABASE_URL: postgresql://courier@courier-db.production.courier.example:5432/courier"
         }
       ]
+    },
+    {
+      "id": "IK6",
+      "title": "Nothing but people applying the manifests by hand puts a change into the cluster: there's no pipeline",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        },
+        {
+          "file": "deploy/k8s/api.yaml",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-06"],
+      "found": "Not planted: raised by Peer AI's infrastructure-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "IK7",
+      "title": "Public traffic reaches the API with no TLS set up in front of it, and the API reaches the database without TLS",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/k8s/services.yaml",
+          "match": "- name: https",
+          "lines": 3
+        },
+        {
+          "file": "deploy/k8s/api.yaml",
+          "match": "value: postgresql://courier:Courier-Prod-2026!@courier-db:5432/courier"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's infrastructure-review skill on 2026-09-29, and judged real."
     }
   ]
 }
