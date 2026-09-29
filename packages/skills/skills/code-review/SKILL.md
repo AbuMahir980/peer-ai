@@ -31,11 +31,13 @@ Copy this checklist and tick it off as you go:
 - **A work item:** call the peer-ai MCP tool `next_work`. Review what its branch changed (`git diff --name-only <base>...HEAD`), and read the unchanged code each changed unit calls or is called by.
 - **The whole project:** every part on the map from the peer-ai MCP tool `project_map`, except external and dormant ones.
 
+Review everything in scope, older code included. A part that's half rebuilt, such as older JavaScript screens beside newer TypeScript features, is reviewed in both halves: bugs hide in the half nobody is changing.
+
 Read these first where they exist, and list them in the report's `inputs`: the architecture and its decision records, the API contract, the project's standards documents, and the rules it has set aside (`standards.exceptions` in `peer-ai.config.json`).
 
 ## 2. Inventory
 
-List every unit in scope, from the code. Give each an id, a kind and its file and line.
+Start from the list of every source file in scope, such as `git ls-files` for each part, so no folder is skipped. Then list every unit in those files, from the code. Give each an id, a kind and its file and line.
 
 | Kind | Id, for example | Covers |
 |------|-----------------|--------|
@@ -63,7 +65,7 @@ Work through each group. Its reference says what to look for, what counts as evi
 | REL-01, BE-02, PERF-01, PERF-05, PERF-06: outside calls, load and leaks | [performance-and-reliability.md](references/performance-and-reliability.md) |
 | FE-01 to FE-09: screens and their data | [frontend.md](references/frontend.md) |
 | ARC-01 to ARC-08: where code lives | [architecture.md](references/architecture.md) |
-| CODE-01 to CODE-14: code people can change safely | [code-quality.md](references/code-quality.md) |
+| CODE-01 to CODE-15: code people can change safely, and edge cases | [code-quality.md](references/code-quality.md) |
 | TEST-01, TEST-04, TEST-07: tests | [testing.md](references/testing.md) |
 | MONEY-01 to MONEY-12, SAFE-01 to SAFE-06: money and safety-critical data | [money-and-safety.md](references/money-and-safety.md) |
 

@@ -1,6 +1,6 @@
 # Code people can change safely
 
-CODE-01 to CODE-14. Size and nesting limits come from the stack profile, through `standards_for_file`.
+CODE-01 to CODE-15. Size and nesting limits come from the stack profile, through `standards_for_file`.
 
 ## Names
 
@@ -27,3 +27,14 @@ CODE-01 to CODE-14. Size and nesting limits come from the stack profile, through
 - **CODE-12:** catching every kind of error needs a comment saying why that's safe.
 - **CODE-13:** impossible states can't be written down. Fail several true-or-false flags, such as `isLoading` and `hasError`, where one status value would do.
 - **CODE-14:** types are strict. Fail `any`, `Any` or a cast used to skip checking data of unknown shape.
+
+## Edges
+
+- **CODE-15:** edge cases give the right answer. For every unit, try the edges of what it can receive:
+  - dates near midnight, in another time zone, and across a change to daylight saving;
+  - an empty list, and a very long one;
+  - two equal values competing for one place, such as the same position or the same time;
+  - the first and the last item;
+  - zero and negative numbers.
+
+  A calculation done in UTC but shown as local time is the classic case.
