@@ -379,7 +379,7 @@
         },
         {
           "id": "C11",
-          "point": "States no number of bookings, users or delivery times as fact: any figure is marked as assumed or asked about.",
+          "point": "Invents no numbers: any count of bookings or users, or any time or target the operations lead's message didn't give, is marked as assumed or asked about.",
           "must": true
         }
       ]

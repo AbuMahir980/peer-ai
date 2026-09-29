@@ -63,7 +63,7 @@
         },
         {
           "id": "F13",
-          "point": "States no number of users, orders or delivery times as fact: any figure is marked as assumed or asked about.",
+          "point": "Invents no numbers: any count of patients, orders or pharmacies, or any delivery time, that the brief didn't give is marked as assumed or asked about.",
           "must": true
         }
       ]
