@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Refill",
+    "description": "Repeat prescriptions delivered to the door.",
+    "stage": "prototype",
+    "origin": "new",
+    "team": "solo"
+  },
+  "tools": ["claude-code", "codex", "cursor"],
+  "tracks": [
+    { "id": "app", "kind": "other", "status": "active", "note": "Set the kind and stack once they are decided." }
+  ],
+  "tracker": { "kind": "none", "ticketPrefix": "RF" }
+}

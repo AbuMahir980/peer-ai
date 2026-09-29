@@ -9,7 +9,8 @@
     "data-migration-review": "Review Courier's database migrations.",
     "performance-review": "Review Courier's API and database for performance problems.",
     "reliability-review": "Review Courier's API for reliability problems.",
-    "ai-feature-review": "Review Courier's support assistant, which uses an AI model."
+    "ai-feature-review": "Review Courier's support assistant, which uses an AI model.",
+    "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\""
   },
   "defects": [
     {
@@ -326,5 +327,61 @@
         }
       ]
     }
-  ]
+  ],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "C1",
+          "point": "Keeps every existing requirement: signing in and booking a pickup, customers seeing only their own parcels, card payment through the payment provider with no card details stored, the tracking link without the recipient's details, keyboard and screen reader use, and UK GDPR.",
+          "must": true
+        },
+        {
+          "id": "C2",
+          "point": "Adds moving a pickup to another day, with acceptance criteria that allow it until the evening before and refuse it after.",
+          "must": true
+        },
+        {
+          "id": "C3",
+          "point": "Adds a text message when the driver is about ten minutes away, with acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "C4",
+          "point": "Puts the loyalty scheme out of scope, for the backlog.",
+          "must": true
+        },
+        {
+          "id": "C5",
+          "point": "Asks what time \"the evening before\" ends, or records an assumption about it with what changes if it's wrong."
+        },
+        {
+          "id": "C6",
+          "point": "Asks who gets the text, the customer who booked or someone at the pickup address, or notes that the phone numbers used are personal data sent to a messaging provider."
+        },
+        {
+          "id": "C7",
+          "point": "Lists a text messaging provider as a dependency."
+        },
+        {
+          "id": "C8",
+          "point": "Notes that the code already has an assistant that can cancel and reschedule parcels, which the requirements didn't mention, and asks whether it's meant to."
+        },
+        {
+          "id": "C9",
+          "point": "Says what changed and why, citing the operations lead's message."
+        },
+        {
+          "id": "C10",
+          "point": "Asks about needs nobody gave, such as how many bookings to expect or how available the service must be, instead of inventing them."
+        },
+        {
+          "id": "C11",
+          "point": "States no number of bookings, users or delivery times as fact: any figure is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    }
+  }
 }

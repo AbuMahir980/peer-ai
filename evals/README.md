@@ -1,12 +1,13 @@
 # Evals
 
-An eval tests whether a review finds the problems it should. Each practice project in [`fixtures/`](../fixtures/) has problems planted in it on purpose, and its answer sheet lives here, outside the project, so the AI tool under test never sees the answers. The design is in [RFC 0002](../rfcs/0002-review-reports-and-evals.md).
+An eval tests whether a review finds the problems it should, and whether a document skill writes what a good document contains. Each practice project in [`fixtures/`](../fixtures/) has problems planted in it on purpose, and its answer sheet lives here, outside the project, so the AI tool under test never sees the answers. The design is in [RFC 0002](../rfcs/0002-review-reports-and-evals.md) and [RFC 0004](../rfcs/0004-how-a-skill-is-written.md).
 
-| Answer sheet | Practice project | Planted problems |
-|--------------|------------------|------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 19: 18 planted, and 1 a review found that nobody planted |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 18: 16 planted, and 2 that reviews found and nobody planted |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 |
+| Answer sheet | Practice project | Planted problems | Document scenarios |
+|--------------|------------------|------------------|--------------------|
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | – |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code |
+| [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief |
 
 ## Running one
 
@@ -21,8 +22,9 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--tool codex` | Use Codex instead of Claude Code |
 | `--model <model>` | Ask for a model, such as a fast one and a strong one. RFC 0004 asks for both on each tool. |
 | `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
+| `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
 | `--runs 2` | Run it twice |
-| `--record` | Add the result to the table below |
+| `--record` | Add the result to the tables below |
 
 Each run uses about $1 to $3 of the tool's usage.
 
@@ -32,6 +34,21 @@ Each run uses about $1 to $3 of the tool's usage.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
 - **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
+
+## How a document is marked
+
+```bash
+node scripts/eval.ts refill --skill requirements-analysis
+```
+
+A document skill's scenario is a prompt, such as a founder's brief, and the points a good document makes of it. After the run:
+
+- **`check_document`** checks the document against the skill's template.
+- **A grader,** a second run of an AI tool, reads only the document and the points. For each point it says whether the document makes it, with a quote. It never sees the project or the first run.
+- **A person reads the quotes,** because a grader can be wrong. A wrong grade is corrected in the notes below.
+- A document is **ready** when `check_document` accepts it, it makes every point marked as one it must make, and at least 80% of all its points.
+
+A baseline, without the skill, can't follow a template it doesn't have, so `check_document` refuses it. Compare the points it makes instead.
 
 ## Each answer sheet
 
@@ -144,3 +161,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+
+## Document results
+
+Newest last. **Points** is how many of the scenario's points the grader found in the document, and **Must-haves** how many of those it must make. **Check** is whether `check_document` accepted it.
+
+| Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
+|------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
