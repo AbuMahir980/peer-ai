@@ -32,7 +32,7 @@ Copy this checklist and tick it off as you go:
 Read everything there is before writing anything:
 
 - **The person's words:** a brief, an email, notes or messages they've shared. For something new, if they've shared nothing, ask for everything they have first.
-- **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update: keep everything in it that's still true. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
+- **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
 - **The code,** when the product exists: its screens, routes and jobs show what it does today, and what it does that nobody wrote down.
 - **A single feature:** the work item from the peer-ai MCP tool `next_work`, and the requirements it changes.
 
@@ -49,6 +49,11 @@ List what you found before you write. Give each item its source: the brief, a na
 | `dependency` | Each thing it needs from people or systems the team doesn't control |
 
 Mark each item **stated**, when someone said it, or **inferred**, when you worked it out from the code or by reasoning. Only what's stated is a requirement. An inferred item is written as inferred, and becomes a question.
+
+Compare the code with the existing requirements both ways, even when you were asked about one change:
+
+- **In the code, not in the requirements:** a feature nobody wrote down, such as an assistant or an export. List it as inferred, with its file, and ask whether it's meant to be there.
+- **In the requirements, not in the code:** a requirement the code doesn't meet yet. It stays a requirement. Note the gap under Open questions or as work to do.
 
 ## 3. Questions
 
@@ -67,7 +72,7 @@ Hold every part to this bar:
 
 - **Say where each statement came from,** such as "(brief)", "(Ada, 3 March)", "(from the code: bookings/routes.ts)" or "(assumed)".
 - **Say what, not how.** Requirements say what the product must do and why. How it's built belongs to the architecture and the specs, which come next.
-- **When updating,** keep what's still true, change what isn't, and say under Sources what changed and why.
+- **When updating,** keep every existing requirement. A requirement is a decision someone made: code that doesn't meet it yet is a gap to report, never a reason to weaken it or call it an intention. Change or drop one only when a person asks you to, and say under Sources what changed and why.
 - **Cite only real rules:** those in rules.md, or returned by the peer-ai MCP tool `standards_for_file`.
 - **Anything only a lawyer or a regulator can settle** is an open question for them, not a conclusion.
 

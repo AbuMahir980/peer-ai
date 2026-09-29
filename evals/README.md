@@ -23,6 +23,7 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--model <model>` | Ask for a model, such as a fast one and a strong one. RFC 0004 asks for both on each tool. |
 | `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
 | `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
+| `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
 | `--runs 2` | Run it twice |
 | `--record` | Add the result to the tables below |
 
@@ -168,3 +169,6 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 
 | Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
 |------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
+| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 12 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 10 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |

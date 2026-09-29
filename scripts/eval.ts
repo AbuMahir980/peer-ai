@@ -9,10 +9,11 @@
 //
 //   node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>]
 //     [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--record]
+//   node scripts/eval.ts <fixture> --skill <document skill> --regrade <copy> [--grader …] [--record]
 
 import { execFile, execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -561,8 +562,16 @@ export const runGrader: GraderRunner = async (tool, dir, prompt, log, model) => 
     );
     return;
   }
-  const codex = ["exec", "--ephemeral", "--ignore-user-config", "--sandbox", "workspace-write", "-C", dir];
-  await run("codex", [...codex, "-c", 'approval_policy="never"', ...choose, prompt], dir, log);
+  // The grading folder isn't a git repository, which Codex refuses to work in unless told it's fine.
+  const codex = [
+    "exec",
+    "--ephemeral",
+    "--ignore-user-config",
+    "--skip-git-repo-check",
+    "--sandbox",
+    "workspace-write",
+  ];
+  await run("codex", [...codex, "-C", dir, "-c", 'approval_policy="never"', ...choose, prompt], dir, log);
 };
 
 export interface GraderOptions {
@@ -578,6 +587,56 @@ export interface DocumentRun {
   model?: string;
   skillUsed?: boolean;
   grader: GraderOptions;
+  /** Graded again from an earlier run's copy, so the run's time and cost aren't known. */
+  regraded?: boolean;
+}
+
+/**
+ * Checks and grades the document a run left in its copy. `before` is the document as the copy
+ * started, so a run that leaves an existing document unchanged hasn't written one.
+ */
+export async function markDocument(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  before: string | undefined,
+  grade: GraderRunner,
+  grader: GraderOptions,
+): Promise<DocumentScore> {
+  const scenario = sheet.documents?.[skill];
+  if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
+  const path = writtenDocument(dir, scenario.path, before);
+  if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
+  const check = checkDocumentIn(dir, skill, path);
+  const gradeDir = `${dir}-grades`;
+  rmSync(gradeDir, { recursive: true, force: true });
+  mkdirSync(gradeDir, { recursive: true });
+  writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8"));
+  const points = scenario.points.map(({ id, point }) => ({ id, point }));
+  writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
+  await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
+  return { ...scoreDocument(skill, scenario, true, check, readGrades(gradeDir)), path };
+}
+
+/**
+ * Where the run wrote its document: the expected path when it changed there, or else a new or
+ * changed file of the same name elsewhere in the copy, such as requirements/requirements.md for
+ * docs/requirements.md. The project map finds a document by its name, so either counts.
+ */
+export function writtenDocument(dir: string, expected: string, before: string | undefined): string | undefined {
+  const target = join(dir, expected);
+  if (existsSync(target) && readFileSync(target, "utf8") !== before) return expected;
+  let changed: string[];
+  try {
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter((line) => line !== "");
+  } catch {
+    return undefined;
+  }
+  const name = expected.split("/").at(-1)?.toLowerCase();
+  return changed.find((file) => file !== expected && file.split("/").at(-1)?.toLowerCase() === name);
 }
 
 /** One run of a document skill: a fresh copy, the tool given the prompt, and the document graded. */
@@ -602,35 +661,49 @@ export async function evaluateDocument(
   const before = existsSync(target) ? readFileSync(target, "utf8") : undefined;
   const log = `${dir}.log`;
   const toolRun = await runner(tool, dir, evalPrompt(sheet, skill, baseline), log, options.model);
-  const after = existsSync(target) ? readFileSync(target, "utf8") : undefined;
-  const written = after !== undefined && after !== before;
-  let check: DocumentScore["check"];
-  let grades: Grade[] | undefined;
-  if (written) {
-    check = checkDocumentIn(dir, skill, scenario.path);
-    const gradeDir = `${dir}-grades`;
-    mkdirSync(gradeDir, { recursive: true });
-    writeFileSync(join(gradeDir, "document.md"), after);
-    writeFileSync(
-      join(gradeDir, "points.json"),
-      `${JSON.stringify(
-        scenario.points.map(({ id, point }) => ({ id, point })),
-        null,
-        2,
-      )}\n`,
-    );
-    await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
-    grades = readGrades(gradeDir);
-  }
+  const score = await markDocument(sheet, skill, dir, before, grade, grader);
   const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
   return {
     dir,
-    score: scoreDocument(skill, scenario, written, check, grades),
+    score,
     tool: toolRun,
     baseline,
     ...(options.model === undefined ? {} : { model: options.model }),
     ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
     grader,
+  };
+}
+
+/**
+ * Grades an earlier run's document again, from its copy: when a grader failed, or for a second
+ * opinion from another grader. Whether the run had the skill is read from the copy and its log.
+ */
+export async function regradeDocument(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  grade: GraderRunner,
+  grader: GraderOptions,
+  options: EvalOptions = {},
+): Promise<DocumentRun> {
+  const scenario = sheet.documents?.[skill];
+  if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
+  const original = join(REPO, "fixtures", sheet.fixture, scenario.path);
+  const before = existsSync(original) ? readFileSync(original, "utf8") : undefined;
+  const baseline = ![".claude/skills", ".agents/skills"].some((home) =>
+    existsSync(join(dir, home, renderedName(skill))),
+  );
+  const log = `${dir}.log`;
+  const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
+  return {
+    dir,
+    score: await markDocument(sheet, skill, dir, before, grade, grader),
+    tool: { seconds: 0 },
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
+    grader,
+    regraded: true,
   };
 }
 
@@ -714,6 +787,10 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
     `${sheet.fixture} · ${marked.skill} · ${TOOL_NAMES[tool]}${model} · ${describeSkill(run)} · run ${String(index)} of ${String(of)}`,
     "",
   ];
+  const expected = sheet.documents?.[marked.skill]?.path;
+  if (marked.written && expected !== undefined && marked.path !== expected) {
+    lines.push(`Written to ${marked.path}, not ${expected}.`);
+  }
   if (marked.written) {
     const met = marked.points.filter((point) => point.met).length;
     const musts = marked.points.filter((point) => point.must);
@@ -736,7 +813,11 @@ export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, in
   }
   const cost = run.tool.costUsd === undefined ? "" : ` · $${run.tool.costUsd.toFixed(2)}`;
   const turns = run.tool.turns === undefined ? "" : `${String(run.tool.turns)} turns · `;
-  lines.push(`${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`);
+  lines.push(
+    run.regraded === true
+      ? `Graded again from the copy in ${run.dir}`
+      : `${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`,
+  );
   lines.push("", marked.ready ? "Ready: it made every point it must." : `Not ready yet: ${marked.reasons.join("; ")}.`);
   return lines;
 }
@@ -770,6 +851,7 @@ if (invokedDirectly) {
       record: { type: "boolean" },
       grader: { type: "string", default: "codex" },
       "grader-model": { type: "string" },
+      regrade: { type: "string" },
     },
   });
   const [name] = positionals;
@@ -779,7 +861,7 @@ if (invokedDirectly) {
   const tools: string[] = ["claude-code", "codex"];
   if (name === undefined || skill === undefined || !tools.includes(tool) || !tools.includes(graderTool)) {
     console.error(
-      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
+      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
     );
     process.exit(2);
   }
@@ -793,7 +875,18 @@ if (invokedDirectly) {
     baseline: values.baseline === true,
     ...(values.model === undefined ? {} : { model: values.model }),
   };
-  for (let i = 1; i <= runs && SKILL_KINDS[skill] === "document"; i++) {
+  const regrade = values.regrade;
+  if (regrade !== undefined) {
+    const grader = {
+      tool: graderTool,
+      ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
+    };
+    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, options);
+    console.log(formatDocumentRun(sheet, tool, result, 1, 1).join("\n"));
+    if (values.record === true) recordDocument(sheet, tool, result);
+    allReady &&= result.score.ready;
+  }
+  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] === "document"; i++) {
     const grader = {
       tool: graderTool,
       ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
@@ -804,7 +897,7 @@ if (invokedDirectly) {
     if (values.record === true) recordDocument(sheet, tool, result);
     allReady &&= result.score.ready;
   }
-  for (let i = 1; i <= runs && SKILL_KINDS[skill] !== "document"; i++) {
+  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] !== "document"; i++) {
     const result = await evaluate(sheet, skill, tool, runTool, into(), options);
     console.log(formatRun(sheet, tool, result, i, runs).join("\n"));
     if (i < runs) console.log("");
