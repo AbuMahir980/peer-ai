@@ -122,7 +122,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Next work",
       description:
-        "The work to continue: the open work item for the current git branch, with where it stopped and its next action, and every other open item. When nothing is open, the gaps the project's stage needs, to start as work items.",
+        "The work to continue: the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill).",
       annotations: READ_ONLY,
     },
     withProject((root, config) => reply(nextWork(root, config))),
@@ -233,7 +233,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Advance a work item",
       description:
-        "Move a work item to its next stage (prepare, build, verify, ship, done), to an earlier stage to reopen it, or to cancelled. Moving to ship or done passes the same gates as CI: a passing verify, passing reviews, and for a gap, the gap filled. When it refuses, it lists what to fix.",
+        "Move a work item to its next stage (prepare, build, verify, ship, done), to an earlier stage to reopen it, or to cancelled. Moving to verify works out the reviews the change needs from the files it touched. Moving to ship or done passes the same gates as CI: a passing verify, the required reviews passing, and for a gap, the gap filled. When it refuses, it lists what to fix.",
       inputSchema: {
         id: itemId,
         to: WorkItemSchema.shape.stage.optional().describe("The stage to move to. Omit it for the next one."),

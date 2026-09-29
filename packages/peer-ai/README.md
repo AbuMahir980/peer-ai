@@ -226,6 +226,7 @@ pnpm peer-ai check
 | A work item at `ship` or `done` has no recorded verify, or its last verify failed | `commands.verify` runs before any work is called done. Without a verify command, only a recorded failure counts. |
 | A work item at `ship` or `done` has a review whose latest result failed, or is incomplete | A review that didn't check every rule hasn't passed. A later passing review from the same skill replaces an earlier failure. At the `prototype` stage, an incomplete review is allowed; a failed one never is. |
 | A production project's work item at `ship` or `done` has a review with no report | Without a report, the result is only the agent's word. For an MVP this is a warning; for a prototype it's allowed. |
+| A work item at `ship` or `done` is missing a review it needs | When an item reaches verify, Peer AI works out the reviews it needs from the files it touched, such as a security review for code at MVP or production. Missing one is a warning for an MVP and a failure in production. `activities.verify.reviews` in the config can require more, or skip one with a reason. |
 | A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
 
 It warns, and still passes, when:
@@ -275,13 +276,13 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | Tool | What it does |
 |------|--------------|
 | `project_map` | Each item on the project map with its evidence, what the stage still needs, compliance signals and traits to consider. It assesses afresh on every call, and says whether the committed map has fallen behind. |
-| `next_work` | The open work item for the current git branch, with where it stopped and its next action, and every other open item. When nothing is open, the gaps the stage needs. |
+| `next_work` | The open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item. When nothing is open, the gaps the stage needs, with the Peer AI skill to use for each (`useSkill`). |
 | `standards_for_file` | The track a file belongs to, the stack profiles, and the project's own standards documents and rules for that track |
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. |
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there |
 | `run_verify` | Runs `commands.verify` and records the result with the end of its output. Only this tool records a verify, so a pass is proven rather than claimed. |
 | `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support. A review recorded without a report is marked unproven. |
-| `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. |
+| `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. Moving to verify works out the reviews the change needs from the files it touched, and keeps them on the item. |
 
 Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.
 

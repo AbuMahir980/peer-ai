@@ -273,9 +273,23 @@ const Capability = z.strictObject({
   notes: z.array(Note).optional(),
 });
 
+const ReviewChoices = z
+  .strictObject({
+    require: z
+      .array(z.enum(SKILL_IDS))
+      .optional()
+      .describe("Reviews every change needs, beyond the ones Peer AI works out from what it touched."),
+    skip: z
+      .array(z.strictObject({ skill: z.enum(SKILL_IDS), reason: Note }))
+      .optional()
+      .describe("Reviews this project doesn't need, each with the reason."),
+  })
+  .describe("For verify: add to or remove from the reviews each change needs (RFC 0004).");
+
 const Activity = z.strictObject({
   inputs: z.array(Path).optional().describe("Read these before anything else, and before asking the user anything."),
   notes: z.array(Note).optional().describe("Project-specific instructions for this activity."),
+  reviews: ReviewChoices.optional(),
 });
 
 const Models = z

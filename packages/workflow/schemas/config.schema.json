@@ -868,6 +868,103 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "reviews": {
+            "type": "object",
+            "properties": {
+              "require": {
+                "description": "Reviews every change needs, beyond the ones Peer AI works out from what it touched.",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "requirements-analysis",
+                    "product-spec",
+                    "architecture",
+                    "system-design",
+                    "api-design",
+                    "data-modelling",
+                    "threat-model",
+                    "design-system",
+                    "issue-planning",
+                    "implement-ticket",
+                    "code-review",
+                    "security-review",
+                    "contract-check",
+                    "accessibility-review",
+                    "design-review",
+                    "performance-review",
+                    "reliability-review",
+                    "data-migration-review",
+                    "dependency-review",
+                    "compliance-review",
+                    "test-strategy",
+                    "qa-acceptance",
+                    "ai-feature-review",
+                    "release-readiness",
+                    "infrastructure-review",
+                    "observability-review",
+                    "incident-response",
+                    "documentation",
+                    "tech-debt-triage"
+                  ]
+                }
+              },
+              "skip": {
+                "description": "Reviews this project doesn't need, each with the reason.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "skill": {
+                      "type": "string",
+                      "enum": [
+                        "requirements-analysis",
+                        "product-spec",
+                        "architecture",
+                        "system-design",
+                        "api-design",
+                        "data-modelling",
+                        "threat-model",
+                        "design-system",
+                        "issue-planning",
+                        "implement-ticket",
+                        "code-review",
+                        "security-review",
+                        "contract-check",
+                        "accessibility-review",
+                        "design-review",
+                        "performance-review",
+                        "reliability-review",
+                        "data-migration-review",
+                        "dependency-review",
+                        "compliance-review",
+                        "test-strategy",
+                        "qa-acceptance",
+                        "ai-feature-review",
+                        "release-readiness",
+                        "infrastructure-review",
+                        "observability-review",
+                        "incident-response",
+                        "documentation",
+                        "tech-debt-triage"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "skill",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false,
+            "description": "For verify: add to or remove from the reviews each change needs (RFC 0004)."
           }
         },
         "additionalProperties": false

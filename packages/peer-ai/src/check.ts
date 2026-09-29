@@ -4,6 +4,7 @@
 // reported, so they become work items instead of blockers. The project's stage sets how strict
 // it is.
 
+import { renderedName } from "@peer-ai/skills";
 import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "@peer-ai/workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
@@ -56,6 +57,16 @@ export function gateWorkItem(item: WorkItem, config: PeerAiConfig, stage: Stage,
         `Run ${verifyCommand} and record the result on the work item, ${backToBuild}`,
       ),
     );
+  }
+
+  // The reviews the change needs (RFC 0004): a warning for an MVP, a failure in production. A
+  // prototype is only told, by next_work.
+  const recorded = new Set((item.reviews ?? []).map((review) => review.skill));
+  for (const required of item.requiredReviews ?? []) {
+    if (recorded.has(required.skill) || stage === "prototype") continue;
+    const message = `${claim}, but it has no ${required.skill}, which it needs because ${required.reason}.`;
+    const fix = `Use the ${renderedName(required.skill)} skill and record its review, ${backToBuild}`;
+    checks.push(stage === "production" ? fail("gates", message, fix) : warn("gates", message, fix));
   }
 
   for (const review of latestReviews(item)) {

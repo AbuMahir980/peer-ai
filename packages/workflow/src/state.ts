@@ -94,6 +94,12 @@ export const WorkItemSchema = z
         }),
       )
       .optional(),
+    requiredReviews: z
+      .array(z.strictObject({ skill: z.enum(SKILL_IDS), reason: z.string().min(1) }))
+      .optional()
+      .describe(
+        "The reviews this work needs, worked out from what the change touched when it reached verify (RFC 0004).",
+      ),
     reopened: z
       .array(z.strictObject({ activity: z.enum(ACTIVITY_IDS), reason: z.string().min(1), at: Timestamp }))
       .optional()
