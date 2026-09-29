@@ -147,7 +147,7 @@
     {
       "id": "D14",
       "title": "Prices are worked out in pounds as decimals, while the API charges whole pence",
-      "severity": "medium",
+      "severity": "critical",
       "skills": ["code-review"],
       "locations": [{ "file": "apps/web/src/lib/price.ts", "match": "return 3.5 + weightKg * 0.85;" }]
     },
