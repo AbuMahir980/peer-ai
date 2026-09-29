@@ -318,6 +318,19 @@
           "match": "http<LibrarianReply>(\"/librarian\""
         }
       ]
+    },
+    {
+      "id": "S24",
+      "title": "The newer features' request helper has no timeout, so a slow API leaves a screen waiting forever",
+      "severity": "medium",
+      "skills": ["code-review", "reliability-review"],
+      "locations": [
+        {
+          "file": "src/lib/http.ts",
+          "match": "const response = await fetch(`${API_URL}${path}`, {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
     }
   ]
 }
