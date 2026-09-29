@@ -110,6 +110,21 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **One was real and nobody had planted it:** shelf's request helper for its newer features has no timeout, so a slow API leaves a screen waiting. code-review raised it too. It's now S24 on the answer sheet, for code-review and reliability-review. The code-review rows above were marked before it was added, against 11 problems.
   - **Courier's "no tests of the assistant's behaviour, or of attacks on it"** (AI-08) is real under the rules, and is about how the project is run rather than planted code, like SEC-25 and TEST-08 before.
 
+- **2026-09-29, requirements-analysis with Codex, on refill, courier and sprout, with the skill and without.** A second Codex run graded each document; a person read every grade, and the corrections are below. The first six rows were graded again against the final points:
+  - **With the skill, all three are ready:** refill 13 of 13, and courier 11 of 11 and sprout 11 of 11 after the fixes below. Without it: 10 of 13, 7 of 11 and 8 of 11, none ready.
+  - **Without the skill, Codex put an extra idea into the agreed scope:** the loyalty scheme the operations lead added to their message. It also dropped sprout's existing requirements.
+  - **The baselines still followed the template,** because Peer AI's MCP server was connected and `check_document` named the parts they were missing. As with the reviews, "without" measures the skill, not Peer AI as a whole.
+- **What the runs changed:**
+  - **Existing requirements were weakened.** On sprout, with and without the skill, Codex turned requirements such as "nothing may ever be lost" into intentions, because the code doesn't meet them yet. The skill now keeps every requirement a person decided, and reports the gap. The next run kept them all.
+  - **A feature nobody wrote down was missed.** Courier's code has a support assistant its requirements don't mention. The skill now compares the code with the requirements both ways, and the next run asked about it.
+  - **An extra idea was treated as agreed.** One courier run put the loyalty scheme in scope. The skill now says an idea added to a request isn't agreed until someone decides, and the point accepts "unclear" as well as "out of scope".
+  - **A run stopped to wait.** One courier run asked its questions, then waited for answers nobody would give, and wrote nothing. The skill now writes the document with its questions in it, and asks at hand-over. The next run made every point.
+  - **The runner:** Codex wouldn't grade outside a git repository until told it's fine; `--regrade` grades an earlier run's copy again; and a document written under the same name elsewhere, such as `requirements/requirements.md`, is found.
+- **What people judged in those runs:**
+  - **Two points were wrong about the projects,** and were rewritten before the re-grade. Sprout's journal, watering and plant identification are in the code but not reachable from any screen, so "describes what the app does today" can't expect them as working features. Three "invents no numbers" points now say plainly that figures from the brief are allowed.
+  - **The grader was wrong once:** in the second courier run it counted "about ten minutes", from the operations lead's message, as an invented figure. A person counts that run 10 of 11; it still isn't ready, because of the loyalty scheme.
+  - **The grader varies:** refill with the skill was graded 12 and then 13 of 13 on the same document, over whether it asked if a patient is charged when a prescription is rejected.
+
 ## Results
 
 Newest last.
@@ -169,6 +184,13 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 
 | Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
 |------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
-| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 12 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
+| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 13 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
 | 2026-09-29 | courier | requirements-analysis | Codex | default | used | 10 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
-| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | refill | requirements-analysis | Codex | default | without | 10 of 13 | 6 of 6 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | without | 7 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | without | 8 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | No document | – | – | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
