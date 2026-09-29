@@ -218,7 +218,7 @@ describe("validating a skill", () => {
   });
 
   it("stays fast on text full of unclosed links", () => {
-    const hostile = `${"](!".repeat(50_000)}`;
+    const hostile = "](!".repeat(50_000);
     const started = performance.now();
     problemsWith(setSkillMd(FIELDS, `${BODY}\n${hostile}`));
     expect(performance.now() - started).toBeLessThan(1000);
