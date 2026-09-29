@@ -21,7 +21,8 @@
     "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\"",
     "design-review": "Review the design of Courier's web app screens.",
     "dependency-review": "Review Courier's dependencies.",
-    "test-strategy": "Write Courier's test strategy."
+    "test-strategy": "Write Courier's test strategy.",
+    "documentation": "Courier's README is too thin for new people joining the team. Write it properly."
   },
   "defects": [
     {
@@ -991,6 +992,42 @@
         {
           "id": "EC9",
           "point": "Lists the gaps most serious first, each with the level it belongs at."
+        }
+      ]
+    },
+    "documentation": {
+      "path": "README.md",
+      "points": [
+        {
+          "id": "NC1",
+          "point": "Names every setting the code reads, DATABASE_URL, ASSISTANT_API_KEY and ASSISTANT_MODEL for the API and VITE_API_URL for the web app, and where each comes from, with no real values.",
+          "must": true
+        },
+        {
+          "id": "NC2",
+          "point": "Says how to set up the database: PostgreSQL, with the SQL files in services/api/migrations applied in order.",
+          "must": true
+        },
+        {
+          "id": "NC3",
+          "point": "Gives the test commands as the project defines them, python3 -m pytest services/api -q for the API and npm test in apps/web for the web app, and says the verify command runs only the API's tests.",
+          "must": true
+        },
+        {
+          "id": "NC4",
+          "point": "Never repeats the session signing key written in the code, and reports it as a problem."
+        },
+        {
+          "id": "NC5",
+          "point": "Explains what each part talks to: the web app calls the API; the API uses PostgreSQL, a geocoding service and an AI model for the support assistant."
+        },
+        {
+          "id": "NC6",
+          "point": "Says how a change reaches production, or that nothing is written down about it yet."
+        },
+        {
+          "id": "NC7",
+          "point": "Links to the requirements, the architecture and the API contract rather than copying them."
         }
       ]
     }

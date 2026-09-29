@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI documentation"
+  short_description: "A README a newcomer can follow, checked against the code"
+  default_prompt: "Use ${{name}} to write or update this project's README so a newcomer can set it up, run it and work on it."
