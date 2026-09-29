@@ -308,6 +308,11 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The runner sets up review scenarios too:** an answer sheet's `setup` files are written into the copy and committed before the run, as for documents, and planted problems can be in them. The shared practice projects stay as they are.
   - **Before any run, the checking guide gave away four of its own answers,** such as a rounding test whose value needs no rounding, and whose clock the code uses. Each was rewritten as the general rule.
 
+- **2026-09-29, documentation with Claude Code on Sonnet, graded by Claude Code on Haiku, on courier, shelf and sprout, and on courier without it:**
+  - **Courier and shelf are ready:** 7 of 7 and 6 of 7. Without the skill, courier made 4 of 7, and `check_document` refused it: it never reported the signing key written in the code, and said nothing of how a change reaches production.
+  - **Sprout isn't ready, in two runs.** The first stopped to ask for permission to run `npm install` and wrote nothing. The skill now says to check commands against where they're defined instead, never stopping to ask. The second wrote the README, but named the plant identification key without saying it ends up in the app people download, and described the service worker without saying new versions never reach people: 3 of 7. Reporting what a setting exposes, and what the app gets wrong, is the work left for the next round.
+  - **Shelf's one miss:** nothing about how the app reaches the stores.
+
 ## Results
 
 Newest last.
@@ -503,3 +508,8 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | test-strategy | Claude Code | sonnet | used | 4 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $1.25 |
 | 2026-09-29 | courier | test-strategy | Claude Code | sonnet | without | 3 of 9 | 2 of 4 | Accepted | Not ready | Claude Code, haiku | $0.91 |
 | 2026-09-29 | shelf | test-strategy | Claude Code | sonnet | used | 2 of 10 | 1 of 4 | Accepted | Not ready | Claude Code, haiku | $1.20 |
+| 2026-09-29 | courier | documentation | Claude Code | sonnet | used | 7 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.03 |
+| 2026-09-29 | shelf | documentation | Claude Code | sonnet | used | 6 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.80 |
+| 2026-09-29 | sprout | documentation | Claude Code | sonnet | used | No document | – | – | Not ready | Claude Code, haiku | $0.38 |
+| 2026-09-29 | courier | documentation | Claude Code | sonnet | without | 4 of 7 | 3 of 3 | Refused | Not ready | Claude Code, haiku | $1.50 |
+| 2026-09-29 | sprout | documentation | Claude Code | sonnet | used | 3 of 7 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.68 |
