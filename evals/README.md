@@ -231,6 +231,16 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's data that can be cleared was named where the store opens.** The run with the skill put it at `src/db.ts`, where the database is created; the sheet only accepted `src/main.tsx`, where it's opened, and marked the run 3 of 4. Both are fair places for the fix, so the sheet now accepts either, and the run counts 4 of 4.
 
+- **2026-09-29, compliance-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on shelf without it:**
+  - **With the skill, all three are ready after the fix below:** courier 4 of 4, shelf 5 of 5 and sprout 1 of 1, each covering all 12 rules. Without it, shelf found 5 of 5 too, in twice the time ($1.65 and 8 minutes, against $1.32 and 4).
+  - **One finding was wrong:** the second shelf run said the reader's saved books are kept with no retention period. They're the reader's own list on their own phone; retention duties apply to what the service keeps.
+  - **The baseline raised one fair point that isn't on the sheet:** the requirements should have prompted a check on whether a data protection impact assessment is needed.
+- **What the runs changed:**
+  - **A public page that shows personal data wasn't checked.** The first courier run missed that public tracking shows the recipient's name and address to anyone with the link. The skill now counts a page or response that shows personal data as somewhere the data goes, and checks that it shows only what its readers need. The next run found it.
+  - **Findings now point at where a service is set up,** so one fix covers every caller.
+- **What people judged in those runs:**
+  - **Shelf's analytics with no consent was named where it's called.** Every shelf run, with the skill and without, put it at the one place analytics is called, and the sheet only accepted the analytics module. It's the same problem, so the sheet now accepts both, and the counts above include it.
+
 - **2026-09-29, design-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
   - **With the skill, all three are ready after the fix below:** courier 3 of 3, shelf 3 of 3 and sprout 3 of 3, each covering all 11 rules. Without it, sprout found 3 of 3 too.
   - **The runs raised real problems nobody planted,** now on the answer sheets, and the counts include them: courier's failed booking and stuck tracking page (D26 and D27, which accessibility-review found too), shelf's librarian screen writing its colour as a value (S28), and on sprout, a card radius with no token (SP15) and a plant list that shows nothing while it loads or when it's empty (SP16).
@@ -303,6 +313,12 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | shelf | reliability-review | Claude Code | sonnet | used | 3 of 3 | 14 of 14 | 0 | Ready | $1.69 |
 | 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | used | 4 of 4 | 14 of 14 | 0 | Ready | $1.06 |
 | 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | without | 4 of 4 | 14 of 14 | 1 | Ready | $1.93 |
+| 2026-09-29 | courier | compliance-review | Claude Code | sonnet | used | 3 of 4 | 12 of 12 | 0 | Not ready | $1.23 |
+| 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | used | 5 of 5 | 12 of 12 | 0 | Ready | $1.78 |
+| 2026-09-29 | sprout | compliance-review | Claude Code | sonnet | used | 1 of 1 | 12 of 12 | 0 | Ready | $0.96 |
+| 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | without | 5 of 5 | 12 of 12 | 1 | Ready | $1.65 |
+| 2026-09-29 | courier | compliance-review | Claude Code | sonnet | used | 4 of 4 | 12 of 12 | 0 | Ready | $1.27 |
+| 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | used | 5 of 5 | 12 of 12 | 1 | Ready | $1.32 |
 | 2026-09-29 | courier | design-review | Claude Code | sonnet | installed, not used | 0 of 3 | 0 of 11 | 0 | Not ready | $0.18 |
 | 2026-09-29 | shelf | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 1 | Ready | $1.71 |
 | 2026-09-29 | sprout | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 2 | Ready | $0.95 |
