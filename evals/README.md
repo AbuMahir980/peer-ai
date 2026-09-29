@@ -146,6 +146,19 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **One point was wrong about refill:** its brief doesn't ask for live tracking, which the skill rightly didn't assume. The point now asks how riders see where to go, and whether patients should follow a delivery live.
   - **Shelf's storage rule was missed with the skill and without:** neither kept the rule that a change to how data is stored on the phone moves the existing data.
 
+- **2026-09-29, product-spec with Codex, on courier, shelf and sprout, with the skill and without.** The first six rows were graded again against the final points:
+  - **With the skill, all three are ready after the fixes below:** courier 10 of 11, shelf 10 of 10 and sprout 8 of 10. Without it: courier 8 of 11, and sprout 7 of 10, neither ready. Shelf's baseline saved its spec as `docs/loan-extension.md`, where the project map doesn't find a spec, so the gap it was meant to fill stayed open.
+- **What the runs changed:**
+  - **Another way to do the same thing was missed.** Courier's assistant can already cancel parcels, and the first spec didn't say how the two must agree. The skill now looks for another path that does the same thing, but the next courier run still didn't mention the assistant: a gap that remains.
+  - **Who else is affected.** Shelf's first spec didn't say whether the lender is told about an extension. The skill now asks who each change affects, and how they find out.
+  - **Phones.** The skill now covers text size and touch targets, which shelf's first spec left out.
+  - **Undoing a mistake.** Sprout's specs didn't say how a person undoes watering recorded by accident. The skill now asks for it where a mistake can happen, and the next run covered it.
+  - **The runner** now finds a document wherever the project map finds it, such as `docs/plant-watering-spec.md`, so a baseline isn't marked down only for its folder.
+- **What people judged in those runs:**
+  - **A point was misread:** "leaves tables to the system design" meant database tables, and the grader counted the spec's own tables. The points now say database tables.
+  - **The grader is strict about storage:** it counted "the data stays on the device" as a storage detail in sprout's last run. A person would count that point as made.
+  - **One re-grade lost its grades:** the grader said it wrote them, and the file wasn't there. It was graded again.
+
 ## Results
 
 Newest last.
@@ -231,3 +244,13 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | shelf | architecture | Codex | default | without | 8 of 9 | 3 of 3 | Refused | Not ready | Codex | – |
 | 2026-09-29 | refill | architecture | Codex | default | without | 7 of 10 | 2 of 4 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | courier | architecture | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | product-spec | Codex | default | used | 9 of 11 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | product-spec | Codex | default | used | 9 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | used | 8 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | product-spec | Codex | default | without | 8 of 11 | 4 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | product-spec | Codex | default | without | No document | – | – | Not ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | without | 7 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | product-spec | Codex | default | used | 10 of 11 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | product-spec | Codex | default | used | 10 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | used | 9 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | used | 8 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
