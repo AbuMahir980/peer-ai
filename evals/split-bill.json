@@ -1,0 +1,71 @@
+{
+  "fixture": "split-bill",
+  "prompts": {
+    "implement-ticket": "Build SB-1."
+  },
+  "defects": [],
+  "documents": {
+    "implement-ticket": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "setup": {
+        ".peer-ai/work/SB-1.json": {
+          "version": 1,
+          "id": "SB-1",
+          "title": "Add an optional tip",
+          "kind": "feature",
+          "stage": "prepare",
+          "track": "core",
+          "goal": "A bill can be split with an optional tip, given as a whole percentage, and the shares still add up to the cent.",
+          "acceptance": [
+            "Given a bill of 1000 cents, 3 people and a 10% tip, when it's split, then the shares add up to 1100 cents.",
+            "Given a tip that isn't a whole cent, when it's split, then the tip is rounded half up to the nearest cent before splitting.",
+            "Given no tip, or a tip of 0%, when a bill is split, then the shares are exactly what they are today.",
+            "Given a tip below 0% or above 100%, or not a whole number, when a bill is split, then it's refused with a clear message."
+          ],
+          "sources": ["docs/requirements.md#backlog"],
+          "next": "Write the tests from the acceptance criteria.",
+          "updatedAt": "2026-09-29T09:00:00.000Z"
+        }
+      },
+      "points": [
+        {
+          "id": "KT1",
+          "point": "SB-1 reached ship, with a passing verify recorded.",
+          "must": true
+        },
+        {
+          "id": "KT2",
+          "point": "The change adds a test for each of SB-1's four acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "KT3",
+          "point": "The tip is rounded half up to a whole cent before splitting, and the shares add up to the bill plus the tip.",
+          "must": true
+        },
+        {
+          "id": "KT4",
+          "point": "Splitting with no tip works exactly as before, and the existing tests are unchanged.",
+          "must": true
+        },
+        {
+          "id": "KT5",
+          "point": "A tip below 0%, above 100% or not a whole number is refused with a clear message."
+        },
+        {
+          "id": "KT6",
+          "point": "A code review is recorded on SB-1."
+        },
+        {
+          "id": "KT7",
+          "point": "Stays within SB-1: nothing for uneven splits or anything else."
+        },
+        {
+          "id": "KT8",
+          "point": "The README or the requirements say how to split with a tip."
+        }
+      ]
+    }
+  }
+}

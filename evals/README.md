@@ -4,10 +4,13 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 27: 24 planted, and 3 that reviews found and nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 26: 21 planted, and 5 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
+| [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
+| [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
+| [`split-bill-waiting.json`](split-bill-waiting.json) | `split-bill` | – | implement-ticket: an item waiting on another |
 
 ## Running one
 
@@ -25,6 +28,7 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
 | `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
 | `--document <path>` | With `--regrade`: the document to grade, when the run saved it where neither the scenario nor the project map finds it |
+| (scenario) `setup`, `diff` | A scenario can write files into the copy before the run, such as a planned work item, and give the grader the run's change as a diff |
 | `--runs 2` | Run it twice |
 | `--record` | Add the result to the tables below |
 
@@ -198,6 +202,21 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **Sprout's last plan is a judgement call:** it has a criterion that existing plants and notes stay available, but no step for upgrading the data kept on the device. The grader didn't count it; a person could. It's counted as not ready.
 
+- **2026-09-29, implement-ticket on split-bill, with the skill and without.** The grader reads every work item, the run's change as a diff, and what the run told the person at the end. Codex ran the first scenario; Codex's usage then ran out, so Claude Code on Sonnet ran the rest. Claude Code on Haiku graded them all:
+  - **With the skill, all three scenarios are ready:** a planned item, a tip, 8 of 8; an unplanned request, uneven splits, 7 of 7; and an item waiting on another, 5 of 5. Without the skill, the tip made 5 of 8 and wasn't ready.
+  - **Without the skill, the tip was built and tested well, but never finished:** the item stopped at verify with no passing verify recorded, no code review, and nothing in the README about tips.
+  - **With the skill, the unplanned request got its own work item with criteria before the code,** and the tip, which the backlog also mentions, was left alone.
+- **What the runs changed:**
+  - **The grader couldn't see the whole picture.** At first it saw only the items a run changed, without their verify or reviews, so it marked the tip run 6 of 8 and the waiting run as writing nothing. The runner now shows every item, marked as changed or left as it was, with its last verify and reviews, and what the run told the person at the end. Graded again, the tip run made every point.
+  - **An item that couldn't be built yet didn't say why it stopped.** The waiting run rightly didn't build SB-2, which needs SB-1's tip, but left SB-2's next action as it was. The grader credited that as recording where SB-2 stands; a person counts it 4 of 5. The skill now sets the next action to what the item waits for. The next run did: SB-2's next action says to build SB-1 first, because SB-2 needs the tip in the code.
+- **What people judged in those runs:**
+  - **A point about work the run rightly didn't do.** The grader marked the second waiting run as missing "any work done on SB-2 is covered by tests", though it wrote no code. The point now says that writing no code makes it, and graded again, the run made all 5.
+
+- **2026-09-29, accessibility-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready:** courier 5 of 5, shelf 4 of 4 and sprout 2 of 2, each covering all 11 rules. Without it, courier found 4 of 5 and wasn't ready.
+  - **The runs with the skill raised four real problems nobody planted,** now on the answer sheets: on courier, a failed booking shows the person nothing (D26), and a failed tracking lookup stays on "Loading…" for ever (D27); on shelf, the librarian's question field has no label (S25), and its button is too small to tap reliably (S26). The counts above include them. Against the sheets as they were, every run found every planted problem, the baseline included.
+  - **Without the skill, courier's review missed the failed booking** and rated problems a level higher than the rules do: the Book button that isn't a button critical, and the missing labels and the colour-only status high.
+
 - **2026-09-29, reliability-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
   - **With the skill, all three are ready:** courier 1 of 1, shelf 3 of 3 and sprout 4 of 4, each covering all 14 rules. Without it, sprout found 4 of 4 too, so the skill's gain here isn't what's found: its run took half the time and cost ($1.06 against $1.93).
   - **The baseline raised one point that isn't on the sheet,** judged fair and minor: the service worker has no fallback page when a route is neither cached nor reachable.
@@ -256,6 +275,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | accessibility-review | Claude Code | sonnet | used | 5 of 5 | 11 of 11 | 0 | Ready | $0.91 |
+| 2026-09-29 | shelf | accessibility-review | Claude Code | sonnet | used | 4 of 4 | 11 of 11 | 0 | Ready | $1.64 |
+| 2026-09-29 | sprout | accessibility-review | Claude Code | sonnet | used | 2 of 2 | 11 of 11 | 0 | Ready | $0.97 |
+| 2026-09-29 | courier | accessibility-review | Claude Code | sonnet | without | 4 of 5 | 11 of 11 | 0 | Not ready | $0.94 |
 | 2026-09-29 | courier | reliability-review | Claude Code | sonnet | used | 1 of 1 | 14 of 14 | 0 | Ready | $1.16 |
 | 2026-09-29 | shelf | reliability-review | Claude Code | sonnet | used | 3 of 3 | 14 of 14 | 0 | Ready | $1.69 |
 | 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | used | 4 of 4 | 14 of 14 | 0 | Ready | $1.06 |
@@ -339,3 +362,8 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | issue-planning | Codex | default | without | 3 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
 | 2026-09-29 | shelf | issue-planning | Codex | default | used | 6 of 6 | 3 of 3 | Accepted | Ready | Codex | – |
 | 2026-09-29 | sprout | issue-planning | Codex | default | used | 5 of 6 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | split-bill | implement-ticket | Codex | default | used | 8 of 8 | 4 of 4 | Accepted | Ready | Claude Code, haiku | – |
+| 2026-09-29 | split-bill-uneven | implement-ticket | Claude Code | sonnet | used | 7 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.58 |
+| 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.20 |
+| 2026-09-29 | split-bill | implement-ticket | Claude Code | sonnet | without | 5 of 8 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $0.43 |
+| 2026-09-29 | split-bill-waiting | implement-ticket | Claude Code | sonnet | used | 5 of 5 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.24 |
