@@ -59,7 +59,9 @@ const EVERY_FILE: DomainId[] = [
   "safety-critical",
   "ai-features",
 ];
-const UI: DomainId[] = ["frontend", "design-accessibility", "performance"];
+// Apps call other services and can hold the only copy of a person's data, so reliability counts
+// for them too; its offline and real-time rules apply only with those traits.
+const UI: DomainId[] = ["frontend", "design-accessibility", "performance", "reliability"];
 const SERVER: DomainId[] = [
   "backend",
   "api-design",

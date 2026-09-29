@@ -80,6 +80,13 @@ const DocumentScenario = z.strictObject({
       "Where the document should be written, relative to the project root. When the skill names the file, a folder ending in /, such as docs/specs/, or a pattern with * for the name, such as docs/specs/*-design.md.",
     ),
   points: z.array(Point).min(3),
+  setup: z
+    .record(z.string().min(1), z.union([z.string(), z.record(z.string(), z.unknown())]))
+    .optional()
+    .describe(
+      "Files written into the copy and committed before the run, such as a planned work item. An object is written as JSON.",
+    ),
+  diff: z.boolean().optional().describe("Give the grader the change the run made to the code, as a diff."),
 });
 
 export const SheetSchema = z.strictObject({
@@ -651,7 +658,13 @@ export async function markDocument(
   const also = otherDocuments(dir, path).map(
     (file) => `\n\n---\n\n# Also written: ${file}\n\n${readFileSync(join(dir, file), "utf8")}`,
   );
-  writeFileSync(join(gradeDir, "document.md"), (plan ?? readFileSync(join(dir, path), "utf8")) + also.join(""));
+  const told = work ? finalMessage(`${dir}.log`) : undefined;
+  const answer = told === undefined ? "" : `\n\n---\n\n# What the run told the person at the end\n\n${told}\n`;
+  const change = scenario.diff === true ? `\n\n---\n\n# The change\n\n\`\`\`diff\n${changeIn(dir)}\n\`\`\`\n` : "";
+  writeFileSync(
+    join(gradeDir, "document.md"),
+    (plan ?? readFileSync(join(dir, path), "utf8")) + also.join("") + change + answer,
+  );
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
   // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
@@ -664,23 +677,101 @@ export async function markDocument(
   return { ...scoreDocument(skill, scenario, true, check, grades), path };
 }
 
+/** The tag a scenario's copy is marked with once it's set up, so the run's change can be told apart. */
+const START = "eval-start";
+
+/** Writes a scenario's files into the copy and commits them, then marks where the run starts. */
+export function setUp(dir: string, files: DocumentScenario["setup"]): void {
+  const git = (...args: string[]) =>
+    execFileSync(
+      "git",
+      ["-c", "user.name=Peer AI eval", "-c", "user.email=eval@example.com", "-c", "commit.gpgsign=false", ...args],
+      { cwd: dir, stdio: "ignore" },
+    );
+  if (files !== undefined && Object.keys(files).length > 0) {
+    for (const [path, content] of Object.entries(files)) {
+      mkdirSync(join(dir, path, ".."), { recursive: true });
+      writeFileSync(join(dir, path), typeof content === "string" ? content : `${JSON.stringify(content, null, 2)}\n`);
+    }
+    git("add", "-A");
+    git("commit", "-q", "-m", "Set up the scenario");
+  }
+  git("tag", "-f", START);
+}
+
+/**
+ * The files the run changed since the scenario was set up, committed or not, new files included. A
+ * copy made before the start was marked falls back to what git reports as changed.
+ */
+export function changedSinceStart(dir: string): string[] {
+  const lines = (args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+  try {
+    execFileSync("git", ["add", "-A", "-N", "."], { cwd: dir, stdio: "ignore" });
+    return lines(["diff", "--name-only", START]);
+  } catch {
+    try {
+      return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+        .split("\n")
+        .map((line) => line.slice(3).trim())
+        .filter((line) => line !== "");
+    } catch {
+      return [];
+    }
+  }
+}
+
+/** Everything the run changed in the code since the scenario was set up, new files included, leaving out Peer AI's own files. */
+export function changeIn(dir: string): string {
+  try {
+    execFileSync("git", ["add", "-A", "-N", "."], { cwd: dir, stdio: "ignore" });
+    return execFileSync(
+      "git",
+      ["diff", START, "--", ".", ":(exclude).peer-ai", ":(exclude).claude", ":(exclude).agents", ":(exclude).cursor"],
+      { cwd: dir, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    ).trim();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * What a run told the person at the end, from its log: Claude Code's result, or Codex's last message.
+ * Undefined when the log has none.
+ */
+export function finalMessage(log: string): string | undefined {
+  if (!existsSync(log)) return undefined;
+  let last: string | undefined;
+  for (const line of readFileSync(log, "utf8").split("\n")) {
+    if (!line.startsWith("{")) continue;
+    try {
+      const event = JSON.parse(line) as { type?: string; result?: unknown; item?: { type?: string; text?: unknown } };
+      if (event.type === "result" && typeof event.result === "string") last = event.result;
+      if (event.item?.type === "agent_message" && typeof event.item.text === "string") last = event.item.text;
+    } catch {
+      // Not an event line.
+    }
+  }
+  return last;
+}
+
 const WORK_FOLDER = ".peer-ai/work/";
 
 /** The work items a run created or changed, written out as a document for the grader, or undefined for none. */
 export function workItemsDocument(dir: string): string | undefined {
-  let changed: string[];
-  try {
-    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
-      .split("\n")
-      .map((line) => line.slice(3).trim())
-      .filter((file) => file.startsWith(WORK_FOLDER) && file.endsWith(".json"));
-  } catch {
-    return undefined;
-  }
-  const items = changed
-    .flatMap((file) => {
+  // Every work item, marked by whether the run changed it: leaving an item as it was can be the
+  // right outcome, such as one waiting on another.
+  const changed = new Set(changedSinceStart(dir));
+  const folder = join(dir, WORK_FOLDER);
+  const files = existsSync(folder) ? readdirSync(folder).filter((file) => file.endsWith(".json")) : [];
+  const items = files
+    .flatMap((file): Record<string, unknown>[] => {
       try {
-        return [JSON.parse(readFileSync(join(dir, file), "utf8")) as Record<string, unknown>];
+        const item = JSON.parse(readFileSync(join(folder, file), "utf8")) as Record<string, unknown>;
+        return [{ ...item, changedByRun: changed.has(`${WORK_FOLDER}${file}`) }];
       } catch {
         return [];
       }
@@ -689,11 +780,24 @@ export function workItemsDocument(dir: string): string | undefined {
   if (items.length === 0) return undefined;
   const list = (value: unknown) => (Array.isArray(value) ? value.map((entry) => `  - ${String(entry)}`) : []);
   const text = (value: unknown) => (typeof value === "string" ? value : "–");
+  const verified = (value: unknown) => {
+    const { result, at } = (value ?? {}) as { result?: unknown; at?: unknown };
+    return typeof result === "string" ? `${result}${typeof at === "string" ? ` (${at})` : ""}` : "none";
+  };
+  const reviewed = (value: unknown) =>
+    Array.isArray(value)
+      ? value.map((review) => {
+          const { skill, result, report } = review as { skill?: unknown; result?: unknown; report?: unknown };
+          return `  - ${String(skill)}: ${String(result)}${typeof report === "string" ? `, report ${report}` : ", no report"}`;
+        })
+      : ["  - none"];
   const needs = (value: unknown) =>
     Array.isArray(value) && value.length > 0 ? value.map(String).join(", ") : "nothing";
   const sections = items.map((item) =>
     [
       `## ${text(item.id)}: ${text(item.title)}`,
+      "",
+      item.changedByRun ? "Created or changed by this run." : "Left as it was by this run.",
       "",
       `- Kind: ${text(item.kind)}; part: ${text(item.track)}; stage: ${text(item.stage)}`,
       `- Goal: ${text(item.goal)}`,
@@ -702,6 +806,9 @@ export function workItemsDocument(dir: string): string | undefined {
       "- Sources:",
       ...list(item.sources),
       `- Depends on: ${needs(item.dependsOn)}`,
+      `- Last verify: ${verified(item.lastVerify)}`,
+      "- Reviews recorded:",
+      ...reviewed(item.reviews),
       `- Next: ${text(item.next)}`,
     ].join("\n"),
   );
@@ -830,6 +937,7 @@ export async function evaluateDocument(
     throw new Error(`There's no ${skill} skill yet. Run with --baseline to measure the document without one.`);
   }
   const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
+  setUp(dir, scenario.setup);
   const before = readIfFile(join(dir, scenario.path));
   const log = `${dir}.log`;
   const toolRun = await runner(tool, dir, evalPrompt(sheet, skill, baseline), log, options.model);

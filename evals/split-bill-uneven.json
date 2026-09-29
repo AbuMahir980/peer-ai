@@ -1,0 +1,46 @@
+{
+  "fixture": "split-bill",
+  "prompts": {
+    "implement-ticket": "Add uneven splits, where some people pay for more than others."
+  },
+  "defects": [],
+  "documents": {
+    "implement-ticket": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "points": [
+        {
+          "id": "KU1",
+          "point": "A work item for uneven splits exists, with acceptance criteria written before or with the change, and it reached ship with a passing verify recorded.",
+          "must": true
+        },
+        {
+          "id": "KU2",
+          "point": "Shares follow each person's weight, add up exactly to the bill, and any leftover cents go to people in a fixed, stated order.",
+          "must": true
+        },
+        {
+          "id": "KU3",
+          "point": "Splitting evenly between a number of people works exactly as before, and the existing tests are unchanged.",
+          "must": true
+        },
+        {
+          "id": "KU4",
+          "point": "Weights that are missing, zero, negative or not whole numbers, or a list with nobody in it, are refused with a clear message."
+        },
+        {
+          "id": "KU5",
+          "point": "The change adds tests for each acceptance criterion, including a bill that doesn't divide evenly."
+        },
+        {
+          "id": "KU6",
+          "point": "A code review is recorded on the work item."
+        },
+        {
+          "id": "KU7",
+          "point": "Stays within uneven splits: nothing for tips."
+        }
+      ]
+    }
+  }
+}
