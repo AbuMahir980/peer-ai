@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI threat model"
+  short_description: "Every way in, what can go wrong, and what stops it"
+  default_prompt: "Use ${{name}} to write this product's threat model, with evidence for every defence."

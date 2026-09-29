@@ -10,7 +10,8 @@
     "performance-review": "Review Courier's API and database for performance problems.",
     "reliability-review": "Review Courier's API for reliability problems.",
     "ai-feature-review": "Review Courier's support assistant, which uses an AI model.",
-    "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\""
+    "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\"",
+    "threat-model": "Write a threat model for Courier."
   },
   "defects": [
     {
@@ -380,6 +381,68 @@
           "id": "C11",
           "point": "Invents no numbers: any count of bookings or users, or any time or target the operations lead's message didn't give, is marked as assumed or asked about.",
           "must": true
+        }
+      ]
+    },
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TC1",
+          "point": "Lists the ways in, including booking a pickup, viewing a customer's parcels, the public tracking link, card payment, the support assistant, and the signed token that identifies a customer.",
+          "must": true
+        },
+        {
+          "id": "TC2",
+          "point": "Names what's worth protecting, including customers' and recipients' personal details, payments and customer accounts.",
+          "must": true
+        },
+        {
+          "id": "TC3",
+          "point": "Finds that a signed-in customer can read another customer's parcel by its id, and marks the defence missing.",
+          "must": true
+        },
+        {
+          "id": "TC4",
+          "point": "Finds that the assistant can be steered by parcel notes pasted into its instructions, or can cancel or reschedule parcels without the customer confirming, and marks the defence missing.",
+          "must": true
+        },
+        {
+          "id": "TC5",
+          "point": "Finds that card numbers and security codes reach Courier's own servers, or that the customer's browser decides the amount to pay, and marks it missing."
+        },
+        {
+          "id": "TC6",
+          "point": "Finds that the parcel status filter can be used for SQL injection, and marks it missing."
+        },
+        {
+          "id": "TC7",
+          "point": "Finds that parcel notes are shown as HTML on the tracking page, where they can run a script, and marks it missing."
+        },
+        {
+          "id": "TC8",
+          "point": "Finds that the session signing key is written in the code, or that sessions never expire, and marks it missing."
+        },
+        {
+          "id": "TC9",
+          "point": "Finds personal data going where it shouldn't: into the logs, to anyone with a tracking link, or to the AI provider."
+        },
+        {
+          "id": "TC10",
+          "point": "Marks at least one defence as in place, such as booking needing a signed-in customer, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TC11",
+          "point": "Cites Peer AI rule ids, such as SEC-01, for the defences."
+        },
+        {
+          "id": "TC12",
+          "point": "States an assumption about who can reach the service or where it runs, or asks about it."
+        },
+        {
+          "id": "TC13",
+          "point": "Lists the missing defences as work to do, most serious first."
         }
       ]
     }

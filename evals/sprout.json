@@ -10,7 +10,8 @@
     "performance-review": "Review Sprout for performance problems.",
     "accessibility-review": "Review Sprout for accessibility problems.",
     "design-review": "Review Sprout against its design system.",
-    "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today."
+    "requirements-analysis": "Sprout's requirements are only a short list. Write them up properly from what the app does today.",
+    "threat-model": "Write a threat model for Sprout."
   },
   "defects": [
     {
@@ -243,6 +244,55 @@
           "id": "SR11",
           "point": "Invents no numbers: any count of users, plants or photos, or any storage limit, that nobody gave is marked as assumed or asked about.",
           "must": true
+        }
+      ]
+    },
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TP1",
+          "point": "Lists the ways in, including adding plants and photos, identifying a plant through the outside service, the service worker, and the data kept in the browser.",
+          "must": true
+        },
+        {
+          "id": "TP2",
+          "point": "Names what's worth protecting, including people's plants, photos and journal, which exist only on their device, and the identification service's key.",
+          "must": true
+        },
+        {
+          "id": "TP3",
+          "point": "Finds that the identification service's key is built into the web app, where anyone can read it, and marks it missing.",
+          "must": true
+        },
+        {
+          "id": "TP4",
+          "point": "Finds that care instructions from the identification service are shown as HTML, where they can run a script, and marks it missing."
+        },
+        {
+          "id": "TP5",
+          "point": "Finds that a photo sent for identification can carry where it was taken."
+        },
+        {
+          "id": "TP6",
+          "point": "Considers losing the only copy of a person's data, such as the browser clearing it, an update that fails, or running out of space."
+        },
+        {
+          "id": "TP7",
+          "point": "Treats the identification service's reply as untrusted, including its advice on whether a plant is safe for pets."
+        },
+        {
+          "id": "TP8",
+          "point": "Marks at least one defence as in place where the app has one, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TP9",
+          "point": "Treats sync as not built yet, rather than describing its threats as present."
+        },
+        {
+          "id": "TP10",
+          "point": "Lists the missing defences as work to do, most serious first."
         }
       ]
     }
