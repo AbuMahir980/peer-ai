@@ -10,7 +10,8 @@
     "reliability-review": "Review the Shelf app for reliability problems.",
     "design-review": "Review the Shelf app against its design system.",
     "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model.",
-    "threat-model": "Write a threat model for Shelf."
+    "threat-model": "Write a threat model for Shelf.",
+    "architecture": "Bring Shelf's architecture document up to date with the code."
   },
   "defects": [
     {
@@ -386,6 +387,50 @@
         {
           "id": "TS11",
           "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AS1",
+          "point": "Keeps the rebuild rule: features move from src/legacy to src/features, and the legacy Redux store owns the book list while both halves exist.",
+          "must": true
+        },
+        {
+          "id": "AS2",
+          "point": "Keeps that the Shelf API is a separate service in another repository, and describes only what the app uses of it.",
+          "must": true
+        },
+        {
+          "id": "AS3",
+          "point": "Adds the parts the document is missing, such as the librarian, analytics, QR scanning and finding books nearby."
+        },
+        {
+          "id": "AS4",
+          "point": "Notes that there are two ways to reach the API, the legacy client and the newer helper, and says which new code must use or treats it as a risk."
+        },
+        {
+          "id": "AS5",
+          "point": "Keeps the rule that a change to how data is stored on the phone moves the existing data across."
+        },
+        {
+          "id": "AS6",
+          "point": "Names each outside service the app sends data to, such as the Shelf API and analytics."
+        },
+        {
+          "id": "AS7",
+          "point": "Marks what it worked out from the code as coming from the code."
+        },
+        {
+          "id": "AS8",
+          "point": "States which parts or folders may depend on which, in a direction a reviewer could check."
+        },
+        {
+          "id": "AS9",
+          "point": "Invents no parts, hosting or services the code doesn't show, and doesn't describe the API's insides as known.",
+          "must": true
         }
       ]
     }

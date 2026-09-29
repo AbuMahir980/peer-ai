@@ -1,7 +1,8 @@
 {
   "fixture": "refill",
   "prompts": {
-    "requirements-analysis": "Write the requirements for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
+    "requirements-analysis": "Write the requirements for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
+    "architecture": "Propose an architecture for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
   },
   "defects": [],
   "documents": {
@@ -64,6 +65,55 @@
         {
           "id": "F13",
           "point": "Invents no numbers: any count of patients, orders or pharmacies, or any delivery time, that the brief didn't give is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AR1",
+          "point": "Separates what patients, pharmacists and riders use, and says what each part owns.",
+          "must": true
+        },
+        {
+          "id": "AR2",
+          "point": "Gives two or more options with trade-offs for at least one significant choice, recommends one, and leaves the decision to a person rather than marking it accepted.",
+          "must": true
+        },
+        {
+          "id": "AR3",
+          "point": "Keeps prescriptions and health data in one owned place with access limited by role, and asks where it may be stored.",
+          "must": true
+        },
+        {
+          "id": "AR4",
+          "point": "Takes card and mobile money payments through payment providers rather than handling card details itself."
+        },
+        {
+          "id": "AR5",
+          "point": "Treats the riders' location and delivery progress as live data with its own needs."
+        },
+        {
+          "id": "AR6",
+          "point": "Names the needs from the brief that shape it: two cities in two countries, delivery within the day, and refill reminders."
+        },
+        {
+          "id": "AR7",
+          "point": "Writes decisions as decision records, or lists the decisions still to make."
+        },
+        {
+          "id": "AR8",
+          "point": "States how the parts may talk to each other, such as only through an API contract."
+        },
+        {
+          "id": "AR9",
+          "point": "Asks about needs the brief doesn't give, such as scale, availability or where data must stay."
+        },
+        {
+          "id": "AR10",
+          "point": "Names vendors, clouds or frameworks only as options, never as settled.",
           "must": true
         }
       ]
