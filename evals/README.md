@@ -20,6 +20,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`shelf-release.json`](shelf-release.json) | `shelf`, with release 3.5.0 about to go to the stores | 11: 4 planted, and 7 found that nobody planted | – |
 | [`courier-launch.json`](courier-launch.json) | `courier`, about to launch in production | 12: 5 planted, and 7 found that nobody planted | – |
 | [`split-bill-release.json`](split-bill-release.json) | `split-bill`, with version 1.3.0 about to be published | 5: 3 planted, and 2 found that nobody planted | – |
+| [`courier-observability.json`](courier-observability.json) | `courier` in production, with its logs, health check and alerts | 8: 5 planted, and 3 found that nobody planted | – |
+| [`courier-security-logs.json`](courier-security-logs.json) | `courier` in production, with sign-in and an audit log | 9: 4 planted, and 5 found that nobody planted | – |
+| [`shelf-monitoring.json`](shelf-monitoring.json) | `shelf`, with crash reporting | 4: 2 planted, and 2 found that nobody planted | – |
 
 ## Running one
 
@@ -314,6 +317,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The runs raised real problems nobody planted,** now on the sheets: shelf's release has no CI, though its plan says CI builds both apps; the reviews recorded on its items point to reports that don't exist; and like courier's launch, it has no dependency list, incident plan, service targets or staging. The launch also carries courier's existing problems into production: the migration dropping notes, stored card numbers and the tracking page's leak.
 - **What the runs changed:** the description now covers any release, a deploy, an app or a library, and a check never moves a work item's stage: one run moved an item to ship "as a diagnostic".
 
+- **2026-09-29, observability-review with Claude Code on Sonnet, on three scenarios, and on courier's logging without it.** Courier in production with its logs, health check and alerts; courier with sign-in and an audit log; and shelf's crash reporting. Planted: log lines pasted into sentences, no request ids, a health check that always says ok, alerts on every error and a busy CPU, no service targets, failed sign-ins unrecorded, session tokens in the audit log, an audit log the app can rewrite, nothing alerting on attacks, and crash reports carrying readers' emails and locations:
+  - **With the skill, all three are ready:** courier 7 of 8, sign-in and audit 9 of 9, and shelf 4 of 4, each covering all 9 rules. Without it, courier found 8 of 8.
+  - **The runs raised real problems nobody planted,** now on the sheets: courier's booking log holds recipients' details, and a bad session token is refused unlogged; on the sign-in scenario, courier has no request ids, health check or targets either; shelf writes the reader's password to the device log and sends their exact location to analytics; and, from the baseline, courier has nowhere to keep security logs safe from the app.
+  - **Fair points not added:** a phone app not logging sign-ins itself, which the API in the other repository should; no request id sent from the app; unhandled errors not logged; and no measure of payments.
+- **What people judged in those runs:** findings about something missing everywhere, such as no service targets, were placed at the requirements or at the place an attack starts. They now count wherever they cite their rule, and the baseline's point about sentences in logs counts at the logging setup, where it starts.
+
 ## Results
 
 Newest last.
@@ -421,6 +430,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier-launch | release-readiness | Claude Code | sonnet | without | 8 of 12 | 18 of 18 | 14 | Not ready | $2.65 |
 | 2026-09-29 | split-bill-release | release-readiness | Claude Code | sonnet | used | 4 of 5 | 18 of 18 | 1 | Not ready | $0.85 |
 | 2026-09-29 | split-bill-release | release-readiness | Claude Code | sonnet | used | 4 of 5 | 18 of 18 | 0 | Not ready | $0.94 |
+| 2026-09-29 | courier-observability | observability-review | Claude Code | sonnet | used | 7 of 8 | 9 of 9 | 0 | Ready | $1.02 |
+| 2026-09-29 | courier-security-logs | observability-review | Claude Code | sonnet | used | 9 of 9 | 9 of 9 | 0 | Ready | $1.15 |
+| 2026-09-29 | shelf-monitoring | observability-review | Claude Code | sonnet | used | 4 of 4 | 9 of 9 | 2 | Ready | $1.02 |
+| 2026-09-29 | courier-observability | observability-review | Claude Code | sonnet | without | 8 of 8 | 9 of 9 | 2 | Ready | $1.01 |
 
 ## Document results
 
