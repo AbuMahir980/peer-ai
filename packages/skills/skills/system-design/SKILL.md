@@ -74,6 +74,7 @@ These decide whether the feature holds up. [hard-cases.md](references/hard-cases
 Copy the [template](assets/system-design.md) and fill in every part. For each rule in [rules.md](references/rules.md) the feature touches, say how the design meets it; a reviewer will check the code against the same rules.
 
 - **Name what changes:** files, tables, fields and routes, not "the backend".
+- **Another repository's part gets guarantees, not a design.** In the Data, Two at once and Failures parts, write what you need from it as guarantees to request, such as "two extensions sent at once extend the loan once", never as its transactions, locks or tables.
 - **Decisions with their reasons.** Where there's a real choice, give the options and pick one. A choice that changes the architecture becomes a proposed decision record for a person to decide.
 - **Tests that prove it** (TEST-08, SYS-06): name the tests for the hard cases, attacks included.
 - **No code.** Signatures and schemas where they help; the building comes next.

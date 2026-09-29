@@ -28,7 +28,15 @@ import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
-import { SEVERITIES, SKILL_IDS, SKILL_KINDS, validateReport, type ReviewReport, type SkillId } from "@peer-ai/workflow";
+import {
+  MAP_ITEM_SKILLS,
+  SEVERITIES,
+  SKILL_IDS,
+  SKILL_KINDS,
+  validateReport,
+  type ReviewReport,
+  type SkillId,
+} from "@peer-ai/workflow";
 import { z } from "zod";
 import { CLI, localServer, prepareFixture } from "./fixture.ts";
 
@@ -412,6 +420,8 @@ export const runTool: ToolRunner = async (tool, dir, prompt, log, model) => {
 };
 
 export interface EvalOptions {
+  /** For a re-grade: the document to grade, when the run saved it where neither the scenario nor the map finds it. */
+  document?: string;
   /** Run without Peer AI's skills, to measure what a skill adds. */
   baseline?: boolean;
   /** The model to ask for, such as a fast one and a strong one; otherwise the tool's default. */
@@ -476,7 +486,7 @@ export const GRADE_PROMPT = `Grade a document against a list of points. document
 
 For each point, decide whether the document makes it: clearly and in substance, not by mentioning a word in passing. Judge only from what the document says.
 
-Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Change no other file.`;
+Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Escape any double quotes inside a quote, and check that grades.json parses as JSON. Change no other file.`;
 
 /** The grades the grader wrote, or undefined when it wrote none that are valid. */
 export function readGrades(dir: string): Grade[] | undefined {
@@ -616,10 +626,11 @@ export async function markDocument(
   before: string | undefined,
   grade: GraderRunner,
   grader: GraderOptions,
+  document?: string,
 ): Promise<DocumentScore> {
   const scenario = sheet.documents?.[skill];
   if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
-  const path = writtenDocument(dir, scenario.path, before);
+  const path = document ?? writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill);
   if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
   const check = checkDocumentIn(dir, skill, path);
   const gradeDir = `${dir}-grades`;
@@ -631,8 +642,14 @@ export async function markDocument(
   writeFileSync(join(gradeDir, "document.md"), readFileSync(join(dir, path), "utf8") + also.join(""));
   const points = scenario.points.map(({ id, point }) => ({ id, point }));
   writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
-  await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}.log`, grader.model);
-  return { ...scoreDocument(skill, scenario, true, check, readGrades(gradeDir)), path };
+  // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
+  let grades: Grade[] | undefined;
+  for (let attempt = 1; attempt <= 2 && grades === undefined; attempt++) {
+    rmSync(join(gradeDir, "grades.json"), { force: true });
+    await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}${attempt === 1 ? "" : "-2"}.log`, grader.model);
+    grades = readGrades(gradeDir);
+  }
+  return { ...scoreDocument(skill, scenario, true, check, grades), path };
 }
 
 /** A file's text, or undefined for a folder or nothing at all. */
@@ -656,6 +673,30 @@ export function otherDocuments(dir: string, main: string): string[] {
   }
   const skipped = /^\.(peer-ai|claude|agents|cursor|github)\//;
   return changed.filter((file) => file.endsWith(".md") && file !== main && !skipped.test(file)).sort();
+}
+
+/**
+ * A document the project map finds for the skill's map item, among the files the run wrote, such as
+ * docs/plant-watering-spec.md for product-spec. It counts wherever it is, because it fills the gap.
+ */
+export function mappedDocument(dir: string, skill: SkillId): string | undefined {
+  const items = Object.entries(MAP_ITEM_SKILLS)
+    .filter(([, skills]) => skills.includes(skill))
+    .map(([item]) => item);
+  let evidence: string[];
+  let changed: string[];
+  try {
+    const map = JSON.parse(
+      execFileSync(process.execPath, [CLI, "assess", "--json", "--dry-run"], { cwd: dir, encoding: "utf8" }),
+    ) as { items: Record<string, { evidence?: string[] } | undefined> };
+    evidence = items.flatMap((item) => map.items[item]?.evidence ?? []);
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim());
+  } catch {
+    return undefined;
+  }
+  return evidence.find((file) => file.endsWith(".md") && changed.includes(file));
 }
 
 /**
@@ -751,7 +792,7 @@ export async function regradeDocument(
   const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
   return {
     dir,
-    score: await markDocument(sheet, skill, dir, before, grade, grader),
+    score: await markDocument(sheet, skill, dir, before, grade, grader, options.document),
     tool: { seconds: 0 },
     baseline,
     ...(options.model === undefined ? {} : { model: options.model }),
@@ -907,6 +948,7 @@ if (invokedDirectly) {
       grader: { type: "string", default: "codex" },
       "grader-model": { type: "string" },
       regrade: { type: "string" },
+      document: { type: "string" },
     },
   });
   const [name] = positionals;
@@ -916,7 +958,7 @@ if (invokedDirectly) {
   const tools: string[] = ["claude-code", "codex"];
   if (name === undefined || skill === undefined || !tools.includes(tool) || !tools.includes(graderTool)) {
     console.error(
-      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy>] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
+      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy> [--document <path>]] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
     );
     process.exit(2);
   }
@@ -936,7 +978,10 @@ if (invokedDirectly) {
       tool: graderTool,
       ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
     };
-    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, options);
+    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, {
+      ...options,
+      ...(values.document === undefined ? {} : { document: values.document }),
+    });
     console.log(formatDocumentRun(sheet, tool, result, 1, 1).join("\n"));
     if (values.record === true) recordDocument(sheet, tool, result);
     allReady &&= result.score.ready;
