@@ -4,9 +4,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 36: 25 planted, and 11 found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. test-strategy. documentation. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 33: 23 planted, and 10 found that nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. test-strategy. documentation. |
-| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 20: 16 planted, and 4 found that nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. test-strategy. documentation. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 36: 25 planted, and 11 found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. test-strategy. documentation. tech-debt-triage. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 33: 23 planted, and 10 found that nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
+| [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 20: 16 planted, and 4 found that nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
 | [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
@@ -337,6 +337,11 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Sprout isn't ready, in two runs.** The first stopped to ask for permission to run `npm install` and wrote nothing. The skill now says to check commands against where they're defined instead, never stopping to ask. The second wrote the README, but named the plant identification key without saying it ends up in the app people download, and described the service worker without saying new versions never reach people: 3 of 7. Reporting what a setting exposes, and what the app gets wrong, is the work left for the next round.
   - **Shelf's one miss:** nothing about how the app reaches the stores.
 
+- **2026-09-29, tech-debt-triage with Claude Code on Sonnet, graded by Claude Code on Haiku, on courier, shelf and sprout, and on courier without it:**
+  - **None is ready yet: each made 4 of 7.** With the skill, every run changed no code, wrote work items with a goal and acceptance criteria, and kept a register with each item's cost, risk and size. Without it, courier made 3 of 7 at nearly three times the cost ($2.47 against $0.88): it stopped to ask before creating any work items, and listed the rest without their cost, risk or size.
+  - **What the runs missed is breadth and order.** Each found some of the debt and not the rest. Courier missed prices worked out in two places, and tests that never run or can't fail, as the baseline did. Shelf missed that the whole app has one test, and the saved books lost on updating. Sprout missed the dependencies with published vulnerabilities, the missing lockfile, and the identification key in the app people download, and named the lack of tests without saying why it matters when the device holds the only copy of people's journals. Two ranked wrongly: courier put first an item it said costs nothing yet, and shelf planned finishing its half-finished rebuild, fourth on its list, not first.
+  - **Work for the next round:** going through each kind of debt in turn, such as the code, the tests, the dependencies, the data and the build, so none is skipped, and ranking by what each costs and risks before anything else.
+
 ## Results
 
 Newest last.
@@ -555,3 +560,7 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | sprout | documentation | Claude Code | sonnet | used | No document | – | – | Not ready | Claude Code, haiku | $0.38 |
 | 2026-09-29 | courier | documentation | Claude Code | sonnet | without | 4 of 7 | 3 of 3 | Refused | Not ready | Claude Code, haiku | $1.50 |
 | 2026-09-29 | sprout | documentation | Claude Code | sonnet | used | 3 of 7 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.68 |
+| 2026-09-29 | courier | tech-debt-triage | Claude Code | sonnet | used | 4 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.88 |
+| 2026-09-29 | shelf | tech-debt-triage | Claude Code | sonnet | used | 4 of 7 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.97 |
+| 2026-09-29 | sprout | tech-debt-triage | Claude Code | sonnet | used | 4 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.82 |
+| 2026-09-29 | courier | tech-debt-triage | Claude Code | sonnet | without | 3 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $2.47 |
