@@ -225,6 +225,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Apps never got the reliability rules.** The first sprout run saw that the service worker always serves its first copy, then marked REL-09 not applicable, because `standards_for_file` didn't return it. The tool now gives web, mobile, desktop and extension apps the reliability rules, offline ones included.
   - **A problem the code shows is a finding, whether or not its rule applies yet.** The skill already said so for rules from a later stage. It now says the same for a trait the project hasn't set, since projects often forget one. The next sprout run found the service worker problem.
 
+- **2026-09-29, reliability-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
+  - **With the skill, all three are ready:** courier 1 of 1, shelf 3 of 3 and sprout 4 of 4, each covering all 14 rules. Without it, sprout found 4 of 4 too, so the skill's gain here isn't what's found: its run took half the time and cost ($1.06 against $1.93).
+  - **The baseline raised one point that isn't on the sheet,** judged fair and minor: the service worker has no fallback page when a route is neither cached nor reachable.
+- **What people judged in those runs:**
+  - **Sprout's data that can be cleared was named where the store opens.** The run with the skill put it at `src/db.ts`, where the database is created; the sheet only accepted `src/main.tsx`, where it's opened, and marked the run 3 of 4. Both are fair places for the fix, so the sheet now accepts either, and the run counts 4 of 4.
+
 - **2026-09-29, design-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
   - **With the skill, all three are ready after the fix below:** courier 3 of 3, shelf 3 of 3 and sprout 3 of 3, each covering all 11 rules. Without it, sprout found 3 of 3 too.
   - **The runs raised real problems nobody planted,** now on the answer sheets, and the counts include them: courier's failed booking and stuck tracking page (D26 and D27, which accessibility-review found too), shelf's librarian screen writing its colour as a value (S28), and on sprout, a card radius with no token (SP15) and a plant list that shows nothing while it loads or when it's empty (SP16).
@@ -293,6 +299,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 2 of 3 | 12 of 12 | 0 | Not ready | $1.15 |
 | 2026-09-29 | courier | performance-review | Claude Code | sonnet | without | 2 of 3 | 12 of 12 | 1 | Not ready | $1.27 |
 | 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $0.92 |
+| 2026-09-29 | courier | reliability-review | Claude Code | sonnet | used | 1 of 1 | 14 of 14 | 0 | Ready | $1.16 |
+| 2026-09-29 | shelf | reliability-review | Claude Code | sonnet | used | 3 of 3 | 14 of 14 | 0 | Ready | $1.69 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | used | 4 of 4 | 14 of 14 | 0 | Ready | $1.06 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | without | 4 of 4 | 14 of 14 | 1 | Ready | $1.93 |
 | 2026-09-29 | courier | design-review | Claude Code | sonnet | installed, not used | 0 of 3 | 0 of 11 | 0 | Not ready | $0.18 |
 | 2026-09-29 | shelf | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 1 | Ready | $1.71 |
 | 2026-09-29 | sprout | design-review | Claude Code | sonnet | used | 3 of 3 | 11 of 11 | 2 | Ready | $0.95 |
