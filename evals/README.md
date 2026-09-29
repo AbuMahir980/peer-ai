@@ -23,6 +23,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`courier-observability.json`](courier-observability.json) | `courier` in production, with its logs, health check and alerts | 5 | – |
 | [`courier-security-logs.json`](courier-security-logs.json) | `courier` in production, with sign-in and an audit log | 4 | – |
 | [`shelf-monitoring.json`](shelf-monitoring.json) | `shelf`, with crash reporting | 2 | – |
+| [`courier-incident.json`](courier-incident.json) | `courier`, with customers seeing each other's parcels | – | incident-response: data exposed |
+| [`sprout-incident.json`](sprout-incident.json) | `sprout`, with journals lost after an update | – | incident-response: data lost on devices |
+| [`shelf-incident.json`](shelf-incident.json) | `shelf`, with the librarian reserving books nobody asked for | – | incident-response: an AI feature abused |
 
 ## Running one
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI incident response"
+  short_description: "Contain, communicate, fix, and learn from an incident"
+  default_prompt: "Use ${{name}} to handle this incident: contain it, keep a timeline, fix it, and write the review."
