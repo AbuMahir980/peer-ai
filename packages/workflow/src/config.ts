@@ -299,6 +299,15 @@ const Models = z
     }
   });
 
+const Skills = z.strictObject({
+  commit: z
+    .boolean()
+    .optional()
+    .describe(
+      "Commit the skills peer-ai render writes, for AI tools that can't run a setup step first. Defaults to false: they're rebuilt from the installed version and left out of git, and each tool's setup step writes them.",
+    ),
+});
+
 const Gates = z.strictObject({
   blockOn: z
     .enum(["critical", "high", "medium"])
@@ -324,6 +333,7 @@ const configShape = {
   version: z.literal(1),
   project: Project,
   tools: z.array(z.enum(TOOL_IDS)).min(1).optional(),
+  skills: Skills.optional(),
   design: Design.optional(),
   tracks: z.array(Track).min(1),
   apis: z.array(Api).optional(),

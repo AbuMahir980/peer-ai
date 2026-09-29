@@ -141,7 +141,18 @@ Render writes Peer AI's skills where the listed tools read them, each named `pee
 - **They stay out of git.** They're rebuilt from the installed version, so a version bump stays a one-line change. Render adds them to `.gitignore` in a marked block.
 - **After cloning,** run `peer-ai render` to write them. In a Node project, a `prepare` script can do it on install. `peer-ai doctor` warns when they're missing or out of date.
 - **Only its own skills.** Render replaces and removes only folders named `peer-ai-…`. A skill of your own sits beside them untouched.
-- **Cloud sessions.** Claude Code's cloud sessions load only the skills committed to the repository, so run `peer-ai render` in the environment's setup.
+- **Cloud agents** start from a fresh clone, so render gives each one a setup step that writes the skills before it starts: `peer-ai render --skills --quiet`, which touches nothing committed.
+
+| Tool | The setup step |
+|------|----------------|
+| Claude Code | A `SessionStart` hook in `.claude/settings.json`. It runs in cloud sessions and routines too, and keeps skills fresh on your machine after an upgrade. |
+| Cursor | Added to the `start` command in `.cursor/environment.json` |
+| GitHub Copilot | A step in `.github/workflows/copilot-setup-steps.yml`. An existing workflow is left to you, with the step to add. |
+| Codex | Codex cloud keeps its setup script in its own settings, so render prints the line to add there |
+
+Each edit keeps everything else in the file, and updates only Peer AI's own command.
+
+- **Committing them instead.** Set `"skills": { "commit": true }` for a tool that can't run a setup step. Render then commits the skills, marks them as generated in `.gitattributes` so pull requests fold them away, and `render --check` checks them too.
 
 What render changes, and what it leaves alone:
 
@@ -154,7 +165,9 @@ What render changes, and what it leaves alone:
 
 | Option | What it does |
 |--------|--------------|
-| `--check` | Change nothing, and fail when a committed file is out of date. For CI. It leaves the skills out, since CI never has them. |
+| `--check` | Change nothing, and fail when a committed file is out of date. For CI. It leaves the skills out, since CI never has them, unless the project commits them. |
+| `--skills` | Write only the skills, touching nothing committed. It's what each tool's setup step runs. |
+| `--quiet` | Print nothing unless something fails |
 
 ### Exit codes
 

@@ -45,6 +45,8 @@ Options for assess:
 
 Options for render:
       --check                 Change nothing; fail when a file is out of date (for CI)
+      --skills                Write only the skills (what each tool's setup step runs)
+      --quiet                 Print nothing unless something fails
 
 Options for doctor and check:
       --json                  Print the checks as JSON
@@ -130,8 +132,15 @@ function check(args: string[], io: Io): number {
 }
 
 function render(args: string[], io: Io): number {
-  const { values } = parseArgs({ args, strict: true, options: { check: { type: "boolean" } } });
-  return runRender({ cwd: io.cwd, check: values.check === true }, io.out);
+  const { values } = parseArgs({
+    args,
+    strict: true,
+    options: { check: { type: "boolean" }, skills: { type: "boolean" }, quiet: { type: "boolean" } },
+  });
+  return runRender(
+    { cwd: io.cwd, check: values.check === true, skills: values.skills === true, quiet: values.quiet === true },
+    io.out,
+  );
 }
 
 async function mcp(args: string[], io: Io): Promise<number> {

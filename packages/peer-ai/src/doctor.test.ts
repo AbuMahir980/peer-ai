@@ -197,7 +197,8 @@ describe("doctor on what render writes", () => {
       {
         id: "render",
         status: "warn",
-        message: "Out of date for the AI tools: AGENTS.md, .cursor/rules/peer-ai.mdc, .cursor/mcp.json.",
+        message:
+          "Out of date for the AI tools: AGENTS.md, .cursor/rules/peer-ai.mdc, .cursor/mcp.json, .cursor/environment.json.",
         fix: "Run peer-ai render.",
       },
     ]);
