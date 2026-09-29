@@ -46,7 +46,7 @@ Each run uses about $1 to $3 of the tool's usage.
 ## How a review is marked
 
 - A planted problem counts as **found** when the report names a problem within three lines of it, at a severity no more than one level away.
-- A problem with a **whole file, or the whole project**, such as a missing lockfile, counts as found by a finding on that file or on the project (`.`) that cites one of the problem's rules, with or without a line.
+- A problem with a **whole file, or the whole project**, such as a missing lockfile, counts as found by a finding that cites one of the problem's rules: on that file, with or without a line, or, for the whole project, anywhere.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
 - **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
