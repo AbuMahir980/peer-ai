@@ -56,7 +56,7 @@ Then list what's worth protecting: personal data, money, accounts, secrets, and 
 
 ## 3. Assumptions
 
-A threat model depends on a few facts the code can't show: who can reach the product (the internet, or only a private network), where it runs, who has admin access, and who the likely attackers are. Ask the person up to three questions, the ones that would change the model most, and wait for the answers if they're there. Whatever stays unanswered becomes an assumption, with what changes if it's wrong.
+A threat model depends on a few facts the code can't show: who can reach the product (the internet, or only a private network), where it runs, who has admin access, and who the likely attackers are. Pick the three questions that would change the model most. Don't stop to wait for answers: write each as an assumption, with what changes if it's wrong, and ask the person when you hand over. Their answers update the model.
 
 ## 4. Threats
 
