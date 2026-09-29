@@ -75,6 +75,32 @@
         }
       ],
       "rules": ["OPS-15", "OPS-09"]
+    },
+    {
+      "id": "OM3",
+      "title": "Signing in writes the reader's email and password to the device log",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "console.log(\"Signing in\", email, password);"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OM4",
+      "title": "The reader's exact location goes to a third-party analytics service",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "analytics.track(\"nearby_opened\", { lat: coords.latitude, lng: coords.longitude });"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
     }
   ]
 }
