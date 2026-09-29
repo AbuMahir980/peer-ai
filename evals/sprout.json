@@ -199,6 +199,32 @@
           "match": ".muted { color: #b8b8b8; }"
         }
       ]
+    },
+    {
+      "id": "SP15",
+      "title": "The card's corner radius is written as a value, with no token for it",
+      "severity": "low",
+      "skills": ["design-review"],
+      "locations": [
+        {
+          "file": "src/styles/app.css",
+          "match": "border-radius: 12px;"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's design-review skill and a baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "SP16",
+      "title": "The plant list shows nothing while it loads or when there are no plants yet",
+      "severity": "medium",
+      "skills": ["design-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "const plants = useLiveQuery(() => db.plants.orderBy(\"position\").toArray()) ?? [];"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's design-review skill and a baseline on 2026-09-29, and judged real."
     }
   ],
   "documents": {

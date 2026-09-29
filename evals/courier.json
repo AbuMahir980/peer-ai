@@ -18,7 +18,8 @@
     "api-design": "Write down Courier's API design from the code and its contract.",
     "data-modelling": "Write down Courier's data model from its migrations.",
     "design-system": "Courier has no design system yet. Write one from its web app's screens.",
-    "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\""
+    "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\"",
+    "design-review": "Review the design of Courier's web app screens."
   },
   "defects": [
     {
@@ -360,6 +361,79 @@
         }
       ],
       "found": "Not planted: raised by Peer AI's accessibility-review and design-review skills on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D28",
+      "title": "The contract says anyone can ask the assistant, but the API requires sign-in",
+      "severity": "medium",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/openapi.json",
+          "match": "\"/assistant/messages\": {"
+        },
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "def ask(question: Question, customer=Depends(current_customer), db=Depends(get_db)):"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's contract-check skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D29",
+      "title": "The web app's API types are written by hand and never checked against the contract",
+      "severity": "medium",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "apps/web/src/api.ts",
+          "match": "export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {"
+        },
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "interface Tracking {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's contract-check skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D30",
+      "title": "A customer can pay for any parcel, because the payment never checks the parcel is theirs",
+      "severity": "medium",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "def pay(payment: CardPayment, customer=Depends(current_customer), db=Depends(get_db)):"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D31",
+      "title": "A payment returns a body the contract doesn't describe",
+      "severity": "low",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "return {\"status\": \"paid\"}"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D32",
+      "title": "The API refuses parcels over 30 kg, which the contract doesn't say",
+      "severity": "low",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "weight_kg: float = Field(gt=0, le=30)"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
     }
   ],
   "documents": {

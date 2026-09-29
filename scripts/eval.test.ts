@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { skillRuleIds } from "@peer-ai/skills";
-import { WorkItemSchema, validateReport, type ReviewReport } from "@peer-ai/workflow";
+import { availableSkills, skillRuleIds } from "@peer-ai/skills";
+import { SKILL_IDS, WorkItemSchema, validateReport, type ReviewReport } from "@peer-ai/workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   DOCUMENT_RESULTS,
@@ -240,7 +240,7 @@ describe("running an eval", () => {
 
     const printed = formatRun(sheet, "claude-code", result, 1, 1).join("\n");
     expect(printed).toMatch(
-      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 14 problems on the answer sheet:/,
+      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 15 problems on the answer sheet:/,
     );
     expect(printed).toContain(
       "\n  D3   critical services/api/app/routes/parcels.py:55  The status filter is pasted into SQL",
@@ -289,10 +289,13 @@ describe("running an eval", () => {
     expect(log).toContain("SKILL.md");
   });
 
-  it("refuses to run with a skill that doesn't exist yet", async () => {
+  // Any skill not written yet will do; once all 29 exist, there's nothing left to refuse.
+  const unwritten = SKILL_IDS.find((id) => !availableSkills().includes(id));
+  it.skipIf(unwritten === undefined)("refuses to run with a skill that doesn't exist yet", async () => {
+    const skill = unwritten ?? "code-review";
     await expect(
-      evaluate(loadSheet("courier"), "contract-check", "claude-code", () => Promise.resolve({ seconds: 0 })),
-    ).rejects.toThrow(/There's no contract-check skill yet. Run with --baseline/);
+      evaluate(loadSheet("courier"), skill, "claude-code", () => Promise.resolve({ seconds: 0 })),
+    ).rejects.toThrow(new RegExp(`There's no ${skill} skill yet. Run with --baseline`));
   });
 
   it("adds a result to the end of the table under its heading", () => {
