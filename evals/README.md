@@ -14,6 +14,9 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`split-bill-qa-tip.json`](split-bill-qa-tip.json) | `split-bill`, with a tip already built | 5 | – |
 | [`split-bill-qa-uneven.json`](split-bill-qa-uneven.json) | `split-bill`, with uneven splits already built | 5 | – |
 | [`courier-qa-move.json`](courier-qa-move.json) | `courier`, with moving a pickup already built | 5 | – |
+| [`courier-infra.json`](courier-infra.json) | `courier`, with its cloud infrastructure in Terraform | 7 | – |
+| [`courier-kubernetes.json`](courier-kubernetes.json) | `courier`, deployed on Kubernetes | 7: 5 planted, and 2 found that nobody planted | – |
+| [`sprout-hosting.json`](sprout-hosting.json) | `sprout`, with its container, web server and deploy workflow | 6: 5 planted, and 1 found that nobody planted | – |
 
 ## Running one
 
@@ -40,7 +43,7 @@ Each run uses about $1 to $3 of the tool's usage.
 ## How a review is marked
 
 - A planted problem counts as **found** when the report names a problem within three lines of it, at a severity no more than one level away.
-- A problem with a **whole file, or the whole project**, such as a missing lockfile, counts as found by a finding on that file or on the project (`.`) that cites one of the problem's rules, with or without a line.
+- A problem with a **whole file, or the whole project**, such as a missing lockfile, counts as found by a finding that cites one of the problem's rules: on that file, with or without a line, or, for the whole project, anywhere.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
 - **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
@@ -296,6 +299,12 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The runner sets up review scenarios too:** an answer sheet's `setup` files are written into the copy and committed before the run, as for documents, and planted problems can be in them. The shared practice projects stay as they are.
   - **Before any run, the checking guide gave away four of its own answers,** such as a rounding test whose value needs no rounding, and whose clock the code uses. Each was rewritten as the general rule.
 
+- **2026-09-29, infrastructure-review with Claude Code on Sonnet, on three sets of infrastructure written into the copies, and on the Terraform one without it.** Courier's cloud infrastructure in Terraform, courier on Kubernetes, and sprout's container, web server and deploy workflow, each with problems planted in them: a database and a storage bucket open to the internet, a role that may do anything, secrets in files, no backups, production data copied to staging, changes applied from a laptop, a public status page, deploys from any branch with an administrator's key:
+  - **With the skill, all three are ready:** 7 of 7, 7 of 7 and 6 of 6, each covering all 13 rules. Without it, the Terraform set found 7 of 7 too, in nearly twice the time and cost ($1.86 and 8 minutes, against $0.91 and 5).
+  - **The runs raised three real problems nobody planted,** now on the sheets: on Kubernetes, nothing but people applying the manifests by hand deploys a change, and there's no TLS in front of the API or to the database; on sprout, the app sends the plant identification key from people's browsers anyway, whatever the web server does.
+  - **Fair points not added:** no list of secrets and how to rotate them, at a stage where that rule doesn't apply yet; and no secret scanner, which is security-review's rule.
+- **What the runs changed:** a problem with the whole project, such as nothing alerting on attacks, now counts as found by a finding anywhere that cites its rule. Before, it counted only at the files the sheet listed.
+
 ## Results
 
 Newest last.
@@ -393,6 +402,10 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | split-bill-qa-uneven | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 0 | Ready | $1.12 |
 | 2026-09-29 | courier-qa-move | qa-acceptance | Claude Code | sonnet | used | 5 of 5 | 9 of 9 | 0 | Ready | $1.01 |
 | 2026-09-29 | split-bill-qa-tip | qa-acceptance | Claude Code | sonnet | without | 4 of 5 | 9 of 9 | 0 | Not ready | $1.20 |
+| 2026-09-29 | courier-infra | infrastructure-review | Claude Code | sonnet | used | 7 of 7 | 13 of 13 | 0 | Ready | $0.91 |
+| 2026-09-29 | courier-kubernetes | infrastructure-review | Claude Code | sonnet | used | 7 of 7 | 13 of 13 | 0 | Ready | $1.04 |
+| 2026-09-29 | sprout-hosting | infrastructure-review | Claude Code | sonnet | used | 6 of 6 | 13 of 13 | 1 | Ready | $1.35 |
+| 2026-09-29 | courier-infra | infrastructure-review | Claude Code | sonnet | without | 7 of 7 | 13 of 13 | 1 | Ready | $1.86 |
 
 ## Document results
 
