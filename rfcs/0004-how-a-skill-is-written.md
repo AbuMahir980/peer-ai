@@ -289,3 +289,11 @@ This answers the open question above.
 - **The instructions.** The block `render` writes tells agents to check every document a skill writes with `check_document`.
 
 requirements-analysis is the first document skill.
+
+**29 September 2026: acceptance criteria are checked before a feature ships.** REQ-05 says a feature ships only when every acceptance criterion holds. For that to hold without anyone remembering to ask, the table in section 8 gains a row:
+
+| Review | Required when the change... |
+|--------|-----------------------------|
+| qa-acceptance | belongs to a work item with acceptance criteria, at MVP or production |
+
+Peer AI reads the criteria from the work item, where RFC 0005 put them, when the item reaches verify. A prototype isn't held to it, as REQ-05 isn't. A project can drop it in its config with a reason, like any other required review.

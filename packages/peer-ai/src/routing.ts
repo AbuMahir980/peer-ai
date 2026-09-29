@@ -70,6 +70,7 @@ export function reviewsFor(
   stage: Stage,
   read: (file: string) => string,
   available: readonly SkillId[] = availableSkills(),
+  item: { acceptance?: string[] | undefined } = {},
 ): RequiredReview[] {
   const tracks = config.tracks.filter((track) => track.status !== "external" && track.status !== "dormant");
   const code = files.filter((file) => CODE.test(file));
@@ -129,6 +130,11 @@ export function reviewsFor(
     "infrastructure-review",
     "it changes infrastructure or deployment",
     files.some((file) => INFRASTRUCTURE_AS_CODE.test(file) || DEPLOYMENT.test(file)),
+  );
+  need(
+    "qa-acceptance",
+    "its work item has acceptance criteria, which must all hold before it ships",
+    (item.acceptance?.length ?? 0) > 0 && stage !== "prototype" && files.length > 0,
   );
   need("release-readiness", "it's about to ship, at the production stage", stage === "production" && files.length > 0);
 
