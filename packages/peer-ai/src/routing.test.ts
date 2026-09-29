@@ -97,6 +97,21 @@ describe("the reviews a change needs", () => {
     expect(reviews({ "docs/menu.md": "" })).toEqual([]);
   });
 
+  it("checks a work item against its acceptance criteria, from MVP, when it has some", () => {
+    const [, config] = configured();
+    const change = ["services/api/app/routes.py"];
+    const criteria = { acceptance: ["Given a full slot, when a cyclist books it, then it's refused."] };
+    const skills = (stage: Stage, item = {}) =>
+      reviewsFor(change, config, stage, () => "", SKILL_IDS, item).map((review) => review.skill);
+    expect(reviewsFor(change, config, "mvp", () => "", SKILL_IDS, criteria)).toContainEqual({
+      skill: "qa-acceptance",
+      reason: "its work item has acceptance criteria, which must all hold before it ships",
+    });
+    expect(skills("mvp")).not.toContain("qa-acceptance");
+    expect(skills("mvp", { acceptance: [] })).not.toContain("qa-acceptance");
+    expect(skills("prototype", criteria)).not.toContain("qa-acceptance");
+  });
+
   it("follows the project's config, and requires only skills that exist", () => {
     const code = { "services/api/app/routes.py": "def menu(): ..." };
     const extra = {
@@ -148,7 +163,13 @@ describe("the files a change touched", () => {
     const created = createWorkItem(
       root,
       config,
-      { title: "Menu", kind: "feature", track: "api", branch: "feature/MENU-1-menu" },
+      {
+        title: "Menu",
+        kind: "feature",
+        track: "api",
+        branch: "feature/MENU-1-menu",
+        acceptance: ["Given a closed kitchen, when a guest opens the menu, then it says when it opens."],
+      },
       NOW,
     );
     if (!created.ok) throw new Error(created.error);
@@ -160,6 +181,7 @@ describe("the files a change touched", () => {
       { skill: "code-review", reason: "it changes code" },
       { skill: "security-review", reason: "it changes code, at the mvp stage" },
       { skill: "contract-check", reason: "it changes an API or its contract" },
+      { skill: "qa-acceptance", reason: "its work item has acceptance criteria, which must all hold before it ships" },
     ].filter((review) => availableSkills().includes(review.skill as SkillId));
     expect(moved.value.requiredReviews).toEqual(needed);
     expect(nextWork(root, config).reviews).toEqual(

@@ -366,7 +366,7 @@ export function advanceWorkItem(
         return "";
       }
     };
-    const requiredReviews = reviewsFor(changedFiles(root), config, projectStage(config), read);
+    const requiredReviews = reviewsFor(changedFiles(root), config, projectStage(config), read, undefined, item);
     return save(root, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
   if (target === "ship" || target === "done") {
