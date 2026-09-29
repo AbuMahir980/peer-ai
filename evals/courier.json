@@ -394,7 +394,7 @@
       "points": [
         {
           "id": "TC1",
-          "point": "Lists the ways in, including booking a pickup, viewing a customer's parcels, the public tracking link, card payment, the support assistant, and signing in.",
+          "point": "Lists the ways in, including booking a pickup, viewing a customer's parcels, the public tracking link, card payment, the support assistant, and the signed token that identifies a customer.",
           "must": true
         },
         {
@@ -434,7 +434,7 @@
         },
         {
           "id": "TC10",
-          "point": "Backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "point": "Marks at least one defence as in place, such as booking needing a signed-in customer, and backs each defence it marks as in place with a file and line, not only a rule's name.",
           "must": true
         },
         {
