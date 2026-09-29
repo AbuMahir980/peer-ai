@@ -479,7 +479,7 @@
         },
         {
           "id": "PS10",
-          "point": "Leaves tables, endpoints and code to the system design."
+          "point": "Leaves database tables, API endpoints and code to the system design."
         }
       ]
     }
