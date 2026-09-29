@@ -16,7 +16,7 @@
 
 ## Data
 
-{{Each table, field or store added or changed, its migration, and how existing data is kept. What's locked, and which database guarantees are used.}}
+{{Each table, field or store added or changed, its migration, and how existing data is kept. What's locked, and which database guarantees are used. For a part in another repository, the guarantees to request from its owners instead.}}
 
 ## API
 

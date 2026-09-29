@@ -24,6 +24,7 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
 | `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
 | `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
+| `--document <path>` | With `--regrade`: the document to grade, when the run saved it where neither the scenario nor the project map finds it |
 | `--runs 2` | Run it twice |
 | `--record` | Add the result to the tables below |
 
@@ -110,6 +111,65 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **One was real and nobody had planted it:** shelf's request helper for its newer features has no timeout, so a slow API leaves a screen waiting. code-review raised it too. It's now S24 on the answer sheet, for code-review and reliability-review. The code-review rows above were marked before it was added, against 11 problems.
   - **Courier's "no tests of the assistant's behaviour, or of attacks on it"** (AI-08) is real under the rules, and is about how the project is run rather than planted code, like SEC-25 and TEST-08 before.
 
+- **2026-09-29, requirements-analysis with Codex, on refill, courier and sprout, with the skill and without.** A second Codex run graded each document; a person read every grade, and the corrections are below. The first six rows were graded again against the final points:
+  - **With the skill, all three are ready:** refill 13 of 13, and courier 11 of 11 and sprout 11 of 11 after the fixes below. Without it: 10 of 13, 7 of 11 and 8 of 11, none ready.
+  - **Without the skill, Codex put an extra idea into the agreed scope:** the loyalty scheme the operations lead added to their message. It also dropped sprout's existing requirements.
+  - **The baselines still followed the template,** because Peer AI's MCP server was connected and `check_document` named the parts they were missing. As with the reviews, "without" measures the skill, not Peer AI as a whole.
+- **What the runs changed:**
+  - **Existing requirements were weakened.** On sprout, with and without the skill, Codex turned requirements such as "nothing may ever be lost" into intentions, because the code doesn't meet them yet. The skill now keeps every requirement a person decided, and reports the gap. The next run kept them all.
+  - **A feature nobody wrote down was missed.** Courier's code has a support assistant its requirements don't mention. The skill now compares the code with the requirements both ways, and the next run asked about it.
+  - **An extra idea was treated as agreed.** One courier run put the loyalty scheme in scope. The skill now says an idea added to a request isn't agreed until someone decides, and the point accepts "unclear" as well as "out of scope".
+  - **A run stopped to wait.** One courier run asked its questions, then waited for answers nobody would give, and wrote nothing. The skill now writes the document with its questions in it, and asks at hand-over. The next run made every point.
+  - **The runner:** Codex wouldn't grade outside a git repository until told it's fine; `--regrade` grades an earlier run's copy again; and a document written under the same name elsewhere, such as `requirements/requirements.md`, is found.
+- **What people judged in those runs:**
+  - **Two points were wrong about the projects,** and were rewritten before the re-grade. Sprout's journal, watering and plant identification are in the code but not reachable from any screen, so "describes what the app does today" can't expect them as working features. Three "invents no numbers" points now say plainly that figures from the brief are allowed.
+  - **The grader was wrong once:** in the second courier run it counted "about ten minutes", from the operations lead's message, as an invented figure. A person counts that run 10 of 11; it still isn't ready, because of the loyalty scheme.
+  - **The grader varies:** refill with the skill was graded 12 and then 13 of 13 on the same document, over whether it asked if a patient is charged when a prescription is rejected.
+
+- **2026-09-29, threat-model with Codex, on courier, shelf and sprout, with the skill and without.** The first six rows were graded again after two points were corrected:
+  - **With the skill, after the fixes below:** courier 13 of 13 and sprout 10 of 10, both ready; shelf 9 of 11. Without it: 10 of 13, 7 of 11 and 9 of 10, none ready.
+  - **Without the skill, Codex missed what matters most on shelf:** the partner secret built into the app and the plain HTTP to the API. On courier it missed the notes shown as HTML, and cited no rules.
+- **What the runs changed:**
+  - **Only missing defences were listed.** Every first run listed what's missing and marked nothing in place, so a reader couldn't tell what must be kept, such as the sign-in check on courier's routes. The skill now looks as hard for defences that hold. Courier and sprout then marked theirs, with files and lines; shelf still didn't.
+  - **Stopping to wait.** The skill said to wait for answers to its questions, as requirements-analysis did. It now writes them down as assumptions and asks at hand-over. No threat-model run was caught by it.
+- **What people judged in those runs:**
+  - **Two points were wrong about courier,** and were rewritten before the re-grade. Courier has no sign-in route: a customer is identified by a signed token, and the threat model said so correctly. The point on in-place defences was empty when none was marked; it now asks for at least one.
+  - **Shelf's in-place defences are a judgement call.** Its requests carry the reader's session token, which a person would mark in place; almost everything else it has is planted as missing. The shelf run is counted as not ready.
+  - **The grader varies:** the same sprout baseline was graded 7 and then 9 of 10, though only one of its points had changed.
+
+- **2026-09-29, architecture with Codex, on courier, shelf and refill, with the skill and without.** Every row was graded after the grader was given the decision records as well as the main document:
+  - **With the skill, all three are ready:** courier 10 of 10 after the fix below, shelf 8 of 9 and refill 9 of 10. Without it: 5 of 10, 8 of 9 and 7 of 10, none ready.
+  - **Without the skill, courier's rules were lost:** the baseline dropped what the old document decided, and didn't flag the assistant changing parcels that another module owns. Refill's baseline gave no options for a person to decide between. Shelf's baseline made the same points as the skill, but didn't follow the template, so `check_document` refused it.
+- **What the runs changed:**
+  - **An existing rule was dropped.** The first courier run with the skill lost the rule that each request carries a signed session token. The skill now keeps every rule and decision the document already states, even where the code breaks it; the break goes under Risks. The next run made every point.
+  - **The grader saw only the main document,** so it couldn't credit options written in a decision record. The runner now gives it every Markdown document the run wrote.
+- **What people judged in those runs:**
+  - **One point was wrong about refill:** its brief doesn't ask for live tracking, which the skill rightly didn't assume. The point now asks how riders see where to go, and whether patients should follow a delivery live.
+  - **Shelf's storage rule was missed with the skill and without:** neither kept the rule that a change to how data is stored on the phone moves the existing data.
+
+- **2026-09-29, product-spec with Codex, on courier, shelf and sprout, with the skill and without.** The first six rows were graded again against the final points:
+  - **With the skill, all three are ready after the fixes below:** courier 10 of 11, shelf 10 of 10 and sprout 8 of 10. Without it: courier 8 of 11, and sprout 7 of 10, neither ready. Shelf's baseline saved its spec as `docs/loan-extension.md`, where the project map doesn't find a spec, so the gap it was meant to fill stayed open.
+- **What the runs changed:**
+  - **Another way to do the same thing was missed.** Courier's assistant can already cancel parcels, and the first spec didn't say how the two must agree. The skill now looks for another path that does the same thing, but the next courier run still didn't mention the assistant: a gap that remains.
+  - **Who else is affected.** Shelf's first spec didn't say whether the lender is told about an extension. The skill now asks who each change affects, and how they find out.
+  - **Phones.** The skill now covers text size and touch targets, which shelf's first spec left out.
+  - **Undoing a mistake.** Sprout's specs didn't say how a person undoes watering recorded by accident. The skill now asks for it where a mistake can happen, and the next run covered it.
+  - **The runner** now finds a document wherever the project map finds it, such as `docs/plant-watering-spec.md`, so a baseline isn't marked down only for its folder.
+- **What people judged in those runs:**
+  - **A point was misread:** "leaves tables to the system design" meant database tables, and the grader counted the spec's own tables. The points now say database tables.
+  - **The grader is strict about storage:** it counted "the data stays on the device" as a storage detail in sprout's last run. A person would count that point as made.
+  - **One re-grade lost its grades:** the grader said it wrote them, and the file wasn't there. It was graded again.
+
+- **2026-09-29, system-design with Codex, on courier, shelf and sprout, with the skill and without.** Every row was graded against the final points:
+  - **With the skill:** courier 10 of 10 and shelf 7 of 8, both ready, after the fixes below. Sprout's run made 7 of 8, missing the test for a watering just before midnight.
+  - **Without the skill, no design was saved where the project map finds a spec:** each went to `docs/<feature>-design.md`, so the gap stayed open. Graded where they were saved, with `--document`, they made 7 of 10, 5 of 8 and 7 of 8, none ready. Shelf's baseline designed the other repository's API from the inside.
+- **What the runs changed:**
+  - **Another path to the same data.** Courier's first design didn't route the assistant's cancel through the parcels module. The skill now finds every existing path that does the same thing, and routes them through the data's one owner. The next courier run made every point.
+  - **Another repository's insides.** Two of shelf's designs were graded as describing the other repository's transactions and locks, the second after the skill said not to. The rule now sits where the template invites a design, in the Data, Two at once and Failures parts, and asks for guarantees instead. The next shelf run was ready.
+  - **The runner:** `--document` grades a file a run saved where nothing else finds it, and a grader that writes no valid grades is asked once more. Two baselines' grades were lost to that before the fix.
+- **What people judged in those runs:**
+  - **The grader varies:** sprout's first run was graded 8 of 8, and 7 of 8 when graded again.
+
 ## Results
 
 Newest last.
@@ -169,6 +229,48 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 
 | Date | Project | Document | Tool | Model | Skill | Points | Must-haves | Check | Result | Grader | Cost |
 |------|---------|----------|------|-------|-------|--------|------------|-------|--------|--------|------|
-| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 12 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
+| 2026-09-29 | refill | requirements-analysis | Codex | default | used | 13 of 13 | 6 of 6 | Accepted | Ready | Codex | – |
 | 2026-09-29 | courier | requirements-analysis | Codex | default | used | 10 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
-| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | refill | requirements-analysis | Codex | default | without | 10 of 13 | 6 of 6 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | without | 7 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | without | 8 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 9 of 11 | 3 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | No document | – | – | Not ready | Codex | – |
+| 2026-09-29 | courier | requirements-analysis | Codex | default | used | 11 of 11 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | threat-model | Codex | default | used | 11 of 13 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | threat-model | Codex | default | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | threat-model | Codex | default | used | 9 of 10 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | threat-model | Codex | default | without | 10 of 13 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | threat-model | Codex | default | without | 7 of 11 | 2 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | threat-model | Codex | default | without | 9 of 10 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | threat-model | Codex | default | used | 13 of 13 | 5 of 5 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | threat-model | Codex | default | used | 9 of 11 | 4 of 5 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | threat-model | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | architecture | Codex | default | used | 9 of 10 | 3 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | architecture | Codex | default | used | 8 of 9 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | refill | architecture | Codex | default | used | 9 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | architecture | Codex | default | without | 5 of 10 | 2 of 4 | Refused | Not ready | Codex | – |
+| 2026-09-29 | shelf | architecture | Codex | default | without | 8 of 9 | 3 of 3 | Refused | Not ready | Codex | – |
+| 2026-09-29 | refill | architecture | Codex | default | without | 7 of 10 | 2 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | architecture | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | product-spec | Codex | default | used | 9 of 11 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | product-spec | Codex | default | used | 9 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | used | 8 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | product-spec | Codex | default | without | 8 of 11 | 4 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | product-spec | Codex | default | without | No document | – | – | Not ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | without | 7 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | product-spec | Codex | default | used | 10 of 11 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | product-spec | Codex | default | used | 10 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | used | 9 of 10 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | product-spec | Codex | default | used | 8 of 10 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | courier | system-design | Codex | default | used | 9 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
+| 2026-09-29 | sprout | system-design | Codex | default | used | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | system-design | Codex | default | without | 7 of 10 | 4 of 4 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | without | 5 of 8 | 1 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | sprout | system-design | Codex | default | without | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | courier | system-design | Codex | default | used | 10 of 10 | 4 of 4 | Accepted | Ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 2 of 3 | Accepted | Not ready | Codex | – |
+| 2026-09-29 | shelf | system-design | Codex | default | used | 7 of 8 | 3 of 3 | Accepted | Ready | Codex | – |
