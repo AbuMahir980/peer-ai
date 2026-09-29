@@ -169,3 +169,15 @@ Where the language has types, they're strict. No escape-hatch type, such as Type
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Prototype | A tool | Medium | Always | – |
+
+## CODE-15 · Edge cases are handled
+
+Code gives the right answer at the edges of what it can receive: time zones and daylight saving, empty and very long input, ties and equal values, the first and last item, and zero.
+
+**Why:** Most bugs live at the edges. The ordinary path is the one everyone tries, so it's rarely where things break.
+
+**Ask:** Does this change give the right answer at its edges: time zones, empty or huge input, ties, first and last, and zero?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | – |

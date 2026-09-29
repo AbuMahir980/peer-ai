@@ -9,6 +9,7 @@
 //     [--baseline] [--runs <n>] [--record]
 
 import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
@@ -498,7 +499,8 @@ if (invokedDirectly) {
       skill,
       tool,
       runTool,
-      join(tmpdir(), `peer-ai-eval-${name}-${skill}-${String(Date.now())}`),
+      // Unique for each run, since runs on different tools may start in the same millisecond.
+      join(tmpdir(), `peer-ai-eval-${name}-${skill}-${tool}-${String(Date.now())}-${randomUUID().slice(0, 8)}`),
       {
         baseline: values.baseline === true,
         ...(values.model === undefined ? {} : { model: values.model }),

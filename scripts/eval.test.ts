@@ -248,8 +248,8 @@ describe("running an eval", () => {
 
   it("refuses to run with a skill that doesn't exist yet", async () => {
     await expect(
-      evaluate(loadSheet("courier"), "code-review", "claude-code", () => Promise.resolve({ seconds: 0 })),
-    ).rejects.toThrow(/There's no code-review skill yet. Run with --baseline/);
+      evaluate(loadSheet("courier"), "contract-check", "claude-code", () => Promise.resolve({ seconds: 0 })),
+    ).rejects.toThrow(/There's no contract-check skill yet. Run with --baseline/);
   });
 
   it("adds a result to the table only when the table is the last thing in the file", () => {
