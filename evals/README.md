@@ -4,8 +4,8 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 25: 24 planted, and 1 a review found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 24: 21 planted, and 3 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 27: 24 planted, and 3 that reviews found and nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 27: 21 planted, and 6 that reviews found and nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 14 | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
@@ -212,6 +212,41 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:**
   - **A point about work the run rightly didn't do.** The grader marked the second waiting run as missing "any work done on SB-2 is covered by tests", though it wrote no code. The point now says that writing no code makes it, and graded again, the run made all 5.
 
+- **2026-09-29, accessibility-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready:** courier 5 of 5, shelf 4 of 4 and sprout 2 of 2, each covering all 11 rules. Without it, courier found 4 of 5 and wasn't ready.
+  - **The runs with the skill raised four real problems nobody planted,** now on the answer sheets: on courier, a failed booking shows the person nothing (D26), and a failed tracking lookup stays on "Loading…" for ever (D27); on shelf, the librarian's question field has no label (S25), and its button is too small to tap reliably (S26). The counts above include them. Against the sheets as they were, every run found every planted problem, the baseline included.
+  - **Without the skill, courier's review missed the failed booking** and rated problems a level higher than the rules do: the Book button that isn't a button critical, and the missing labels and the colour-only status high.
+
+- **2026-09-29, performance-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready:** courier 3 of 3, shelf 2 of 2, and sprout 3 of 3 after the fixes below, each covering all 12 rules. Without it, courier found 2 of 3 and wasn't ready: it missed the parcels looked up by customer with no index.
+  - **The baseline raised one problem that isn't on the sheet,** and a person judged it fair but outside the rules: every request opens a new database connection, with no pool. It called it high; at this stage it's minor. No rule covers connection pooling yet.
+  - **The first baseline stopped at a prompt** to approve installing the skills, which a baseline shouldn't be asked to do. The runner no longer tells a baseline to install them, and the second one ran through.
+- **What the runs changed:**
+  - **Apps never got the reliability rules.** The first sprout run saw that the service worker always serves its first copy, then marked REL-09 not applicable, because `standards_for_file` didn't return it. The tool now gives web, mobile, desktop and extension apps the reliability rules, offline ones included.
+  - **A problem the code shows is a finding, whether or not its rule applies yet.** The skill already said so for rules from a later stage. It now says the same for a trait the project hasn't set, since projects often forget one. The next sprout run found the service worker problem.
+
+- **2026-09-29, reliability-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on sprout without it:**
+  - **With the skill, all three are ready:** courier 1 of 1, shelf 3 of 3 and sprout 4 of 4, each covering all 14 rules. Without it, sprout found 4 of 4 too, so the skill's gain here isn't what's found: its run took half the time and cost ($1.06 against $1.93).
+  - **The baseline raised one point that isn't on the sheet,** judged fair and minor: the service worker has no fallback page when a route is neither cached nor reachable.
+- **What people judged in those runs:**
+  - **Sprout's data that can be cleared was named where the store opens.** The run with the skill put it at `src/db.ts`, where the database is created; the sheet only accepted `src/main.tsx`, where it's opened, and marked the run 3 of 4. Both are fair places for the fix, so the sheet now accepts either, and the run counts 4 of 4.
+
+- **2026-09-29, compliance-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on shelf without it:**
+  - **With the skill, all three are ready after the fix below:** courier 4 of 4, shelf 5 of 5 and sprout 1 of 1, each covering all 12 rules. Without it, shelf found 5 of 5 too, in twice the time ($1.65 and 8 minutes, against $1.32 and 4).
+  - **One finding was wrong:** the second shelf run said the reader's saved books are kept with no retention period. They're the reader's own list on their own phone; retention duties apply to what the service keeps.
+  - **The baseline raised one fair point that isn't on the sheet:** the requirements should have prompted a check on whether a data protection impact assessment is needed.
+- **What the runs changed:**
+  - **A public page that shows personal data wasn't checked.** The first courier run missed that public tracking shows the recipient's name and address to anyone with the link. The skill now counts a page or response that shows personal data as somewhere the data goes, and checks that it shows only what its readers need. The next run found it.
+  - **Findings now point at where a service is set up,** so one fix covers every caller.
+- **What people judged in those runs:**
+  - **Shelf's analytics with no consent was named where it's called.** Every shelf run, with the skill and without, put it at the one place analytics is called, and the sheet only accepted the analytics module. It's the same problem, so the sheet now accepts both, and the counts above include it.
+
+- **2026-09-29, data-migration-review with Claude Code on Sonnet, on courier, shelf and sprout with the skill, and on courier without it:**
+  - **With the skill, all three are ready, twice:** courier 1 of 1, shelf 2 of 2 and sprout 1 of 1, each covering all 9 rules. Without it, courier found 1 of 1 too.
+  - **Both shelf runs raised a real problem nobody planted:** the app has no way to make people on an unsafe version update (MOB-06), so a version that loses saved books can't be retired. It's now S27 on the answer sheet, and the counts include it.
+- **What the runs changed:**
+  - **The guide named the planted problems.** Its example failures were a column dropped with its replacement, a browser database version that deletes an old store, and a new storage key with no move: the three planted problems, almost word for word. That makes an eval measure the answers, not the skill. The guide now states the rule for every kind of storage instead, and the second runs, with that guide, found every problem again.
+
 ## Results
 
 Newest last.
@@ -264,6 +299,32 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier | ai-feature-review | Codex | default | without | 4 of 6 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | shelf | ai-feature-review | Codex | default | without | 3 of 5 | 14 of 14 | 0 | Not ready | – |
 | 2026-09-29 | sprout | ai-feature-review | Codex | default | without | 5 of 5 | 14 of 14 | 0 | Ready | – |
+| 2026-09-29 | courier | accessibility-review | Claude Code | sonnet | used | 5 of 5 | 11 of 11 | 0 | Ready | $0.91 |
+| 2026-09-29 | shelf | accessibility-review | Claude Code | sonnet | used | 4 of 4 | 11 of 11 | 0 | Ready | $1.64 |
+| 2026-09-29 | sprout | accessibility-review | Claude Code | sonnet | used | 2 of 2 | 11 of 11 | 0 | Ready | $0.97 |
+| 2026-09-29 | courier | accessibility-review | Claude Code | sonnet | without | 4 of 5 | 11 of 11 | 0 | Not ready | $0.94 |
+| 2026-09-29 | courier | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $1.02 |
+| 2026-09-29 | shelf | performance-review | Claude Code | sonnet | used | 2 of 2 | 12 of 12 | 0 | Ready | $1.43 |
+| 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 2 of 3 | 12 of 12 | 0 | Not ready | $1.15 |
+| 2026-09-29 | courier | performance-review | Claude Code | sonnet | without | 2 of 3 | 12 of 12 | 1 | Not ready | $1.27 |
+| 2026-09-29 | sprout | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $0.92 |
+| 2026-09-29 | courier | reliability-review | Claude Code | sonnet | used | 1 of 1 | 14 of 14 | 0 | Ready | $1.16 |
+| 2026-09-29 | shelf | reliability-review | Claude Code | sonnet | used | 3 of 3 | 14 of 14 | 0 | Ready | $1.69 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | used | 4 of 4 | 14 of 14 | 0 | Ready | $1.06 |
+| 2026-09-29 | sprout | reliability-review | Claude Code | sonnet | without | 4 of 4 | 14 of 14 | 1 | Ready | $1.93 |
+| 2026-09-29 | courier | compliance-review | Claude Code | sonnet | used | 3 of 4 | 12 of 12 | 0 | Not ready | $1.23 |
+| 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | used | 5 of 5 | 12 of 12 | 0 | Ready | $1.78 |
+| 2026-09-29 | sprout | compliance-review | Claude Code | sonnet | used | 1 of 1 | 12 of 12 | 0 | Ready | $0.96 |
+| 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | without | 5 of 5 | 12 of 12 | 1 | Ready | $1.65 |
+| 2026-09-29 | courier | compliance-review | Claude Code | sonnet | used | 4 of 4 | 12 of 12 | 0 | Ready | $1.27 |
+| 2026-09-29 | shelf | compliance-review | Claude Code | sonnet | used | 5 of 5 | 12 of 12 | 1 | Ready | $1.32 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.81 |
+| 2026-09-29 | shelf | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $1.02 |
+| 2026-09-29 | sprout | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.88 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | without | 1 of 1 | 9 of 9 | 0 | Ready | $0.90 |
+| 2026-09-29 | courier | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.68 |
+| 2026-09-29 | shelf | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $0.84 |
+| 2026-09-29 | sprout | data-migration-review | Claude Code | sonnet | used | 1 of 1 | 9 of 9 | 0 | Ready | $0.86 |
 
 ## Document results
 
