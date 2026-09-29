@@ -21,7 +21,7 @@ Each need is a number, a place or a group, or a question saying who can give it.
 - **Badly:** "Booking should be quick and easy."
 - **Well:**
   - Given a signed-in cyclist, when they book a service for Thursday, then they see a booking reference and get an email with it.
-  - Given a service booked for Thursday, when the cyclist moves it to Friday before 5pm on Wednesday, then the shop sees Friday.
+  - Given a cyclist who has booked before, when they start a new booking, then their bike's details are already filled in.
   - Given a shop with no free slot on Friday, when a cyclist tries to book one, then they're shown the next free slot instead.
 
 Each criterion is one situation, one action and one result a tester can see. Cover what goes wrong, not only what goes right.
@@ -31,7 +31,7 @@ Each criterion is one situation, one action and one result a tester can see. Cov
 - **Badly:** putting "a parts shop" in scope because someone mentioned it once.
 - **Well:** in scope, what someone agreed to; out of scope, ideas for the backlog, such as a parts shop; unclear, what could go either way, such as whether a shop can have several mechanics' calendars.
 
-An idea tacked onto a request ("and while you're at it, could we add a parts shop?") is a separate decision: list it as unclear or out of scope, and ask who decides. When in doubt, it's unclear, not in scope.
+An idea mentioned on top of a request, such as the parts shop, isn't agreed until whoever decides scope says yes.
 
 ## Open questions
 

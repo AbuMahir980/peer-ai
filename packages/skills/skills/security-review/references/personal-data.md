@@ -35,7 +35,7 @@ When you can't tell whether data is real, mark the line `not-checked` and say so
 - analytics or telemetry run before the person opts in;
 - data goes to a service without the consent the law needs.
 
-Check the service where it's set up, not only where one call sends data: whether it starts collecting before the person opts in, and what every event it sends carries. A missing consent check is one finding at the setup, however many calls send data through it. A call that sends extra personal data, such as a location, is a finding of its own.
+A missing consent check is one finding, where the service is set up. A call that sends more than that, such as a cyclist's email address in a booking event, is a finding of its own.
 
 The evidence is the code that sets up or sends to the service, and the consent check before it, or its absence.
 

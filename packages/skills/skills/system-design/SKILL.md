@@ -1,6 +1,6 @@
 ---
 name: system-design
-description: Designs how a feature is built across the system (the flow, data changes, API changes, what happens when two people act at once or a call fails, and the tests that prove it). Use after a product spec, before building, or for a risky change.
+description: Designs how a feature is built across the system (the flow, data and API changes, two people acting at once, failed calls, and the tests that prove it). Use when a feature is about to be built, with or without a spec, or for a risky change.
 license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
@@ -31,7 +31,7 @@ Copy this checklist and tick it off as you go:
 
 ## 1. Sources
 
-- **The product spec** for the feature, and its acceptance criteria. The design must meet every one; where it can't, say so.
+- **The product spec** for the feature, and its acceptance criteria. The design must meet every one; where it can't, say so. With no spec, design from the request and the requirements, and write the criteria you designed for, marked **proposed**.
 - **The architecture:** call the peer-ai MCP tool `project_map`. The design keeps to its parts, owners and dependency rules. A design that needs to break one proposes a decision record instead of breaking it quietly.
 - **The API contract and the data model,** and the code the feature touches. Call the peer-ai MCP tool `standards_for_file` for those files: it returns the rules and the stack profile's numbers.
 - **Where to save it:** beside the spec, as `docs/specs/<feature>-design.md`.
@@ -49,9 +49,9 @@ List everything the feature touches, from the code, with its file:
 | `outside` | Each call to another service |
 | `client` | Each app or screen that uses what changes |
 
-Find every existing path that already does what the feature does, such as another screen, a job or an assistant. They must go through the one module that owns the data (ARC-02), so the rules hold on every path.
+Find every existing path that already does what the feature does, such as a staff screen or a nightly job. They must go through the one module that owns the data (ARC-02), so the rules hold on every path.
 
-A part in another repository is designed only as far as what this feature needs from it: the contract change, and what it must guarantee, such as "extending twice extends once". Mark it as a request to that part's owners, and leave its tables, locks and code to them.
+A part in another repository is designed only as far as what this feature needs from it: the contract change, and what it must guarantee, such as "the same booking sent twice is made once". Mark it as a request to that part's owners, and leave its tables, locks and code to them.
 
 ## 3. Flow
 
@@ -73,9 +73,9 @@ These decide whether the feature holds up. [hard-cases.md](references/hard-cases
 
 Copy the [template](assets/system-design.md) and fill in every part. For each rule in [rules.md](references/rules.md) the feature touches, say how the design meets it; a reviewer will check the code against the same rules.
 
-- **Name what changes:** files, tables, fields and routes, not "the backend".
-- **Another repository's part gets guarantees, not a design.** In the Data, Two at once and Failures parts, write what you need from it as guarantees to request, such as "two extensions sent at once extend the loan once", never as its transactions, locks or tables.
-- **Decisions with their reasons.** Where there's a real choice, give the options and pick one. A choice that changes the architecture becomes a proposed decision record for a person to decide.
+- **Name what changes:** each file, table, field and route by name, so a builder knows exactly where to work.
+- **Another repository's part gets guarantees, not a design.** In the Data, Two at once and Failures parts, write what you need from it as guarantees to request, such as "two bookings for the same slot sent at once make one booking", never as its transactions, locks or tables.
+- **Decisions with their reasons.** Where there's a real choice, give the options and pick one. Where only a person can decide, don't stop to wait for answers: write what you recommend, mark it **proposed**, and ask the person when you hand over. Their answers update the design. A choice that changes the architecture becomes a proposed decision record for a person to decide.
 - **Tests that prove it** (TEST-08, SYS-06): name the tests for the hard cases, attacks included.
 - **No code.** Signatures and schemas where they help; the building comes next.
 
