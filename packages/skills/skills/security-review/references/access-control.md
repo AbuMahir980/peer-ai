@@ -7,17 +7,18 @@ SEC-01 to SEC-04, SEC-14 and SEC-21.
 For every item that takes an id, whether in the path, the query, the body or a GraphQL argument:
 
 1. Find where the record is loaded.
-2. **Pass** when the load, or a check straight after it, ties the record to the caller: by owner, by tenant or by an explicit grant. The evidence is that line.
-3. **Fail** when the record is loaded by its id alone, then returned or changed.
+2. **Pass** when the load, or a check straight after it, ties the record to the caller: by owner, by tenant or by an explicit grant. The evidence names each id the item takes and the line that ties it to the caller. Recording who made a request doesn't check the records it names.
+3. **Fail** when the record is loaded by its id alone, then returned or changed, or never loaded at all before it's used.
 
 Look closely at:
 
 - a child reached through its parent, such as `/orders/{id}/items/{itemId}`, where the item must belong to that order;
 - a check on read that's missing on update or delete;
 - lists and exports filtered by an owner id the client sends;
-- bulk actions, which must check every record.
+- bulk actions, which must check every record;
+- the fields returned: a caller allowed to see a record may not be allowed all of it. A public page, such as a repair's status link, shows only what anyone may see, never a person's contact details.
 
-Not a finding: a record the product means to be public. Say so in the evidence.
+Not a finding: a record the product means to be public. Say so in the evidence, with the fields it returns.
 
 ## SEC-02: each action checks its role
 
