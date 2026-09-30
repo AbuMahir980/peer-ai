@@ -38,7 +38,7 @@ describe("feedback", () => {
     // Fake keys, built here so that no key-shaped text sits in the repository for scanners to flag.
     expect(refused(`The key ${["sk", "live", "x".repeat(24)].join("_")} leaked.`)).toBe(true);
     expect(refused(`Token ${["ghp", "a1".repeat(18)].join("_")}`)).toBe(true);
-    expect(refused(`AWS key ${"AKIA"}${"Q".repeat(16)}`)).toBe(true);
+    expect(refused(`AWS key ${["AKIA", "Q".repeat(16)].join("")}`)).toBe(true);
     expect(refused("Write to ada@example.com")).toBe(true);
     expect(refused("security-review reported a test fixture at critical, in commit 3f882a9.")).toBe(false);
   });
