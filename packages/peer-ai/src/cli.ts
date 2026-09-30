@@ -2,6 +2,7 @@
 // The peer-ai command. Exit codes: 0 success, 1 refused, cancelled or problems found, 2 usage or
 // config error.
 
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -240,7 +241,10 @@ export async function main(argv: string[], io: Io): Promise<number> {
   }
 }
 
-const invokedDirectly = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+// An installed peer-ai runs through a link in node_modules/.bin, so compare the file the link points to.
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url));
 if (invokedDirectly) {
   const interactive = process.stdin.isTTY && process.stdout.isTTY;
   process.exitCode = await main(process.argv.slice(2), {
