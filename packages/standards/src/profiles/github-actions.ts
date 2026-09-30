@@ -12,16 +12,18 @@ const fakeToken = () => `${["gh", "p_"].join("")}${"R7kQ2mZ9".repeat(4)}ab4d`;
 const checkout = (pinned: boolean) =>
   pinned ? "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1" : "actions/checkout@v7";
 
-/** A workflow that builds the app, pinned or not, with the workflow's permissions, and the job's own or none. */
-function workflow(pinned: boolean, permissions: string[], jobPermissions = true): string {
+/** A workflow that builds the app, pinned or not, starting from no permissions, with the job's own. */
+function workflow(pinned: boolean, jobPermissions: string[] = ["contents: read"]): string {
   return [
     "name: Build",
     "on: pull_request",
-    ...permissions,
+    "permissions: {}",
     "jobs:",
     "  build:",
     "    runs-on: ubuntu-latest",
-    ...(jobPermissions ? ["    permissions:", "      contents: read"] : []),
+    ...(jobPermissions.length === 1 && jobPermissions[0] === "write-all"
+      ? ["    permissions: write-all"]
+      : ["    permissions:", ...jobPermissions.map((line) => `      ${line}`)]),
     "    steps:",
     `      - uses: ${checkout(pinned)}`,
     "        with:",
@@ -82,8 +84,8 @@ export const githubActions: ProfileInput = {
       enforcer: { tool: "github-actions", job: "workflows", finding: "unpinned-uses" },
       examples: {
         file: ".github/workflows/build.yml",
-        fails: workflow(false, ["permissions: {}"]),
-        passes: workflow(true, ["permissions: {}"]),
+        fails: workflow(false),
+        passes: workflow(true),
       },
     },
     {
@@ -99,9 +101,8 @@ export const githubActions: ProfileInput = {
       enforcer: { tool: "github-actions", job: "workflows", finding: "excessive-permissions" },
       examples: {
         file: ".github/workflows/build.yml",
-        // The job has no permissions of its own, so it runs with the workflow's write-all.
-        fails: workflow(true, ["permissions: write-all"], false),
-        passes: workflow(true, ["permissions: {}"]),
+        fails: workflow(true, ["write-all"]),
+        passes: workflow(true),
       },
     },
     {
