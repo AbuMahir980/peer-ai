@@ -34,17 +34,11 @@ const profileInput = (id: string, prefix: string, extra: Partial<ProfileInput> =
 });
 
 describe("stack profiles", () => {
-  it("load and pass their checks", () => {
-    expect(PROFILES.map((profile) => profile.id)).toContain("typescript");
-    for (const profile of PROFILES) {
-      for (const each of profile.rules) {
-        expect(
-          CORE_RULES.some((core) => core.id === each.carries),
-          each.id,
-        ).toBe(true);
-        if (each.check === "auto") expect(each.examples, each.id).toBeDefined();
-      }
-    }
+  it("enforce every automatic rule with a tool whose examples the tests run", () => {
+    // The compiler's rules are run below, and ESLint's in @peer-ai/eslint-config. A rule for any
+    // other tool needs its own run before it can ship.
+    const tools = PROFILES.flatMap((profile) => profile.rules).map((each) => each.enforcer?.tool);
+    expect(new Set(tools.filter((tool) => tool !== undefined))).toEqual(new Set(["eslint", "typescript"]));
   });
 
   it("refuse a rule that carries no core rule, or uses another profile's prefix", () => {
@@ -132,6 +126,10 @@ describe("which profiles apply to a part", () => {
   it("ignores ids with no profile", () => {
     expect(ids(["vue", "base"], ["typescript"])).toEqual(["base"]);
   });
+
+  it("never applies a base the project didn't list on its own stack tag", () => {
+    expect(ids(["web"], ["typescript", "express"])).toEqual([]);
+  });
 });
 
 describe("a profile's rules for one project", () => {
@@ -173,6 +171,11 @@ describe("a profile's rules for one project", () => {
     expect(changed?.title).toBe("Wheels have at most 36 spokes");
     expect(changed?.value).toBe(36);
     expect(changed?.enforcer).toEqual({ tool: "eslint", rule: "max-depth", options: [{ max: 36 }] });
+  });
+
+  it("keeps the default when the project's value is of another type", () => {
+    const [kept] = select({ overrides: { "WH-01": { value: "36" } } });
+    expect(kept?.value).toBe(32);
   });
 });
 

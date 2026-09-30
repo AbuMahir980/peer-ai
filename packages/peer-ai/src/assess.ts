@@ -59,6 +59,12 @@ export interface TraitSuggestion {
   evidence: string;
 }
 
+/** A stack found in a part the config lists with no stack of its own. */
+export interface StackSuggestion {
+  track: string;
+  stack: string[];
+}
+
 /** A stack profile that fits a part of the project, which the config doesn't list yet. */
 export interface ProfileSuggestion {
   profile: string;
@@ -76,6 +82,11 @@ export interface Assessment {
   suggestedTraits: TraitSuggestion[];
   /** Stack profiles to consider adding to standards.profiles, each with the tools that enforce it (RFC 0006). */
   suggestedProfiles: ProfileSuggestion[];
+  /**
+   * Stacks to add to parts that name none. A listed profile applies to every part without a stack,
+   * so each part's stack keeps a profile to the parts it fits.
+   */
+  suggestedStacks: StackSuggestion[];
   /** A copy of the v0 playbook was found and left out of the assessment. */
   legacyPlaybook: boolean;
 }
@@ -592,6 +603,7 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
     signals,
     suggestedTraits: suggestTraits(ctx, signals, tracks),
     suggestedProfiles: suggestProfiles(root, config, detected),
+    suggestedStacks: suggestStacks(root, config),
     legacyPlaybook,
   };
 }
@@ -634,6 +646,17 @@ function suggestProfiles(
     }
   }
   return [...suggestions].map(([profile, evidence]) => ({ profile, evidence }));
+}
+
+/** The stack detection finds in each part the config lists without one. */
+function suggestStacks(root: string, config: PeerAiConfig | undefined): StackSuggestion[] {
+  if (config === undefined) return [];
+  const found = detectTracks(root, config.project.name);
+  return config.tracks.flatMap((track) => {
+    if (track.stack !== undefined || track.status === "external") return [];
+    const stack = found.find((other) => (other.path ?? ".") === (track.path ?? "."))?.stack ?? [];
+    return stack.length === 0 ? [] : [{ track: track.id, stack }];
+  });
 }
 
 export function gaps(assessment: Assessment, stage: Stage): KnownMapItemId[] {

@@ -1,30 +1,59 @@
 // The ESLint settings for a project's stack profiles (RFC 0006). For each part of the project,
 // the automatic rules its profiles enforce with ESLint, at the project's stage, with its traits,
 // its architecture and the values it changed. Rules the project set aside are left out.
+//
+// The plugins are peer dependencies: ESLint refuses two copies of one plugin, and a project that
+// registers typescript-eslint itself must share its copy with these settings.
 
-import { normalize } from "node:path";
+import { existsSync } from "node:fs";
+import { dirname, join, normalize, resolve } from "node:path";
 import { profileRulesFor, type AppliedRule } from "@peer-ai/standards";
 import { CONFIG_FILE, readConfig, type PeerAiConfig } from "@peer-ai/workflow";
-import nextPlugin from "@next/eslint-plugin-next";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import type { ESLint, Linter } from "eslint";
-import jsxA11y from "eslint-plugin-jsx-a11y-x";
-import reactDom from "eslint-plugin-react-dom";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactX from "eslint-plugin-react-x";
 import tseslint from "typescript-eslint";
 
-/** The plugins Peer AI's rules come from, by the prefix of their rule names. */
-const PLUGINS: Record<string, ESLint.Plugin> = {
-  "@typescript-eslint": tseslint.plugin,
-  "react-hooks": reactHooks as ESLint.Plugin,
-  "react-x": reactX as ESLint.Plugin,
-  "react-dom": reactDom as ESLint.Plugin,
-  "jsx-a11y": jsxA11y as ESLint.Plugin,
-  "@next/next": nextPlugin as ESLint.Plugin,
+/**
+ * The packages Peer AI's rules come from, by the prefix of their rule names. typescript-eslint is
+ * always needed, for its parser; the others are optional, and loaded only when a profile's rule
+ * needs one, so a project installs only the plugins its profiles use.
+ */
+const PLUGIN_PACKAGES: Record<string, string> = {
+  "react-hooks": "eslint-plugin-react-hooks",
+  "react-x": "eslint-plugin-react-x",
+  "react-dom": "eslint-plugin-react-dom",
+  "jsx-a11y": "eslint-plugin-jsx-a11y-x",
+  "@next/next": "@next/eslint-plugin-next",
 };
+
+const load = createRequire(import.meta.url);
+const loaded = new Map<string, ESLint.Plugin>([["@typescript-eslint", tseslint.plugin]]);
+
+/** The plugin for a rule prefix, loaded from the project's own copy. */
+function plugin(prefix: string, rule: string): ESLint.Plugin {
+  const known = loaded.get(prefix);
+  if (known !== undefined) return known;
+  const name = PLUGIN_PACKAGES[prefix];
+  if (name === undefined) throw new Error(`Peer AI has no ESLint plugin for ${rule}.`);
+  let module: { default?: ESLint.Plugin } & ESLint.Plugin;
+  try {
+    // Found as import finds it, since some plugins export only for import, then loaded at once.
+    module = load(fileURLToPath(import.meta.resolve(name))) as { default?: ESLint.Plugin } & ESLint.Plugin;
+  } catch {
+    throw new Error(
+      `${rule} needs the ESLint plugin ${name}. Install it beside ESLint, such as npm install --save-dev ${name}.`,
+    );
+  }
+  const found = module.default ?? module;
+  loaded.set(prefix, found);
+  return found;
+}
 
 const TYPESCRIPT_FILES = ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"];
 const SCRIPT_FILES = [...TYPESCRIPT_FILES, "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
+
+type Track = PeerAiConfig["tracks"][number];
 
 /** The plugin an ESLint rule belongs to: `@typescript-eslint/no-explicit-any` → `@typescript-eslint`. */
 export function pluginOf(rule: string): string | undefined {
@@ -63,47 +92,66 @@ function pluginsFor(names: readonly string[]): Record<string, ESLint.Plugin> {
   const plugins: Record<string, ESLint.Plugin> = {};
   for (const name of names) {
     const prefix = pluginOf(name);
-    if (prefix === undefined) continue;
-    const plugin = PLUGINS[prefix];
-    if (plugin === undefined) throw new Error(`Peer AI has no ESLint plugin for ${name}.`);
-    plugins[prefix] = plugin;
+    if (prefix !== undefined) plugins[prefix] = plugin(prefix, name);
   }
   return plugins;
 }
 
+/** A part's folder relative to the root, without ./ or a trailing slash: "" for the root itself. */
+const folder = (path: string | undefined) =>
+  path === undefined
+    ? ""
+    : normalize(path)
+        .replace(/^\.\/?$/, "")
+        .replace(/\/$/, "");
+
 const within = (path: string | undefined, globs: readonly string[]) => {
-  const base =
-    path === undefined
-      ? ""
-      : normalize(path)
-          .replace(/^\.\/?$/, "")
-          .replace(/\/$/, "");
+  const base = folder(path);
   return globs.map((glob) => (base === "" ? glob : `${base}/${glob}`));
 };
 
-/** The ESLint settings for a project: one block per part with rules, and one for its typed rules. */
-export function configFor(config: PeerAiConfig, root: string): Linter.Config[] {
-  const listed = config.standards?.profiles ?? [];
-  if (listed.length === 0) return [];
+/** The other parts' folders inside this part's folder, which their own settings cover. */
+function nestedIn(config: PeerAiConfig, track: Track): string[] {
+  const own = folder(track.path);
+  return config.tracks
+    .filter((other) => other !== track && other.status !== "external")
+    .map((other) => folder(other.path))
+    .filter((path) => path !== own && path !== "" && (own === "" || path.startsWith(`${own}/`)))
+    .map((path) => `${path}/**`);
+}
+
+/** The automatic rules a part gets from its profiles, leaving out the ones the project set aside. */
+function rulesForPart(config: PeerAiConfig, track: Track): AppliedRule[] {
   const setAside = new Set((config.standards?.exceptions ?? []).map((exception) => exception.rule));
+  return profileRulesFor({
+    listed: config.standards?.profiles ?? [],
+    stage: config.project.stage ?? "mvp",
+    traits: config.project.traits ?? [],
+    overrides: config.standards?.overrides ?? {},
+    ...(track.stack === undefined ? {} : { stack: track.stack }),
+    ...(track.architecture === undefined ? {} : { architecture: track.architecture }),
+  }).filter((rule) => !setAside.has(rule.id));
+}
+
+/**
+ * The ESLint settings for a project: for each part, a block per set of files its rules cover. Each
+ * block's files are relative to the project's root, wherever the ESLint config lives, and leave out
+ * the parts nested inside it, which get their own settings.
+ */
+export function configFor(config: PeerAiConfig, root: string): Linter.Config[] {
   const blocks: Linter.Config[] = [];
   for (const track of config.tracks) {
     if (track.status === "external") continue;
-    const rules = profileRulesFor({
-      listed,
-      stage: config.project.stage ?? "mvp",
-      traits: config.project.traits ?? [],
-      overrides: config.standards?.overrides ?? {},
-      ...(track.stack === undefined ? {} : { stack: track.stack }),
-      ...(track.architecture === undefined ? {} : { architecture: track.architecture }),
-    }).filter((rule) => !setAside.has(rule.id));
-    for (const group of eslintRules(rules)) {
-      // A group for its own files is named after them, such as peer-ai/web/**/*.tsx,**/*.jsx.
+    const ignores = nestedIn(config, track);
+    for (const group of eslintRules(rulesForPart(config, track))) {
+      // A group for its own files is named after them, such as peer-ai/web/**/*.tsx.
       const ownFiles = group.files !== SCRIPT_FILES && group.files !== TYPESCRIPT_FILES;
       const name = [`peer-ai/${track.id}`, group.typed ? "/typed" : "", ownFiles ? `/${group.files.join(",")}` : ""];
       blocks.push({
         name: name.join(""),
+        basePath: root,
         files: within(track.path, group.files),
+        ...(ignores.length === 0 ? {} : { ignores }),
         languageOptions: {
           parser: tseslint.parser,
           parserOptions: {
@@ -119,17 +167,25 @@ export function configFor(config: PeerAiConfig, root: string): Linter.Config[] {
   return blocks;
 }
 
+/** The nearest folder, from `start` up, that holds peer-ai.config.json, or `start` when none does. */
+export function findRoot(start: string): string {
+  for (let dir = resolve(start); ; dir = dirname(dir)) {
+    if (existsSync(join(dir, CONFIG_FILE))) return dir;
+    if (dirname(dir) === dir) return resolve(start);
+  }
+}
+
 /**
- * Peer AI's ESLint settings for the project at `root`, read from its peer-ai.config.json. Spread
- * them into eslint.config.js, before the project's own settings:
+ * Peer AI's ESLint settings for the project, read from its peer-ai.config.json, found from the
+ * folder ESLint runs in, or up. Spread them into eslint.config.js, before your own settings:
  *
  *     import peerAi from "@peer-ai/eslint-config";
  *     export default [...peerAi(), ...yourOwnSettings];
  */
 export default function peerAi(options: { root?: string } = {}): Linter.Config[] {
-  const root = options.root ?? process.cwd();
+  const root = options.root ?? findRoot(process.cwd());
   const { config, errors } = readConfig(root);
   if (errors !== undefined) throw new Error(`${CONFIG_FILE} isn't valid:\n- ${errors.join("\n- ")}`);
-  if (config === undefined) throw new Error(`There's no ${CONFIG_FILE} in ${root}. Run npx peer-ai init.`);
+  if (config === undefined) throw new Error(`There's no ${CONFIG_FILE} in ${root} or above it. Run npx peer-ai init.`);
   return configFor(config, root);
 }

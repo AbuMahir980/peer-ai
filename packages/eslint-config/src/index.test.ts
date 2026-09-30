@@ -1,11 +1,12 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PROFILES, type Example, type Profile, type Value } from "@peer-ai/standards";
 import { validateConfig, type PeerAiConfig } from "@peer-ai/workflow";
-import { ESLint } from "eslint";
+import { ESLint, type Linter } from "eslint";
+import tseslint from "typescript-eslint";
 import { afterEach, describe, expect, it } from "vitest";
-import peerAi, { configFor, pluginOf } from "./index.ts";
+import peerAi, { configFor, findRoot, pluginOf } from "./index.ts";
 
 /** A valid config for a made-up bicycle repair booking service. */
 function repairs(extra: { stage?: "prototype" | "mvp" | "production"; standards?: unknown; tracks?: unknown[] } = {}) {
@@ -69,6 +70,26 @@ describe("Peer AI's ESLint settings", () => {
     expect(configFor(repairs({ standards: {} }), "/repairs")).toEqual([]);
   });
 
+  it("anchor every block at the project's root, wherever the ESLint config lives", () => {
+    expect(new Set(configFor(repairs(), "/repairs").map((block) => block.basePath))).toEqual(new Set(["/repairs"]));
+  });
+
+  it("leave the parts nested inside a part to their own settings", () => {
+    const blocks = configFor(
+      repairs({
+        tracks: [
+          { id: "site", kind: "web", status: "active", stack: ["typescript"] },
+          { id: "legacy", kind: "web", status: "active", path: "packages/legacy", stack: ["javascript"] },
+        ],
+      }),
+      "/repairs",
+    );
+    expect(blocks.map((block) => [block.name, block.ignores])).toEqual([
+      ["peer-ai/site", ["packages/legacy/**"]],
+      ["peer-ai/site/typed", ["packages/legacy/**"]],
+    ]);
+  });
+
   it("name each rule's plugin by its prefix", () => {
     expect(pluginOf("@typescript-eslint/no-explicit-any")).toBe("@typescript-eslint");
     expect(pluginOf("react-hooks/rules-of-hooks")).toBe("react-hooks");
@@ -80,6 +101,14 @@ describe("reading the project's config", () => {
   let dir: string | undefined;
   afterEach(() => {
     if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("finds the config from a folder inside the project", () => {
+    const root = mkdtempSync(join(tmpdir(), "peer-ai-eslint-"));
+    dir = root;
+    mkdirSync(join(root, "apps/web/src"), { recursive: true });
+    writeFileSync(join(root, "peer-ai.config.json"), JSON.stringify(repairs()));
+    expect(findRoot(join(root, "apps/web/src"))).toBe(root);
   });
 
   it("builds the settings from peer-ai.config.json, and says when there isn't one", () => {
@@ -130,6 +159,20 @@ describe("every rule ESLint enforces, run through ESLint", () => {
     const [result] = await eslint.lintText(code, { filePath: join(dir, file) });
     return (result?.messages ?? []).map((message) => message.ruleId ?? message.message);
   }
+
+  it("share typescript-eslint with a project that registers it too", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eslint-"));
+    dirs.push(dir);
+    const config = repairs({ tracks: [{ id: "app", kind: "web", status: "active", stack: ["typescript"] }] });
+    const own = tseslint.configs.recommended as Linter.Config[];
+    const eslint = new ESLint({
+      cwd: dir,
+      overrideConfigFile: true,
+      overrideConfig: [...configFor(config, dir), ...own],
+    });
+    const [result] = await eslint.lintText("export const bay = 1;\n", { filePath: join(dir, "bay.js") });
+    expect(result?.messages).toEqual([]);
+  });
 
   const enforced = PROFILES.flatMap((profile) =>
     profile.rules.filter((rule) => rule.enforcer?.tool === "eslint").map((rule) => [rule.id, profile, rule] as const),

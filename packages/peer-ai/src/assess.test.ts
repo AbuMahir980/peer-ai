@@ -232,7 +232,13 @@ describe("assess", () => {
         standards: { profiles: ["typescript"] },
       }),
     });
-    expect(assess(listed, loadConfig(listed).config, "mvp").suggestedProfiles).toEqual([]);
+    expect(assess(listed, loadConfig(listed).config, "mvp")).toMatchObject({
+      suggestedProfiles: [],
+      suggestedStacks: [
+        { track: "web", stack: ["typescript", "react"] },
+        { track: "api", stack: ["python", "fastapi"] },
+      ],
+    });
     const out = capture();
     runAssess({ cwd: project(parts), json: false, dryRun: true, now: NOW }, out, formatReport);
     expect(out.text()).toContain(

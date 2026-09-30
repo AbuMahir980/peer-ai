@@ -205,15 +205,19 @@ importers:
 
   packages/eslint-config:
     dependencies:
-      '@next/eslint-plugin-next':
-        specifier: 16.3.6
-        version: 16.3.6(eslint@10.11.0)
       '@peer-ai/standards':
         specifier: workspace:*
         version: link:../standards
       '@peer-ai/workflow':
         specifier: workspace:*
         version: link:../workflow
+      eslint:
+        specifier: ^10.0.0
+        version: 10.11.0
+    devDependencies:
+      '@next/eslint-plugin-next':
+        specifier: 16.3.6
+        version: 16.3.6(eslint@10.11.0)
       eslint-plugin-jsx-a11y-x:
         specifier: 0.2.0
         version: 0.2.0(eslint@10.11.0)
@@ -247,6 +251,9 @@ importers:
       '@peer-ai/workflow':
         specifier: workspace:*
         version: link:../workflow
+      jsonc-parser:
+        specifier: 3.3.1
+        version: 3.3.1
       zod:
         specifier: 4.6.5
         version: 4.6.5

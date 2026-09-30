@@ -38,3 +38,4 @@ A stack profile says how to follow the core rules in one stack, and which tool e
 | Profile | Id | Builds on | Rules |
 |---------|----|-----------|-------|
 | [TypeScript](profiles/typescript.md) | `typescript` | – | 10 |
+| [React](profiles/react.md) | `react` | typescript | 10 |

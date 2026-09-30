@@ -6,7 +6,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { CORE_RULES, PROFILE_RULES, PROFILES } from "@peer-ai/standards";
+import { CORE_RULES, PROFILE_RULES, PROFILES, overrideFits } from "@peer-ai/standards";
 import { DOMAINS, type PeerAiConfig } from "@peer-ai/workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
@@ -216,6 +216,16 @@ export function checkStandards(config: PeerAiConfig, today: string): Check[] {
         )
       : undefined;
   };
+  // A value of another type than the default can't stand in for it, so the default stays.
+  const wrongType = (rule: string, value: string | number) => {
+    const profiled = PROFILE_RULES.get(rule);
+    if (profiled?.default === undefined || overrideFits(profiled, value)) return undefined;
+    return warn(
+      "standards",
+      `${rule}'s value is a ${typeof profiled.default.value}, such as ${JSON.stringify(profiled.default.value)}, so ${JSON.stringify(value)} is ignored and the default stays.`,
+      `Write the value in standards.overrides as a ${typeof profiled.default.value}.`,
+    );
+  };
   const seen = new Set<string>();
   const listed = exceptions.map((exception): Check => {
     const { rule, reason, decidedBy, until } = exception;
@@ -250,7 +260,8 @@ export function checkStandards(config: PeerAiConfig, today: string): Check[] {
             `${rule} has no value to change, so the override does nothing.`,
             `Remove it from standards.overrides, or set the rule aside in standards.exceptions with the reason.`,
           )
-        : ok("standards", `${rule} changed to ${String(override.value)}: ${override.reason}`)),
+        : (wrongType(rule, override.value) ??
+          ok("standards", `${rule} changed to ${String(override.value)}: ${override.reason}`))),
   );
   return [...listed, ...changed];
 }

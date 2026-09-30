@@ -36,6 +36,7 @@ import { RuleSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage
 export { DOMAIN_INFO } from "./domains.ts";
 export {
   checkProfiles,
+  overrideFits,
   withValue,
   VALUE,
   type AppliedRule,

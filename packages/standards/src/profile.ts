@@ -195,18 +195,17 @@ export interface Part {
 }
 
 /**
- * The listed profiles that apply to a part, with the profiles they extend, bases first. A profile
- * applies when the part's stack has one of its tags, when a profile extending it applies, when it
- * names no stacks, or when the part names no stack.
+ * The listed profiles that apply to a part, with the profiles they extend, bases first. A listed
+ * profile applies when the part's stack has one of its tags, when it names no stacks, or when the
+ * part names no stack. A profile it extends comes only with it, never on its own tag.
  */
 export function profilesFor(all: readonly Profile[], listed: readonly string[], part: Part): Profile[] {
   const byId = new Map(all.map((profile) => [profile.id, profile]));
-  const known = listed.filter((id) => byId.has(id));
-  const candidates = new Set([...known, ...reachable(byId, known)]);
   const stack = part.stack ?? [];
-  const direct = [...candidates].filter((id) => {
-    const stacks = byId.get(id)?.stacks ?? [];
-    return stack.length === 0 || stacks.length === 0 || stacks.some((tag) => stack.includes(tag));
+  const direct = listed.filter((id) => {
+    const profile = byId.get(id);
+    if (profile === undefined) return false;
+    return stack.length === 0 || profile.stacks.length === 0 || profile.stacks.some((tag) => stack.includes(tag));
   });
   const applying = new Set([...direct, ...reachable(byId, direct)]);
   const ordered: Profile[] = [];
@@ -277,5 +276,13 @@ export function applyProfiles(all: readonly Profile[], selection: ProfileSelecti
         (rule.architectures === undefined ||
           (selection.architecture !== undefined && rule.architectures.includes(selection.architecture))),
     )
-    .map((rule) => withValue(rule, selection.overrides?.[rule.id]?.value ?? rule.default?.value));
+    .map((rule) => {
+      const changed = selection.overrides?.[rule.id]?.value;
+      return withValue(rule, changed !== undefined && overrideFits(rule, changed) ? changed : rule.default?.value);
+    });
+}
+
+/** Whether a project's value can stand in for the rule's default: a rule with one, and a value of its type. */
+export function overrideFits(rule: ProfileRule, value: Value): boolean {
+  return rule.default !== undefined && typeof value === typeof rule.default.value;
 }
