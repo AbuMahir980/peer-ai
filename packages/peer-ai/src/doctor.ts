@@ -25,6 +25,11 @@ export interface Diagnosis {
   checks: Check[];
 }
 
+export interface DiagnoseOptions {
+  /** Check the rendered skills too. CI never has them, since they stay out of git, unless the project commits them. */
+  skills?: boolean;
+}
+
 const NEEDS_CONFIG = `needs a valid ${CONFIG_FILE}`;
 const isDirectory = (path: string) => statSync(path, { throwIfNoEntry: false })?.isDirectory() === true;
 const isUrl = (value: string) => /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
@@ -170,14 +175,15 @@ function checkTools(root: string, config: PeerAiConfig): Check {
 /** What render writes for the AI tools still matches the config. */
 const ENFORCER_FILES = [WORKFLOW_FILE, RUFF_FILE];
 
-function checkRendered(root: string, config: PeerAiConfig): Check {
+function checkRendered(root: string, config: PeerAiConfig, skills: boolean): Check {
   const plan = planRender(root, config);
+  const withSkills = skills || config.skills?.commit === true;
   const stale = [
     // The tools that enforce the stack profiles are checked on their own, with what each needs.
     ...plan.files
       .filter((file) => file.action !== "unchanged" && !ENFORCER_FILES.includes(file.path))
       .map((file) => file.path),
-    ...plan.skills.filter((skill) => skill.action !== "unchanged").map((skill) => `${skill.path}/`),
+    ...(withSkills ? plan.skills : []).filter((skill) => skill.action !== "unchanged").map((skill) => `${skill.path}/`),
   ];
   if (stale.length === 0)
     return ok("render", "The AI tools' instructions, MCP registrations and skills are up to date");
@@ -358,6 +364,7 @@ export function diagnose(
   root: string,
   nodeVersion: string = process.versions.node,
   today: Date = new Date(),
+  options: DiagnoseOptions = {},
 ): Diagnosis {
   const { check: configCheck, config } = checkConfig(root);
   const needsConfig = (id: string, what: string): Check[] =>
@@ -368,7 +375,9 @@ export function diagnose(
     ...(config === undefined ? needsConfig("tracks", "Tracks") : checkTracks(root, config)),
     ...(config === undefined ? needsConfig("references", "Files the config names") : checkReferences(root, config)),
     ...(config === undefined ? needsConfig("tools", "AI tools") : [checkTools(root, config)]),
-    ...(config === undefined ? needsConfig("render", "What render writes") : [checkRendered(root, config)]),
+    ...(config === undefined
+      ? needsConfig("render", "What render writes")
+      : [checkRendered(root, config, options.skills ?? true)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
     ...(config === undefined
       ? needsConfig("standards", "Rules set aside")

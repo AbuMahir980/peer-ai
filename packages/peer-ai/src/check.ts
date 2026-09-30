@@ -9,7 +9,7 @@ import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } f
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
 import { CONFIG_FILE } from "./detect.ts";
-import { checkTracks, checkWorkItems } from "./doctor.ts";
+import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
 import type { Output, Stage } from "./init.ts";
 import { mapChanges, readMap, readWorkItems } from "./state.ts";
 
@@ -18,6 +18,27 @@ export interface Verdict {
   stage: Stage;
   ok: boolean;
   checks: Check[];
+  /** What doctor would fail on, which fails the build too (RFC 0007), and a count of its warnings. */
+  setup: Check[];
+}
+
+/** Doctor's checks that check already makes itself. */
+const CHECKED_HERE = new Set(["config", "tracks", "map", "work-items"]);
+
+/**
+ * The setup checks doctor makes: every failure, and one line counting the warnings. The skills
+ * are left out, since CI never has them.
+ */
+export function setupChecks(root: string, nodeVersion?: string, today?: Date): Check[] {
+  const diagnosis = diagnose(root, nodeVersion, today, { skills: false });
+  const others = diagnosis.checks.filter((check) => !CHECKED_HERE.has(check.id));
+  const warnings = count(others, "warn");
+  return [
+    ...others.filter((check) => check.status === "fail"),
+    ...(warnings === 0
+      ? []
+      : [warn("setup", `${plural(warnings, "setup warning")}.`, "Run npx peer-ai doctor for the details.")]),
+  ];
 }
 
 type Review = NonNullable<WorkItem["reviews"]>[number];
@@ -247,17 +268,26 @@ export function evaluate(root: string, config: PeerAiConfig): Verdict {
     ...checkVerifyCommand(config, stage),
     checkGapsTracked(assessment, stage, items),
   ];
-  return { name: config.project.name, stage, ok: count(checks, "fail") === 0, checks };
+  const setup = setupChecks(root);
+  return {
+    name: config.project.name,
+    stage,
+    ok: count(checks, "fail") + count(setup, "fail") === 0,
+    checks,
+    setup,
+  };
 }
 
 export function formatVerdict(verdict: Verdict): string[] {
-  const failures = count(verdict.checks, "fail");
-  const warnings = count(verdict.checks, "warn");
+  const all = [...verdict.checks, ...verdict.setup];
+  const failures = count(all, "fail");
+  const warnings = count(all, "warn");
   const andWarnings = warnings === 0 ? "" : `, and ${plural(warnings, "warning")}`;
   return [
     `Peer AI check: ${verdict.name} (stage: ${verdict.stage})`,
     "",
     ...formatChecks(verdict.checks),
+    ...(verdict.setup.length === 0 ? [] : ["", "Setup, as peer-ai doctor checks it:", ...formatChecks(verdict.setup)]),
     "",
     failures > 0
       ? `Failed: ${plural(failures, "problem")}${andWarnings}.`

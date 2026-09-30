@@ -2,7 +2,8 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { availableSkills } from "@peer-ai/skills";
 import { afterEach, describe, expect, it } from "vitest";
-import { runAssess } from "./assess.ts";
+import { loadConfig, runAssess } from "./assess.ts";
+import { evaluate, setupChecks } from "./check.ts";
 import { main } from "./cli.ts";
 import type { Check } from "./checks.ts";
 import { diagnose, runDoctor } from "./doctor.ts";
@@ -10,6 +11,7 @@ import { MIN_NODE_MAJOR } from "./package-info.ts";
 import { runRender } from "./render.ts";
 import { formatReport } from "./report.ts";
 import { capture, cleanUp, project } from "./test-helpers.ts";
+import { nextWork, setupProblems } from "./work.ts";
 
 afterEach(cleanUp);
 
@@ -636,5 +638,63 @@ describe("doctor on stack profiles", () => {
         message: 'TS-07\'s value is a whole number of 0 or more, such as 60, so "80" is ignored and the default stays.',
       },
     ]);
+  });
+});
+
+describe("setup checks that run themselves (RFC 0007)", () => {
+  const loaded = (root: string) => {
+    const { config: value } = loadConfig(root);
+    if (value === undefined) throw new Error("the test config is not valid");
+    return value;
+  };
+
+  it("finds nothing to report in a project set up correctly", () => {
+    const root = healthy();
+    expect(setupProblems(root, NODE, NOW)).toEqual([]);
+    expect(setupChecks(root, NODE, NOW)).toEqual([]);
+    expect(nextWork(root, loaded(root)).setup).toBeUndefined();
+  });
+
+  it("gives next_work every problem doctor finds, each with its fix", () => {
+    const root = healthy();
+    const problems = setupProblems(root, "20.0.0", NOW);
+    expect(problems).toContainEqual(expect.objectContaining({ check: "node", status: "fail" }));
+    expect(problems.find((problem) => problem.check === "node")?.fix).toBeDefined();
+  });
+
+  it("fails check on what doctor fails on, and counts doctor's warnings in one line", () => {
+    const production = assessed({
+      "peer-ai.config.json": config({
+        project: { name: "Shop", stage: "production" },
+        tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active", stack: ["react"] }],
+        standards: { profiles: ["react"] },
+      }),
+      "CLAUDE.md": "# Shop",
+      "apps/web/package.json": web,
+    });
+    // Nothing tells ESLint to enforce the react profile: a failure at production.
+    const verdict = evaluate(production, loaded(production));
+    expect(verdict.setup).toContainEqual(expect.objectContaining({ id: "enforcers", status: "fail" }));
+    expect(verdict.ok).toBe(false);
+
+    const mvp = assessed({
+      "peer-ai.config.json": config({
+        tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active", stack: ["react"] }],
+        standards: { profiles: ["react"] },
+      }),
+      "CLAUDE.md": "# Shop",
+      "apps/web/package.json": web,
+    });
+    // At MVP the same gap is a warning, which doesn't fail the build.
+    const warned = evaluate(mvp, loaded(mvp));
+    expect(warned.setup).toEqual([expect.objectContaining({ id: "setup", status: "warn" })]);
+    expect(warned.setup[0]?.fix).toBe("Run npx peer-ai doctor for the details.");
+  });
+
+  it("leaves the skills out of check, since CI never has them", () => {
+    const root = healthy();
+    rmSync(join(root, ".claude", "skills"), { recursive: true, force: true });
+    expect(checksFor(root, "render")[0]?.status).toBe("warn");
+    expect(setupChecks(root, NODE, NOW)).toEqual([]);
   });
 });
