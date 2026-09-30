@@ -254,6 +254,10 @@
         {
           "file": "services/api/app/auth.py",
           "match": "serializer = URLSafeSerializer(SECRET_KEY, salt=\"session\")"
+        },
+        {
+          "file": "services/api/app/auth.py",
+          "match": "        customer_id = serializer.loads(token)"
         }
       ],
       "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."

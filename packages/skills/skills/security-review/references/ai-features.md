@@ -26,7 +26,7 @@ AI-01, AI-03, AI-04 and AI-06, for projects with the ai-features trait. For othe
 - text the model reads, such as a document, email, web page or a user's message, is joined into its instructions;
 - the model's own output decides what it's allowed to do, with no check outside it. A tool call that deletes or pays because the model said so is the classic case.
 
-For each call to a model, name every piece of text in its instructions and where it comes from. A pass shows that none of it can be written by a customer, a partner or anyone else outside, or that what they can write is kept apart from the instructions.
+Check AI-04 on each `prompt` item: name every piece of text in the instructions and where it comes from. A pass shows that none of it can be written by a customer, a partner or anyone else outside, or that what they can write is kept apart from the instructions. A fail names the piece that can be.
 
 ## AI-06: the model's instructions hold no secrets
 
