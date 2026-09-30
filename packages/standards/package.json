@@ -2,7 +2,7 @@
   "name": "@peer-ai/standards",
   "version": "0.0.0",
   "private": true,
-  "description": "Peer AI's engineering standards: core principles for every project, with stack profiles and project add-ons",
+  "description": "Peer AI's engineering standards: 197 rules for every project, and stack profiles with the tools that enforce them",
   "license": "MIT",
   "type": "module",
   "exports": {

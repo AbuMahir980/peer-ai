@@ -124,7 +124,11 @@ export const WorkItemSchema = z
       .array(z.strictObject({ activity: z.enum(ACTIVITY_IDS), reason: z.string().min(1), at: Timestamp }))
       .optional()
       .describe("Earlier activities reopened for this item, such as a re-spec after a new decision."),
-    next: z.string().min(1).max(200).describe("One line: the next action. The story belongs in CONTEXT.md."),
+    next: z
+      .string()
+      .min(1)
+      .max(200)
+      .describe("One line: the next action. The fuller story lives in the goal, acceptance criteria and sources."),
     updatedAt: Timestamp,
   })
   .superRefine((item, ctx) => {

@@ -2,7 +2,7 @@
   "name": "peer-ai",
   "version": "0.0.0",
   "private": true,
-  "description": "Compliance-aware AI development: the Peer AI command-line tool",
+  "description": "Keeps AI coding tools to a senior team's standard: planning, testing, security and compliance, with proof of every check",
   "license": "MIT",
   "type": "module",
   "bin": {

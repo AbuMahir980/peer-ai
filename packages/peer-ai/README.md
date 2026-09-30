@@ -1,15 +1,46 @@
 # peer-ai
 
-The Peer AI command-line tool.
+**Keeps AI coding tools to a senior team's standard: planning, testing, security and compliance, with proof of every check.**
 
-> Not published yet. Inside this repository, run it with `pnpm peer-ai <command>`. It becomes `npx peer-ai` when the package is published.
+This package is Peer AI's command-line tool and its MCP server, the connection AI tools use to follow Peer AI's way of working. It works with Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI and any tool that reads `AGENTS.md`. To learn what Peer AI does for a project, read the [project's README](https://github.com/AbuMahir980/peer-ai#readme).
+
+> **Pre-release.** Needs Node.js 24 or newer, on macOS, Linux or Windows.
+
+## Start
+
+In your project's folder:
+
+```bash
+npx peer-ai init
+npx peer-ai assess
+npx peer-ai render
+```
+
+Then open the project in your AI tool and ask for work in plain words. In a Node project, you can pin the version instead, and your AI tools then start that copy:
+
+```bash
+npm install --save-dev peer-ai
+```
+
+## Commands
+
+| Command | What it does |
+|---------|--------------|
+| [`peer-ai init`](#peer-ai-init) | Sets up Peer AI in a repository: one config file, from what it detects |
+| [`peer-ai assess`](#peer-ai-assess) | Maps what the project has and what its stage still needs |
+| [`peer-ai render`](#peer-ai-render) | Connects each AI tool: instructions, the MCP server and the skills |
+| [`peer-ai doctor`](#peer-ai-doctor) | Checks the setup and says how to fix what isn't right |
+| [`peer-ai check`](#peer-ai-check) | The CI gate: fails when work claims more than its record shows |
+| [`peer-ai check-report`](#peer-ai-check-report) | Checks a review's report, as the `record_review` tool does |
+| [`peer-ai check-document`](#peer-ai-check-document) | Checks a document against its skill's template |
+| [`peer-ai mcp`](#peer-ai-mcp) | Starts the MCP server that AI tools connect to |
 
 ## `peer-ai init`
 
 Sets up Peer AI in a repository by writing `peer-ai.config.json`.
 
 ```bash
-pnpm peer-ai init
+npx peer-ai init
 ```
 
 It reads the repository first and works out what it can:
@@ -49,7 +80,7 @@ It never overwrites an existing `peer-ai.config.json`, and it never assumes anyt
 Maps what a project already has, and what its stage still needs. Run it on any project, at any point: a brief with no code, a prototype, or a product in production with no documents at all.
 
 ```bash
-pnpm peer-ai assess
+npx peer-ai assess
 ```
 
 For each item on the project map it records one of four statuses, with the files that prove it:
@@ -113,14 +144,14 @@ It writes the result to `.peer-ai/map.json`, which agents read to know where the
 
 ### Exit codes
 
-`0` success, `2` a usage error or an invalid `peer-ai.config.json`. Gaps are not errors: `assess` maps, and `peer-ai check` will be the command that fails a build.
+`0` success, `2` a usage error or an invalid `peer-ai.config.json`. Gaps are not errors: `assess` maps, and `peer-ai check` is the command that fails a build.
 
 ## `peer-ai render`
 
 Sets up each AI tool listed in `tools` in `peer-ai.config.json`, so every tool works the project the same way.
 
 ```bash
-pnpm peer-ai render
+npx peer-ai render
 ```
 
 | Tool | Instructions | MCP server registration |
@@ -199,7 +230,7 @@ What render changes, and what it leaves alone:
 Checks that Peer AI is set up correctly in a repository, and says how to fix what isn't. It only reads; it never changes a file.
 
 ```bash
-pnpm peer-ai doctor
+npx peer-ai doctor
 ```
 
 | It checks | A problem looks like |
@@ -238,7 +269,7 @@ A failure (✗) means Peer AI can't work as intended until it's fixed. A warning
 The gate CI runs. It fails when the setup is broken, or when a work item claims more than its record shows.
 
 ```bash
-pnpm peer-ai check
+npx peer-ai check
 ```
 
 | It fails when | Why |
@@ -287,7 +318,7 @@ Run it after the project's own checks:
 Checks a review's report the way the `record_review` tool does: that it's valid, gives every rule its skill answers for a line, and claims the result its findings and coverage support. It records nothing. It's there for AI tools that work in a shell rather than through the MCP server, and for a person checking a report by hand.
 
 ```bash
-npx peer-ai check-report .peer-ai/reports/project/security-review.json
+npx peer-ai check-report .peer-ai/reports/project/security-review-20261001T0900Z.json
 ```
 
 | Option | What it does |

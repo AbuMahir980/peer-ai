@@ -1,6 +1,6 @@
 # @peer-ai/skills
 
-Peer AI's skills, in the [Agent Skills](https://agentskills.io) format that Claude Code, Codex, Cursor, GitHub Copilot and Gemini CLI all read. Each skill does a job and proves it: it builds an inventory of what it's checking, checks every rule against it, and hands its output to Peer AI, which checks it in turn. [RFC 0004](../../rfcs/0004-how-a-skill-is-written.md) sets out the design.
+Peer AI's skills, in the [Agent Skills](https://agentskills.io) format that Claude Code, Codex, Cursor, GitHub Copilot and Gemini CLI all read. Each skill does a job and proves it: it builds an inventory of what it's checking, checks every rule against it, and hands its output to Peer AI, which checks it in turn. [RFC 0004](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/0004-how-a-skill-is-written.md) sets out the design.
 
 You don't install this package yourself. `peer-ai render` writes the skills where each of your AI tools reads them.
 

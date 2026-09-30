@@ -361,7 +361,7 @@ const configShape = {
   rules: z
     .array(z.strictObject({ path: Path, description: Note.optional() }))
     .optional()
-    .describe("Project rules every activity respects, such as repository rules kept in CONTEXT.md."),
+    .describe("Project rules every activity respects, wherever they are written, such as a contributing guide."),
   models: Models.optional(),
   gates: Gates.optional(),
   capabilities: z.partialRecord(z.enum(SKILL_IDS), Capability).optional(),

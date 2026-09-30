@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Start here to discuss an idea. Once it has support, the detailed write-up goes in a pull request
-        that adds a file to `rfcs/`, as described in [rfcs/README.md](https://github.com/AbuMahir980/peer-ai/blob/next/rfcs/README.md).
+        that adds a file to `rfcs/`, as described in [rfcs/README.md](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/README.md).
 
   - type: textarea
     id: problem

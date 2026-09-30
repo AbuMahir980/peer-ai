@@ -2,17 +2,22 @@
 
 Thanks for helping. Peer AI 1.0 is being built on the `next` branch; `main` holds the v0 playbook until 1.0 ships.
 
-## Ways to help right now
+## Ways to help
 
-- **Report where v0 failed on your project.** Use the *Workflow defect* issue form and describe the project's shape: its stack, whether it had an API, whether its design already existed, and whether it was new or existing. Most defects so far only showed up on a project of a different shape.
+Contributions are open. Good first ones:
+
+- **Add a stack profile.** Say how to follow the core rules in a stack Peer AI doesn't cover yet, and which tool enforces each automatic rule. See [adding a profile](packages/standards/README.md#adding-a-profile-or-a-profile-rule).
+- **Add a rule, with its eval.** Write a rule a careful team follows that the standards miss, and plant a problem in a practice project that proves a review finds it. See [adding a rule](packages/standards/README.md#adding-or-changing-a-rule) and the [evals](evals/README.md).
+- **Add a practice project.** Build a small, made-up project in [`fixtures/`](fixtures/README.md) of a shape the others don't cover, with problems planted for the evals.
+- **Connect another AI tool.** `peer-ai render` sets up Claude Code, Codex, Cursor, GitHub Copilot and Gemini CLI: their instructions, Peer AI's skills, and its MCP server, the connection a tool uses to call Peer AI. Another tool means teaching `render` where that tool reads each one.
+- **Report where Peer AI got something wrong.** Use the *Workflow defect* issue form and describe the project's shape: its stack, whether it had an API, whether its design already existed, and whether it was new or existing. Most defects so far only showed up on a project of a different shape.
 - **Discuss a proposal.** Significant changes go through an [RFC](rfcs/README.md).
-- **Code contributions** open once the Foundations milestone in [ROADMAP.md](ROADMAP.md) lands. Until then the package layout is still moving.
 
 ## The one hard rule
 
 Peer AI grew out of real client work, and none of that work may appear here. Never commit client names, private project names, or details from a real project, including in commit messages. Examples, fixtures and tests use fictional domains.
 
-CI enforces this with a forbidden-terms check that reads a private list. If it flags your pull request, it tells you the file and position; replace what it found with a neutral or fictional name. Until 1.0 launches, the check can't run on pull requests from forks, because they don't receive the list; a maintainer runs it for you before merging.
+CI enforces this with a forbidden-terms check that reads a private list. If it flags your pull request, it tells you the file and position; replace what it found with a neutral or fictional name. Until the first release, the check can't run on pull requests from forks, because they don't receive the list; a maintainer runs it for you before merging.
 
 ## Development setup
 
@@ -28,7 +33,7 @@ pnpm verify
 - **TypeScript, strictly.** Node runs `.ts` files directly, so use only syntax that can be stripped: no `enum`, `namespace` or parameter properties.
 - **Tests sit next to the code** as `*.test.ts`, and every change comes with tests.
 - **Exact versions.** Dependencies are pinned without `^` or `~`, and GitHub Actions are pinned to a commit.
-- **Conventional Commits.** Use `feat:`, `fix:`, `docs:`, `chore:`, `refactor:` or `test:` with a short description.
+- **Conventional Commits.** Use `feat:`, `fix:`, `docs:`, `build:`, `chore:`, `refactor:` or `test:` with a short description. Add a scope where it helps, such as `fix(skills):` or `feat(standards):`.
 - **LF line endings** everywhere. `.gitattributes` and `.editorconfig` handle this.
 - **Stack-agnostic by default.** Workflow text never names a framework, bundler or platform as an instruction, only as an example. Every early defect in v0 was the playbook assuming a web stack.
 
@@ -42,7 +47,7 @@ Every change to a published package comes with a changeset (`pnpm changeset`). P
 | Minor | New skills, profiles, rules or commands, and compatible changes to wording or behaviour |
 | Major | Changes to the config or state schema, a skill's output format or rule IDs, or removed or renamed commands. A major version ships with a migration. |
 
-Before 1.0, packages are versioned `0.x`, and breaking changes may land in a minor version.
+The five packages share one version number. Until 1.0.0, pre-releases are versioned `1.0.0-next.N` and may still change without notice.
 
 ## Code of conduct
 

@@ -52,7 +52,7 @@ describe("a work item", () => {
     expect(errors(validateWorkItem(item()))).toBe("");
   });
 
-  it("keeps next to one line, so the story stays in CONTEXT.md", () => {
+  it("keeps next to one line, since the fuller story lives in the goal, acceptance criteria and sources", () => {
     expect(errors(validateWorkItem({ ...item(), next: "x".repeat(201) }))).toContain("next:");
   });
 
