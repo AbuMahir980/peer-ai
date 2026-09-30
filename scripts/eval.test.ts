@@ -267,7 +267,9 @@ describe("marking a review", () => {
         const asked = JSON.parse(readFileSync(join(gradeDir, "pairs.json"), "utf8")) as { finding: { id: string } }[];
         // The first time, it writes nothing.
         if (calls === 2) {
-          const answer = [{ finding: asked[0]?.finding.id, problem: "D2", same: true }];
+          const answer = [
+            { finding: asked[0]?.finding.id, problem: "D2", same: true, quote: "reads another's parcel" },
+          ];
           writeFileSync(join(gradeDir, "pairings.json"), JSON.stringify(answer));
         }
         return Promise.resolve();

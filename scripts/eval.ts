@@ -321,15 +321,20 @@ export function pairingsToConfirm(sheet: Sheet, skill: SkillId, reports: ReviewR
 }
 
 export const PairingsSchema = z.array(
-  z.strictObject({ finding: z.string().min(1), problem: z.string().min(1), same: z.boolean() }),
+  z.strictObject({
+    finding: z.string().min(1),
+    problem: z.string().min(1),
+    same: z.boolean(),
+    quote: z.string().max(1000),
+  }),
 );
 
 /** What the grader is asked. It sees only the findings and the problems near them, never the project. */
 export const PAIRINGS_PROMPT = `Check which problems a code review found. pairs.json lists the review's findings; each has the planted problems in the code near it, by id, that it might be about.
 
-For each finding and each of its problems, decide whether the finding is about that problem: it describes the same fault, in substance, even in other words. A finding about something else nearby, or about a wider concern that only touches the problem, is not about it. A finding can be about more than one of its problems only when it clearly describes each.
+For each finding and each of its problems, decide whether the finding is about that problem: its title or evidence describes the same fault, in substance, even in other words. A finding about something else in the same code, or about a wider concern that only touches the problem, is not about it. A finding can be about more than one of its problems only when it clearly describes each.
 
-Write pairings.json in this folder: a JSON array with one entry for each finding and problem, in the same order, such as {"finding": "F3", "problem": "D9", "same": true}. Check that pairings.json parses as JSON. Change no other file.`;
+Write pairings.json in this folder: a JSON array with one entry for each finding and problem, in the same order, such as {"finding": "F3", "problem": "D9", "same": true, "quote": "..."}. The quote is the finding's own words that describe the problem's fault, at most 200 characters; when there are none, same is false and the quote is empty. Escape any double quotes inside a quote, and check that pairings.json parses as JSON. Change no other file.`;
 
 /**
  * Has a grader confirm which planted problems each finding is really about, since findings are
@@ -355,7 +360,9 @@ export async function confirmPairings(
     try {
       const parsed = PairingsSchema.safeParse(JSON.parse(readFileSync(join(gradeDir, "pairings.json"), "utf8")));
       if (parsed.success) {
-        return new Set(parsed.data.filter((pair) => pair.same).map((pair) => pairKey(pair.finding, pair.problem)));
+        // A pairing counts only with the finding's own words to show for it.
+        const shown = parsed.data.filter((pair) => pair.same && pair.quote.trim() !== "");
+        return new Set(shown.map((pair) => pairKey(pair.finding, pair.problem)));
       }
     } catch {
       // Not written, or not JSON: try again.
