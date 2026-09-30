@@ -10,7 +10,7 @@
 
 ## Main journeys
 
-{{Each main journey a person takes, with the end-to-end test that proves it, or "none yet".}}
+{{Each main journey a person takes, with the end-to-end test that proves it, or "none yet", and each platform it must run on.}}
 
 ## Business rules
 
@@ -24,6 +24,10 @@
 
 {{The abuse tests the product needs, such as another person's data, bad input and repeats, and what the threat model names; fuzzing and penetration tests where the stage calls for them.}}
 
+## Rules this stage asks for
+
+{{Each testing rule that applies at the product's stage, by id, and how the strategy meets it: a test that exists, a gap below, or a check planned with when it runs.}}
+
 ## Test data
 
 {{Where test data comes from, and how each test gets its own.}}
@@ -34,7 +38,7 @@
 
 ## Gaps
 
-{{Each missing or weak test, most serious first: what it would prove, its level, and the risk while it's missing.}}
+{{Each missing or weak test, most serious first: the test that would close it, described well enough to write (what it sets up, does and checks), its level, and the risk while it's missing.}}
 
 ## Open questions (optional)
 

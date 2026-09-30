@@ -398,36 +398,56 @@ function run(command: string, args: string[], cwd: string, log: string): Promise
   });
 }
 
+/**
+ * Only the copy's own settings: skills and plugins installed for the user would otherwise stand in
+ * for the skill under test, or for none in a baseline. Codex's `--ignore-user-config` does the same.
+ */
+const CLAUDE_ISOLATION = ["--strict-mcp-config", "--setting-sources", "project,local"];
+
+/** Claude Code's arguments for a run, with only the peer-ai server and its own file tools. */
+export function claudeRunArgs(prompt: string, model?: string): string[] {
+  return [
+    "-p",
+    prompt,
+    ...(model === undefined ? [] : ["--model", model]),
+    "--mcp-config",
+    ".mcp.json",
+    ...CLAUDE_ISOLATION,
+    "--permission-mode",
+    "acceptEdits",
+    "--allowedTools",
+    "mcp__peer-ai",
+    "Skill",
+    "Bash(git:*)",
+    // Every event, so the log shows which tools and skills the run used.
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--max-turns",
+    "120",
+  ];
+}
+
+/** Claude Code's arguments for grading, with no MCP servers and nothing but the grading folder. */
+export function claudeGraderArgs(prompt: string, model?: string): string[] {
+  return [
+    "-p",
+    prompt,
+    ...(model === undefined ? [] : ["--model", model]),
+    ...CLAUDE_ISOLATION,
+    "--permission-mode",
+    "acceptEdits",
+    "--max-turns",
+    "20",
+  ];
+}
+
 /** Runs a real AI tool headless on the copy, with only the peer-ai server and its own file tools. */
 export const runTool: ToolRunner = async (tool, dir, prompt, log, model) => {
   const started = Date.now();
   const server = localServer();
   if (tool === "claude-code") {
-    const out = await run(
-      "claude",
-      [
-        "-p",
-        prompt,
-        ...(model === undefined ? [] : ["--model", model]),
-        "--mcp-config",
-        ".mcp.json",
-        "--strict-mcp-config",
-        "--permission-mode",
-        "acceptEdits",
-        "--allowedTools",
-        "mcp__peer-ai",
-        "Skill",
-        "Bash(git:*)",
-        // Every event, so the log shows which tools and skills the run used.
-        "--output-format",
-        "stream-json",
-        "--verbose",
-        "--max-turns",
-        "120",
-      ],
-      dir,
-      log,
-    );
+    const out = await run("claude", claudeRunArgs(prompt, model), dir, log);
     const last = out
       .trim()
       .split("\n")
@@ -630,14 +650,8 @@ export type GraderRunner = (tool: Tool, dir: string, prompt: string, log: string
 
 /** Runs a tool headless to grade a document, with no MCP servers and nothing but the grading folder. */
 export const runGrader: GraderRunner = async (tool, dir, prompt, log, model) => {
-  const choose = model === undefined ? [] : [tool === "codex" ? "-m" : "--model", model];
   if (tool === "claude-code") {
-    await run(
-      "claude",
-      ["-p", prompt, ...choose, "--strict-mcp-config", "--permission-mode", "acceptEdits", "--max-turns", "20"],
-      dir,
-      log,
-    );
+    await run("claude", claudeGraderArgs(prompt, model), dir, log);
     return;
   }
   // The grading folder isn't a git repository, which Codex refuses to work in unless told it's fine.
@@ -649,6 +663,7 @@ export const runGrader: GraderRunner = async (tool, dir, prompt, log, model) => 
     "--sandbox",
     "workspace-write",
   ];
+  const choose = model === undefined ? [] : ["-m", model];
   await run("codex", [...codex, "-C", dir, "-c", 'approval_policy="never"', ...choose, prompt], dir, log);
 };
 
