@@ -38,4 +38,10 @@ A stack profile says how to follow the core rules in one stack, and which tool e
 | Profile | Id | Builds on | Rules |
 |---------|----|-----------|-------|
 | [TypeScript](profiles/typescript.md) | `typescript` | – | 10 |
+| [Node](profiles/node.md) | `node` | typescript | 4 |
 | [React](profiles/react.md) | `react` | typescript | 10 |
+| [React Native](profiles/react-native.md) | `react-native` | react | 9 |
+| [Next.js](profiles/next.md) | `next` | react, node | 5 |
+| [Express](profiles/express.md) | `express` | node | 7 |
+| [NestJS](profiles/nestjs.md) | `nestjs` | node | 6 |
+| [Fastify](profiles/fastify.md) | `fastify` | node | 4 |

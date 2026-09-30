@@ -227,9 +227,6 @@ importers:
       eslint-plugin-react-hooks:
         specifier: 7.1.1
         version: 7.1.1(eslint@10.11.0)
-      eslint-plugin-react-x:
-        specifier: 5.20.8
-        version: 5.20.8(eslint@10.11.0)(typescript@6.0.3)
       typescript-eslint:
         specifier: 8.70.1
         version: 8.70.1(eslint@10.11.0)(typescript@6.0.3)
@@ -1012,13 +1009,6 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0 || ^10.0.0
-
-  eslint-plugin-react-x@5.20.8:
-    resolution: {integrity: sha512-G86Iu4K3cDjFTVwQ+24aZ+fu3+2U6zrIFcJ0xCdMVD3OcAPdreLidwDtHB9NLLWTK3dQ4DeM0H/q0d3jar5Rwg==}
-    engines: {node: '>=22.0.0'}
-    peerDependencies:
-      eslint: '*'
-      typescript: '*'
 
   eslint-scope@9.1.2:
     resolution: {integrity: sha512-xS90H51cKw0jltxmvmHy2Iai1LIqrfbw57b79w/J7MfvDfkIkFZ+kj6zC3BjtUwh150HsSSdxXZcsuv72miDFQ==}
@@ -2666,28 +2656,6 @@ snapshots:
       hermes-parser: 0.25.1
       zod: 4.6.5
       zod-validation-error: 4.0.2(zod@4.6.5)
-    transitivePeerDependencies:
-      - supports-color
-
-  eslint-plugin-react-x@5.20.8(eslint@10.11.0)(typescript@6.0.3):
-    dependencies:
-      '@eslint-react/ast': 5.20.8(eslint@10.11.0)(typescript@6.0.3)
-      '@eslint-react/core': 5.20.8(eslint@10.11.0)(typescript@6.0.3)
-      '@eslint-react/eslint': 5.20.8(eslint@10.11.0)(typescript@6.0.3)
-      '@eslint-react/jsx': 5.20.8(eslint@10.11.0)(typescript@6.0.3)
-      '@eslint-react/shared': 5.20.8(eslint@10.11.0)(typescript@6.0.3)
-      '@eslint-react/var': 5.20.8(eslint@10.11.0)(typescript@6.0.3)
-      '@typescript-eslint/scope-manager': 8.70.1
-      '@typescript-eslint/type-utils': 8.70.1(eslint@10.11.0)(typescript@6.0.3)
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(typescript@6.0.3)
-      '@typescript-eslint/utils': 8.70.1(eslint@10.11.0)(typescript@6.0.3)
-      compare-versions: 6.1.1
-      eslint: 10.11.0
-      string-ts: 2.3.1
-      ts-api-utils: 2.5.0(typescript@6.0.3)
-      ts-pattern: 5.9.0
-      typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
 

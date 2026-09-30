@@ -29,6 +29,12 @@ import {
   type ProfileInput,
   type ProfileSelection,
 } from "./profile.ts";
+import { express } from "./profiles/express.ts";
+import { fastify } from "./profiles/fastify.ts";
+import { nestjs } from "./profiles/nestjs.ts";
+import { next } from "./profiles/next.ts";
+import { node } from "./profiles/node.ts";
+import { reactNative } from "./profiles/react-native.ts";
 import { react } from "./profiles/react.ts";
 import { typescript } from "./profiles/typescript.ts";
 import { RuleSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
@@ -121,7 +127,7 @@ export function rulesFor({ stage, traits = [], domains }: Selection): Rule[] {
   );
 }
 
-const PROFILE_INPUTS: ProfileInput[] = [typescript, react];
+const PROFILE_INPUTS: ProfileInput[] = [typescript, node, react, reactNative, next, express, nestjs, fastify];
 
 const checkedProfiles = checkProfiles(PROFILE_INPUTS, CORE_RULES, Object.values(DOMAINS));
 if (checkedProfiles.problems.length > 0) {

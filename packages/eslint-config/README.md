@@ -18,6 +18,19 @@ For each part of the project, `peerAi()` turns on the automatic rules its profil
 
 `peer-ai doctor` checks your ESLint config uses these settings, and says what to add when it doesn't.
 
+## The plugins each profile needs
+
+Install `eslint` and `typescript-eslint` always, and the plugins for the profiles you list. A profile needs the plugins of the profiles it builds on too.
+
+| Profile | Plugins |
+|---------|---------|
+| `typescript`, `node`, `express`, `nestjs`, `fastify` | none beyond typescript-eslint |
+| `react` | `eslint-plugin-react-hooks`, `eslint-plugin-react-dom`, `eslint-plugin-jsx-a11y-x` |
+| `react-native` | the React plugins |
+| `next` | the React plugins, and `@next/eslint-plugin-next` |
+
+If a plugin is missing, `peerAi()` says which one to install.
+
 ## Proven against ESLint
 
 Every rule these settings turn on has an example that must fail and one that must pass. The tests run ESLint on both, through the same settings a project gets, and again with a changed value where the rule has one. A setting that can't fail can't ship.

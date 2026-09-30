@@ -21,7 +21,6 @@ import tseslint from "typescript-eslint";
  */
 const PLUGIN_PACKAGES: Record<string, string> = {
   "react-hooks": "eslint-plugin-react-hooks",
-  "react-x": "eslint-plugin-react-x",
   "react-dom": "eslint-plugin-react-dom",
   "jsx-a11y": "eslint-plugin-jsx-a11y-x",
   "@next/next": "@next/eslint-plugin-next",
