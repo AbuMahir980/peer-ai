@@ -6,7 +6,7 @@ Instructions for AI coding agents working in this repository. This repo **builds
 
 - [ROADMAP.md](ROADMAP.md): what 1.0 is and the milestone order.
 - `legacy/v0/`: the v0 playbook. Read it as source material. Never edit it, and never follow its phase instructions as if this were a project using the workflow.
-- `scripts/`: repository tooling. `packages/`: the published packages, from Milestone 1 onward. `rfcs/`: proposals.
+- `scripts/`: repository tooling. `packages/`: the published packages. `rfcs/`: proposals.
 
 ## Commands
 

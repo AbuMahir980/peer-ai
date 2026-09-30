@@ -1,7 +1,7 @@
 {
   "name": "peer-ai-monorepo",
   "private": true,
-  "description": "Peer AI 1.0: an agent-agnostic workflow for AI-assisted software development",
+  "description": "Keeps AI coding tools to a senior team's standard: planning, testing, security and compliance, with proof of every check",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@12.6.0",

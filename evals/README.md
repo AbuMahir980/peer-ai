@@ -41,8 +41,8 @@ It makes a fresh copy of the project with Peer AI's skills installed, as `peer-a
 | `--tool codex` | Use Codex instead of Claude Code |
 | `--model <model>` | Ask for a model, such as a fast one and a strong one. RFC 0004 asks for both on each tool. |
 | `--baseline` | Run without the skill, and tell the tool where the report format is, to measure what the skill adds |
-| `--grader codex` | For a document: the tool that grades it, Codex by default. `--grader-model <model>` asks for a model. |
-| `--regrade <copy>` | For a document: grade an earlier run's copy again, when a grader failed or for a second opinion from another grader |
+| `--grader codex` | The tool that grades a document or confirms a review's pairings: Codex by default. `--grader-model <model>` asks for a model. |
+| `--regrade <copy>` | Mark an earlier run's copy again: grade a document, or confirm a review's pairings, when a grader failed or for a second opinion from another grader |
 | `--document <path>` | With `--regrade`: the document to grade, when the run saved it where neither the scenario nor the project map finds it |
 | (scenario) `setup`, `diff` | A scenario can write files into the copy before the run, such as a planned work item, and give the grader the run's change as a diff |
 | `--runs 2` | Run it twice |
@@ -80,7 +80,7 @@ A planted problem is found in its file by a short piece of the exact code, not b
 
 ## What people judged
 
-- **2026-09-28, courier, security-review, Claude Code.** This was a baseline, before Peer AI's own review skills exist. Of the 6 problems it raised that weren't on the answer sheet:
+- **2026-09-28, courier, security-review, Claude Code.** This was a baseline, before Peer AI's own review skills existed. Of the 6 problems it raised that weren't on the answer sheet:
   - **One was real and nobody had planted it:** session tokens never expire. It's now D19 on the answer sheet.
   - **One was a planted problem at the wrong severity:** the migration that deletes customers' notes (D13) is critical, and the review called it medium.
   - **The other four were fair, minor points:** the login token kept in the browser's storage, no length limits on text fields, no lockfile for the web app, and no tests for who can see what.

@@ -669,7 +669,7 @@
       "additionalProperties": false
     },
     "rules": {
-      "description": "Project rules every activity respects, such as repository rules kept in CONTEXT.md.",
+      "description": "Project rules every activity respects, wherever they are written, such as a contributing guide.",
       "type": "array",
       "items": {
         "type": "object",

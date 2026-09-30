@@ -2,7 +2,7 @@
 
 The vocabulary Peer AI is built on, and the schemas for the files a project keeps: `peer-ai.config.json` for its settings and customisations, and `.peer-ai/` for its state.
 
-> Private for now. It is published once the CLI adds a build step in Milestone 2.
+> Private for now. It is published with Peer AI's first release.
 
 ## What's here
 
@@ -34,7 +34,9 @@ Only `version`, `project.name` and `tracks` are required. This is a complete con
 |-----|--------------|
 | `extends` | A shared base config to inherit, such as a studio's defaults. The project's values win; objects merge key by key and lists are replaced. |
 | `project` | Name; stage (`prototype`, `mvp`, `production`), which sets how strict the gates are; origin (`new` or `existing`); team (`solo` or `team`) |
+| `project.traits` | What the product is or does that switches on extra rules: `money`, `safety-critical`, `several-audiences`, `offline`, `real-time`, `uploads`, `ai-features`. `peer-ai assess` suggests the ones it finds evidence for. |
 | `tools` | Which AI tools to render instructions for |
+| `skills` | `commit`: whether to commit the skills `peer-ai render` writes, for AI tools that can't run a setup step first. By default they're left out of git, and each tool's setup step writes them. |
 | `design` | Whether designs exist, are still to be produced, or there are none; where they live; whether they are authoritative |
 | `tracks` | Each part of the system. See below. |
 | `apis` | Each interface between parts, or to a third-party service: its kind, which track provides it, and where its contract comes from |
@@ -42,6 +44,8 @@ Only `version`, `project.name` and `tracks` are required. This is a complete con
 | `repo`, `tracker`, `commands` | Git host, remote, branch naming, commit style, merge policy; the issue tracker; the verify command |
 | `delivery` | Whether CI already exists. If it does, Peer AI extends it and never adds a second pipeline. |
 | `standards` | Core principles on or off, stack profiles, the project's own standards documents, and which side wins a conflict |
+| `standards.overrides` | A stack profile rule's default changed for this project, such as a larger size limit, with the reason |
+| `standards.exceptions` | Rules the project sets aside, each with a reason, who decided, and an optional end date. `peer-ai doctor` lists them all, and warns when one has ended. |
 | `compliance` | Where the product operates, its industries, and the rule packs that apply |
 | `rules` | Project rules every activity respects, wherever they are written |
 | `models` | `none`, `tiers`, or `pinned` with the project's own model names. Model names live only here, never in Peer AI itself. |
@@ -81,7 +85,7 @@ The examples show one project per shape:
 
 ### Compliance and rule packs
 
-`compliance` says where the product operates (`jurisdictions`: ISO 3166 codes such as `NG` or `US-CA`, or zone ids such as `eu` or `difc`), what it does (`industries`), and which rule packs apply (`packs`). A rule pack is any outside rulebook the software must follow: a law such as the NDPA, an industry standard such as PCI DSS, a religious or cultural standard such as halal, labelling rules such as allergens, or a platform policy such as the App Store's. The packs themselves arrive in Milestone 3.
+`compliance` says where the product operates (`jurisdictions`: ISO 3166 codes such as `NG` or `US-CA`, or zone ids such as `eu` or `difc`), what it does (`industries`), and which rule packs apply (`packs`). A rule pack is any outside rulebook the software must follow: a law such as the NDPA, an industry standard such as PCI DSS, a religious or cultural standard such as halal, labelling rules such as allergens, or a platform policy such as the App Store's. The packs themselves aren't built yet.
 
 ## Project state
 
@@ -90,9 +94,9 @@ State is split across files so that parallel sessions never edit the same one:
 - **`.peer-ai/map.json`** records what `peer-ai assess` found: each item on the map as present, partial, missing or not applicable, with the evidence behind it. An item found by reading the code rather than a document is marked `inferred` until someone confirms it.
 - **`.peer-ai/work/<id>.json`** holds one file per work item: its kind, stage, the activities it has called, where work stopped, its last verify and reviews, and a one-line `next`. It can also carry its plan (RFC 0005): a `goal`, `acceptance` criteria, the `sources` it implements, and the items it `dependsOn`, which must ship before it can.
 
-- **`.peer-ai/reports/<work item>/<skill>-<time>.json`** holds a review's report: what it looked at, what it read first, every rule it checked and how each went, and every problem it found, with file, line and evidence. See [RFC 0002](../../rfcs/0002-review-reports-and-evals.md).
+- **`.peer-ai/reports/<work item>/<skill>-<time>.json`** holds a review's report: what it looked at, what it read first, every rule it checked and how each went, and every problem it found, with file, line and evidence. See [RFC 0002](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/0002-review-reports-and-evals.md).
 
-A session finds its work item from the git branch it is on, so there is no shared "current phase" for two sessions to fight over. `next` is capped at 200 characters: the story belongs in `CONTEXT.md`.
+A session finds its work item from the git branch it is on, so there is no shared "current phase" for two sessions to fight over. `next` is capped at 200 characters: the fuller story lives in the item's goal, acceptance criteria and sources, and in its review reports.
 
 ## Changing the schemas
 
@@ -102,7 +106,7 @@ The Zod definitions in `src/` are the source. After changing one, regenerate the
 pnpm --filter @peer-ai/workflow generate
 ```
 
-A test fails if the committed files fall behind. Changing either schema needs an RFC; see [rfcs/README.md](../../rfcs/README.md).
+A test fails if the committed files fall behind. Changing either schema needs an RFC; see [rfcs/README.md](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/README.md).
 
 ## Review reports
 

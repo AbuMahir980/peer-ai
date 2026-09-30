@@ -1,5 +1,5 @@
 name: Workflow defect
-description: A phase, skill, rule or template misled you, contradicted itself, or could not be followed on your project.
+description: An activity, skill, rule or template misled you, contradicted itself, or could not be followed on your project.
 title: "[defect] "
 labels: ["workflow-defect"]
 body:
@@ -16,7 +16,7 @@ body:
     attributes:
       label: Where
       description: The file, skill or command, and the step or section inside it.
-      placeholder: "frontend/03-build.md, step 4 'Mock data layer'"
+      placeholder: "security-review skill, step 2 'Inventory'"
     validations:
       required: true
 
@@ -50,8 +50,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: The package version, or for v0 the commit you copied from.
-      placeholder: "v0.1.0"
+      description: The package version, such as 1.0.0-next.0, from `npx peer-ai --version`.
+      placeholder: "1.0.0-next.0"
 
   - type: textarea
     id: shape

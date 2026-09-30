@@ -10,8 +10,8 @@ Include what you found, how to reproduce it, and the version or commit affected.
 
 | Version | Supported |
 |---------|-----------|
-| 1.0 pre-releases (`next` branch) | Yes, once published to npm |
-| v0 playbook (`main`, `v0.1.0`) | Best effort. v0 is Markdown only, but reports about the CI and workflow examples it tells agents to generate are welcome. |
+| 1.0 pre-releases, from npm or the `next` branch | Yes |
+| v0 playbook | No. It stays available by its tag, `v0.1.0`. |
 
 ## Scope
 

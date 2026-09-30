@@ -5,9 +5,9 @@ Small, made-up projects that Peer AI is tested on end to end. Each one is set up
 | Fixture | What it is | Stage |
 |---------|------------|-------|
 | [`split-bill`](split-bill/) | A dependency-free TypeScript library that splits a bill between people, to the cent | MVP |
-| [`courier`](courier/) | A parcel pickup service: a React web app and a Python API on PostgreSQL, with 18 problems planted on purpose for the [evals](../evals/) | MVP |
-| [`shelf`](shelf/) | A book-lending phone app in React Native, in production and half rebuilt: older JavaScript screens beside newer TypeScript features, with its API in another repository. 16 problems planted for the [evals](../evals/). | Production |
-| [`sprout`](sprout/) | A plant-care journal that works offline: a React web app with its data in the browser, a service worker, and plant identification by an AI service. Sync is planned. 14 problems planted for the [evals](../evals/). | MVP |
+| [`courier`](courier/) | A parcel pickup service: a React web app and a Python API on PostgreSQL, with 25 problems planted on purpose for the [evals](../evals/) | MVP |
+| [`shelf`](shelf/) | A book-lending phone app in React Native, in production and half rebuilt: older JavaScript screens beside newer TypeScript features, with its API in another repository. 23 problems planted for the [evals](../evals/). | Production |
+| [`sprout`](sprout/) | A plant-care journal that works offline: a React web app with its data in the browser, a service worker, and plant identification by an AI service. Sync is planned. 16 problems planted for the [evals](../evals/). | MVP |
 | [`kennel`](kennel/) | A dog-boarding service's API in NestJS, on PostgreSQL through TypeORM, in production: a modular monolith that takes deposits, stores photo uploads and checks vaccinations with another service. 22 problems planted for the [evals](../evals/), so the reviews are proven on a Node backend as well as Python. | Production |
 | [`refill`](refill/) | A new product with nothing built yet: only a config and a founder's brief, which the [evals](../evals/) give to requirements-analysis | Prototype |
 
@@ -39,6 +39,6 @@ Each run gave the tool the same backlog item, the optional tip, on a fresh copy.
 | 2026-09-28 | split-bill | Claude Code 2.1.274 | Pass, at `ship` | 25 | 1 min 30 s | $1.20 | With the stages explained, it moved to `build` before changing code, then verified, reviewed and shipped, in order. |
 | 2026-09-28 | split-bill | Claude Code 2.1.274 | Pass, at `ship` | 37 | 3 min 53 s | $2.06 | It wrote the code while the item was still at `prepare`: the instructions didn't say when to move stages, and now do. It recorded its own failed review, fixed both findings, verified again, then recorded a pass. |
 
-The Claude Code runs reviewed with the code review skill installed in Claude Code, and Codex reviewed the diff itself, since Peer AI's own skills come in Milestone 3.
+The Claude Code runs reviewed with the code review skill installed in Claude Code, and Codex reviewed the diff itself, since these runs came before Peer AI's own skills were built.
 
 Codex ran headless with `codex exec --ephemeral --ignore-user-config`, with the server passed as `-c mcp_servers.peer-ai.command=…` for that run only, and `-c mcp_servers.peer-ai.tools.run_verify.approval_mode="approve"` on the second run.
