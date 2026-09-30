@@ -29,6 +29,7 @@ import {
   type ProfileInput,
   type ProfileSelection,
 } from "./profile.ts";
+import { react } from "./profiles/react.ts";
 import { typescript } from "./profiles/typescript.ts";
 import { RuleSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage } from "./rule.ts";
 
@@ -119,7 +120,7 @@ export function rulesFor({ stage, traits = [], domains }: Selection): Rule[] {
   );
 }
 
-const PROFILE_INPUTS: ProfileInput[] = [typescript];
+const PROFILE_INPUTS: ProfileInput[] = [typescript, react];
 
 const checkedProfiles = checkProfiles(PROFILE_INPUTS, CORE_RULES, Object.values(DOMAINS));
 if (checkedProfiles.problems.length > 0) {

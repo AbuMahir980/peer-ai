@@ -5,11 +5,23 @@
 import { normalize } from "node:path";
 import { profileRulesFor, type AppliedRule } from "@peer-ai/standards";
 import { CONFIG_FILE, readConfig, type PeerAiConfig } from "@peer-ai/workflow";
+import nextPlugin from "@next/eslint-plugin-next";
 import type { ESLint, Linter } from "eslint";
+import jsxA11y from "eslint-plugin-jsx-a11y-x";
+import reactDom from "eslint-plugin-react-dom";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactX from "eslint-plugin-react-x";
 import tseslint from "typescript-eslint";
 
 /** The plugins Peer AI's rules come from, by the prefix of their rule names. */
-const PLUGINS: Record<string, ESLint.Plugin> = { "@typescript-eslint": tseslint.plugin };
+const PLUGINS: Record<string, ESLint.Plugin> = {
+  "@typescript-eslint": tseslint.plugin,
+  "react-hooks": reactHooks as ESLint.Plugin,
+  "react-x": reactX as ESLint.Plugin,
+  "react-dom": reactDom as ESLint.Plugin,
+  "jsx-a11y": jsxA11y as ESLint.Plugin,
+  "@next/next": nextPlugin as ESLint.Plugin,
+};
 
 const TYPESCRIPT_FILES = ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"];
 const SCRIPT_FILES = [...TYPESCRIPT_FILES, "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
@@ -20,16 +32,31 @@ export function pluginOf(rule: string): string | undefined {
   return slash === -1 ? undefined : rule.slice(0, slash);
 }
 
-/** ESLint's settings for these rules, each an error: rules that need types apart from the rest. */
-export function eslintRules(rules: readonly AppliedRule[]): { plain: Linter.RulesRecord; typed: Linter.RulesRecord } {
-  const plain: Linter.RulesRecord = {};
-  const typed: Linter.RulesRecord = {};
+/** A set of rules for the same files, in the order the profiles give them. */
+export interface RuleGroup {
+  files: string[];
+  typed: boolean;
+  rules: Linter.RulesRecord;
+}
+
+/**
+ * ESLint's settings for these rules, each an error, grouped by the files they apply to: rules that
+ * need types run on TypeScript files only, and a rule can name its own files. Groups keep the
+ * profiles' order, so where a later profile sets the same rule for some files, it wins there.
+ */
+export function eslintRules(rules: readonly AppliedRule[]): RuleGroup[] {
+  const groups = new Map<string, RuleGroup>();
   for (const rule of rules) {
     if (rule.check !== "auto" || rule.enforcer?.tool !== "eslint") continue;
-    const { rule: name, options = [], typed: needsTypes = false } = rule.enforcer;
-    (needsTypes ? typed : plain)[name] = ["error", ...options];
+    const { rule: name, options = [], typed = false, files } = rule.enforcer;
+    const scope = files ?? (typed ? TYPESCRIPT_FILES : SCRIPT_FILES);
+    const key = JSON.stringify([scope, typed]);
+    const group = groups.get(key) ?? { files: scope, typed, rules: {} };
+    if (name in group.rules) throw new Error(`${rule.id} sets ${name} for files another of its rules already covers.`);
+    group.rules[name] = ["error", ...options];
+    groups.set(key, group);
   }
-  return { plain, typed };
+  return [...groups.values()];
 }
 
 function pluginsFor(names: readonly string[]): Record<string, ESLint.Plugin> {
@@ -70,27 +97,22 @@ export function configFor(config: PeerAiConfig, root: string): Linter.Config[] {
       ...(track.stack === undefined ? {} : { stack: track.stack }),
       ...(track.architecture === undefined ? {} : { architecture: track.architecture }),
     }).filter((rule) => !setAside.has(rule.id));
-    const { plain, typed } = eslintRules(rules);
-    const plugins = pluginsFor([...Object.keys(plain), ...Object.keys(typed)]);
-    if (Object.keys(plain).length > 0) {
+    for (const group of eslintRules(rules)) {
+      // A group for its own files is named after them, such as peer-ai/web/**/*.tsx,**/*.jsx.
+      const ownFiles = group.files !== SCRIPT_FILES && group.files !== TYPESCRIPT_FILES;
+      const name = [`peer-ai/${track.id}`, group.typed ? "/typed" : "", ownFiles ? `/${group.files.join(",")}` : ""];
       blocks.push({
-        name: `peer-ai/${track.id}`,
-        files: within(track.path, SCRIPT_FILES),
-        languageOptions: { parser: tseslint.parser },
-        plugins,
-        rules: plain,
-      });
-    }
-    if (Object.keys(typed).length > 0) {
-      blocks.push({
-        name: `peer-ai/${track.id}/typed`,
-        files: within(track.path, TYPESCRIPT_FILES),
+        name: name.join(""),
+        files: within(track.path, group.files),
         languageOptions: {
           parser: tseslint.parser,
-          parserOptions: { projectService: true, tsconfigRootDir: root },
+          parserOptions: {
+            ecmaFeatures: { jsx: true },
+            ...(group.typed ? { projectService: true, tsconfigRootDir: root } : {}),
+          },
         },
-        plugins,
-        rules: typed,
+        plugins: pluginsFor(Object.keys(group.rules)),
+        rules: group.rules,
       });
     }
   }

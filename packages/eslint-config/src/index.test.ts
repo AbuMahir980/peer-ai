@@ -109,7 +109,14 @@ describe("every rule ESLint enforces, run through ESLint", () => {
     writeFileSync(
       join(dir, "tsconfig.json"),
       JSON.stringify({
-        compilerOptions: { strict: true, target: "es2022", module: "esnext", moduleResolution: "bundler", types: [] },
+        compilerOptions: {
+          strict: true,
+          target: "es2022",
+          module: "esnext",
+          moduleResolution: "bundler",
+          jsx: "react-jsx",
+          types: [],
+        },
         include: ["*.ts", "*.tsx"],
       }),
     );

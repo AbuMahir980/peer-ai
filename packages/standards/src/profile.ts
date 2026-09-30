@@ -24,6 +24,11 @@ export const EnforcerSchema = z.discriminatedUnion("tool", [
     rule: Text.describe("The ESLint rule, with its plugin's prefix, such as @typescript-eslint/no-explicit-any."),
     options: z.array(z.unknown()).optional().describe(`The rule's options. "${VALUE}" stands for the rule's value.`),
     typed: z.boolean().optional().describe("The rule needs type information, so it runs on TypeScript files only."),
+    files: z
+      .array(Text)
+      .min(1)
+      .optional()
+      .describe("The files it applies to, as globs within the part, such as **/*.tsx. None: every script."),
   }),
   z.strictObject({
     tool: z.literal("typescript"),
