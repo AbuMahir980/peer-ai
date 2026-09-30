@@ -38,7 +38,7 @@ export const EnforcerSchema = z.discriminatedUnion("tool", [
       .regex(/^[A-Z]+[0-9]+$/, "a Ruff rule code, such as S608")
       .describe("The Ruff rule's code."),
     settings: z
-      .record(z.string(), z.unknown())
+      .record(z.string(), z.record(z.string(), z.unknown()))
       .optional()
       .describe(`Ruff's lint settings the rule reads, such as { pylint: { "max-statements": "${VALUE}" } }.`),
   }),
@@ -255,7 +255,7 @@ export function withValue(rule: ProfileRule, value: Value | undefined): AppliedR
     rule.enforcer?.tool === "eslint" && rule.enforcer.options !== undefined
       ? { ...rule.enforcer, options: fillOptions(rule.enforcer.options, value) }
       : rule.enforcer?.tool === "ruff" && rule.enforcer.settings !== undefined
-        ? { ...rule.enforcer, settings: fill(rule.enforcer.settings, value) as Record<string, unknown> }
+        ? { ...rule.enforcer, settings: fill(rule.enforcer.settings, value) as Record<string, Record<string, unknown>> }
         : rule.enforcer;
   return {
     ...rule,
@@ -301,7 +301,13 @@ export function applyProfiles(all: readonly Profile[], selection: ProfileSelecti
     });
 }
 
-/** Whether a project's value can stand in for the rule's default: a rule with one, and a value of its type. */
+/**
+ * Whether a project's value can stand in for the rule's default: a rule with one, and a value of
+ * its type. A default that's a whole number, such as a count of lines, takes only whole numbers of
+ * 0 or more, since the tools refuse anything else.
+ */
 export function overrideFits(rule: ProfileRule, value: Value): boolean {
-  return rule.default !== undefined && typeof value === typeof rule.default.value;
+  if (rule.default === undefined || typeof value !== typeof rule.default.value) return false;
+  const counts = typeof rule.default.value === "number" && Number.isInteger(rule.default.value);
+  return !counts || (Number.isInteger(value) && Number(value) >= 0);
 }

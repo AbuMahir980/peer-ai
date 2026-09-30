@@ -144,8 +144,8 @@ describe("render", () => {
     const root = project({ "peer-ai.config.json": python() });
     render(root);
     const ruff = read(root, ".peer-ai/enforce/ruff.toml");
-    expect(ruff).toContain('select = ["ANN001", "ANN401", "BLE001", "E722"');
-    expect(ruff).toContain("[lint.pylint]\nmax-statements = 50\n");
+    expect(ruff).toContain('extend-select = [ "ANN001", "ANN401", "BLE001", "E722"');
+    expect(ruff).toContain("[lint.pylint]\nmax-statements = 50");
     expect(render(root, true).code).toBe(0);
     writeFileSync(
       join(root, "peer-ai.config.json"),
@@ -318,7 +318,9 @@ describe("render", () => {
     const { config: loaded } = loadConfig(root);
     if (loaded === undefined) throw new Error("the test config is not valid");
     expect(planRender(root, loaded).files.map((file) => file.path)).toEqual(["AGENTS.md"]);
-    expect(text).toContain("No AI tools are listed in peer-ai.config.json, so only AGENTS.md was written.");
+    expect(text).toContain(
+      "No AI tools are listed in peer-ai.config.json, so AGENTS.md is the only instructions file written.",
+    );
   });
 
   it("needs a valid config, and runs from the command line", async () => {

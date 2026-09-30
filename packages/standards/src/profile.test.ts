@@ -173,9 +173,11 @@ describe("a profile's rules for one project", () => {
     expect(changed?.enforcer).toEqual({ tool: "eslint", rule: "max-depth", options: [{ max: 36 }] });
   });
 
-  it("keeps the default when the project's value is of another type", () => {
-    const [kept] = select({ overrides: { "WH-01": { value: "36" } } });
-    expect(kept?.value).toBe(32);
+  it("keeps the default when the project's value is of another type, or a count isn't a whole number", () => {
+    for (const value of ["36", 36.5, -2]) {
+      const [kept] = select({ overrides: { "WH-01": { value } } });
+      expect(kept?.value, String(value)).toBe(32);
+    }
   });
 });
 

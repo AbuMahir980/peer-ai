@@ -56,7 +56,7 @@ Settings are a Pydantic settings class, loaded once at start-up, so the app refu
 
 Exception handlers answer in the project's error shape, without tracebacks, queries or driver errors, and `debug` is off outside development.
 
-**Why:** An unhandled database error otherwise reaches the client with the query and the table names in it.
+**Why:** With debug on, or a handler that passes on an exception's text, such as `HTTPException(detail=str(error))`, a database error reaches the client with the query and the table names in it.
 
 **Ask:** Could an error in this change reach the client with internal detail?
 
@@ -66,7 +66,7 @@ Exception handlers answer in the project's error shape, without tracebacks, quer
 
 ## FASTAPI-06 · Request bodies stay under 1 MiB
 
-Something limits request bodies to 1 MiB, such as the proxy in front, the server's settings or a middleware, since FastAPI sets no limit itself.
+Something limits request bodies to 1 MiB, such as the proxy in front or a middleware like Starlette's `RequestBodyLimitMiddleware`, since FastAPI sets no limit itself.
 
 **Why:** With no limit, one request can fill the server's memory.
 

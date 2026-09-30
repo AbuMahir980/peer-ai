@@ -614,7 +614,9 @@ export function runRender(options: RenderOptions, out: Output): number {
       : [];
   const checks = [...plan.files.map((planned) => toCheck(planned, options.check)), ...skillLines];
   if ((config.tools ?? []).length === 0) {
-    checks.push(skip("render", `No AI tools are listed in ${CONFIG_FILE}, so only AGENTS.md was written.`));
+    checks.push(
+      skip("render", `No AI tools are listed in ${CONFIG_FILE}, so AGENTS.md is the only instructions file written.`),
+    );
   }
   const failures = count(checks, "fail");
   if (options.quiet === true && failures === 0) return 0;

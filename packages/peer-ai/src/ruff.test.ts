@@ -1,6 +1,7 @@
 import { PositionEncoding, Workspace } from "@astral-sh/ruff-wasm-nodejs";
 import { PROFILES, profileRulesFor, type Example, type Value } from "@peer-ai/standards";
 import type { PeerAiConfig } from "@peer-ai/workflow";
+import { parse } from "smol-toml";
 import { describe, expect, it } from "vitest";
 import { ruffFile, ruffSettings, toToml } from "./ruff.ts";
 
@@ -15,16 +16,17 @@ const repairs = (standards: PeerAiConfig["standards"], stage: "mvp" | "productio
 });
 
 describe("Ruff's settings", () => {
-  it("select every automatic Ruff rule, with the settings they read", () => {
+  it("add every automatic Ruff rule to Ruff's own, with the settings they read", () => {
     const settings = ruffSettings(profileRulesFor({ listed: ["python"], stack: ["python"], stage: "mvp" }));
-    expect(settings.lint.select).toEqual(expect.arrayContaining(["E722", "S608", "PLR0915"]));
+    // extend-select keeps Ruff's defaults and the project's choices; select would replace them.
+    expect(settings.lint).not.toHaveProperty("select");
+    expect(settings.lint["extend-select"]).toEqual(expect.arrayContaining(["E722", "S608", "PLR0915"]));
     expect(settings.lint.pylint).toEqual({ "max-statements": 50 });
   });
 
-  it("are written as TOML, with each table under its dotted name", () => {
-    expect(toToml({ lint: { select: ["E722", "S608"], pylint: { "max-statements": 50 } } })).toBe(
-      '[lint]\nselect = ["E722", "S608"]\n\n[lint.pylint]\nmax-statements = 50',
-    );
+  it("are written as TOML that reads back as the same settings", () => {
+    const settings = ruffSettings(profileRulesFor({ listed: ["python"], stack: ["python"], stage: "mvp" }));
+    expect(parse(toToml(settings))).toEqual(settings);
   });
 
   it("make a file for a project whose profiles have Ruff rules, with its values", () => {
@@ -34,7 +36,7 @@ describe("Ruff's settings", () => {
         overrides: { "PY-10": { value: 70, reason: "Report builders run long" } },
       }),
     );
-    expect(file).toContain("[lint.pylint]\nmax-statements = 70\n");
+    expect(file).toContain("[lint.pylint]\nmax-statements = 70");
     expect(ruffFile(repairs({ profiles: ["react"] }))).toBeUndefined();
   });
 });
@@ -48,7 +50,8 @@ describe("every rule Ruff enforces, run through Ruff", () => {
 
   function check(profile: string, code: string, overrides: Record<string, { value: Value }> = {}): string[] {
     const rules = profileRulesFor({ listed: [profile], stack: [], stage: "production", overrides });
-    const workspace = new Workspace(ruffSettings(rules), PositionEncoding.Utf16);
+    // Through the TOML render writes, so what's proven is the file a project extends.
+    const workspace = new Workspace(parse(toToml(ruffSettings(rules))), PositionEncoding.Utf16);
     return (workspace.check(code) as { code: string | null; message: string }[]).map((d) => d.code ?? d.message);
   }
 

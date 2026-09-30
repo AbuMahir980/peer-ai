@@ -61,7 +61,7 @@ export const fastapi: ProfileInput = {
       id: "FASTAPI-05",
       title: "Errors keep internals in",
       rule: "Exception handlers answer in the project's error shape, without tracebacks, queries or driver errors, and `debug` is off outside development.",
-      why: "An unhandled database error otherwise reaches the client with the query and the table names in it.",
+      why: "With debug on, or a handler that passes on an exception's text, such as `HTTPException(detail=str(error))`, a database error reaches the client with the query and the table names in it.",
       ask: "Could an error in this change reach the client with internal detail?",
       stage: "mvp",
       check: "ai-review",
@@ -71,7 +71,7 @@ export const fastapi: ProfileInput = {
     {
       id: "FASTAPI-06",
       title: "Request bodies stay under {value}",
-      rule: "Something limits request bodies to {value}, such as the proxy in front, the server's settings or a middleware, since FastAPI sets no limit itself.",
+      rule: "Something limits request bodies to {value}, such as the proxy in front or a middleware like Starlette's `RequestBodyLimitMiddleware`, since FastAPI sets no limit itself.",
       why: "With no limit, one request can fill the server's memory.",
       ask: "What limits the size of a request body, and is it {value} or less?",
       stage: "mvp",

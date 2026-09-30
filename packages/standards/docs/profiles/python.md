@@ -40,13 +40,13 @@ An `except` block never just passes. Where ignoring an error is right, it logs i
 |--------------|------------|----------|---------|---------------|-------------|
 | Prototype | A tool | High | [CODE-11](../code-quality.md) | Any | `S110`, in Ruff |
 
-## PY-04 · No `Any` where a real type exists
+## PY-04 · No argument or return is typed `Any`
 
-`Any` isn't written. Data of unknown shape is `object`, and checked before use.
+No function takes or returns `Any`. Data of unknown shape is `object`, and checked before use. `Any` elsewhere, such as inside `dict[str, Any]`, is the strict type checker's to catch (PY-11).
 
 **Why:** `Any` turns the type checker off for everything it touches.
 
-**Ask:** Does this change write Any?
+**Ask:** Does any function in this change take or return Any?
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
@@ -137,3 +137,27 @@ A type checker, such as mypy with `strict = true` or pyright in strict mode, run
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
 | MVP | AI review | Medium | [CODE-14](../code-quality.md) | Any | – |
+
+## PY-12 · No text is run with exec
+
+`exec` isn't used, so no text, least of all text from outside, is ever run as code.
+
+**Why:** exec runs any statement it's given, with everything the server can reach.
+
+**Ask:** Does this change use exec?
+
+| Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
+|--------------|------------|----------|---------|---------------|-------------|
+| Prototype | A tool | Critical | [SEC-30](../security.md) | Any | `S102`, in Ruff |
+
+## PY-13 · No command is run by os.system or another shell helper
+
+`os.system`, `os.popen` and the like, which always go through a shell, aren't used. A command runs with `subprocess` and a list of arguments.
+
+**Why:** Every one of these hands the whole string to a shell, so an argument holding a semicolon runs whatever follows it.
+
+**Ask:** Does this change run a command through os.system or another shell helper?
+
+| Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
+|--------------|------------|----------|---------|---------------|-------------|
+| Prototype | A tool | Critical | [SEC-30](../security.md) | Any | `S605`, in Ruff |

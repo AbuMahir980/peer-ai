@@ -50,9 +50,9 @@ export const python: ProfileInput = {
       examples: {
         file: "example.py",
         fails:
-          "from collections.abc import Callable\n\ndef parts_price(fetch: Callable[[], float]) -> float | None:\n    try:\n        return fetch()\n    except Exception:\n        return None\n",
+          "from collections.abc import Callable\n\n\ndef parts_price(fetch: Callable[[], float]) -> float | None:\n    try:\n        return fetch()\n    except Exception:\n        return None\n",
         passes:
-          "from collections.abc import Callable\n\ndef parts_price(fetch: Callable[[], float]) -> float | None:\n    try:\n        return fetch()\n    except ConnectionError:\n        return None\n",
+          "from collections.abc import Callable\n\n\ndef parts_price(fetch: Callable[[], float]) -> float | None:\n    try:\n        return fetch()\n    except ConnectionError:\n        return None\n",
       },
     },
     {
@@ -69,17 +69,17 @@ export const python: ProfileInput = {
       examples: {
         file: "example.py",
         fails:
-          "from collections.abc import Callable\n\ndef cancel(booking_id: int, release: Callable[[int], None]) -> None:\n    try:\n        release(booking_id)\n    except KeyError:\n        pass\n",
+          "from collections.abc import Callable\n\n\ndef cancel(booking_id: int, release: Callable[[int], None]) -> None:\n    try:\n        release(booking_id)\n    except KeyError:\n        pass\n",
         passes:
-          'import logging\nfrom collections.abc import Callable\n\ndef cancel(booking_id: int, release: Callable[[int], None]) -> None:\n    try:\n        release(booking_id)\n    except KeyError:\n        # Already released by the mechanic; nothing left to do.\n        logging.info("booking %s already released", booking_id)\n',
+          'import logging\nfrom collections.abc import Callable\n\nlogger = logging.getLogger(__name__)\n\n\ndef cancel(booking_id: int, release: Callable[[int], None]) -> None:\n    try:\n        release(booking_id)\n    except KeyError:\n        # Already released by the mechanic; nothing left to do.\n        logger.info("booking %s already released", booking_id)\n',
       },
     },
     {
       id: "PY-04",
-      title: "No `Any` where a real type exists",
-      rule: "`Any` isn't written. Data of unknown shape is `object`, and checked before use.",
+      title: "No argument or return is typed `Any`",
+      rule: "No function takes or returns `Any`. Data of unknown shape is `object`, and checked before use. `Any` elsewhere, such as inside `dict[str, Any]`, is the strict type checker's to catch (PY-11).",
       why: "`Any` turns the type checker off for everything it touches.",
-      ask: "Does this change write Any?",
+      ask: "Does any function in this change take or return Any?",
       stage: "prototype",
       check: "auto",
       severity: "medium",
@@ -87,7 +87,7 @@ export const python: ProfileInput = {
       enforcer: { tool: "ruff", rule: "ANN401" },
       examples: {
         file: "example.py",
-        fails: "from typing import Any\n\ndef bike_name(data: Any) -> str:\n    return str(data)\n",
+        fails: "from typing import Any\n\n\ndef bike_name(data: Any) -> str:\n    return str(data)\n",
         passes: 'def bike_name(data: object) -> str:\n    return data if isinstance(data, str) else ""\n',
       },
     },
@@ -122,9 +122,9 @@ export const python: ProfileInput = {
       examples: {
         file: "example.py",
         fails:
-          "from sqlite3 import Cursor\n\ndef bikes_named(cursor: Cursor, name: str) -> list[tuple[str]]:\n    cursor.execute(f\"SELECT serial FROM bikes WHERE name = '{name}'\")\n    return cursor.fetchall()\n",
+          "from sqlite3 import Cursor\n\n\ndef bikes_named(cursor: Cursor, name: str) -> list[tuple[str]]:\n    cursor.execute(f\"SELECT serial FROM bikes WHERE name = '{name}'\")\n    return cursor.fetchall()\n",
         passes:
-          'from sqlite3 import Cursor\n\ndef bikes_named(cursor: Cursor, name: str) -> list[tuple[str]]:\n    cursor.execute("SELECT serial FROM bikes WHERE name = ?", (name,))\n    return cursor.fetchall()\n',
+          'from sqlite3 import Cursor\n\n\ndef bikes_named(cursor: Cursor, name: str) -> list[tuple[str]]:\n    cursor.execute("SELECT serial FROM bikes WHERE name = ?", (name,))\n    return cursor.fetchall()\n',
       },
     },
     {
@@ -158,9 +158,9 @@ export const python: ProfileInput = {
       examples: {
         file: "example.py",
         fails:
-          'import subprocess\n\ndef print_label(serial: str) -> None:\n    subprocess.run(f"lpr label-{serial}.pdf", shell=True, check=True)\n',
+          'import subprocess\n\n\ndef print_label(serial: str) -> None:\n    subprocess.run(f"lpr label-{serial}.pdf", shell=True, check=True)\n',
         passes:
-          'import subprocess\n\ndef print_label(serial: str) -> None:\n    subprocess.run(["lpr", f"label-{serial}.pdf"], check=True)\n',
+          'import subprocess\n\n\ndef print_label(serial: str) -> None:\n    subprocess.run(["lpr", f"label-{serial}.pdf"], check=True)\n',
       },
     },
     {
@@ -177,9 +177,9 @@ export const python: ProfileInput = {
       examples: {
         file: "example.py",
         fails:
-          'import requests\n\ndef parts_price(sku: str) -> float:\n    return float(requests.get(f"https://parts.example.com/{sku}").json()["price"])\n',
+          'import requests\n\n\ndef parts_price(sku: str) -> float:\n    return float(requests.get(f"https://parts.example.com/{sku}").json()["price"])\n',
         passes:
-          'import requests\n\ndef parts_price(sku: str) -> float:\n    response = requests.get(f"https://parts.example.com/{sku}", timeout=5)\n    return float(response.json()["price"])\n',
+          'import requests\n\n\ndef parts_price(sku: str) -> float:\n    response = requests.get(f"https://parts.example.com/{sku}", timeout=5)\n    return float(response.json()["price"])\n',
       },
     },
     {
@@ -210,6 +210,41 @@ export const python: ProfileInput = {
       check: "ai-review",
       severity: "medium",
       carries: "CODE-14",
+    },
+    {
+      id: "PY-12",
+      title: "No text is run with exec",
+      rule: "`exec` isn't used, so no text, least of all text from outside, is ever run as code.",
+      why: "exec runs any statement it's given, with everything the server can reach.",
+      ask: "Does this change use exec?",
+      stage: "prototype",
+      check: "auto",
+      severity: "critical",
+      carries: "SEC-30",
+      enforcer: { tool: "ruff", rule: "S102" },
+      examples: {
+        file: "example.py",
+        fails: 'def apply_discount(code: str) -> None:\n    exec(f"discount = {code}")\n',
+        passes: "def apply_discount(percent: int) -> float:\n    return percent / 100\n",
+      },
+    },
+    {
+      id: "PY-13",
+      title: "No command is run by os.system or another shell helper",
+      rule: "`os.system`, `os.popen` and the like, which always go through a shell, aren't used. A command runs with `subprocess` and a list of arguments.",
+      why: "Every one of these hands the whole string to a shell, so an argument holding a semicolon runs whatever follows it.",
+      ask: "Does this change run a command through os.system or another shell helper?",
+      stage: "prototype",
+      check: "auto",
+      severity: "critical",
+      carries: "SEC-30",
+      enforcer: { tool: "ruff", rule: "S605" },
+      examples: {
+        file: "example.py",
+        fails: 'import os\n\n\ndef print_label(serial: str) -> None:\n    os.system(f"lpr label-{serial}.pdf")\n',
+        passes:
+          'import subprocess\n\n\ndef print_label(serial: str) -> None:\n    subprocess.run(["lpr", f"label-{serial}.pdf"], check=True)\n',
+      },
     },
   ],
 };

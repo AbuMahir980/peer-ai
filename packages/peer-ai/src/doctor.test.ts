@@ -485,37 +485,101 @@ describe("doctor on stack profiles", () => {
     ]);
   });
 
-  it("checks the Ruff settings nearest each Python part extend Peer AI's", () => {
-    const api = (files: Record<string, string>) =>
-      project({
-        "peer-ai.config.json": json({
-          version: 1,
-          project: { name: "Repairs", stage: "production" },
-          tools: ["codex"],
-          tracks: [{ id: "api", kind: "backend", path: "services/api", status: "active", stack: ["python"] }],
-          standards: { profiles: ["python"] },
-        }),
-        ".peer-ai/enforce/ruff.toml": "[lint]\n",
-        ...files,
+  describe("Ruff", () => {
+    const pythonConfig = (tracks: unknown[]) =>
+      json({
+        version: 1,
+        project: { name: "Repairs", stage: "production" },
+        tools: ["codex"],
+        tracks,
+        standards: { profiles: ["python"] },
       });
-    expect(checksFor(api({}), "enforcers")).toMatchObject([
-      {
-        status: "fail",
-        message: expect.stringMatching(
-          /^There are no Ruff settings for services\/api, so nothing enforces PY-01/,
-        ) as string,
-        fix: 'Add [tool.ruff] to services/api/pyproject.toml, with extend = "../../.peer-ai/enforce/ruff.toml".',
-      },
-    ]);
-    const own = api({ "pyproject.toml": "[tool.ruff]\nline-length = 100\n" });
-    expect(checksFor(own, "enforcers")[0]).toMatchObject({
-      status: "fail",
-      message: expect.stringContaining("pyproject.toml doesn't extend Peer AI's Ruff settings") as string,
+    const apiTrack = { id: "api", kind: "backend", path: "services/api", status: "active", stack: ["python"] };
+    /** A project with Peer AI's Ruff file as render writes it, and these files. */
+    const api = (files: Record<string, string>, tracks: unknown[] = [apiTrack]) => {
+      const root = project({ "peer-ai.config.json": pythonConfig(tracks), ...files });
+      runRender({ cwd: root, check: false }, capture());
+      return root;
+    };
+    const extendsPeerAi = 'extend = "../../.peer-ai/enforce/ruff.toml"\n';
+
+    it("passes settings that extend Peer AI's, directly or through a shared base", () => {
+      expect(checksFor(api({ "services/api/ruff.toml": extendsPeerAi }), "enforcers")).toEqual([
+        {
+          id: "enforcers",
+          status: "ok",
+          message: "services/api/ruff.toml extends Peer AI's Ruff settings for 12 rules",
+        },
+      ]);
+      const chained = api({
+        "services/api/ruff.toml": 'extend = "../../config/ruff-base.toml"\n',
+        "config/ruff-base.toml": 'extend = "../.peer-ai/enforce/ruff.toml"\nline-length = 100\n',
+      });
+      expect(checksFor(chained, "enforcers")[0]).toMatchObject({ status: "ok" });
     });
-    const linked = api({ "services/api/ruff.toml": 'extend = "../../.peer-ai/enforce/ruff.toml"\n' });
-    expect(checksFor(linked, "enforcers")).toEqual([
-      { id: "enforcers", status: "ok", message: "services/api/ruff.toml extends Peer AI's Ruff settings for 10 rules" },
-    ]);
+
+    it("says where to add the extend, at the end of an existing chain", () => {
+      expect(checksFor(api({}), "enforcers")).toMatchObject([
+        {
+          status: "fail",
+          message: expect.stringMatching(
+            /^There are no Ruff settings for services\/api, so nothing enforces PY-01/,
+          ) as string,
+          fix: 'Add [tool.ruff] to services/api/pyproject.toml, with extend = "../../.peer-ai/enforce/ruff.toml".',
+        },
+      ]);
+      const shared = api({
+        "pyproject.toml": '[tool.ruff]\nextend = "config/org.toml"\n',
+        "config/org.toml": "line-length = 100\n",
+      });
+      expect(checksFor(shared, "enforcers")[0]).toMatchObject({
+        status: "fail",
+        fix: 'pyproject.toml extends config/org.toml, which extends nothing further. In config/org.toml add extend = "../.peer-ai/enforce/ruff.toml". Ruff allows one extend in each file.',
+      });
+    });
+
+    it("finds a pyproject whose only Ruff table is [tool.ruff.lint], as Ruff does", () => {
+      const nearer = api({
+        "pyproject.toml": '[tool.ruff]\nextend = ".peer-ai/enforce/ruff.toml"\n',
+        "services/api/pyproject.toml": '[tool.ruff.lint]\nextend-select = ["B"]\n',
+      });
+      expect(checksFor(nearer, "enforcers")[0]).toMatchObject({
+        status: "fail",
+        message: expect.stringContaining(
+          "services/api/pyproject.toml doesn't extend Peer AI's Ruff settings",
+        ) as string,
+      });
+    });
+
+    it("fails a select, which replaces Peer AI's rules, and an ignore that drops them", () => {
+      const selecting = api({ "services/api/ruff.toml": `${extendsPeerAi}[lint]\nselect = ["E", "F"]\n` });
+      expect(checksFor(selecting, "enforcers")[0]).toMatchObject({
+        status: "fail",
+        fix: "In services/api/ruff.toml, rename select to extend-select.",
+      });
+      const ignoring = api({ "services/api/ruff.toml": `${extendsPeerAi}[lint]\nextend-ignore = ["S"]\n` });
+      expect(checksFor(ignoring, "enforcers")[0]).toMatchObject({
+        status: "fail",
+        message: expect.stringContaining(
+          "ignore the codes of PY-03, PY-06, PY-07, PY-08, PY-09, PY-12, PY-13",
+        ) as string,
+      });
+    });
+
+    it("reports each part without settings, and Peer AI's file when it's out of date", () => {
+      const worker = { ...apiTrack, id: "worker", path: "services/worker" };
+      const two = api({}, [apiTrack, worker]);
+      expect(checksFor(two, "enforcers").map((check) => check.message.split(",")[0])).toEqual([
+        "There are no Ruff settings for services/api",
+        "There are no Ruff settings for services/worker",
+      ]);
+      const stale = api({ "services/api/ruff.toml": extendsPeerAi });
+      writeFileSync(join(stale, ".peer-ai/enforce/ruff.toml"), "[lint]\n");
+      expect(checksFor(stale, "enforcers")[0]).toMatchObject({
+        status: "fail",
+        message: ".peer-ai/enforce/ruff.toml is out of date with the config.",
+      });
+    });
   });
 
   it("warns about an override for a rule with no value to change", () => {
@@ -535,7 +599,7 @@ describe("doctor on stack profiles", () => {
       { status: "ok", message: "TS-06 changed to 4: The booking rules nest deeper" },
       {
         status: "warn",
-        message: 'TS-07\'s value is a number, such as 60, so "80" is ignored and the default stays.',
+        message: 'TS-07\'s value is a whole number of 0 or more, such as 60, so "80" is ignored and the default stays.',
       },
     ]);
   });

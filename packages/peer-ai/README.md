@@ -170,7 +170,7 @@ What render changes, and what it leaves alone:
 ### Settings for the tools that enforce the stack profiles
 
 - **ESLint** reads Peer AI's settings from the `@peer-ai/eslint-config` package, which your `eslint.config.js` spreads in. Render writes nothing for it.
-- **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config.
+- **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`, directly or through a shared file that extends it. Add rules of your own with `extend-select`: a `select` replaces Peer AI's rules instead of adding to them, and doctor fails it, as it does an `ignore` that drops one of Peer AI's codes. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config.
 - **The TypeScript compiler** reads each part's own `tsconfig.json`, which render never edits.
 
 ### Options
