@@ -382,6 +382,10 @@ describe("next work", () => {
       }),
     );
     expect(useSkill).toMatchObject({ requirements: "peer-ai-requirements-analysis" });
-    expect(nextWork(root, config)).toEqual({ open: [], gaps: { stage: "mvp", needed, later, useSkill } });
+    // Setup problems are covered in doctor.test.ts; this bare project has some.
+    expect({ ...nextWork(root, config), setup: undefined }).toEqual({
+      open: [],
+      gaps: { stage: "mvp", needed, later, useSkill },
+    });
   });
 });

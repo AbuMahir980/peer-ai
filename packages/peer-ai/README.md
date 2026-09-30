@@ -33,6 +33,7 @@ npm install --save-dev peer-ai
 | [`peer-ai check`](#peer-ai-check) | The CI gate: fails when work claims more than its record shows |
 | [`peer-ai check-report`](#peer-ai-check-report) | Checks a review's report, as the `record_review` tool does |
 | [`peer-ai check-document`](#peer-ai-check-document) | Checks a document against its skill's template |
+| [`peer-ai feedback`](#peer-ai-feedback) | Lists, sends or drops the feedback drafts your AI tool wrote about Peer AI |
 | [`peer-ai mcp`](#peer-ai-mcp) | Starts the MCP server that AI tools connect to |
 
 ## `peer-ai init`
@@ -229,6 +230,8 @@ What render changes, and what it leaves alone:
 
 Checks that Peer AI is set up correctly in a repository, and says how to fix what isn't. It only reads; it never changes a file.
 
+You rarely need to run it yourself (RFC 0007): `peer-ai check` fails in CI on anything doctor fails on, and your AI tool hears about every problem it finds through `next_work` at the start of each session.
+
 ```bash
 npx peer-ai doctor
 ```
@@ -284,6 +287,8 @@ npx peer-ai check
 | A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
 | A work item at `ship` or `done` depends on an item that hasn't shipped | Changes land in the order they depend on (RFC 0005). Building before a dependency ships is fine. |
 | A work item depends on an item that doesn't exist, or items depend on each other in a loop | The plan can't be followed |
+
+It also fails on anything [`peer-ai doctor`](#peer-ai-doctor) fails on (RFC 0007), listed under their own heading, so a setup that stopped working never passes CI unnoticed: for example, a production project whose linter no longer enforces its stack profile. Doctor's warnings don't fail the build; `check` counts them in one line. The skills are left out, since CI never has them.
 
 It warns, and still passes, when:
 
@@ -345,6 +350,26 @@ npx peer-ai check-document docs/requirements.md --skill requirements-analysis
 
 Exit codes: `0` when the document is ready, `1` when it isn't or can't be checked, and `2` without a path or a skill.
 
+## `peer-ai feedback`
+
+When Peer AI gets something wrong in your project, such as a review that misses a problem or a check that blocks work by mistake, your AI tool drafts a report with the `draft_feedback` tool and keeps it in `.peer-ai/feedback/`, out of git. You decide what happens to each one (RFC 0007).
+
+```bash
+npx peer-ai feedback
+npx peer-ai feedback send 2026-10-02-check-blocked-a-merge.md
+npx peer-ai feedback drop 2026-10-02-check-blocked-a-merge.md
+```
+
+| Command | What it does |
+|---------|--------------|
+| `peer-ai feedback` | Lists the drafts waiting, with each title |
+| `peer-ai feedback send <draft>` | Opens the draft as an issue on Peer AI's repository, labelled `feedback`, under your own GitHub account through the GitHub CLI, `gh`. The draft moves to `.peer-ai/feedback/sent/` with the issue's link. Without a signed-in `gh`, it prints a link to a new issue with the report filled in, for you to submit. |
+| `peer-ai feedback drop <draft>` | Deletes the draft |
+
+Your AI tool asks you about each draft at a natural stopping point, and runs `send` or `drop` only after you answer. Nothing is ever sent without a person's yes, and a report never holds your code: Peer AI refuses a draft with a block of code, anything that looks like a key or a token, or an email address.
+
+Exit codes: `0` done, `1` a draft that doesn't exist, `2` a usage error.
+
 ## `peer-ai mcp`
 
 Starts the Peer AI MCP server over stdio. Any AI tool that supports MCP servers reaches the same project map, work items and gates through it, so a project behaves the same whichever tool a person uses.
@@ -364,7 +389,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | Tool | What it does |
 |------|--------------|
 | `project_map` | Each item on the project map with its evidence, what the stage still needs, compliance signals and traits to consider. It assesses afresh on every call, and says whether the committed map has fallen behind. |
-| `next_work` | The open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship (`waiting`). When nothing is open, the gaps the stage needs, with the Peer AI skill to use for each (`useSkill`). |
+| `next_work` | Any setup problem `peer-ai doctor` finds (`setup`), each with its fix, for the AI tool to fix or tell the person about before other work. Then the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship (`waiting`). When nothing is open, the gaps the stage needs, with the Peer AI skill to use for each (`useSkill`). |
 | `standards_for_file` | The track a file belongs to, the stack profiles, and the project's own standards documents and rules for that track |
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. It can carry its plan (RFC 0005): a goal, acceptance criteria, the sources it implements, and the items it depends on. |
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there. It also sets the item's goal, acceptance criteria, sources and dependencies. |
@@ -372,6 +397,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support, or a report that leaves out any of the skill's rules. A review recorded without a report is marked unproven. For a review of the whole project, leave out the work item: Peer AI checks the report the same way and gives its result, without recording it. |
 | `check_document` | Checks a document a Peer AI skill wrote against the skill's template, and lists what to change: missing or empty parts, template text left in, and rule ids that don't exist. The skill fixes them and checks again, until the document is ready. |
 | `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. Moving to verify works out the reviews the change needs from the files it touched, and keeps them on the item. |
+| `draft_feedback` | Drafts a report for Peer AI's maintainers when Peer AI itself gets something wrong, with Peer AI's version, the AI tool, the stage and the stack profiles added. It writes the draft to `.peer-ai/feedback/` and refuses one holding code, a key or token, or an email address. The person decides whether it's sent: see [`peer-ai feedback`](#peer-ai-feedback). |
 
 Every change to a work item is validated against its schema before it is written. `run_verify` runs the project's own command through the shell, exactly as a person would type it.
 

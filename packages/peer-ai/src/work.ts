@@ -23,6 +23,7 @@ import {
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
 import { CONFIG_FILE } from "./detect.ts";
+import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
@@ -458,7 +459,17 @@ export function currentBranch(root: string): string | undefined {
   }
 }
 
+/** A setup problem doctor finds, for the AI tool to fix or tell the person about before other work. */
+export interface SetupProblem {
+  check: string;
+  status: "fail" | "warn";
+  message: string;
+  fix?: string;
+}
+
 export interface NextWork {
+  /** Every setup problem doctor finds (RFC 0007). Absent when there is none. */
+  setup?: { problems: SetupProblem[] };
   branch?: string;
   /** The open work item for the current branch. */
   current?: WorkItem;
@@ -480,7 +491,24 @@ export interface NextWork {
   };
 }
 
+/** Doctor's failures and warnings, as next_work reports them. */
+export function setupProblems(root: string, nodeVersion?: string, today?: Date): SetupProblem[] {
+  return diagnose(root, nodeVersion, today).checks.flatMap((check) =>
+    check.status === "fail" || check.status === "warn"
+      ? [
+          {
+            check: check.id,
+            status: check.status,
+            message: check.message,
+            ...(check.fix === undefined ? {} : { fix: check.fix }),
+          },
+        ]
+      : [],
+  );
+}
+
 export function nextWork(root: string, config: PeerAiConfig): NextWork {
+  const problems = setupProblems(root);
   const branch = currentBranch(root);
   const open = readWorkItems(root)
     .flatMap(({ item }) => (item.ok && !CLOSED.includes(item.value.stage) ? [item.value] : []))
@@ -498,6 +526,7 @@ export function nextWork(root: string, config: PeerAiConfig): NextWork {
       .filter(([, unfinished]) => unfinished.length > 0),
   );
   const result: NextWork = {
+    ...(problems.length === 0 ? {} : { setup: { problems } }),
     ...(branch === undefined ? {} : { branch }),
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),

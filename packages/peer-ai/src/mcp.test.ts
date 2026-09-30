@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { skillRuleIds } from "@peer-ai/skills";
@@ -89,6 +89,35 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 }
 
 describe("the MCP server", () => {
+  it("drafts feedback about Peer AI with what it knows, and refuses code, keys and email addresses", async () => {
+    const root = shop();
+    const client = await connect(root);
+    const drafted = await call(client, "draft_feedback", {
+      title: "security-review flagged a test file as production code",
+      what: "It reported a hard-coded password in a test fixture as a critical finding.",
+      expected: "Test fixtures are out of scope unless a rule is about them.",
+      skill: "security-review",
+    });
+    expect(drafted.isError).toBe(false);
+    const draft = drafted.value().draft as string;
+    expect(draft).toBe(".peer-ai/feedback/2026-10-02-security-review-flagged-a-test-file-as-production.md");
+    const report = readFileSync(join(root, draft), "utf8");
+    // Peer AI adds what it knows: its version, the AI tool that connected, the stage and profiles.
+    expect(report).toContain("| AI tool | test |");
+    expect(report).toContain("| Skill | security-review |");
+    expect(report).toContain("| Stage | mvp |");
+    expect(report).toContain("| Stack profiles | react |");
+
+    const leaky = await call(client, "draft_feedback", {
+      title: "A check failed",
+      what: "It failed on:\n```\nconst key = 1;\n```\nand wrote to ada@example.com.",
+      expected: "No failure.",
+    });
+    expect(leaky.isError).toBe(true);
+    expect(leaky.text).toContain("block of code");
+    expect(leaky.text).toContain("email address");
+  });
+
   it("offers the workflow's tools, and tells the agent how to use them", async () => {
     const client = await connect(shop());
     const { tools } = await client.listTools();
@@ -103,8 +132,11 @@ describe("the MCP server", () => {
       ["record_review", false],
       ["check_document", true],
       ["advance_work_item", false],
+      ["draft_feedback", false],
     ]);
     expect(client.getInstructions()).toContain("Start a session with next_work");
+    expect(client.getInstructions()).toContain("When next_work reports setup problems");
+    expect(client.getInstructions()).toContain("call draft_feedback");
   });
 
   it("takes a work item from creation to done, and CI agrees with the result", async () => {
