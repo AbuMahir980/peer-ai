@@ -345,10 +345,28 @@
         {
           "file": "src/features/identify/identify.ts",
           "match": "  return (await response.json()) as T;"
+        },
+        {
+          "file": "src/features/identify/CareCard.tsx",
+          "match": "      <h2>This is {identification.species}</h2>",
+          "lines": 5
         }
       ],
       "rules": ["SEC-06", "AI-01"],
       "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "SP25",
+      "title": "Dragging a plant to reorder it never works: nothing lets the list accept a drop",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "        <li key={plant.id} draggable onDragStart={() => setDragging(plant.id ?? null)} onDrop={() => void moveTo(plant.position)}>"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, and judged real: a drop needs the list to allow it first."
     }
   ],
   "documents": {
