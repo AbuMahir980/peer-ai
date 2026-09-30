@@ -7,7 +7,7 @@ An eval tests whether a review finds the problems it should, and whether a docum
 | [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 36: 25 planted, and 11 found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. test-strategy. documentation. tech-debt-triage. |
 | [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 33: 23 planted, and 10 found that nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 20: 16 planted, and 4 found that nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
-| [`kennel.json`](kennel.json) | [`kennel`](../fixtures/kennel/): a dog-boarding service's API in NestJS, in production | 22 planted | – |
+| [`kennel.json`](kennel.json) | [`kennel`](../fixtures/kennel/): a dog-boarding service's API in NestJS, in production | 29: 22 planted, and 7 found that nobody planted | – |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
 | [`split-bill.json`](split-bill.json) | [`split-bill`](../fixtures/split-bill/): a small library whose tests run anywhere | – | implement-ticket: a planned item |
 | [`split-bill-uneven.json`](split-bill-uneven.json) | `split-bill` | – | implement-ticket: an unplanned request |
@@ -350,6 +350,11 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What the runs changed in the runner:** Claude Code runs and the grader now load only the copy's own settings. Before, they could see skills and plugins installed for the person running the evals, and two of 328 logged runs used one: the courier baselines for incident-response and tech-debt-triage used a general skill of the same kind, so those rows now say "another skill". Codex runs already ignored the user's own settings.
 - **Why shelf's first incident run cost $11.09:** after containing the incident, it built the fix and ran the five reviews it required, and three of them again, each in a background helper with its own copy of the context, as the skill's normal way of working asks. This time it ran the reviews itself, in one session, for $4.79.
 
+- **2026-09-30, the reviews on kennel, a NestJS API, with Claude Code on Sonnet, and security-review without its skill.** Kennel is the first practice project with a Node backend, so the reviews are proven on NestJS as well as Python:
+  - **Every review is ready with its skill:** security 16 of 16, code 14 of 14, reliability 2 of 2, compliance 2 of 2, performance 3 of 3, data migrations 2 of 2 and dependencies 2 of 2, each covering all its rules. Without its skill, security-review found 15 of 16, missing the microchip number put into another service's URL, a high problem, so it isn't ready.
+  - **The runs raised seven real problems nobody planted,** now on the sheet: a microchip number checked only for its length before it goes into the vet records service's URL; no retention period for personal data; an unpaged list of bookings; photos stored at full size; refused sign-ins unlogged; no abuse tests; and no threat model.
+  - **What people judged:** K15, a failed vaccination check counted as a pass, was planted as critical. The severity guide gives a finding its rule's level, and the fitting rules are high (CODE-11) and medium (REL-01), so the sheet now says high: reliability-review had found it, as medium. Code-review placed K22 at the import rather than the line that registers the entity, so the import is on the sheet too.
+
 ## Results
 
 Newest last.
@@ -462,6 +467,14 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | shelf-monitoring | observability-review | Claude Code | sonnet | used | 4 of 4 | 9 of 9 | 2 | Ready | $1.02 |
 | 2026-09-29 | courier-observability | observability-review | Claude Code | sonnet | without | 8 of 8 | 9 of 9 | 2 | Ready | $1.01 |
 | 2026-09-30 | split-bill-release | release-readiness | Claude Code | sonnet | used | 5 of 5 | 18 of 18 | 0 | Ready | $1.10 |
+| 2026-09-30 | kennel | security-review | Claude Code | sonnet | used | 16 of 16 | 50 of 50 | 0 | Ready | $1.25 |
+| 2026-09-30 | kennel | security-review | Claude Code | sonnet | without | 15 of 16 | 50 of 50 | 1 | Not ready | $2.23 |
+| 2026-09-30 | kennel | code-review | Claude Code | sonnet | used | 14 of 14 | 68 of 68 | 2 | Ready | $1.51 |
+| 2026-09-30 | kennel | reliability-review | Claude Code | sonnet | used | 2 of 2 | 14 of 14 | 0 | Ready | $1.20 |
+| 2026-09-30 | kennel | compliance-review | Claude Code | sonnet | used | 2 of 2 | 12 of 12 | 0 | Ready | $0.84 |
+| 2026-09-30 | kennel | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $0.96 |
+| 2026-09-30 | kennel | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $0.78 |
+| 2026-09-30 | kennel | dependency-review | Claude Code | sonnet | used | 2 of 2 | 8 of 8 | 0 | Ready | $1.79 |
 
 ## Document results
 
