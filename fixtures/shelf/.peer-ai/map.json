@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/map.schema.json",
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/map.schema.json",
   "version": 1,
   "assessedAt": "2026-09-28T20:04:57.712Z",
   "items": {

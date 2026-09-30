@@ -1,7 +1,7 @@
 // Proves the packages work as people will get them from npm: builds each one, packs it as
 // `pnpm publish` would, installs the packed files into an empty project with npm, and runs the
 // installed peer-ai there: its version, init, assess and render, and the MCP server AI tools
-// connect to. It runs in CI, and locally:
+// connect to, and loads the ESLint settings as a project's eslint.config.js would. It runs in CI on Linux, macOS and Windows, and locally:
 //
 //     node scripts/package-proof.ts
 
@@ -12,12 +12,14 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
-const PACKAGES = ["workflow", "standards", "skills", "peer-ai"];
+const PACKAGES = ["workflow", "standards", "skills", "peer-ai", "eslint-config"];
 const work = mkdtempSync(join(tmpdir(), "peer-ai-package-proof-"));
 const failures: string[] = [];
+// On Windows, pnpm, npm and an installed command are .cmd files, which run only through a shell.
+const WINDOWS = process.platform === "win32";
 
 function run(command: string, args: string[], cwd: string): string {
-  return execFileSync(command, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  return execFileSync(command, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: WINDOWS });
 }
 
 function check(name: string, ok: boolean, detail = ""): void {
@@ -28,7 +30,11 @@ function check(name: string, ok: boolean, detail = ""): void {
 /** Starts the installed MCP server, asks it to start a session and list its tools, and returns their names. */
 function mcpTools(cwd: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
-    const server = spawn(join(cwd, "node_modules", ".bin", "peer-ai"), ["mcp"], { cwd });
+    // Through the installed command's link, as an AI tool starts it; on Windows, through Node itself,
+    // since a server started through a shell can't be stopped with it.
+    const server = WINDOWS
+      ? spawn(process.execPath, [join(cwd, "node_modules", "peer-ai", "dist", "cli.js"), "mcp"], { cwd })
+      : spawn(join(cwd, "node_modules", ".bin", "peer-ai"), ["mcp"], { cwd });
     let buffer = "";
     const timer = setTimeout(() => {
       server.kill();
@@ -73,7 +79,7 @@ writeFileSync(join(project, "package.json"), `${JSON.stringify({ name: "repairs"
 writeFileSync(join(project, "README.md"), "# Repairs\n\nA made-up bicycle repair service.\n");
 run("git", ["init", "--quiet"], project);
 run("npm", ["install", "--no-audit", "--no-fund", "--save-dev", ...tarballs], project);
-const bin = join(project, "node_modules", ".bin", "peer-ai");
+const bin = join(project, "node_modules", ".bin", WINDOWS ? "peer-ai.cmd" : "peer-ai");
 check("peer-ai is installed as a command", existsSync(bin));
 
 // 3. Run it there.
@@ -96,6 +102,17 @@ check(
   "the MCP server lists its tools",
   tools.includes("next_work") && tools.includes("record_review"),
   tools.join(", "),
+);
+
+// The ESLint settings load as a project's eslint.config.js loads them, with ESLint and
+// typescript-eslint installed beside them as their peers.
+writeFileSync(
+  join(project, "eslint-check.mjs"),
+  'const { default: peerAi } = await import("@peer-ai/eslint-config");\nconsole.log(typeof peerAi);\n',
+);
+check(
+  "@peer-ai/eslint-config loads",
+  execFileSync(process.execPath, ["eslint-check.mjs"], { cwd: project, encoding: "utf8" }).trim() === "function",
 );
 
 if (failures.length > 0) {

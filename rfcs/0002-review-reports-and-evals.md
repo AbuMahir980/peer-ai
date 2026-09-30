@@ -62,7 +62,7 @@ Here is a small example:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/review-report.schema.json",
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/review-report.schema.json",
   "version": 1,
   "skill": "security-review",
   "workItem": "SHOP-12",

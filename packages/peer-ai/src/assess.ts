@@ -22,7 +22,7 @@ import type { Output, Stage } from "./init.ts";
 
 export const MAP_FILE = ".peer-ai/map.json";
 export const MAP_SCHEMA_URL =
-  "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/map.schema.json";
+  "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/map.schema.json";
 
 export type Status = "present" | "partial" | "missing" | "not-applicable";
 

@@ -28,7 +28,7 @@ import type { Output, Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
 
 export const WORK_ITEM_SCHEMA_URL =
-  "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/work-item.schema.json";
+  "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/work-item.schema.json";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 

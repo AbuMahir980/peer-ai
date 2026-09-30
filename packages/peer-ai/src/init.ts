@@ -9,7 +9,7 @@ import { CONFIG_FILE, detect, type Detected, type DetectedTrack, type TrackKind 
 import { Cancelled, type Choice, type Prompter } from "./prompter.ts";
 
 export const SCHEMA_URL =
-  "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/config.schema.json";
+  "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/config.schema.json";
 
 export type Stage = "prototype" | "mvp" | "production";
 export type Team = "solo" | "team";
