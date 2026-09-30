@@ -144,7 +144,8 @@
           "match": "  card_number TEXT NOT NULL,",
           "lines": 3
         }
-      ]
+      ],
+      "rules": ["MONEY-12", "PRIV-03"]
     },
     {
       "id": "D10",
@@ -156,7 +157,8 @@
           "file": "services/api/app/routes/payments.py",
           "match": "    amount_pence: int"
         }
-      ]
+      ],
+      "rules": ["SEC-05", "MONEY-02"]
     },
     {
       "id": "D11",
@@ -411,6 +413,7 @@
           "match": "def pay(payment: CardPayment, customer=Depends(current_customer), db=Depends(get_db)):"
         }
       ],
+      "rules": ["SEC-01"],
       "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
     },
     {

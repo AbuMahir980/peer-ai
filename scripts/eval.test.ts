@@ -190,6 +190,36 @@ describe("marking a review", () => {
     expect(three.unmatched).toEqual([]);
   });
 
+  it("pairs a finding first with the problem whose rule it cites, where several share a few lines", () => {
+    const payment = (id: string, severity: "critical" | "high" | "medium", rules: string[]): ResolvedDefect => ({
+      id,
+      title: "A payment problem",
+      severity,
+      skills: ["security-review"],
+      locations: [],
+      rules,
+      spans: [{ file: "payments.py", line: 15, endLine: 20 }],
+    });
+    // Card numbers stored, the amount taken from the request, and no check the parcel is the
+    // payer's. The review found the first and the last: the amount, a high problem, was missed.
+    const sheet: Sheet = {
+      ...SHEET,
+      defects: [
+        payment("card", "critical", ["MONEY-12"]),
+        payment("amount", "high", ["SEC-05"]),
+        payment("owner", "medium", ["SEC-01"]),
+      ],
+    };
+    const cites = (rule: string, severity: string) => ({ ...finding("payments.py", 18, severity), rule });
+    const marked = score(sheet, "security-review", [report([cites("SEC-01", "high"), cites("MONEY-12", "high")])]);
+    expect(marked.expected.map(({ defect, foundBy }) => [defect.id, foundBy.length])).toEqual([
+      ["card", 1],
+      ["amount", 0],
+      ["owner", 1],
+    ]);
+    expect(marked.ready).toBe(false);
+  });
+
   it("counts a problem found at any of its locations, and only a review's own reports", () => {
     const marked = score(SHEET, "security-review", [
       report([finding("db/0001.sql", 5, "high")]),

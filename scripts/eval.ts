@@ -76,7 +76,9 @@ const Defect = z.strictObject({
     .array(z.string().regex(/^[A-Z]+-\d{2}$/))
     .min(1)
     .optional()
-    .describe("The rules it breaks. A finding about a whole file or the project must cite one of them."),
+    .describe(
+      "The rules it breaks. A finding about a whole file or the project must cite one of them; elsewhere, a finding that cites one is paired with it first.",
+    ),
 });
 
 const Point = z.strictObject({
@@ -224,11 +226,13 @@ function distance(finding: Finding, defect: ResolvedDefect, span: Span): number 
 }
 
 /**
- * The planted problems a finding could be about, nearest first: those in the same file within the
- * line tolerance, at a severity no more than one level away.
+ * The planted problems a finding could be about: those in the same file within the line tolerance,
+ * at a severity no more than one level away. A problem whose rules the finding cites comes first,
+ * so where several problems share a few lines, each finding goes to the one it's about; then the
+ * nearest.
  */
 function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect[] {
-  const ranked: { defect: ResolvedDefect; lines: number; gap: number }[] = [];
+  const ranked: { defect: ResolvedDefect; cited: boolean; lines: number; gap: number }[] = [];
   for (const defect of defects) {
     const gap = Math.abs(SEVERITIES.indexOf(finding.severity) - SEVERITIES.indexOf(defect.severity));
     if (gap > 1) continue;
@@ -242,9 +246,12 @@ function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect
         )
         .map((span) => distance(finding, defect, span)),
     );
-    if (lines <= LINE_TOLERANCE) ranked.push({ defect, lines, gap });
+    const cited = defect.rules?.includes(finding.rule) === true;
+    if (lines <= LINE_TOLERANCE) ranked.push({ defect, cited, lines, gap });
   }
-  return ranked.sort((a, b) => a.lines - b.lines || a.gap - b.gap).map(({ defect }) => defect);
+  return ranked
+    .sort((a, b) => Number(b.cited) - Number(a.cited) || a.lines - b.lines || a.gap - b.gap)
+    .map(({ defect }) => defect);
 }
 
 /**
