@@ -85,6 +85,24 @@ An AI tool saying "I checked the security" isn't evidence. Peer AI asks for evid
 - **Documents are checked too.** A requirements document, a threat model or a test strategy must fill every part of its template before Peer AI accepts it.
 - **The skills are tested.** Each skill is run against practice projects with problems planted on purpose, and scored on what it finds. The results, including where a skill still falls short, are published in [`evals/README.md`](evals/README.md).
 
+### With and without Peer AI
+
+Frontier models are capable, and Peer AI doesn't make them smarter. It makes them thorough and accountable: the whole checklist every time, and no "done" without proof. Here is the same model, Claude Sonnet, on the same practice project, asked the same thing with and without Peer AI:
+
+| Asked for | Without Peer AI | With Peer AI |
+|-----------|-----------------|--------------|
+| A release check before a launch | 8 of 12 problems found | 12 of 12 |
+| A test strategy | 3 of 9 points made | 8 of 9 |
+| A README for a newcomer | 4 of 7, and refused by the document check | 7 of 7 |
+| An accessibility review | 4 of 5 problems | 5 of 5 |
+| A performance review | 2 of 3 | 3 of 3 |
+| A dependency review | 3 of 4 | 4 of 4 |
+| A check of an API against its contract | 6 of 8 | 7 of 8 |
+| A tester's check of a built feature | 4 of 5 | 5 of 5 |
+| A security review of a project built after the skills were written | 15 of 16, missing a serious problem | 16 of 16 |
+
+On six other reviews the model did as well on its own: infrastructure, reliability, compliance, data migrations, design and observability. Even there, Peer AI was often cheaper, as with the infrastructure review at half the cost. And without Peer AI, no review could show which rules it had checked; with it, every rule has a line and its evidence. Every run, with its cost, is in [`evals/README.md`](evals/README.md).
+
 ## Rules and standards
 
 Peer AI's standards are **197 rules**, each with an id such as `SEC-07`, a plain statement, why it matters, the stage it applies from, how it's checked, and how serious a break is. Security rules cite the published standard they come from: OWASP ASVS 5.0 for web apps and APIs, OWASP MASVS for phone apps, WCAG 2.2 for accessibility, and the OWASP Top 10 for LLM applications for AI features.
