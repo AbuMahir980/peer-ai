@@ -282,7 +282,7 @@ describe("running an eval", () => {
 
     const printed = formatRun(sheet, "claude-code", result, 1, 1).join("\n");
     expect(printed).toMatch(
-      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 15 problems on the answer sheet:/,
+      /^courier · security-review · Claude Code · without the skill · run 1 of 1\n\nFound 1 of 19 problems on the answer sheet:/,
     );
     expect(printed).toContain(
       "\n  D3   critical services/api/app/routes/parcels.py:55  The status filter is pasted into SQL",
