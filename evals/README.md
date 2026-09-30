@@ -371,6 +371,14 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What changed in the scorer:** it paired findings with problems by place alone, so in courier's payment handler, where three problems share a few lines, the first security run was marked as missing the ownership check, a medium problem, when it had missed the price, a high one. It now pairs a finding first with the problem whose rules it cites, and those three problems name theirs. Pairing is still by place otherwise, which is why a person read every pairing this round.
 - **Added to the sheets:** nine problems the reviews raised that nobody planted, each judged real. On courier: refused sign-ins unlogged, no CI and so no secret scanning, no threat model, no abuse tests, and no test of a payment's amount. On shelf: the API's responses used without checking their shape, no threat model, no abuse tests, and no secret scanning. Courier's stored card numbers now count for code-review too, which carries the money rules.
 
+- **2026-09-30, the four scenarios step 21 left not ready, with each review's pairings now confirmed by a grader.** On Claude Code with Sonnet, graded by Claude Code on Haiku; each scenario ran twice after its fixes, and counts as ready only when both runs are:
+  - **The scorer paired findings with problems by place, so a person had to read every pairing.** A grader now reads each finding beside the problems near it, and keeps a pairing only when it can quote the finding's own words for the fault. On seven earlier runs a person had read, it gave the same counts on all seven. Before it had to quote, it once accepted a finding about the payment request's contract as the missing ownership check.
+  - **Confirming pairings brought out real problems that place had hidden,** each now on its sheet. On courier: payments reported as paid though nothing was charged, a payment sent twice recorded twice, the tracking page copying the parcel into its own state, no limit on request size, and the assistant changing parcels outside the parcels module. On sprout: plants saved before version 2 left out of the sorted list, no empty state, a blank screen when the database won't open, the identification reply used unchecked, and reordering that never works, because nothing lets the list accept a drop. Two problems gained a second place they show: courier's session token where it's read, and sprout's identification reply where it's shown.
+  - **threat-model on shelf is ready, twice: 11 of 11.** The template now has a section for what already holds, and both runs filled it from the code, such as the session token sent with every request and the librarian's reply shown as plain text, each with its file and line.
+  - **security-review on courier is ready: 19 of 19 in three of four runs, the last two in a row.** The runs between missed the parcel notes that can steer the assistant, then an id sent in a request body, a public route returning a person's details, and secret scanning in a repository with no CI, marked not checked. The skill now lists each prompt the code puts together and traces every piece of it, names each id a route takes with the line that ties it to the caller, checks the fields a route returns, and fails a repository with no CI.
+  - **code-review is not ready on courier or sprout, and this is a known limit, recorded here instead of tuned away.** On a whole project it found nearly every critical problem, most serious ones and about two thirds of the medium ones, a different set each run: courier 17, 19 and 18 of 22, sprout 11, 8, 8 and 10 of 13. Checking its worst kinds of problem as rules on every item, and making a pass quote the code it compared, changed what it looked at, but not how much it holds at once. The planned fix is structural: reviews in small passes, planned by importance, one part and one group of rules at a time. Meanwhile, the specialist reviews Peer AI requires for such changes catch what it missed: contract-check a renamed field, ai-feature-review a model's reply saved unchecked, and security-review paying for someone else's parcel.
+- **What changed in the skills:** code-review checks SEC-01, SEC-05, SEC-07, SEC-08, SEC-10, SEC-15, PRIV-01, API-02 and AI-01 on every route, call and page, instead of in a sweep it could skim; lists every outside call; records the edges it tried for each unit; and matches contract field names letter for letter. threat-model lists what already holds. security-review traces each prompt, names each id, checks returned fields and fails a repository with no CI.
+
 ## Results
 
 Newest last.
@@ -503,6 +511,18 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 6 of 8 | 68 of 68 | 1 | Not ready, by a person's count | $1.45 |
 | 2026-09-30 | courier | code-review | Claude Code | sonnet | used | 14 of 17 | 68 of 68 | 0 | Not ready, by a person's count | $1.69 |
 | 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 7 of 8 | 69 of 69 | 0 | Not ready | $1.72 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 18 of 19 | 51 of 51 | 3 | Not ready | $1.65 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 11 of 13 | 72 of 72 | 2 | Not ready | $1.50 |
+| 2026-09-30 | courier | code-review | Claude Code | sonnet | used | 17 of 22 | 72 of 72 | 2 | Not ready | $2.05 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 19 of 19 | 51 of 51 | 3 | Ready | $1.48 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 8 of 13 | 72 of 72 | 2 | Not ready | $1.50 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 8 of 13 | 78 of 78 | 4 | Not ready | $2.13 |
+| 2026-09-30 | courier | code-review | Claude Code | sonnet | used | 19 of 22 | 78 of 78 | 2 | Not ready | $1.83 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 16 of 19 | 51 of 51 | 2 | Not ready | $1.87 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 10 of 13 | 78 of 78 | 1 | Not ready | $1.65 |
+| 2026-09-30 | courier | code-review | Claude Code | sonnet | used | 18 of 22 | 78 of 78 | 2 | Not ready | $1.76 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 19 of 19 | 51 of 51 | 2 | Ready | $1.87 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 19 of 19 | 51 of 51 | 3 | Ready | $1.83 |
 
 ## Document results
 
@@ -655,3 +675,5 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-30 | shelf | threat-model | Claude Code | sonnet | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Claude Code, haiku | $1.61 |
 | 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 7 of 10 | 4 of 4 | Accepted | Not ready | Claude Code, haiku | $0.85 |
 | 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 9 of 10 | 4 of 4 | Accepted | Ready, by a person's count | Claude Code, haiku | $1.09 |
+| 2026-09-30 | shelf | threat-model | Claude Code | sonnet | used | 11 of 11 | 5 of 5 | Accepted | Ready | Claude Code, haiku | $2.55 |
+| 2026-09-30 | shelf | threat-model | Claude Code | sonnet | used | 11 of 11 | 5 of 5 | Accepted | Ready | Claude Code, haiku | $1.48 |
