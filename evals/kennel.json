@@ -193,7 +193,7 @@
     {
       "id": "K15",
       "title": "A dog is checked in when its vaccinations can't be confirmed: a failed call to the vet records service is swallowed and counts as a yes",
-      "severity": "critical",
+      "severity": "high",
       "skills": ["reliability-review", "code-review"],
       "locations": [
         {
@@ -289,8 +289,110 @@
         {
           "file": "services/api/src/bookings/bookings.module.ts",
           "match": "imports: [TypeOrmModule.forFeature([Booking, Update])],"
+        },
+        {
+          "file": "services/api/src/bookings/bookings.module.ts",
+          "match": "import { Update } from \"../updates/update.entity\";"
         }
       ]
+    },
+    {
+      "id": "K23",
+      "title": "Personal data is kept with no retention period and no way to delete it",
+      "severity": "medium",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["PRIV-06"],
+      "found": "Not planted: first raised by the Claude Code compliance and security reviews on 2026-09-30, and judged real."
+    },
+    {
+      "id": "K24",
+      "title": "An owner's whole booking history comes back in one response, unpaged",
+      "severity": "medium",
+      "skills": ["performance-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/bookings.controller.ts",
+          "match": "return this.bookings.listForOwner(req.user.id);"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code performance review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "K25",
+      "title": "A microchip number is checked only for its length, then put into the vet records service's URL",
+      "severity": "high",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/dto/create-booking.dto.ts",
+          "match": "@Length(15, 15)"
+        },
+        {
+          "file": "services/api/src/vet/vet-records.client.ts",
+          "match": "const response = await axios.get(`${process.env.VET_RECORDS_URL}/dogs/${microchip}/vaccinations`);"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "K26",
+      "title": "Refused sign-ins are never logged",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/auth/auth.guard.ts",
+          "match": "if (scheme !== \"Bearer\" || !token) throw new UnauthorizedException();"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, with and without the skill, and judged real."
+    },
+    {
+      "id": "K27",
+      "title": "Nothing security-sensitive has abuse tests",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-08"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, with and without the skill, and judged real."
+    },
+    {
+      "id": "K28",
+      "title": "There's no threat model, though the API takes payments' webhooks, uploads and calls another service",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-25"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, with and without the skill, and judged real."
+    },
+    {
+      "id": "K29",
+      "title": "Uploaded photos are stored at full size, never resized",
+      "severity": "medium",
+      "skills": ["performance-review"],
+      "locations": [
+        {
+          "file": "services/api/src/updates/updates.controller.ts",
+          "match": "FileInterceptor(\"photo\", {"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code reliability review on 2026-09-30, and judged real."
     }
   ]
 }
