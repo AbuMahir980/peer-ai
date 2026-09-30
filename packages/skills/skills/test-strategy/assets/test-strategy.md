@@ -26,7 +26,7 @@
 
 ## Rules this stage asks for
 
-{{Each testing rule that applies at the product's stage, by id, and how the strategy meets it: a test that exists, a gap below, or a check planned with when it runs.}}
+{{Each testing rule that applies at the product's stage, by id, ending in one of three things: the test that meets it, "gap below", or "planned: when, by whom" for a check that isn't a test in the code. Never an open question: what's unknown about the past goes under Open questions, and the plan stands.}}
 
 ## Test data
 
