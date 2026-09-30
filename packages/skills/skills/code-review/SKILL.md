@@ -6,7 +6,7 @@ compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and N
 metadata:
   peer-ai-kind: review
   peer-ai-domains: code-quality architecture frontend backend system-design money safety-critical
-  peer-ai-rules: DATA-03 REL-01 REL-09 PERF-01 PERF-05 PERF-06 API-06 TEST-01 TEST-04 TEST-07
+  peer-ai-rules: SEC-01 API-02 AI-01 DATA-03 REL-01 REL-09 PERF-01 PERF-05 PERF-06 API-06 TEST-01 TEST-04 TEST-07
 ---
 
 # Code review
@@ -69,6 +69,7 @@ Work through each group. Its reference says what to look for, what counts as evi
 | CODE-01 to CODE-15: code people can change safely, and edge cases | [code-quality.md](references/code-quality.md) |
 | TEST-01, TEST-04, TEST-07: tests | [testing.md](references/testing.md) |
 | MONEY-01 to MONEY-12, SAFE-01 to SAFE-06: money and safety-critical data | [money-and-safety.md](references/money-and-safety.md) |
+| SEC-01, API-02, AI-01: records, contracts and AI replies, on every route and call | [serious-problems.md](references/serious-problems.md) |
 
 ### The sweep for serious problems
 
@@ -76,13 +77,10 @@ A code review is not a security audit, but it never walks past a serious problem
 
 - a secret in the code;
 - a query or command built by pasting in input;
-- a record returned or changed without checking it belongs to the caller;
 - outside content put into a page as HTML;
 - a secret or personal detail written to a log;
 - plain HTTP, or certificate checks switched off;
-- a response that no longer matches the API contract;
-- the client deciding a price or a permission;
-- an AI model's reply trusted as if the code had written it.
+- the client deciding a price or a permission.
 
 Report each as a finding that cites the rule it breaks. The peer-ai MCP tool `standards_for_file` lists every rule for a file. Its severity is that rule's. In the summary, name the specialist review that should follow, such as security-review or contract-check.
 

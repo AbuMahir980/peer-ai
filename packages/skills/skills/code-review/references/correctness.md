@@ -22,8 +22,6 @@ For every migration, and every change to how an app reads its stored data, inclu
 
 **Fail** when a response field is removed, renamed or retyped in one step.
 
-A route that already differs from its contract breaks clients the same way. For each `contract` item, compare each route's request and response with it, field by field: names, types, and which fields are there.
-
 Adding a field is safe.
 
 ## SYS-01: background jobs are safe to run twice
