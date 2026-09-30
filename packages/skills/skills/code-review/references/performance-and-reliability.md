@@ -1,6 +1,6 @@
-# Outside calls, load and leaks
+# Outside calls, updates, load and leaks
 
-REL-01, BE-02, PERF-01, PERF-05 and PERF-06.
+REL-01, REL-09, BE-02, PERF-01, PERF-05 and PERF-06.
 
 ## REL-01: every outside call has a timeout and handles failure
 
@@ -40,3 +40,11 @@ For every `call` item, including the project's own API from an app and an AI mod
 - an object URL.
 
 **Pass** when each is released in the component's cleanup.
+
+## REL-09: an app that caches itself still updates
+
+For each service worker or app cache, in an app that works offline:
+
+**Pass** when the cache is versioned, and the app checks for a new version and applies it, or tells the person.
+
+**Fail** on a cache that serves its first copy forever, so nobody gets a fix.
