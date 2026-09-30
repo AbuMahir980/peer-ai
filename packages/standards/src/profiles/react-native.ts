@@ -44,7 +44,7 @@ export const reactNative: ProfileInput = {
       id: "RN-02",
       title: "Nothing is written to the device log",
       rule: "The app doesn't call `console`. What needs recording goes through the project's logger, which drops personal data and sends nothing from release builds.",
-      why: "On a phone, the console goes to the device log, which other apps, crash tools and anyone with the phone on a cable can read.",
+      why: "On a phone, the console goes to the device log, which crash tools collect and anyone with the phone on a cable can read.",
       ask: "Does this change call console?",
       stage: "mvp",
       check: "auto",

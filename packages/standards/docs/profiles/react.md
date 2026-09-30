@@ -8,13 +8,13 @@ List it in `standards.profiles` as `react`. It applies to parts tagged `react`. 
 
 Hooks are called at the top of a component or another hook, never inside a condition, a loop or a callback.
 
-**Why:** React matches each hook to its state by call order. A hook called conditionally gets another hook's state, which the code can't describe.
+**Why:** React matches each hook to its state by the order of the calls. A hook called conditionally gets another hook's state, a bug that appears only on some renders.
 
 **Ask:** Is any hook in this change called conditionally, in a loop or in a callback?
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| Prototype | A tool | High | [CODE-13](../code-quality.md) | Any | `react-hooks/rules-of-hooks`, in ESLint |
+| Prototype | A tool | High | [CODE-16](../code-quality.md) | Any | `react-hooks/rules-of-hooks`, in ESLint |
 
 ## REACT-02 · State isn't copied from other data by an effect
 
@@ -54,23 +54,23 @@ A component file over 150 lines, not counting blank lines and comments, fails th
 |--------------|------------|----------|---------|---------------|-------------|
 | Prototype | A tool | High | [SEC-08](../security.md) | Any | `react-dom/no-dangerously-set-innerhtml`, in ESLint |
 
-## REACT-05 · Every image says what it shows
+## REACT-05 · Every control has a name a screen reader can say
 
-Every `img` has `alt` text saying what it shows, or an empty `alt` when it's only decoration.
+Every button, link and other control has a name a screen reader can announce: its text, or an `aria-label` when it shows only an icon.
 
-**Why:** A screen reader reads an image without alt text as its file name, or not at all.
+**Why:** A button that shows only an icon is announced as "button", with nothing to say what it does.
 
-**Ask:** Does every image in this change have alt text?
+**Ask:** Does every control in this change have a name, including those that show only an icon?
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| Prototype | A tool | Medium | [DES-08](../design-accessibility.md) | Any | `jsx-a11y/alt-text`, in ESLint |
+| Prototype | A tool | Medium | [DES-08](../design-accessibility.md) | Any | `jsx-a11y/control-has-associated-label`, in ESLint |
 
-## REACT-06 · Every form field has a label
+## REACT-06 · Every label is tied to its field
 
 Every `label` is tied to its field, by wrapping it or by `htmlFor`, so the field is named when it's reached.
 
-**Why:** A field named only by placeholder text or position is unnamed to a screen reader, and its placeholder disappears as soon as someone types.
+**Why:** A label that sits beside a field without being tied to it isn't read out when the field is reached, so a screen reader announces an unnamed field.
 
 **Ask:** Is every label in this change tied to its field?
 
@@ -92,7 +92,7 @@ An element with `onClick` also answers the keyboard. Better, it's a `button` or 
 
 ## REACT-08 · Server data comes through a query cache, not an effect
 
-Data from the server is read through the project's query cache, such as TanStack Query or SWR, not fetched in `useEffect` and kept in `useState`.
+In a component that runs in the browser, data from the server is read through the project's query cache, such as TanStack Query or SWR, not fetched in `useEffect` and kept in `useState`. Components that render on the server fetch there instead.
 
 **Why:** Fetching in an effect repeats the same request in every component that needs it, races when inputs change, and leaves each copy stale in its own way.
 

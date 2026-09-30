@@ -40,21 +40,21 @@ A controller maps the request to a service call and the result to a response. Th
 |--------------|------------|----------|---------|---------------|-------------|
 | MVP | AI review | Medium | [ARC-05](../architecture.md) | Any | – |
 
-## NEST-04 · An exception filter keeps internals in
+## NEST-04 · One exception filter gives every error the same shape
 
-A global exception filter answers every error in the project's error shape, without stack traces, queries or database errors.
+A global exception filter answers every error in the project's error shape, whichever exception it was, with the detail kept for the log.
 
-**Why:** An error the filter doesn't know about, such as a database error, otherwise reaches the client with its detail.
+**Why:** Nest's built-in answers differ between its own exceptions and everything else, so a client has to handle several shapes.
 
-**Ask:** Could an error in this change reach the client with internal detail?
+**Ask:** Does every error in this change reach the client in the project's error shape?
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| MVP | AI review | Medium | [SEC-09](../security.md) | Any | – |
+| MVP | AI review | Medium | [API-04](../api-design.md) | Any | – |
 
 ## NEST-05 · Settings are checked when the app starts
 
-`ConfigModule` loads settings with a validation schema, so the app refuses to start with a setting missing or wrong.
+`ConfigModule` loads settings with a validation schema, so the app refuses to start with a setting missing or wrong, and an environment name it doesn't know is treated as production.
 
 **Why:** A setting read unchecked fails on the first request that needs it, long after the deploy looked fine.
 

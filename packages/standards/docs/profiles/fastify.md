@@ -30,17 +30,17 @@ Every route declares schemas for its body, parameters, query and responses, so F
 |--------------|------------|----------|---------|---------------|-------------|
 | MVP | AI review | Medium | [BE-02](../backend.md) | Any | – |
 
-## FASTIFY-03 · One error handler answers every error the same way
+## FASTIFY-03 · One error handler keeps internals in
 
-`setErrorHandler` answers every error in the project's error shape, without stack traces or internal detail.
+`setErrorHandler` answers every error in the project's error shape, with a generic message for anything unexpected, and the detail kept for the log.
 
-**Why:** Errors answered route by route drift apart, and the client can't handle them one way.
+**Why:** Fastify's default handler sends the error's own message, even on a 500, which can carry query text or table names.
 
-**Ask:** Does every error in this change go through the one error handler?
+**Ask:** Could an error in this change reach the client with its own message?
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| MVP | AI review | Medium | [API-04](../api-design.md) | Any | – |
+| MVP | AI review | Medium | [SEC-09](../security.md) | Any | – |
 
 ## FASTIFY-04 · Plugins keep what they add to themselves
 
