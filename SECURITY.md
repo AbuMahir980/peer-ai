@@ -10,7 +10,7 @@ Include what you found, how to reproduce it, and the version or commit affected.
 
 | Version | Supported |
 |---------|-----------|
-| 1.0 pre-releases, from npm or the `next` branch | Yes |
+| 1.0 pre-releases, from npm or the `main` branch | Yes |
 | v0 playbook | No. It stays available by its tag, `v0.1.0`. |
 
 ## Scope

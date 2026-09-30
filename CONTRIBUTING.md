@@ -1,6 +1,6 @@
 # Contributing to Peer AI
 
-Thanks for helping. Peer AI 1.0 is being built on the `next` branch; `main` holds the v0 playbook until 1.0 ships.
+Thanks for helping. Peer AI is built on `main`: open pull requests against it. The v0 playbook stays available at the tag `v0.1.0`.
 
 ## Ways to help
 
@@ -51,11 +51,11 @@ The five packages share one version number. Until 1.0.0, pre-releases are versio
 
 ## Releases
 
-A maintainer versions the packages in an ordinary pull request: `pnpm version-packages` turns the waiting changesets into new versions and changelogs, and renders the practice projects again, since `render` writes the exact version into each AI tool's settings. Once it merges into `next`, the release workflow publishes every package whose version npm doesn't have yet. npm trusts that workflow instead of a token, and records where each version was built, so nobody can publish Peer AI from their own machine.
+A maintainer versions the packages in an ordinary pull request: `pnpm version-packages` turns the waiting changesets into new versions and changelogs, and renders the practice projects again, since `render` writes the exact version into each AI tool's settings. Once it merges into `main`, the release workflow publishes every package whose version npm doesn't have yet. npm trusts that workflow instead of a token, and records where each version was built, so nobody can publish Peer AI from their own machine.
 
 `pnpm release --dry-run` shows what would be published, without publishing anything.
 
-**A new package** needs its first version published by a maintainer, since npm can't create a package through trusted publishing: `npm login`, then `pnpm release` from `next`. Then point npm at the workflow, once per package: `npm trust github <package> --file release.yml --repository AbuMahir980/peer-ai --allow-publish`. Until then, the release workflow skips it with a warning.
+**A new package** needs its first version published by a maintainer, since npm can't create a package through trusted publishing: `npm login`, then `pnpm release` from `main`. Then point npm at the workflow, once per package: `npm trust github <package> --file release.yml --repository AbuMahir980/peer-ai --allow-publish`. Until then, the release workflow skips it with a warning.
 
 ## Code of conduct
 
