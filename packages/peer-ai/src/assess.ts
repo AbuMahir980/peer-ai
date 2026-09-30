@@ -14,8 +14,8 @@ import {
   type PeerAiConfig,
   type ProjectMap,
   type Trait,
-} from "@peer-ai/workflow";
-import { PROFILES, profilesForPart } from "@peer-ai/standards";
+} from "peer-ai-workflow";
+import { PROFILES, profilesForPart } from "peer-ai-standards";
 import { CONFIG_FILE, detect, detectDelivery, detectTracks } from "./detect.ts";
 import { listRepoFiles } from "./files.ts";
 import type { Output, Stage } from "./init.ts";

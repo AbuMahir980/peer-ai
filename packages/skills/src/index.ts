@@ -1,10 +1,10 @@
-// @peer-ai/skills: Peer AI's skills in the Agent Skills format (RFC 0004). Each skill's source
+// peer-ai-skills: Peer AI's skills in the Agent Skills format (RFC 0004). Each skill's source
 // lives in skills/<id>/; buildSkill adds its generated references, and validateSkill checks the
 // result. peer-ai render writes built skills where each AI tool reads them.
 
 import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { SKILL_IDS, type SkillId } from "@peer-ai/workflow";
+import { SKILL_IDS, type SkillId } from "peer-ai-workflow";
 import { buildSkill, ruleIdsFor, type BuildOptions } from "./build.ts";
 import { readSkillFiles, type SkillFiles } from "./skill.ts";
 

@@ -5,7 +5,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DOMAIN_IDS, type DomainId } from "@peer-ai/workflow";
+import { DOMAIN_IDS, type DomainId } from "peer-ai-workflow";
 import { CORE_RULES, DOMAIN_INFO, PROFILES, traitsNeeded, withValue, type Profile, type Rule } from "../src/index.ts";
 
 export const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "docs");
@@ -113,7 +113,7 @@ export function renderIndex(): string {
   return `${[
     "# Peer AI standards",
     "",
-    "Generated from the rules in `src/core/`. Don't edit these pages by hand: change a rule, then run `pnpm --filter @peer-ai/standards generate`.",
+    "Generated from the rules in `src/core/`. Don't edit these pages by hand: change a rule, then run `pnpm --filter peer-ai-standards generate`.",
     "",
     "Every rule has an id, the rule in plain words, why it matters, a question a reviewer can answer, the stage it applies from, how it's checked and how serious breaking it usually is. The design is in [RFC 0003](../../../rfcs/0003-how-a-standard-is-written.md).",
     "",

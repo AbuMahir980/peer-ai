@@ -6,8 +6,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import type { ToolId } from "@peer-ai/workflow";
-import { CONFIG_FILE } from "@peer-ai/workflow";
+import type { ToolId } from "peer-ai-workflow";
+import { CONFIG_FILE } from "peer-ai-workflow";
 
 export { CONFIG_FILE };
 

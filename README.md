@@ -108,7 +108,7 @@ Peer AI's standards are **197 rules**, each with an id such as `SEC-07`, a plain
 
 | Profile | Enforced by |
 |---------|-------------|
-| TypeScript, Node, React, React Native, Next.js, Express, NestJS, Fastify | ESLint (through the `@peer-ai/eslint-config` package) and the TypeScript compiler |
+| TypeScript, Node, React, React Native, Next.js, Express, NestJS, Fastify | ESLint (through the `peer-ai-eslint-config` package) and the TypeScript compiler |
 | Python, FastAPI | Ruff |
 | GitHub Actions | A security pipeline Peer AI writes: Gitleaks for secrets, OSV-Scanner for vulnerable dependencies, zizmor for workflows, Semgrep for code, SSLyze for TLS, and OWASP ZAP against a running test environment |
 

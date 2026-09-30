@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { SKILL_IDS, type PeerAiConfig, type SkillId, type WorkItem } from "@peer-ai/workflow";
-import { availableSkills } from "@peer-ai/skills";
+import { SKILL_IDS, type PeerAiConfig, type SkillId, type WorkItem } from "peer-ai-workflow";
+import { availableSkills } from "peer-ai-skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { assess, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";

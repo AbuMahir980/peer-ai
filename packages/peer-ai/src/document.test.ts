@@ -1,5 +1,5 @@
-import { availableSkills, documentInfo, loadSkill, templatePath } from "@peer-ai/skills";
-import { MAP_ITEM_SKILLS, SKILL_KINDS, type KnownMapItemId, type SkillId } from "@peer-ai/workflow";
+import { availableSkills, documentInfo, loadSkill, templatePath } from "peer-ai-skills";
+import { MAP_ITEM_SKILLS, SKILL_KINDS, type KnownMapItemId, type SkillId } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { assess } from "./assess.ts";
 import { checkDocumentFile, runCheckDocument } from "./document.ts";

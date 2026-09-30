@@ -29,8 +29,8 @@ skills/<skill id>/
     └── openai.yaml  # Codex's name, blurb and starting prompt
 ```
 
-- The folder is named after the skill's id from `@peer-ai/workflow`. **Checked.**
-- The build adds `references/rules.md` from `@peer-ai/standards`, and for review skills `references/severity.md` and `references/report.md` from `shared/`. Never write these by hand.
+- The folder is named after the skill's id from `peer-ai-workflow`. **Checked.**
+- The build adds `references/rules.md` from `peer-ai-standards`, and for review skills `references/severity.md` and `references/report.md` from `shared/`. Never write these by hand.
 - Nothing for people goes inside a skill: no README, changelog or install notes. **Checked.**
 
 ## The frontmatter

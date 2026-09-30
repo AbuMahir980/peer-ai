@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { MAP_ITEM_SKILLS, type KnownMapItemId, type PeerAiConfig } from "@peer-ai/workflow";
-import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
+import { MAP_ITEM_SKILLS, type KnownMapItemId, type PeerAiConfig } from "peer-ai-workflow";
+import { availableSkills, renderedName, skillRuleIds } from "peer-ai-skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
 import { cleanUp, project } from "./test-helpers.ts";

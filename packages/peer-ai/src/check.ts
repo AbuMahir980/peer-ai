@@ -4,8 +4,8 @@
 // reported, so they become work items instead of blockers. The project's stage sets how strict
 // it is.
 
-import { renderedName } from "@peer-ai/skills";
-import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "@peer-ai/workflow";
+import { renderedName } from "peer-ai-skills";
+import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
 import { CONFIG_FILE } from "./detect.ts";

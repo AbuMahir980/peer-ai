@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PROFILES, type Example, type Profile, type Value } from "@peer-ai/standards";
-import { validateConfig, type PeerAiConfig } from "@peer-ai/workflow";
+import { PROFILES, type Example, type Profile, type Value } from "peer-ai-standards";
+import { validateConfig, type PeerAiConfig } from "peer-ai-workflow";
 import { ESLint, type Linter } from "eslint";
 import tseslint from "typescript-eslint";
 import { afterEach, describe, expect, it } from "vitest";

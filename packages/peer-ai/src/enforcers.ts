@@ -8,8 +8,8 @@ import { dirname, join, normalize, posix } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser";
 import { parse as parseToml } from "smol-toml";
 import { parse as parseYaml } from "yaml";
-import { profile, profileRulesFor, type AppliedRule } from "@peer-ai/standards";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import { profile, profileRulesFor, type AppliedRule } from "peer-ai-standards";
+import type { PeerAiConfig } from "peer-ai-workflow";
 import { fail, ok, plural, warn, type Check } from "./checks.ts";
 import {
   WORKFLOW_FILE,
@@ -24,7 +24,7 @@ import {
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((extension) => `eslint.config.${extension}`);
-const ESLINT_PACKAGE = "@peer-ai/eslint-config";
+const ESLINT_PACKAGE = "peer-ai-eslint-config";
 
 const list = (ids: readonly string[]) => ids.join(", ");
 
@@ -38,7 +38,7 @@ export function checkProfiles(config: PeerAiConfig): Check[] {
     warn(
       "profiles",
       `Peer AI has no rules yet for ${list(unknown)}, so ${unknown.length === 1 ? "that profile adds" : "those profiles add"} nothing for now.`,
-      "Keep it listed and its rules arrive with the profile, or check the id against the profiles in @peer-ai/standards.",
+      "Keep it listed and its rules arrive with the profile, or check the id against the profiles in peer-ai-standards.",
     ),
   ];
 }

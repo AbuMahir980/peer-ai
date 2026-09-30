@@ -1,7 +1,7 @@
 // Turns an assessment into the report `peer-ai assess` prints: every item on the map, what the
 // project's stage still needs, what was inferred and should be confirmed, and compliance signals.
 
-import { MAP_ITEM_IDS } from "@peer-ai/workflow";
+import { MAP_ITEM_IDS } from "peer-ai-workflow";
 import { NEXT_STAGE, gaps, type Assessment, type ItemResult, type Status } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Stage } from "./init.ts";

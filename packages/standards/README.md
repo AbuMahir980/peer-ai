@@ -1,4 +1,4 @@
-# @peer-ai/standards
+# peer-ai-standards
 
 Peer AI's engineering standards: the rules every project follows, in any language.
 
@@ -24,7 +24,7 @@ Peer AI's engineering standards: the rules every project follows, in any languag
 ## Choosing the rules that apply
 
 ```ts
-import { rulesFor } from "@peer-ai/standards";
+import { rulesFor } from "peer-ai-standards";
 
 rulesFor({ stage: "mvp", traits: ["money"], domains: ["money", "code-quality"] });
 ```
@@ -32,7 +32,7 @@ rulesFor({ stage: "mvp", traits: ["money"], domains: ["money", "code-quality"] }
 ## Adding or changing a rule
 
 1. Add or edit it in `src/core/`. A rule with a missing part, an id that doesn't match its domain, or an id used twice fails the build.
-2. Regenerate the pages: `pnpm --filter @peer-ai/standards generate`. A test fails if you forget.
+2. Regenerate the pages: `pnpm --filter peer-ai-standards generate`. A test fails if you forget.
 3. Changing what an existing rule requires needs an RFC.
 
 ## Stack profiles
@@ -49,7 +49,7 @@ A profile rule has every part a core rule has, and four more:
 A project lists its profiles in `standards.profiles`. A profile applies to a part whose stack has one of its tags, and brings the profiles it builds on:
 
 ```ts
-import { profileRulesFor } from "@peer-ai/standards";
+import { profileRulesFor } from "peer-ai-standards";
 
 profileRulesFor({ listed: ["typescript"], stack: ["typescript", "react"], stage: "mvp" });
 ```
@@ -57,6 +57,6 @@ profileRulesFor({ listed: ["typescript"], stack: ["typescript", "react"], stage:
 ## Adding a profile or a profile rule
 
 1. Add the profile to `src/profiles/`, and list it in `src/index.ts`. A rule that carries no core rule, an id without the profile's prefix, or an automatic rule without its enforcer and examples fails the build.
-2. Give each automatic rule an example that must fail and one that must pass. The tests run the real tool on both: the compiler here, ESLint in `@peer-ai/eslint-config`, and Ruff in `peer-ai`, through `@astral-sh/ruff-wasm-nodejs`. The GitHub Actions profile's examples are proven in CI instead: `scripts/pipeline-proof.ts` installs the tools its pipeline uses and runs them on each example.
-3. Regenerate the pages: `pnpm --filter @peer-ai/standards generate`.
+2. Give each automatic rule an example that must fail and one that must pass. The tests run the real tool on both: the compiler here, ESLint in `peer-ai-eslint-config`, and Ruff in `peer-ai`, through `@astral-sh/ruff-wasm-nodejs`. The GitHub Actions profile's examples are proven in CI instead: `scripts/pipeline-proof.ts` installs the tools its pipeline uses and runs them on each example.
+3. Regenerate the pages: `pnpm --filter peer-ai-standards generate`.
 4. A new profile doesn't need an RFC; changing what a rule requires does.

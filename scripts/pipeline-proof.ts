@@ -10,7 +10,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { PROFILES, type Example } from "@peer-ai/standards";
+import { PROFILES, type Example } from "peer-ai-standards";
 import { IMAGES, JOBS, WORKFLOW_FILE, workflowFile } from "../packages/peer-ai/src/pipeline.ts";
 
 const runnerTemp = process.env.RUNNER_TEMP ?? mkdtempSync(join(tmpdir(), "peer-ai-proof-"));

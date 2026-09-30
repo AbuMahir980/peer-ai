@@ -1,4 +1,4 @@
-# @peer-ai/workflow
+# peer-ai-workflow
 
 The vocabulary Peer AI is built on, and the schemas for the files a project keeps: `peer-ai.config.json` for its settings and customisations, and `.peer-ai/` for its state.
 
@@ -103,7 +103,7 @@ A session finds its work item from the git branch it is on, so there is no share
 The Zod definitions in `src/` are the source. After changing one, regenerate the JSON Schema files:
 
 ```bash
-pnpm --filter @peer-ai/workflow generate
+pnpm --filter peer-ai-workflow generate
 ```
 
 A test fails if the committed files fall behind. Changing either schema needs an RFC; see [rfcs/README.md](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/README.md).

@@ -4,7 +4,7 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { TOOL_IDS, validateConfig, type ToolId } from "@peer-ai/workflow";
+import { TOOL_IDS, validateConfig, type ToolId } from "peer-ai-workflow";
 import { CONFIG_FILE, detect, type Detected, type DetectedTrack, type TrackKind } from "./detect.ts";
 import { Cancelled, type Choice, type Prompter } from "./prompter.ts";
 

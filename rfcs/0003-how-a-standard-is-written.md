@@ -131,7 +131,7 @@ The project names the specifics in its add-on: which unit its money uses, and wh
 
 ### 7. Where rules live, and how tools use them
 
-- **A new package, `@peer-ai/standards`.** Rules are written as typed data, checked against a schema, so a missing part or a reused ID fails the build. Readable pages, one per domain and one per profile, are generated from that data, and a test fails if they fall behind.
+- **A new package, `peer-ai-standards`.** Rules are written as typed data, checked against a schema, so a missing part or a reused ID fails the build. Readable pages, one per domain and one per profile, are generated from that data, and a test fails if they fall behind.
 - **The review skills cite rule IDs** in their reports, and mark a rule `not-applicable` when its stage or trait doesn't apply.
 - **`standards_for_file` returns the rules themselves.** For the file being edited, that means the core rules for its domains, its stack profile's rules and the project's add-on, filtered by stage and traits. Today it returns only document paths.
 

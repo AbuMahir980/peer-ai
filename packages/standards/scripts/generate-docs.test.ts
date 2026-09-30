@@ -6,7 +6,7 @@ import { DOCS_DIR, renderAll } from "./generate-docs.ts";
 describe("the standards pages", () => {
   const pages = renderAll();
 
-  it("are up to date with the rules; run pnpm --filter @peer-ai/standards generate if not", () => {
+  it("are up to date with the rules; run pnpm --filter peer-ai-standards generate if not", () => {
     const files = readdirSync(DOCS_DIR, { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => join(entry.parentPath, entry.name).slice(DOCS_DIR.length + 1));

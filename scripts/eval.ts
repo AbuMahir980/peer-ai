@@ -30,7 +30,7 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { availableSkills, renderedName, skillRuleIds } from "@peer-ai/skills";
+import { availableSkills, renderedName, skillRuleIds } from "peer-ai-skills";
 import {
   MAP_ITEM_SKILLS,
   SEVERITIES,
@@ -39,7 +39,7 @@ import {
   validateReport,
   type ReviewReport,
   type SkillId,
-} from "@peer-ai/workflow";
+} from "peer-ai-workflow";
 import { z } from "zod";
 import { CLI, localServer, prepareFixture } from "./fixture.ts";
 

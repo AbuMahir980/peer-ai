@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { availableSkills } from "@peer-ai/skills";
-import type { ToolId } from "@peer-ai/workflow";
+import { availableSkills } from "peer-ai-skills";
+import type { ToolId } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
 import { main } from "./cli.ts";

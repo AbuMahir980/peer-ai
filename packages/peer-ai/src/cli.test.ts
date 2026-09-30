@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { skillRuleIds } from "@peer-ai/skills";
+import { skillRuleIds } from "peer-ai-skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { main } from "./cli.ts";
 import { capture, cleanUp, project } from "./test-helpers.ts";

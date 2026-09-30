@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { arch, platform } from "node:os";
 import { basename, join } from "node:path";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import type { PeerAiConfig } from "peer-ai-workflow";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
 import type { Result } from "./work.ts";
