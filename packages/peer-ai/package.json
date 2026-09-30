@@ -15,9 +15,13 @@
     "@peer-ai/standards": "workspace:*",
     "@peer-ai/workflow": "workspace:*",
     "jsonc-parser": "3.3.1",
+    "smol-toml": "1.9.0",
     "zod": "4.6.5"
   },
   "engines": {
     "node": ">=24"
+  },
+  "devDependencies": {
+    "@astral-sh/ruff-wasm-nodejs": "0.16.9"
   }
 }

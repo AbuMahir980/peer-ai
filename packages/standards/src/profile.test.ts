@@ -35,10 +35,10 @@ const profileInput = (id: string, prefix: string, extra: Partial<ProfileInput> =
 
 describe("stack profiles", () => {
   it("enforce every automatic rule with a tool whose examples the tests run", () => {
-    // The compiler's rules are run below, and ESLint's in @peer-ai/eslint-config. A rule for any
-    // other tool needs its own run before it can ship.
+    // The compiler's rules are run below, ESLint's in @peer-ai/eslint-config, and Ruff's in the
+    // CLI, which writes Ruff's settings. A rule for any other tool needs its own run before it ships.
     const tools = PROFILES.flatMap((profile) => profile.rules).map((each) => each.enforcer?.tool);
-    expect(new Set(tools.filter((tool) => tool !== undefined))).toEqual(new Set(["eslint", "typescript"]));
+    expect(new Set(tools.filter((tool) => tool !== undefined))).toEqual(new Set(["eslint", "ruff", "typescript"]));
   });
 
   it("refuse a rule that carries no core rule, or uses another profile's prefix", () => {
@@ -173,9 +173,30 @@ describe("a profile's rules for one project", () => {
     expect(changed?.enforcer).toEqual({ tool: "eslint", rule: "max-depth", options: [{ max: 36 }] });
   });
 
-  it("keeps the default when the project's value is of another type", () => {
-    const [kept] = select({ overrides: { "WH-01": { value: "36" } } });
-    expect(kept?.value).toBe(32);
+  it("keeps the default when the project's value is of another type, or a count isn't a whole number", () => {
+    for (const value of ["36", 36.5, -2]) {
+      const [kept] = select({ overrides: { "WH-01": { value } } });
+      expect(kept?.value, String(value)).toBe(32);
+    }
+  });
+});
+
+describe("the first profiles", () => {
+  const chain = (listed: string[], stack: string[]) => profilesForPart(listed, { stack }).map((p) => p.id);
+
+  it("reach a part through its framework's tag, with everything they build on", () => {
+    expect(chain(["react-native"], ["typescript", "expo"])).toEqual(["typescript", "react", "react-native"]);
+    expect(chain(["next"], ["typescript", "next"])).toEqual(["typescript", "node", "react", "next"]);
+    expect(chain(["express", "nestjs", "fastify"], ["typescript", "nest"])).toEqual(["typescript", "node", "nestjs"]);
+  });
+
+  it("give a layered Express API its layering rule, and a modular monolith its own", () => {
+    const ids = (architecture: string) =>
+      profileRulesFor({ listed: ["express"], stack: ["express"], architecture, stage: "mvp" }).map((each) => each.id);
+    expect(ids("layered")).toContain("EXPRESS-06");
+    expect(ids("layered")).not.toContain("EXPRESS-07");
+    expect(ids("modular-monolith")).toContain("EXPRESS-07");
+    expect(ids("modular-monolith")).not.toContain("EXPRESS-06");
   });
 });
 

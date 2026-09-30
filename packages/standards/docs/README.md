@@ -45,3 +45,5 @@ A stack profile says how to follow the core rules in one stack, and which tool e
 | [Express](profiles/express.md) | `express` | node | 7 |
 | [NestJS](profiles/nestjs.md) | `nestjs` | node | 6 |
 | [Fastify](profiles/fastify.md) | `fastify` | node | 4 |
+| [Python](profiles/python.md) | `python` | – | 13 |
+| [FastAPI](profiles/python-fastapi.md) | `python-fastapi` | python | 8 |

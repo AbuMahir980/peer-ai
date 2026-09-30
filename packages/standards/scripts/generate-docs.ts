@@ -44,16 +44,14 @@ export function renderDomain(domain: DomainId): string | undefined {
   return `${[`# ${title}`, "", about, "", ...rules.flatMap((rule) => [renderRule(rule), ""])].join("\n").trimEnd()}\n`;
 }
 
-const TOOL_NAMES = { eslint: "ESLint", typescript: "the TypeScript compiler" } as const;
+const TOOL_NAMES = { eslint: "ESLint", ruff: "Ruff", typescript: "the TypeScript compiler" } as const;
 
 function renderProfileRule(rule: Profile["rules"][number]): string {
   const shown = withValue(rule, rule.default?.value);
   const enforcer =
     rule.enforcer === undefined
       ? "–"
-      : rule.enforcer.tool === "eslint"
-        ? `\`${rule.enforcer.rule}\`, in ${TOOL_NAMES.eslint}`
-        : `\`${rule.enforcer.option}\`, in ${TOOL_NAMES.typescript}`;
+      : `\`${rule.enforcer.tool === "typescript" ? rule.enforcer.option : rule.enforcer.rule}\`, in ${TOOL_NAMES[rule.enforcer.tool]}`;
   const lines = [
     `## ${rule.id} · ${shown.title}`,
     "",

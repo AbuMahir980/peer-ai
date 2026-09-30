@@ -17,6 +17,7 @@ import { count, fail, formatChecks, ok, plural, skip, type Check } from "./check
 import { CONFIG_FILE } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
+import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 export const START = "<!-- peer-ai:start -->";
 export const END = "<!-- peer-ai:end -->";
@@ -472,6 +473,18 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
     files.push(withServer(root, ".gemini/settings.json", "mcpServers", server));
   }
   const command = skillsCommand(root);
+  // Ruff reads settings from a file, not a package, so its settings for the project's stack
+  // profiles are written where the project's own Ruff settings can extend them (RFC 0006).
+  const ruff = ruffFile(config);
+  if (ruff !== undefined) {
+    const existing = readText(root, RUFF_FILE);
+    files.push({
+      path: RUFF_FILE,
+      action: existing === undefined ? "create" : existing === ruff ? "unchanged" : "update",
+      content: ruff,
+    });
+  }
+
   if (uses("claude-code")) files.push(claudeSessionHook(root, command));
   if (uses("cursor")) files.push(cursorEnvironment(root, command));
   if (uses("copilot")) files.push(copilotSetupSteps(root, command));
@@ -601,7 +614,9 @@ export function runRender(options: RenderOptions, out: Output): number {
       : [];
   const checks = [...plan.files.map((planned) => toCheck(planned, options.check)), ...skillLines];
   if ((config.tools ?? []).length === 0) {
-    checks.push(skip("render", `No AI tools are listed in ${CONFIG_FILE}, so only AGENTS.md was written.`));
+    checks.push(
+      skip("render", `No AI tools are listed in ${CONFIG_FILE}, so AGENTS.md is the only instructions file written.`),
+    );
   }
   const failures = count(checks, "fail");
   if (options.quiet === true && failures === 0) return 0;

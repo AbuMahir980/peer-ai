@@ -216,14 +216,18 @@ export function checkStandards(config: PeerAiConfig, today: string): Check[] {
         )
       : undefined;
   };
-  // A value of another type than the default can't stand in for it, so the default stays.
+  // A value that can't stand in for the default, such as text for a number, or a count that isn't
+  // a whole number, is ignored, so the default stays.
   const wrongType = (rule: string, value: string | number) => {
     const profiled = PROFILE_RULES.get(rule);
     if (profiled?.default === undefined || overrideFits(profiled, value)) return undefined;
+    const fallback = profiled.default.value;
+    const kind =
+      typeof fallback === "number" && Number.isInteger(fallback) ? "whole number of 0 or more" : typeof fallback;
     return warn(
       "standards",
-      `${rule}'s value is a ${typeof profiled.default.value}, such as ${JSON.stringify(profiled.default.value)}, so ${JSON.stringify(value)} is ignored and the default stays.`,
-      `Write the value in standards.overrides as a ${typeof profiled.default.value}.`,
+      `${rule}'s value is a ${kind}, such as ${JSON.stringify(fallback)}, so ${JSON.stringify(value)} is ignored and the default stays.`,
+      `Write the value in standards.overrides as a ${kind}.`,
     );
   };
   const seen = new Set<string>();
