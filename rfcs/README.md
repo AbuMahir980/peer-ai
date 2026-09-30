@@ -32,6 +32,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0004](0004-how-a-skill-is-written.md) | How a skill is written | Accepted |
 | [0005](0005-work-items-that-carry-their-plan.md) | Work items that carry their plan | Accepted |
 | [0006](0006-stack-profiles-and-their-enforcers.md) | Stack profiles and the tools that enforce them | Accepted |
+| [0007](0007-setup-checks-and-feedback-that-run-themselves.md) | Setup checks and feedback that run themselves | Draft |
 
 ## What carries weight
 
