@@ -16,7 +16,7 @@
 
 ## How it's put together
 
-{{Each part, what it does, where it lives, and what it talks to, with a link to the architecture document.}}
+{{Each part, what it does, where it lives, and what it talks to, with a link to the architecture document. Where people's data is kept, and what protects it from being lost.}}
 
 ## Shipping it
 

@@ -19,13 +19,13 @@ Go through every area and run each check. Reading files as they come up misses w
 ## What it's built on
 
 - **Pinned versions:** read each manifest, and check there's a lockfile, so every install gets the same versions (DEL-01).
-- **Known vulnerabilities:** versions with published advisories, from the package manager's audit where it runs, or from what you know of them (DEL-03).
+- **Known vulnerabilities:** versions with published advisories, from the package manager's audit where it runs. Where it can't run, go through each dependency's version against the advisories you know of, and say which you couldn't check (DEL-03).
 - **Left behind:** versions several major releases old, packages no longer maintained, and packages the newer code has already replaced.
 - **The platform:** a runtime or operating system version near its end of support.
 
 ## The data
 
-- **Between versions:** how stored data moves from one version to the next, on servers and on people's devices: migrations, and upgrades of what's kept locally. Check whether any of it can be lost or damaged on the way. Loss that can happen now is a fix.
+- **Between versions:** how stored data moves from one version to the next, on servers and on people's devices: migrations, and upgrades of what's kept locally. Trace each kind of record through a change of version: where the old version wrote it, and where the new one reads it. Anything the new version no longer reads is lost. Loss that can happen now is a fix.
 - **Copies that drift:** the same data kept in two places with nothing keeping them in step.
 
 ## Secrets and settings
