@@ -28,7 +28,7 @@ Copy this checklist and tick it off as you go:
 ## 1. Scope
 
 - **The release:** what the person names, such as a version, a tag or a branch to deploy, an app going to the stores, or a library about to be published. Otherwise, the work items at verify and ship that haven't shipped, from the peer-ai MCP tool `next_work`. List each item in the report's `scope`.
-- **What changed:** everything between the last release and this one, such as the commits since the last release tag, and each work item's record: its stage, last verify, required reviews and their results.
+- **What changed:** everything between the last release and this one, such as the commits since the last release tag, or since the commit that set the version now published when there's no tag, and each work item's record: its stage, last verify, required reviews and their results.
 - **How it goes out:** the release plan or notes, if there are any; the CI and deployment pipelines; the environments in `peer-ai.config.json`; and the infrastructure it runs on.
 
 List what you read in the report's `inputs`. With no release plan at all, say so at the top of the summary, and check the release from its items and changes.
@@ -58,6 +58,7 @@ Every rule in [rules.md](references/rules.md) gets at least one coverage line, i
 Hold every line to this bar:
 
 - **Every item passes its own gates.** Its last verify passed, every required review is recorded and passed, and every acceptance criterion holds (REQ-05). An item that hasn't is a finding: it comes out of the release, or the release waits.
+- **Every interface against what people have now.** For each change to an interface others use, diff it with `git` against the version people have now, and quote the old form and the new in the evidence. Tests changed in this release show the new form, not the code people wrote against the old one (API-06).
 - **Every step in order.** Say what runs first, and what the previous version meets at each step. At every step the release can be undone (OPS-14).
 - **Only what the files and records show.** A scan, a restore or a penetration test counts when a report or record shows it, with its date. Otherwise the line is `not-checked`, with the question for whoever would know.
 - **A failure is a finding:** what could go wrong for people using the product, the file and line or record, and what must happen before release. Its severity is its rule's, from [severity.md](references/severity.md).

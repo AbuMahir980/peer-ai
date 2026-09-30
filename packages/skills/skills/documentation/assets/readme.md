@@ -20,7 +20,7 @@
 
 ## Shipping it
 
-{{How a change reaches people: the pipeline, the environments, and who can release. For a library, how it's published.}}
+{{How a change reaches people: the pipeline, the environments, and who can release. For a library, how it's published. For an app on people's devices or in their browsers, how the version they run is replaced by the next.}}
 
 ## Working on it
 
