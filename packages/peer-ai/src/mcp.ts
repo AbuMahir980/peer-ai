@@ -12,6 +12,7 @@ import { z } from "zod";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { checkDocumentFile } from "./document.ts";
+import { draftFeedback } from "./feedback.ts";
 import { VERSION } from "./package-info.ts";
 import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
@@ -36,7 +37,9 @@ Record progress with update_work_item. Run verification with run_verify rather t
 Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
 Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
-Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.`;
+Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.
+When next_work reports setup problems, fix what you can, such as running npx peer-ai render, before other work, and tell the person in plain words about anything only they can decide.
+When Peer AI gets something wrong, call draft_feedback. At a natural stopping point, show the person each draft in a few words and ask whether to send it.`;
 
 export interface ServerOptions {
   /** Where the AI tool started the server: the project's folder or one inside it. */
@@ -299,6 +302,38 @@ export function createServer(options: ServerOptions): McpServer {
     withProject((root, config, { id, to }: { id: string; to?: Parameters<typeof advanceWorkItem>[3] }) =>
       fromResult(advanceWorkItem(root, config, id, to, now())),
     ),
+  );
+
+  server.registerTool(
+    "draft_feedback",
+    {
+      title: "Draft feedback",
+      description:
+        "Draft a report for Peer AI's maintainers when Peer AI itself gets something wrong: a review misses a problem or reports one that isn't there, a check blocks work by mistake, a skill's step can't be followed, or a command fails or misleads. Not for problems in the project. The draft stays in .peer-ai/feedback/ until the person decides; never send it yourself. Describe everything in plain words: never include the project's code, file contents, names of people, companies or products, secrets, or URLs and hosts. Peer AI refuses a draft holding code, a key or token, or an email address.",
+      inputSchema: {
+        title: z
+          .string()
+          .min(1)
+          .max(120)
+          .describe('One line, such as "security-review flagged a test file as production code".'),
+        what: z.string().min(1).max(4000).describe("What happened, in plain words."),
+        expected: z.string().min(1).max(2000).describe("What should have happened."),
+        skill: z.enum(SKILL_IDS).optional().describe("The Peer AI skill involved, when there is one."),
+        command: z
+          .string()
+          .min(1)
+          .max(120)
+          .optional()
+          .describe("The peer-ai command or MCP tool involved, when there is one."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    (input: Parameters<typeof draftFeedback>[2]) => {
+      const root = findRoot(options.cwd);
+      const { config } = loadConfig(root);
+      const client = server.server.getClientVersion()?.name;
+      return fromResult(draftFeedback(root, config, input, client === undefined ? {} : { tool: client }, now()));
+    },
   );
 
   return server;

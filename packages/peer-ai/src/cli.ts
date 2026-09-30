@@ -11,6 +11,7 @@ import { runAssess } from "./assess.ts";
 import { runCheck } from "./check.ts";
 import { runCheckDocument } from "./document.ts";
 import { runDoctor } from "./doctor.ts";
+import { runFeedback } from "./feedback.ts";
 import { serveStdio } from "./mcp.ts";
 import { runInit, type Output, type Stage, type Team } from "./init.ts";
 import { VERSION } from "./package-info.ts";
@@ -33,6 +34,11 @@ Usage:
   peer-ai check-document <file> --skill <skill>
                               Check a document against its skill's template, as the
                               check_document tool does
+  peer-ai feedback            List the feedback drafts your AI tool wrote about Peer AI
+  peer-ai feedback send <draft>
+                              Send a draft as an issue on Peer AI's repository
+  peer-ai feedback drop <draft>
+                              Delete a draft
   peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
 
 Options for init:
@@ -196,6 +202,12 @@ function render(args: string[], io: Io): number {
   );
 }
 
+function feedback(args: string[], io: Io): number {
+  const { positionals } = parseArgs({ args, strict: true, allowPositionals: true, options: {} });
+  const [action, draft] = positionals;
+  return runFeedback({ cwd: io.cwd, action, draft }, io.out);
+}
+
 async function mcp(args: string[], io: Io): Promise<number> {
   parseArgs({ args, strict: true, options: {} });
   await serveStdio(io.cwd);
@@ -210,6 +222,7 @@ const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promis
   check,
   "check-report": checkReportCommand,
   "check-document": checkDocumentCommand,
+  feedback,
   mcp,
 };
 

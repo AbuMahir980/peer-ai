@@ -100,6 +100,7 @@ export const MCP_TOOL_IDS = [
   "record_review",
   "check_document",
   "advance_work_item",
+  "draft_feedback",
 ] as const;
 export type McpToolId = (typeof MCP_TOOL_IDS)[number];
 
@@ -112,6 +113,7 @@ export const CLI_COMMAND_IDS = [
   "check",
   "check-report",
   "check-document",
+  "feedback",
   "mcp",
 ] as const;
 export type CliCommandId = (typeof CLI_COMMAND_IDS)[number];

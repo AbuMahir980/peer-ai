@@ -27,7 +27,20 @@ describe("fixtures", () => {
     expect(peerAi(join(fileURLToPath(new URL("../fixtures", import.meta.url)), name), "render", "--check")).toContain(
       "Everything is up to date.",
     );
-    expect(peerAi(prepared(name), "check")).toMatch(/^Passed/m);
+    // check's own gates pass on every practice project. Setup problems fail it too (RFC 0007), and
+    // kennel plants two a production project mustn't have: no ESLint config, and a compiler that
+    // isn't strict.
+    let printed: string;
+    try {
+      printed = peerAi(prepared(name), "check", "--json");
+    } catch (error) {
+      printed = String((error as { stdout?: string }).stdout);
+    }
+    const verdict = JSON.parse(printed) as { checks: { status: string }[]; setup: { id: string; status: string }[] };
+    expect(verdict.checks.filter((check) => check.status === "fail")).toEqual([]);
+    expect(verdict.setup.filter((check) => check.status === "fail").map((check) => check.id)).toEqual(
+      name === "kennel" ? ["enforcers", "enforcers"] : [],
+    );
   });
 
   it("prepares a copy as its own git repository, with the server started from this checkout", () => {

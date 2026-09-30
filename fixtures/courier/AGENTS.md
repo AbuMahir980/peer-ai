@@ -14,6 +14,8 @@ This project uses Peer AI at the mvp stage. Its MCP server, `peer-ai`, holds the
 - For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.
 - For every document a skill writes, such as the requirements, check it with `check_document` and fix what it names.
 - Don't edit the files in `.peer-ai/` by hand. The tools keep them valid.
+- When `next_work` reports setup problems, fix what you can, such as running `npx peer-ai render`, before other work, and tell the person in plain words about anything only they can decide.
+- When Peer AI gets something wrong, call `draft_feedback`. At a natural stopping point, show the person each draft in a few words and ask whether to send it.
 
 Parts of the project:
 

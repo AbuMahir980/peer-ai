@@ -155,7 +155,7 @@ Then open the project in your AI tool and ask for work in plain words, such as "
 - run: npx peer-ai check
 ```
 
-`npx peer-ai doctor` checks the setup at any time and says how to fix what isn't right. Every command is described in [`packages/peer-ai`](packages/peer-ai).
+You never have to remember to check the setup: `peer-ai check` in CI fails when the setup stops working, and your AI tool hears about any problem at the start of each session and fixes it or tells you. `npx peer-ai doctor` shows the details at any time. Every command is described in [`packages/peer-ai`](packages/peer-ai).
 
 ## Privacy
 
@@ -257,7 +257,9 @@ pnpm verify
 
 ## Feedback
 
-When Peer AI gets something wrong in your project, such as a review that misses a problem or a check that blocks you by mistake, [open an issue](https://github.com/AbuMahir980/peer-ai/issues/new/choose). Include the Peer AI version, the AI tool, the skill and what you expected; leave out private code and names.
+When Peer AI gets something wrong in your project, such as a review that misses a problem or a check that blocks you by mistake, your AI tool drafts a report for you. At a natural stopping point it shows you each draft and asks whether to send it; only after your yes does `peer-ai feedback send` open it as an issue here. A report never holds your code: Peer AI refuses a draft with code, keys or email addresses.
+
+You can also [open an issue](https://github.com/AbuMahir980/peer-ai/issues/new/choose) yourself. Include the Peer AI version, the AI tool, the skill and what you expected; leave out private code and names.
 
 ## License
 
