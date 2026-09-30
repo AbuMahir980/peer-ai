@@ -9,7 +9,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "node scripts/generate-docs.ts"
+    "generate": "node scripts/generate-docs.ts",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@peer-ai/workflow": "workspace:*",
@@ -17,5 +18,26 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbuMahir980/peer-ai.git",
+    "directory": "packages/standards"
+  },
+  "homepage": "https://github.com/AbuMahir980/peer-ai#readme",
+  "bugs": {
+    "url": "https://github.com/AbuMahir980/peer-ai/issues"
   }
 }
