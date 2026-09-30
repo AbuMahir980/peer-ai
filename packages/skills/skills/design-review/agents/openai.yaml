@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI design review"
+  short_description: "Screens checked against the design system, rule by rule"
+  default_prompt: "Use ${{name}} to review these screens against the design system and record the report."

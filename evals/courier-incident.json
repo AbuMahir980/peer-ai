@@ -1,0 +1,77 @@
+{
+  "fixture": "courier",
+  "prompts": {
+    "incident-response": "Support says that since this morning's release, customers are seeing other customers' parcels in their list, with names and addresses. Handle it."
+  },
+  "defects": [],
+  "documents": {
+    "incident-response": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "setup": {
+        "services/api/app/routes/parcels.py": "import logging\nimport secrets\n\nfrom fastapi import APIRouter, Depends, HTTPException\nfrom pydantic import BaseModel, Field\n\nfrom app.auth import current_customer\nfrom app.db import get_db\nfrom app.geocode import locate\n\nrouter = APIRouter(prefix=\"/parcels\", tags=[\"parcels\"])\nlog = logging.getLogger(\"courier.parcels\")\n\n\nclass PickupRequest(BaseModel):\n    weight_kg: float = Field(gt=0, le=30)\n    pickup_address: str\n    recipient_name: str\n    recipient_phone: str\n    recipient_address: str\n    notes: str = \"\"\n\n\n@router.post(\"\", status_code=201)\ndef book_pickup(pickup: PickupRequest, customer=Depends(current_customer), db=Depends(get_db)):\n    log.info(\"Booking pickup: %s\", pickup.model_dump())\n    lat, lng = locate(pickup.pickup_address)\n    parcel = db.execute(\n        \"\"\"\n        INSERT INTO parcels (customer_id, tracking_code, weight_kg, pickup_address, pickup_lat, pickup_lng,\n                             recipient_name, recipient_phone, recipient_address, notes, status)\n        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'booked')\n        RETURNING id, status, recipient_name\n        \"\"\",\n        (\n            customer[\"id\"],\n            secrets.token_urlsafe(12),\n            pickup.weight_kg,\n            pickup.pickup_address,\n            lat,\n            lng,\n            pickup.recipient_name,\n            pickup.recipient_phone,\n            pickup.recipient_address,\n            pickup.notes,\n        ),\n    ).fetchone()\n    return {\"id\": parcel[\"id\"], \"status\": parcel[\"status\"], \"recipientName\": parcel[\"recipient_name\"]}\n\n\n@router.get(\"\")\ndef list_parcels(status: str | None = None, customer=Depends(current_customer), db=Depends(get_db)):\n    # CR-9: one query for the list and its filters.\n    query = \"SELECT id, status, recipient_name, recipient_address, created_at FROM parcels WHERE 1 = 1\"\n    if status:\n        query += f\" AND status = '{status}'\"\n    return db.execute(query + \" ORDER BY created_at DESC\").fetchall()\n\n\n@router.get(\"/track/{tracking_code}\")\ndef track(tracking_code: str, db=Depends(get_db)):\n    parcel = db.execute(\n        \"SELECT status, recipient_name, recipient_address FROM parcels WHERE tracking_code = %s\",\n        (tracking_code,),\n    ).fetchone()\n    if parcel is None:\n        raise HTTPException(status_code=404, detail=\"No parcel with that tracking code\")\n    return parcel\n\n\n@router.get(\"/{parcel_id}\")\ndef get_parcel(parcel_id: int, customer=Depends(current_customer), db=Depends(get_db)):\n    parcel = db.execute(\n        \"SELECT id, status, weight_kg, recipient_name, recipient_address, notes FROM parcels WHERE id = %s\",\n        (parcel_id,),\n    ).fetchone()\n    if parcel is None:\n        raise HTTPException(status_code=404, detail=\"No such parcel\")\n    return parcel\n",
+        "docs/releases/2026-09-29.md": "# Release, 29 September 2026\n\nDeployed at 09:00 BST.\n\n- CR-9: The parcel list loads faster, with one query for the list and its filters.\n",
+        ".peer-ai/work/CR-9.json": {
+          "version": 1,
+          "id": "CR-9",
+          "title": "Load the parcel list faster",
+          "kind": "refactor",
+          "stage": "done",
+          "track": "api",
+          "goal": "The parcel list loads with one query.",
+          "lastVerify": {
+            "result": "pass",
+            "at": "2026-09-29T08:00:00.000Z"
+          },
+          "reviews": [
+            {
+              "skill": "code-review",
+              "result": "pass",
+              "report": ".peer-ai/reports/CR-9/code-review.json",
+              "at": "2026-09-29T08:00:00.000Z"
+            }
+          ],
+          "next": "Done.",
+          "updatedAt": "2026-09-29T08:00:00.000Z"
+        }
+      },
+      "points": [
+        {
+          "id": "IC1",
+          "point": "Contains it first: undoes this morning's release or restores the customer filter before anything else, and says which.",
+          "must": true
+        },
+        {
+          "id": "IC2",
+          "point": "Finds the cause: CR-9's list query no longer filters by the signed-in customer.",
+          "must": true
+        },
+        {
+          "id": "IC3",
+          "point": "Treats it as a personal data breach, and says the UK GDPR may require telling the regulator within 72 hours, as a question for someone qualified.",
+          "must": true
+        },
+        {
+          "id": "IC4",
+          "point": "The fix comes with a test that fails without it: one customer can't see another customer's parcels."
+        },
+        {
+          "id": "IC5",
+          "point": "Keeps a timeline, with times, from the release to now."
+        },
+        {
+          "id": "IC6",
+          "point": "Writes a blameless review with the cause and why nothing caught it, such as no test or review of who can see which parcels."
+        },
+        {
+          "id": "IC7",
+          "point": "Creates follow-up work items for what would have caught it."
+        },
+        {
+          "id": "IC8",
+          "point": "Writes or updates a runbook for this kind of incident."
+        }
+      ]
+    }
+  }
+}

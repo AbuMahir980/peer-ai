@@ -1,0 +1,212 @@
+{
+  "fixture": "refill",
+  "prompts": {
+    "requirements-analysis": "Write the requirements for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
+    "architecture": "Propose an architecture for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
+    "api-design": "Design the API for Refill from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\"",
+    "data-modelling": "Design Refill's data model from our founder's brief:\n\n\"Refill delivers repeat prescriptions to people's homes in Lagos and Nairobi. A patient uploads a photo of their prescription, a pharmacist at one of our partner pharmacies checks it, and a rider brings the medicine within the day. Patients pay by card or mobile money once the pharmacist approves the order. Patients should get a reminder when a refill is due, and riders need to see where to go. Later we'd like video calls with a doctor, but not yet.\""
+  },
+  "defects": [],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "F1",
+          "point": "Names patients, pharmacists at partner pharmacies, and riders as the people it's for, with the problem or need of each, or a question where the brief doesn't say.",
+          "must": true
+        },
+        {
+          "id": "F2",
+          "point": "Gives acceptance criteria for uploading a prescription, the pharmacist's check, paying, delivery, and refill reminders.",
+          "must": true
+        },
+        {
+          "id": "F3",
+          "point": "Puts video calls with a doctor out of scope, for later.",
+          "must": true
+        },
+        {
+          "id": "F4",
+          "point": "Says the product handles health data, such as prescriptions and medicines, and treats it as especially sensitive.",
+          "must": true
+        },
+        {
+          "id": "F5",
+          "point": "Names both places it operates, Nigeria and Kenya, and leaves which laws apply as a question for someone qualified, rather than a conclusion.",
+          "must": true
+        },
+        {
+          "id": "F6",
+          "point": "Suggests at least three of these traits or equivalents: money for card and mobile money, uploads for prescription photos, several audiences for patients, pharmacists and riders, safety-critical for medicines, and real time or location for riders."
+        },
+        {
+          "id": "F7",
+          "point": "Asks what happens when a pharmacist rejects a prescription, including whether the patient is charged."
+        },
+        {
+          "id": "F8",
+          "point": "Asks which medicines may be delivered, or what rules the pharmacist's check must follow, as a question for a pharmacist or regulator."
+        },
+        {
+          "id": "F9",
+          "point": "Treats \"within the day\" as needing a definition, such as a cut-off time, or asks what it means."
+        },
+        {
+          "id": "F10",
+          "point": "Asks how many patients, orders or pharmacies to expect, instead of giving numbers."
+        },
+        {
+          "id": "F11",
+          "point": "Lists the partner pharmacies and the card and mobile money payment providers as dependencies."
+        },
+        {
+          "id": "F12",
+          "point": "Says it was written from the founder's brief."
+        },
+        {
+          "id": "F13",
+          "point": "Invents no numbers: any count of patients, orders or pharmacies, or any delivery time, that the brief didn't give is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AR1",
+          "point": "Separates what patients, pharmacists and riders use, and says what each part owns.",
+          "must": true
+        },
+        {
+          "id": "AR2",
+          "point": "Gives two or more options with trade-offs for at least one significant choice, recommends one, and leaves the decision to a person rather than marking it accepted.",
+          "must": true
+        },
+        {
+          "id": "AR3",
+          "point": "Keeps prescriptions and health data in one owned place with access limited by role, and asks where it may be stored.",
+          "must": true
+        },
+        {
+          "id": "AR4",
+          "point": "Takes card and mobile money payments through payment providers rather than handling card details itself."
+        },
+        {
+          "id": "AR5",
+          "point": "Covers how riders see where to go, and asks whether patients should follow a delivery live rather than assuming it."
+        },
+        {
+          "id": "AR6",
+          "point": "Names the needs from the brief that shape it: two cities in two countries, delivery within the day, and refill reminders."
+        },
+        {
+          "id": "AR7",
+          "point": "Writes decisions as decision records, or lists the decisions still to make."
+        },
+        {
+          "id": "AR8",
+          "point": "States how the parts may talk to each other, such as only through an API contract."
+        },
+        {
+          "id": "AR9",
+          "point": "Asks about needs the brief doesn't give, such as scale, availability or where data must stay."
+        },
+        {
+          "id": "AR10",
+          "point": "Names vendors, clouds or frameworks only as options, never as settled.",
+          "must": true
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAR1",
+          "point": "Gives each endpoint who may call it among patients, pharmacists and riders, and for which records.",
+          "must": true
+        },
+        {
+          "id": "PAR2",
+          "point": "Takes prescriptions as uploads, with a size and type limit, and never puts health details in a URL.",
+          "must": true
+        },
+        {
+          "id": "PAR3",
+          "point": "Verifies payment providers' webhooks before acting on them.",
+          "must": true
+        },
+        {
+          "id": "PAR4",
+          "point": "Gives paying an idempotency key so a retry doesn't charge twice."
+        },
+        {
+          "id": "PAR5",
+          "point": "Sets money as a whole number in the smallest unit, with its currency, for both countries."
+        },
+        {
+          "id": "PAR6",
+          "point": "Sets one error shape, and paging for every list."
+        },
+        {
+          "id": "PAR7",
+          "point": "Chooses where the contract lives, such as an OpenAPI file, as its one source of truth, or proposes it."
+        },
+        {
+          "id": "PAR8",
+          "point": "Lets riders see only the deliveries assigned to them."
+        },
+        {
+          "id": "PAR9",
+          "point": "Marks choices nobody has made yet as proposed, or asks."
+        }
+      ]
+    },
+    "data-modelling": {
+      "path": "docs/data-model.md",
+      "points": [
+        {
+          "id": "MR1",
+          "point": "Models patients, prescriptions, orders, payments, pharmacies, pharmacists, riders and deliveries, with their links.",
+          "must": true
+        },
+        {
+          "id": "MR2",
+          "point": "Marks prescriptions and medicines as health data, especially sensitive, with who may see them.",
+          "must": true
+        },
+        {
+          "id": "MR3",
+          "point": "Keeps money as a whole number in the smallest unit, with its currency, for both countries.",
+          "must": true
+        },
+        {
+          "id": "MR4",
+          "point": "Never stores card details: a payment keeps the provider's reference."
+        },
+        {
+          "id": "MR5",
+          "point": "Keeps prescription photos as files with their owner, and deletes them with their record."
+        },
+        {
+          "id": "MR6",
+          "point": "Asks, or proposes, how long prescriptions, photos and riders' locations are kept."
+        },
+        {
+          "id": "MR7",
+          "point": "Uses database guarantees, such as a unique order per payment or allowed statuses."
+        },
+        {
+          "id": "MR8",
+          "point": "Models an order's status as a fixed set of values, including a rejected prescription."
+        },
+        {
+          "id": "MR9",
+          "point": "Marks choices nobody has made as proposed, and invents no scale."
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI tech debt triage"
+  short_description: "Technical debt found, ranked, and turned into work"
+  default_prompt: "Use ${{name}} to find and rank this project's technical debt, and plan the work that matters most."

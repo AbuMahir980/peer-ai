@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "description": "Also the file name. Tracker keys work as they are, such as PROJ-14; a GitHub issue #42 becomes GH-42."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "feature",
+        "bug",
+        "refactor",
+        "migration",
+        "gap",
+        "discovery",
+        "chore"
+      ]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "prepare",
+        "build",
+        "verify",
+        "ship",
+        "done",
+        "cancelled"
+      ]
+    },
+    "track": {
+      "type": "string",
+      "minLength": 1
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gap": {
+      "description": "For kind gap: the map item this work fills.",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "requirements",
+            "architecture",
+            "threat-model",
+            "specs",
+            "api-contract",
+            "data-model",
+            "data-inventory",
+            "dpia",
+            "design",
+            "standards",
+            "ci",
+            "environments",
+            "tests",
+            "load-testing",
+            "infrastructure",
+            "observability",
+            "slos",
+            "runbooks",
+            "docs"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      ]
+    },
+    "goal": {
+      "description": "What done means for this item, in a sentence or two (RFC 0005).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "acceptance": {
+      "description": "Criteria a tester could check: given a situation, when something happens, then a result anyone can see.",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    },
+    "sources": {
+      "description": "The spec, design, requirement or issue it implements: paths in the repository, or URLs.",
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dependsOn": {
+      "description": "Items that must reach ship before this one can.",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      }
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "understand",
+              "architect",
+              "specify",
+              "contract",
+              "standards",
+              "delivery-setup",
+              "plan",
+              "build",
+              "verify",
+              "test",
+              "ship",
+              "operate",
+              "document",
+              "retro"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in-progress",
+              "done",
+              "skipped"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "position": {
+      "description": "Where work stopped, so the next session resumes exactly there.",
+      "type": "object",
+      "properties": {
+        "activity": {
+          "type": "string",
+          "enum": [
+            "understand",
+            "architect",
+            "specify",
+            "contract",
+            "standards",
+            "delivery-setup",
+            "plan",
+            "build",
+            "verify",
+            "test",
+            "ship",
+            "operate",
+            "document",
+            "retro"
+          ]
+        },
+        "step": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "activity",
+        "step"
+      ],
+      "additionalProperties": false
+    },
+    "lastVerify": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+      },
+      "required": [
+        "result",
+        "at"
+      ],
+      "additionalProperties": false
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "requirements-analysis",
+              "product-spec",
+              "architecture",
+              "system-design",
+              "api-design",
+              "data-modelling",
+              "threat-model",
+              "design-system",
+              "issue-planning",
+              "implement-ticket",
+              "code-review",
+              "security-review",
+              "contract-check",
+              "accessibility-review",
+              "design-review",
+              "performance-review",
+              "reliability-review",
+              "data-migration-review",
+              "dependency-review",
+              "compliance-review",
+              "test-strategy",
+              "qa-acceptance",
+              "ai-feature-review",
+              "release-readiness",
+              "infrastructure-review",
+              "observability-review",
+              "incident-response",
+              "documentation",
+              "tech-debt-triage"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "incomplete"
+            ]
+          },
+          "report": {
+            "description": "The review report the result was worked out from.",
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "unproven": {
+            "description": "Recorded without a report, so the result is the agent's word rather than proven.",
+            "type": "boolean"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "skill",
+          "result",
+          "at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "requiredReviews": {
+      "description": "The reviews this work needs, worked out from what the change touched when it reached verify (RFC 0004).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "requirements-analysis",
+              "product-spec",
+              "architecture",
+              "system-design",
+              "api-design",
+              "data-modelling",
+              "threat-model",
+              "design-system",
+              "issue-planning",
+              "implement-ticket",
+              "code-review",
+              "security-review",
+              "contract-check",
+              "accessibility-review",
+              "design-review",
+              "performance-review",
+              "reliability-review",
+              "data-migration-review",
+              "dependency-review",
+              "compliance-review",
+              "test-strategy",
+              "qa-acceptance",
+              "ai-feature-review",
+              "release-readiness",
+              "infrastructure-review",
+              "observability-review",
+              "incident-response",
+              "documentation",
+              "tech-debt-triage"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "skill",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "reopened": {
+      "description": "Earlier activities reopened for this item, such as a re-spec after a new decision.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "type": "string",
+            "enum": [
+              "understand",
+              "architect",
+              "specify",
+              "contract",
+              "standards",
+              "delivery-setup",
+              "plan",
+              "build",
+              "verify",
+              "test",
+              "ship",
+              "operate",
+              "document",
+              "retro"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "activity",
+          "reason",
+          "at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "next": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "One line: the next action. The fuller story lives in the goal, acceptance criteria and sources."
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    }
+  },
+  "required": [
+    "version",
+    "id",
+    "title",
+    "kind",
+    "stage",
+    "next",
+    "updatedAt"
+  ],
+  "additionalProperties": false,
+  "title": "Peer AI work item",
+  "description": ".peer-ai/work/<id>.json: one piece of work, where it stands, and what comes next."
+}

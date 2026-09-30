@@ -1,0 +1,1430 @@
+// Tests how well a review finds the problems planted in a fixture (RFC 0002), and how well a
+// document skill writes its document (RFC 0004). Each fixture's answer sheet lives in
+// evals/<fixture>.json, outside the fixture, so the tool under test works on a copy that never
+// contains the answers.
+//
+// By default the copy has Peer AI's skills, rendered as a person's render would, and the tool is
+// asked in plain words. --baseline runs without them, to measure what a skill adds. A document is
+// graded by a second run, of the tool --grader names, against the points its scenario lists.
+//
+//   node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>]
+//     [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--record]
+//   node scripts/eval.ts <fixture> --skill <skill> --regrade <copy> [--grader …] [--record]
+//
+// A review's findings are paired with the answer sheet's problems by place, and the grader then
+// confirms each pairing, so a finding about something else nearby doesn't count.
+
+import { execFile, execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+import { availableSkills, renderedName, skillRuleIds } from "peer-ai-skills";
+import {
+  MAP_ITEM_SKILLS,
+  SEVERITIES,
+  SKILL_IDS,
+  SKILL_KINDS,
+  validateReport,
+  type ReviewReport,
+  type SkillId,
+} from "peer-ai-workflow";
+import { z } from "zod";
+import { CLI, localServer, prepareFixture } from "./fixture.ts";
+
+const REPO = fileURLToPath(new URL("..", import.meta.url));
+const EVALS = join(REPO, "evals");
+const REPORT_SCHEMA = join(REPO, "packages/workflow/schemas/review-report.schema.json");
+
+/** How far a finding's lines may be from a planted problem and still count as finding it. */
+export const LINE_TOLERANCE = 3;
+/** The share of planted medium problems a review must find to be ready to ship. */
+export const MEDIUM_BAR = 0.8;
+/** The share of its scenario's points a document must make to be ready to ship. */
+export const POINTS_BAR = 0.8;
+
+const Location = z
+  .strictObject({
+    file: z.string().min(1).describe('The file, or "." for a problem with the whole project.'),
+    match: z.string().min(1).optional().describe("Exact text that appears once in the file, where the problem is."),
+    lines: z.number().int().positive().optional().describe("How many lines the problem covers from the match."),
+    whole: z
+      .literal(true)
+      .optional()
+      .describe("The problem is with the whole file, or the whole project, such as a missing lockfile."),
+  })
+  .refine((location) => (location.whole === true) !== (location.match !== undefined), {
+    message: "A location has either a match or whole: true, not both.",
+  });
+
+const Defect = z.strictObject({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  severity: z.enum(SEVERITIES),
+  skills: z.array(z.enum(SKILL_IDS)).min(1).describe("The reviews expected to find it."),
+  locations: z.array(Location).min(1).describe("Where it shows. Finding it at any one of them counts."),
+  found: z.string().min(1).optional().describe("For a problem nobody planted: which review first raised it."),
+  rules: z
+    .array(z.string().regex(/^[A-Z]+-\d{2}$/))
+    .min(1)
+    .optional()
+    .describe(
+      "The rules it breaks. A finding about a whole file or the project must cite one of them; elsewhere, a finding that cites one is paired with it first.",
+    ),
+});
+
+const Point = z.strictObject({
+  id: z.string().min(1),
+  point: z.string().min(1).describe("What a good document does, in words a grader can check against it alone."),
+  must: z.boolean().optional().describe("The document isn't ready without it."),
+});
+
+const Setup = z
+  .record(z.string().min(1), z.union([z.string(), z.record(z.string(), z.unknown())]))
+  .describe(
+    "Files written into the copy and committed before the run, such as a planned work item. An object is written as JSON.",
+  );
+
+const DocumentScenario = z.strictObject({
+  path: z
+    .string()
+    .min(1)
+    .describe(
+      "Where the document should be written, relative to the project root. When the skill names the file, a folder ending in /, such as docs/specs/, or a pattern with * for the name, such as docs/specs/*-design.md.",
+    ),
+  points: z.array(Point).min(3),
+  setup: Setup.optional(),
+  diff: z.boolean().optional().describe("Give the grader the change the run made to the code, as a diff."),
+});
+
+export const SheetSchema = z.strictObject({
+  fixture: z.string().min(1),
+  setup: Setup.optional().describe(
+    "For reviews: files written into the copy before the run, such as a feature already built. Planted problems can be in them.",
+  ),
+  prompts: z.partialRecord(z.enum(SKILL_IDS), z.string().min(1)),
+  defects: z.array(Defect),
+  documents: z
+    .partialRecord(z.enum(SKILL_IDS), DocumentScenario)
+    .optional()
+    .describe("For document skills: what a good document makes of the prompt."),
+});
+
+export type DocumentScenario = z.output<typeof DocumentScenario>;
+
+export interface Span {
+  file: string;
+  line: number;
+  endLine: number;
+  /** The problem is with the whole file, or with the project when the file is ".". */
+  whole?: true;
+}
+
+export type ResolvedDefect = z.output<typeof Defect> & { spans: Span[] };
+
+export interface Sheet {
+  fixture: string;
+  setup?: z.output<typeof Setup>;
+  prompts: Partial<Record<SkillId, string>>;
+  defects: ResolvedDefect[];
+  documents?: Partial<Record<SkillId, DocumentScenario>>;
+}
+
+export function sheets(): string[] {
+  return readdirSync(EVALS)
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => file.slice(0, -".json".length));
+}
+
+/** Reads an answer sheet and finds each problem's lines from its matching text. */
+export function loadSheet(name: string): Sheet {
+  const path = join(EVALS, `${name}.json`);
+  if (!existsSync(path)) throw new Error(`There is no answer sheet at evals/${name}.json.`);
+  const parsed = SheetSchema.safeParse(JSON.parse(readFileSync(path, "utf8")));
+  if (!parsed.success) {
+    throw new Error(
+      `evals/${name}.json isn't a valid answer sheet: ${parsed.error.issues.map((i) => i.message).join("; ")}`,
+    );
+  }
+  const root = join(REPO, "fixtures", parsed.data.fixture);
+  const { setup } = parsed.data;
+  // A planted problem can be in a file the scenario writes, or in the practice project itself.
+  const contents = (file: string): string | undefined => {
+    const written = setup?.[file];
+    if (written !== undefined) return typeof written === "string" ? written : `${JSON.stringify(written, null, 2)}\n`;
+    const path = join(root, file);
+    return existsSync(path) && statSync(path).isFile() ? readFileSync(path, "utf8") : undefined;
+  };
+  const defects = parsed.data.defects.map((defect) => ({
+    ...defect,
+    spans: defect.locations.map((location): Span => {
+      const text = contents(location.file);
+      if (text === undefined && !existsSync(join(root, location.file)))
+        throw new Error(`${defect.id}: fixtures/${parsed.data.fixture}/${location.file} doesn't exist.`);
+      if (location.match === undefined) return { file: location.file, line: 1, endLine: 1, whole: true };
+      if (text === undefined) throw new Error(`${defect.id}: ${location.file} is a folder, not a file.`);
+      const first = text.indexOf(location.match);
+      if (first === -1 || text.includes(location.match, first + 1)) {
+        throw new Error(
+          `${defect.id}: its matching text must appear exactly once in ${location.file}, and appears ${first === -1 ? "nowhere" : "more than once"}.`,
+        );
+      }
+      const line = text.slice(0, first).split("\n").length;
+      const covered = location.lines ?? location.match.split("\n").length;
+      return { file: location.file, line, endLine: line + covered - 1 };
+    }),
+  }));
+  const { documents } = parsed.data;
+  return {
+    fixture: parsed.data.fixture,
+    ...(setup === undefined ? {} : { setup }),
+    prompts: parsed.data.prompts,
+    defects,
+    ...(documents === undefined ? {} : { documents }),
+  };
+}
+
+type Finding = ReviewReport["findings"][number];
+
+export interface Score {
+  skill: SkillId;
+  /** The planted problems this review is expected to find. */
+  expected: { defect: ResolvedDefect; foundBy: string[] }[];
+  /** Findings that match no planted problem, for a person to judge. */
+  unmatched: Finding[];
+  bySeverity: Record<(typeof SEVERITIES)[number], { found: number; of: number }>;
+  /** Whether a grader confirmed each pairing, rather than place alone deciding it. */
+  confirmed: boolean;
+  ready: boolean;
+  /** Why it isn't ready, in plain words. */
+  reasons: string[];
+}
+
+const normalise = (file: string) => file.replace(/^\.\//, "").replace(/\/$/, "") || ".";
+
+/**
+ * How many lines separate a finding from a planted problem: 0 when they overlap. A problem with a
+ * whole file, or the whole project, is as near as can be to any finding on that file or project
+ * that cites one of its rules, with or without a line.
+ */
+function distance(finding: Finding, defect: ResolvedDefect, span: Span): number {
+  if (span.whole === true) {
+    return defect.rules === undefined || defect.rules.includes(finding.rule) ? 0 : Number.POSITIVE_INFINITY;
+  }
+  const { line, endLine } = finding.location;
+  if (line === undefined) return Number.POSITIVE_INFINITY;
+  const end = endLine ?? line;
+  if (end < span.line) return span.line - end;
+  if (line > span.endLine) return line - span.endLine;
+  return 0;
+}
+
+/**
+ * The planted problems a finding could be about: those in the same file within the line tolerance,
+ * at a severity no more than one level away. A problem whose rules the finding cites comes first,
+ * so where several problems share a few lines, each finding goes to the one it's about; then the
+ * nearest.
+ */
+function candidates(finding: Finding, defects: ResolvedDefect[], allowed: Allowed = () => true): ResolvedDefect[] {
+  const ranked: { defect: ResolvedDefect; cited: boolean; lines: number; gap: number }[] = [];
+  for (const defect of defects) {
+    if (!allowed(finding, defect)) continue;
+    const gap = Math.abs(SEVERITIES.indexOf(finding.severity) - SEVERITIES.indexOf(defect.severity));
+    if (gap > 1) continue;
+    const lines = Math.min(
+      ...defect.spans
+        // A problem with the whole project can be named anywhere, as long as its rule is cited.
+        .filter(
+          (span) =>
+            (span.whole === true && normalise(span.file) === ".") ||
+            normalise(finding.location.file) === normalise(span.file),
+        )
+        .map((span) => distance(finding, defect, span)),
+    );
+    const cited = defect.rules?.includes(finding.rule) === true;
+    if (lines <= LINE_TOLERANCE) ranked.push({ defect, cited, lines, gap });
+  }
+  return ranked
+    .sort((a, b) => Number(b.cited) - Number(a.cited) || a.lines - b.lines || a.gap - b.gap)
+    .map(({ defect }) => defect);
+}
+
+/** Whether a finding may be paired with a planted problem, beyond being near it. */
+type Allowed = (finding: Finding, defect: ResolvedDefect) => boolean;
+
+/**
+ * Which planted problem each finding is about. Each finding counts for one problem at most, so a
+ * single finding can't score twice when two problems sit close together. Findings are paired with
+ * problems so that as many problems as possible are found: when two findings both cover the same
+ * two problems, each counts for one. A finding left over after that is about its nearest problem.
+ */
+function matchFindings(findings: Finding[], expected: ResolvedDefect[], all: ResolvedDefect[], allowed?: Allowed) {
+  const options = new Map(findings.map((finding) => [finding, candidates(finding, expected, allowed)]));
+  const owner = new Map<ResolvedDefect, Finding>();
+  // Kuhn's algorithm: a finding takes a problem, or moves the finding that holds it to another.
+  const assign = (finding: Finding, tried: Set<ResolvedDefect>): boolean => {
+    for (const defect of options.get(finding) ?? []) {
+      if (tried.has(defect)) continue;
+      tried.add(defect);
+      const holder = owner.get(defect);
+      if (holder === undefined || assign(holder, tried)) {
+        owner.set(defect, finding);
+        return true;
+      }
+    }
+    return false;
+  };
+  for (const finding of findings) assign(finding, new Set());
+  const paired = new Map([...owner].map(([defect, finding]) => [finding, defect]));
+  return new Map(findings.map((finding) => [finding, paired.get(finding) ?? candidates(finding, all, allowed)[0]]));
+}
+
+/** A review's findings, each with a key that's unique across its reports. */
+function keyedFindings(reports: ReviewReport[], skill: SkillId): Map<Finding, string> {
+  const keys = new Map<Finding, string>();
+  const seen = new Map<string, number>();
+  for (const finding of reports.filter((report) => report.skill === skill).flatMap((report) => report.findings)) {
+    const times = (seen.get(finding.id) ?? 0) + 1;
+    seen.set(finding.id, times);
+    keys.set(finding, times === 1 ? finding.id : `${finding.id}#${String(times)}`);
+  }
+  return keys;
+}
+
+const pairKey = (finding: string, problem: string) => `${finding} ${problem}`;
+
+/** Each finding, with the planted problems near enough for it to be about them, for a grader to confirm. */
+export function pairingsToConfirm(sheet: Sheet, skill: SkillId, reports: ReviewReport[]) {
+  return [...keyedFindings(reports, skill)]
+    .map(([finding, key]) => ({
+      finding: {
+        id: key,
+        rule: finding.rule,
+        title: finding.title,
+        evidence: finding.evidence.slice(0, 800),
+        at: `${finding.location.file}${finding.location.line === undefined ? "" : `:${String(finding.location.line)}`}`,
+      },
+      problems: candidates(finding, sheet.defects).map((defect) => ({ id: defect.id, problem: defect.title })),
+    }))
+    .filter(({ problems }) => problems.length > 0);
+}
+
+export const PairingsSchema = z.array(
+  z.strictObject({
+    finding: z.string().min(1),
+    problem: z.string().min(1),
+    same: z.boolean(),
+    quote: z.string().max(1000),
+  }),
+);
+
+/** What the grader is asked. It sees only the findings and the problems near them, never the project. */
+export const PAIRINGS_PROMPT = `Check which problems a code review found. pairs.json lists the review's findings; each has the planted problems in the code near it, by id, that it might be about.
+
+For each finding and each of its problems, decide whether the finding is about that problem: its title or evidence describes the same fault, in substance, even in other words. A finding about something else in the same code, or about a wider concern that only touches the problem, is not about it. A finding can be about more than one of its problems only when it clearly describes each.
+
+Write pairings.json in this folder: a JSON array with one entry for each finding and problem, in the same order, such as {"finding": "F3", "problem": "D9", "same": true, "quote": "..."}. The quote is the finding's own words that describe the problem's fault, at most 200 characters; when there are none, same is false and the quote is empty. Escape any double quotes inside a quote, and check that pairings.json parses as JSON. Change no other file.`;
+
+/**
+ * Has a grader confirm which planted problems each finding is really about, since findings are
+ * paired with problems by place. Undefined when the grader wrote nothing valid, twice.
+ */
+export async function confirmPairings(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  reports: ReviewReport[],
+  grade: GraderRunner,
+  grader: GraderOptions,
+): Promise<ReadonlySet<string> | undefined> {
+  const pairs = pairingsToConfirm(sheet, skill, reports);
+  if (pairs.length === 0) return new Set();
+  const gradeDir = `${dir}-pairings`;
+  rmSync(gradeDir, { recursive: true, force: true });
+  mkdirSync(gradeDir, { recursive: true });
+  writeFileSync(join(gradeDir, "pairs.json"), `${JSON.stringify(pairs, null, 2)}\n`);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    rmSync(join(gradeDir, "pairings.json"), { force: true });
+    await grade(grader.tool, gradeDir, PAIRINGS_PROMPT, `${gradeDir}${attempt === 1 ? "" : "-2"}.log`, grader.model);
+    try {
+      const parsed = PairingsSchema.safeParse(JSON.parse(readFileSync(join(gradeDir, "pairings.json"), "utf8")));
+      if (parsed.success) {
+        // A pairing counts only with the finding's own words to show for it.
+        const shown = parsed.data.filter((pair) => pair.same && pair.quote.trim() !== "");
+        return new Set(shown.map((pair) => pairKey(pair.finding, pair.problem)));
+      }
+    } catch {
+      // Not written, or not JSON: try again.
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Marks a review's reports against the answer sheet. `confirmed` holds the pairings a grader
+ * confirmed; without it, findings are paired with problems by place alone.
+ */
+export function score(sheet: Sheet, skill: SkillId, reports: ReviewReport[], confirmed?: ReadonlySet<string>): Score {
+  const keys = keyedFindings(reports, skill);
+  const findings = [...keys.keys()];
+  const own = sheet.defects.filter((defect) => defect.skills.includes(skill));
+  const allowed: Allowed | undefined =
+    confirmed === undefined
+      ? undefined
+      : (finding, defect) => confirmed.has(pairKey(keys.get(finding) ?? "", defect.id));
+  const matched = matchFindings(findings, own, sheet.defects, allowed);
+  const expected = own.map((defect) => ({
+    defect,
+    foundBy: findings.filter((finding) => matched.get(finding) === defect).map((finding) => finding.id),
+  }));
+  const unmatched = findings.filter((finding) => matched.get(finding) === undefined);
+  const bySeverity = Object.fromEntries(
+    SEVERITIES.map((severity) => {
+      const planted = expected.filter(({ defect }) => defect.severity === severity);
+      return [severity, { found: planted.filter(({ foundBy }) => foundBy.length > 0).length, of: planted.length }];
+    }),
+  ) as Score["bySeverity"];
+
+  const reasons: string[] = [];
+  if (!reports.some((report) => report.skill === skill)) reasons.push(`it wrote no valid ${skill} report`);
+  for (const severity of ["critical", "high"] as const) {
+    const { found, of } = bySeverity[severity];
+    if (found < of) reasons.push(`it missed ${String(of - found)} ${severity} problem${of - found === 1 ? "" : "s"}`);
+  }
+  const medium = bySeverity.medium;
+  if (medium.of > 0 && medium.found / medium.of < MEDIUM_BAR) {
+    reasons.push(
+      `it found ${String(medium.found)} of ${String(medium.of)} medium problems, under ${String(MEDIUM_BAR * 100)}%`,
+    );
+  }
+  return {
+    skill,
+    expected,
+    unmatched,
+    bySeverity,
+    confirmed: confirmed !== undefined,
+    ready: reasons.length === 0,
+    reasons,
+  };
+}
+
+export interface CollectedReports {
+  reports: ReviewReport[];
+  invalid: { path: string; errors: string[] }[];
+}
+
+/** Every review report a run wrote, under .peer-ai/reports/. */
+export function collectReports(dir: string): CollectedReports {
+  const base = join(dir, ".peer-ai", "reports");
+  const collected: CollectedReports = { reports: [], invalid: [] };
+  const walk = (folder: string): void => {
+    if (!existsSync(folder)) return;
+    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      const path = join(folder, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.name.endsWith(".json")) {
+        let json: unknown;
+        try {
+          json = JSON.parse(readFileSync(path, "utf8"));
+        } catch (error) {
+          collected.invalid.push({ path: relative(dir, path), errors: [(error as Error).message] });
+          continue;
+        }
+        const result = validateReport(json);
+        if (result.ok) collected.reports.push(result.value);
+        else collected.invalid.push({ path: relative(dir, path), errors: result.errors });
+      }
+    }
+  };
+  walk(base);
+  return collected;
+}
+
+export type Tool = "claude-code" | "codex";
+export interface ToolRun {
+  seconds: number;
+  turns?: number;
+  costUsd?: number;
+}
+export type ToolRunner = (tool: Tool, dir: string, prompt: string, log: string, model?: string) => Promise<ToolRun>;
+
+const TOOL_NAMES: Record<Tool, string> = { "claude-code": "Claude Code", codex: "Codex" };
+
+/**
+ * The request, in plain words. With the skill installed that's all the tool gets: the skill carries
+ * the report format. A review's baseline, without the skill, is also told where the format is.
+ */
+export function evalPrompt(sheet: Sheet, skill: SkillId, baseline = false): string {
+  const ask = sheet.prompts[skill];
+  if (ask === undefined) {
+    const known = Object.keys(sheet.prompts).join(", ");
+    throw new Error(`evals/${sheet.fixture}.json has no prompt for ${skill}. It has: ${known}.`);
+  }
+  if (!baseline || SKILL_KINDS[skill] !== "review") return ask;
+  return `${ask}\n\nWrite the review's report as JSON in .peer-ai/reports/, following the format in .peer-ai/review-report.schema.json.`;
+}
+
+/**
+ * Whether the tool opened the skill: Claude Code's Skill tool naming it, or any tool reading its
+ * SKILL.md. The skill's name also appears in lists of what's installed, so that alone doesn't count.
+ */
+export function usedSkill(log: string, skill: SkillId): boolean {
+  const name = renderedName(skill);
+  return log.includes(`${name}/SKILL.md`) || new RegExp(`"skill"\\s*:\\s*"${name}"`).test(log);
+}
+
+/** How many of the rules a skill answers for its reports covered, with at least one line each. */
+export function ruleCoverage(reports: ReviewReport[], skill: SkillId): { covered: number; of: number } {
+  const rules = skillRuleIds(skill);
+  const seen = new Set(
+    reports.filter((report) => report.skill === skill).flatMap((report) => report.coverage.map((line) => line.rule)),
+  );
+  return { covered: rules.filter((rule) => seen.has(rule)).length, of: rules.length };
+}
+
+function run(command: string, args: string[], cwd: string, log: string): Promise<string> {
+  return new Promise((resolvePromise, reject) => {
+    const child = execFile(
+      command,
+      args,
+      { cwd, maxBuffer: 256 * 1024 * 1024, timeout: 30 * 60 * 1000 },
+      (error, stdout, stderr) => {
+        writeFileSync(log, `${stdout}\n${stderr}`);
+        if (error) reject(new Error(`${command} failed: ${error.message}. The log is at ${log}.`));
+        else resolvePromise(stdout);
+      },
+    );
+    // Nothing is typed in. Codex reads its prompt from input as well when input is left open, and
+    // waits for it to end, so close it at once.
+    child.stdin?.end();
+  });
+}
+
+/**
+ * Only the copy's own settings: skills and plugins installed for the user would otherwise stand in
+ * for the skill under test, or for none in a baseline. Codex's `--ignore-user-config` does the same.
+ */
+const CLAUDE_ISOLATION = ["--strict-mcp-config", "--setting-sources", "project,local"];
+
+/** Claude Code's arguments for a run, with only the peer-ai server and its own file tools. */
+export function claudeRunArgs(prompt: string, model?: string): string[] {
+  return [
+    "-p",
+    prompt,
+    ...(model === undefined ? [] : ["--model", model]),
+    "--mcp-config",
+    ".mcp.json",
+    ...CLAUDE_ISOLATION,
+    "--permission-mode",
+    "acceptEdits",
+    "--allowedTools",
+    "mcp__peer-ai",
+    "Skill",
+    "Bash(git:*)",
+    // Every event, so the log shows which tools and skills the run used.
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--max-turns",
+    "120",
+  ];
+}
+
+/** Claude Code's arguments for grading, with no MCP servers and nothing but the grading folder. */
+export function claudeGraderArgs(prompt: string, model?: string): string[] {
+  return [
+    "-p",
+    prompt,
+    ...(model === undefined ? [] : ["--model", model]),
+    ...CLAUDE_ISOLATION,
+    "--permission-mode",
+    "acceptEdits",
+    "--max-turns",
+    "20",
+  ];
+}
+
+/** Runs a real AI tool headless on the copy, with only the peer-ai server and its own file tools. */
+export const runTool: ToolRunner = async (tool, dir, prompt, log, model) => {
+  const started = Date.now();
+  const server = localServer();
+  if (tool === "claude-code") {
+    const out = await run("claude", claudeRunArgs(prompt, model), dir, log);
+    const last = out
+      .trim()
+      .split("\n")
+      .reverse()
+      .find((line) => line.includes('"type":"result"'));
+    const result = (last === undefined ? {} : JSON.parse(last)) as { num_turns?: number; total_cost_usd?: number };
+    return {
+      seconds: (Date.now() - started) / 1000,
+      ...(result.num_turns === undefined ? {} : { turns: result.num_turns }),
+      ...(result.total_cost_usd === undefined ? {} : { costUsd: result.total_cost_usd }),
+    };
+  }
+  await run(
+    "codex",
+    [
+      "exec",
+      "--json",
+      "--ephemeral",
+      "--ignore-user-config",
+      "--sandbox",
+      "workspace-write",
+      "-C",
+      dir,
+      "-c",
+      'approval_policy="never"',
+      "-c",
+      `mcp_servers.peer-ai.command=${JSON.stringify(server.command)}`,
+      "-c",
+      `mcp_servers.peer-ai.args=${JSON.stringify(server.args)}`,
+      "-c",
+      'mcp_servers.peer-ai.tools.run_verify.approval_mode="approve"',
+      ...(model === undefined ? [] : ["-m", model]),
+      prompt,
+    ],
+    dir,
+    log,
+  );
+  return { seconds: (Date.now() - started) / 1000 };
+};
+
+export interface EvalOptions {
+  /** For a re-grade: the document to grade, when the run saved it where neither the scenario nor the map finds it. */
+  document?: string;
+  /** Run without Peer AI's skills, to measure what a skill adds. */
+  baseline?: boolean;
+  /** The model to ask for, such as a fast one and a strong one; otherwise the tool's default. */
+  model?: string;
+}
+
+export interface EvalRun {
+  dir: string;
+  score: Score;
+  collected: CollectedReports;
+  tool: ToolRun;
+  baseline: boolean;
+  model?: string;
+  /** With the skill installed: whether the tool opened it. */
+  skillUsed?: boolean;
+  /** How many of the skill's rules the reports covered. */
+  coverage: { covered: number; of: number };
+  /** The grader that confirmed the pairings, when one did. */
+  grader?: GraderOptions;
+  /** Marked again from an earlier run's copy, so the run's time and cost aren't known. */
+  regraded?: boolean;
+}
+
+/** A grader to confirm which problem each finding is about. */
+export interface Pairing {
+  grade: GraderRunner;
+  grader: GraderOptions;
+}
+
+/** Marks the reports in a run's copy, with the pairings confirmed by a grader when one is given. */
+async function markReview(sheet: Sheet, skill: SkillId, dir: string, pairing?: Pairing) {
+  const collected = collectReports(dir);
+  const confirmed =
+    pairing === undefined
+      ? undefined
+      : await confirmPairings(sheet, skill, dir, collected.reports, pairing.grade, pairing.grader);
+  return {
+    collected,
+    score: score(sheet, skill, collected.reports, confirmed),
+    ...(confirmed === undefined || pairing === undefined ? {} : { grader: pairing.grader }),
+  };
+}
+
+/** One run: a fresh copy, the tool given the prompt, and its reports marked. */
+export async function evaluate(
+  sheet: Sheet,
+  skill: SkillId,
+  tool: Tool,
+  runner: ToolRunner = runTool,
+  into?: string,
+  options: EvalOptions = {},
+  pairing?: Pairing,
+): Promise<EvalRun> {
+  const baseline = options.baseline === true;
+  if (!baseline && !availableSkills().includes(skill)) {
+    throw new Error(`There's no ${skill} skill yet. Run with --baseline to measure the review without one.`);
+  }
+  const prompt = evalPrompt(sheet, skill, baseline);
+  const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
+  if (sheet.setup !== undefined) setUp(dir, sheet.setup);
+  if (baseline) {
+    mkdirSync(join(dir, ".peer-ai"), { recursive: true });
+    copyFileSync(REPORT_SCHEMA, join(dir, ".peer-ai", "review-report.schema.json"));
+  }
+  const log = `${dir}.log`;
+  const toolRun = await runner(tool, dir, prompt, log, options.model);
+  const marked = await markReview(sheet, skill, dir, pairing);
+  const { collected } = marked;
+  const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
+  return {
+    dir,
+    ...marked,
+    tool: toolRun,
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
+    coverage: ruleCoverage(collected.reports, skill),
+  };
+}
+
+/** Marks an earlier review run again from its copy, with its pairings confirmed by a grader. */
+export async function regradeReview(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  pairing: Pairing,
+  options: EvalOptions = {},
+): Promise<EvalRun> {
+  const marked = await markReview(sheet, skill, dir, pairing);
+  const baseline = ![".claude/skills", ".agents/skills"].some((home) =>
+    existsSync(join(dir, home, renderedName(skill))),
+  );
+  return {
+    dir,
+    ...marked,
+    tool: { seconds: 0 },
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: true }),
+    coverage: ruleCoverage(marked.collected.reports, skill),
+    regraded: true,
+  };
+}
+
+export const GradesSchema = z.array(
+  z.strictObject({ id: z.string().min(1), met: z.boolean(), quote: z.string().max(1000) }),
+);
+export type Grade = z.output<typeof GradesSchema>[number];
+
+/** What the grader is asked. It sees only the document and the points, never the project or the tool's run. */
+export const GRADE_PROMPT = `Grade a document against a list of points. document.md is the document, followed by any other documents written with it, each under an "Also written" heading: judge the points against all of it. points.json lists the points, each with an id.
+
+For each point, decide whether the document makes it: clearly and in substance, not by mentioning a word in passing. Judge only from what the document says.
+
+Write grades.json in this folder: a JSON array with one entry for each point, in the same order, such as {"id": "R1", "met": true, "quote": "..."}. The quote is the document's own words that make the point, at most 200 characters, or, when the point isn't made, what the document says instead. Escape any double quotes inside a quote, and check that grades.json parses as JSON. Change no other file.`;
+
+/** The grades the grader wrote, or undefined when it wrote none that are valid. */
+export function readGrades(dir: string): Grade[] | undefined {
+  try {
+    const parsed = GradesSchema.safeParse(JSON.parse(readFileSync(join(dir, "grades.json"), "utf8")));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export interface DocumentScore {
+  skill: SkillId;
+  path: string;
+  /** Whether the run wrote the document, or changed it when it was already there. */
+  written: boolean;
+  /** What check_document said, for a document that was written. */
+  check?: { ready: boolean; problems: string[] };
+  graded: boolean;
+  points: { id: string; point: string; must: boolean; met: boolean; quote: string }[];
+  ready: boolean;
+  /** Why it isn't ready, in plain words. */
+  reasons: string[];
+}
+
+/**
+ * Marks a document: it was written, check_document accepts it, it makes every point it must, and
+ * at least 80% of all its points.
+ */
+export function scoreDocument(
+  skill: SkillId,
+  scenario: DocumentScenario,
+  written: boolean,
+  check: DocumentScore["check"],
+  grades: Grade[] | undefined,
+): DocumentScore {
+  const byId = new Map((grades ?? []).map((grade) => [grade.id, grade]));
+  const points = scenario.points.map(({ id, point, must }) => {
+    const grade = byId.get(id);
+    return { id, point, must: must === true, met: grade?.met === true, quote: grade?.quote ?? "" };
+  });
+  const reasons: string[] = [];
+  if (!written) reasons.push(`it wrote no document at ${scenario.path}`);
+  else {
+    if (check !== undefined && !check.ready) {
+      reasons.push(
+        SKILL_KINDS[skill] === "work" ? "peer-ai check found problems in the plan" : "check_document didn't accept it",
+      );
+    }
+    if (grades === undefined) reasons.push("the grader gave no valid grades");
+    const musts = points.filter((point) => point.must);
+    const missed = musts.filter((point) => !point.met).length;
+    if (missed > 0) reasons.push(`it missed ${String(missed)} of the ${String(musts.length)} points it must make`);
+    const met = points.filter((point) => point.met).length;
+    if (met / points.length < POINTS_BAR) {
+      reasons.push(`it made ${String(met)} of ${String(points.length)} points, under ${String(POINTS_BAR * 100)}%`);
+    }
+  }
+  return {
+    skill,
+    path: scenario.path,
+    written,
+    ...(check === undefined ? {} : { check }),
+    graded: grades !== undefined,
+    points,
+    ready: reasons.length === 0,
+    reasons,
+  };
+}
+
+/** check_document's verdict on a document in the copy, from this checkout's CLI. */
+function checkDocumentIn(dir: string, skill: SkillId, path: string): NonNullable<DocumentScore["check"]> {
+  let out: string;
+  try {
+    out = execFileSync(process.execPath, [CLI, "check-document", path, "--skill", skill, "--json"], {
+      cwd: dir,
+      encoding: "utf8",
+    });
+  } catch (error) {
+    // It exits with 1 when the document isn't ready, and still prints its verdict.
+    const { stdout } = error as { stdout?: string | Buffer };
+    out = stdout === undefined ? "" : stdout.toString();
+  }
+  const verdict = JSON.parse(out) as { ok: boolean; ready?: boolean; problems?: string[]; error?: string };
+  return verdict.ok
+    ? { ready: verdict.ready === true, problems: verdict.problems ?? [] }
+    : { ready: false, problems: [verdict.error ?? "check_document couldn't check it"] };
+}
+
+export type GraderRunner = (tool: Tool, dir: string, prompt: string, log: string, model?: string) => Promise<void>;
+
+/** Runs a tool headless to grade a document, with no MCP servers and nothing but the grading folder. */
+export const runGrader: GraderRunner = async (tool, dir, prompt, log, model) => {
+  if (tool === "claude-code") {
+    await run("claude", claudeGraderArgs(prompt, model), dir, log);
+    return;
+  }
+  // The grading folder isn't a git repository, which Codex refuses to work in unless told it's fine.
+  const codex = [
+    "exec",
+    "--ephemeral",
+    "--ignore-user-config",
+    "--skip-git-repo-check",
+    "--sandbox",
+    "workspace-write",
+  ];
+  const choose = model === undefined ? [] : ["-m", model];
+  await run("codex", [...codex, "-C", dir, "-c", 'approval_policy="never"', ...choose, prompt], dir, log);
+};
+
+export interface GraderOptions {
+  tool: Tool;
+  model?: string;
+}
+
+export interface DocumentRun {
+  dir: string;
+  score: DocumentScore;
+  tool: ToolRun;
+  baseline: boolean;
+  model?: string;
+  skillUsed?: boolean;
+  grader: GraderOptions;
+  /** Graded again from an earlier run's copy, so the run's time and cost aren't known. */
+  regraded?: boolean;
+}
+
+/**
+ * Checks and grades the document a run left in its copy. `before` is the document as the copy
+ * started, so a run that leaves an existing document unchanged hasn't written one.
+ */
+export async function markDocument(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  before: string | undefined,
+  grade: GraderRunner,
+  grader: GraderOptions,
+  document?: string,
+): Promise<DocumentScore> {
+  const scenario = sheet.documents?.[skill];
+  if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
+  // A work skill's output is the work items it created, written out as a document for the grader,
+  // and checked by peer-ai check instead of check_document.
+  const work = SKILL_KINDS[skill] === "work";
+  const plan = work ? workItemsDocument(dir) : undefined;
+  const path = work
+    ? plan === undefined
+      ? undefined
+      : WORK_FOLDER
+    : (document ?? writtenDocument(dir, scenario.path, before) ?? mappedDocument(dir, skill));
+  if (path === undefined) return scoreDocument(skill, scenario, false, undefined, undefined);
+  const check = work ? checkWorkIn(dir) : checkDocumentIn(dir, skill, path);
+  const gradeDir = `${dir}-grades`;
+  rmSync(gradeDir, { recursive: true, force: true });
+  mkdirSync(gradeDir, { recursive: true });
+  const also = otherDocuments(dir, path).map(
+    (file) => `\n\n---\n\n# Also written: ${file}\n\n${readFileSync(join(dir, file), "utf8")}`,
+  );
+  const told = work ? finalMessage(`${dir}.log`) : undefined;
+  const answer = told === undefined ? "" : `\n\n---\n\n# What the run told the person at the end\n\n${told}\n`;
+  const change = scenario.diff === true ? `\n\n---\n\n# The change\n\n\`\`\`diff\n${changeIn(dir)}\n\`\`\`\n` : "";
+  writeFileSync(
+    join(gradeDir, "document.md"),
+    (plan ?? readFileSync(join(dir, path), "utf8")) + also.join("") + change + answer,
+  );
+  const points = scenario.points.map(({ id, point }) => ({ id, point }));
+  writeFileSync(join(gradeDir, "points.json"), `${JSON.stringify(points, null, 2)}\n`);
+  // A grader now and then forgets to write the file, or writes JSON that doesn't parse. Try again once.
+  let grades: Grade[] | undefined;
+  for (let attempt = 1; attempt <= 2 && grades === undefined; attempt++) {
+    rmSync(join(gradeDir, "grades.json"), { force: true });
+    await grade(grader.tool, gradeDir, GRADE_PROMPT, `${gradeDir}${attempt === 1 ? "" : "-2"}.log`, grader.model);
+    grades = readGrades(gradeDir);
+  }
+  return { ...scoreDocument(skill, scenario, true, check, grades), path };
+}
+
+/** The tag a scenario's copy is marked with once it's set up, so the run's change can be told apart. */
+const START = "eval-start";
+
+/** Writes a scenario's files into the copy and commits them, then marks where the run starts. */
+export function setUp(dir: string, files: DocumentScenario["setup"]): void {
+  const git = (...args: string[]) =>
+    execFileSync(
+      "git",
+      ["-c", "user.name=Peer AI eval", "-c", "user.email=eval@example.com", "-c", "commit.gpgsign=false", ...args],
+      { cwd: dir, stdio: "ignore" },
+    );
+  if (files !== undefined && Object.keys(files).length > 0) {
+    for (const [path, content] of Object.entries(files)) {
+      mkdirSync(join(dir, path, ".."), { recursive: true });
+      writeFileSync(join(dir, path), typeof content === "string" ? content : `${JSON.stringify(content, null, 2)}\n`);
+    }
+    git("add", "-A");
+    git("commit", "-q", "-m", "Set up the scenario");
+  }
+  git("tag", "-f", START);
+}
+
+/**
+ * The files the run changed since the scenario was set up, committed or not, new files included. A
+ * copy made before the start was marked falls back to what git reports as changed.
+ */
+export function changedSinceStart(dir: string): string[] {
+  const lines = (args: string[]) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+  try {
+    execFileSync("git", ["add", "-A", "-N", "."], { cwd: dir, stdio: "ignore" });
+    return lines(["diff", "--name-only", START]);
+  } catch {
+    try {
+      return execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+        .split("\n")
+        .map((line) => line.slice(3).trim())
+        .filter((line) => line !== "");
+    } catch {
+      return [];
+    }
+  }
+}
+
+/** Everything the run changed in the code since the scenario was set up, new files included, leaving out Peer AI's own files. */
+export function changeIn(dir: string): string {
+  try {
+    execFileSync("git", ["add", "-A", "-N", "."], { cwd: dir, stdio: "ignore" });
+    return execFileSync(
+      "git",
+      ["diff", START, "--", ".", ":(exclude).peer-ai", ":(exclude).claude", ":(exclude).agents", ":(exclude).cursor"],
+      { cwd: dir, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    ).trim();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * What a run told the person at the end, from its log: Claude Code's result, or Codex's last message.
+ * Undefined when the log has none.
+ */
+export function finalMessage(log: string): string | undefined {
+  if (!existsSync(log)) return undefined;
+  let last: string | undefined;
+  for (const line of readFileSync(log, "utf8").split("\n")) {
+    if (!line.startsWith("{")) continue;
+    try {
+      const event = JSON.parse(line) as { type?: string; result?: unknown; item?: { type?: string; text?: unknown } };
+      if (event.type === "result" && typeof event.result === "string") last = event.result;
+      if (event.item?.type === "agent_message" && typeof event.item.text === "string") last = event.item.text;
+    } catch {
+      // Not an event line.
+    }
+  }
+  return last;
+}
+
+const WORK_FOLDER = ".peer-ai/work/";
+
+/** The work items a run created or changed, written out as a document for the grader, or undefined for none. */
+export function workItemsDocument(dir: string): string | undefined {
+  // Every work item, marked by whether the run changed it: leaving an item as it was can be the
+  // right outcome, such as one waiting on another.
+  const changed = new Set(changedSinceStart(dir));
+  const folder = join(dir, WORK_FOLDER);
+  const files = existsSync(folder) ? readdirSync(folder).filter((file) => file.endsWith(".json")) : [];
+  const items = files
+    .flatMap((file): Record<string, unknown>[] => {
+      try {
+        const item = JSON.parse(readFileSync(join(folder, file), "utf8")) as Record<string, unknown>;
+        return [{ ...item, changedByRun: changed.has(`${WORK_FOLDER}${file}`) }];
+      } catch {
+        return [];
+      }
+    })
+    .sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+  if (items.length === 0) return undefined;
+  const list = (value: unknown) => (Array.isArray(value) ? value.map((entry) => `  - ${String(entry)}`) : []);
+  const text = (value: unknown) => (typeof value === "string" ? value : "–");
+  const verified = (value: unknown) => {
+    const { result, at } = (value ?? {}) as { result?: unknown; at?: unknown };
+    return typeof result === "string" ? `${result}${typeof at === "string" ? ` (${at})` : ""}` : "none";
+  };
+  const reviewed = (value: unknown) =>
+    Array.isArray(value)
+      ? value.map((review) => {
+          const { skill, result, report } = review as { skill?: unknown; result?: unknown; report?: unknown };
+          return `  - ${String(skill)}: ${String(result)}${typeof report === "string" ? `, report ${report}` : ", no report"}`;
+        })
+      : ["  - none"];
+  const needs = (value: unknown) =>
+    Array.isArray(value) && value.length > 0 ? value.map(String).join(", ") : "nothing";
+  const sections = items.map((item) =>
+    [
+      `## ${text(item.id)}: ${text(item.title)}`,
+      "",
+      item.changedByRun ? "Created or changed by this run." : "Left as it was by this run.",
+      "",
+      `- Kind: ${text(item.kind)}; part: ${text(item.track)}; stage: ${text(item.stage)}`,
+      `- Goal: ${text(item.goal)}`,
+      "- Acceptance criteria:",
+      ...list(item.acceptance),
+      "- Sources:",
+      ...list(item.sources),
+      `- Depends on: ${needs(item.dependsOn)}`,
+      `- Last verify: ${verified(item.lastVerify)}`,
+      "- Reviews recorded:",
+      ...reviewed(item.reviews),
+      `- Next: ${text(item.next)}`,
+    ].join("\n"),
+  );
+  return `# Work items\n\n${sections.join("\n\n")}\n`;
+}
+
+/** peer-ai check's verdict on the work items in the copy: valid, with dependencies that exist and no loop. */
+function checkWorkIn(dir: string): NonNullable<DocumentScore["check"]> {
+  let out: string;
+  try {
+    out = execFileSync(process.execPath, [CLI, "check", "--json"], { cwd: dir, encoding: "utf8" });
+  } catch (error) {
+    const { stdout } = error as { stdout?: string | Buffer };
+    out = stdout === undefined ? "" : stdout.toString();
+  }
+  try {
+    const verdict = JSON.parse(out) as { checks: { id: string; status: string; message: string }[] };
+    const problems = verdict.checks
+      .filter((check) => check.status === "fail" && ["work-items", "plans"].includes(check.id))
+      .map((check) => check.message);
+    return { ready: problems.length === 0, problems };
+  } catch {
+    return { ready: false, problems: ["peer-ai check gave no verdict"] };
+  }
+}
+
+/** A file's text, or undefined for a folder or nothing at all. */
+const readIfFile = (path: string): string | undefined =>
+  statSync(path, { throwIfNoEntry: false })?.isFile() === true ? readFileSync(path, "utf8") : undefined;
+
+/**
+ * The other Markdown documents the run wrote or changed beside the main one, such as an
+ * architecture's decision records, so the grader sees everything the skill produced. Peer AI's own
+ * files and rendered skills are left out.
+ */
+export function otherDocuments(dir: string, main: string): string[] {
+  let changed: string[];
+  try {
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter((line) => line !== "");
+  } catch {
+    return [];
+  }
+  const skipped = /^\.(peer-ai|claude|agents|cursor|github)\//;
+  return changed.filter((file) => file.endsWith(".md") && file !== main && !skipped.test(file)).sort();
+}
+
+/**
+ * A document the project map finds for the skill's map item, among the files the run wrote, such as
+ * docs/plant-watering-spec.md for product-spec. It counts wherever it is, because it fills the gap.
+ */
+export function mappedDocument(dir: string, skill: SkillId): string | undefined {
+  const items = Object.entries(MAP_ITEM_SKILLS)
+    .filter(([, skills]) => skills.includes(skill))
+    .map(([item]) => item);
+  let evidence: string[];
+  let changed: string[];
+  try {
+    const map = JSON.parse(
+      execFileSync(process.execPath, [CLI, "assess", "--json", "--dry-run"], { cwd: dir, encoding: "utf8" }),
+    ) as { items: Record<string, { evidence?: string[] } | undefined> };
+    evidence = items.flatMap((item) => map.items[item]?.evidence ?? []);
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim());
+  } catch {
+    return undefined;
+  }
+  return evidence.find((file) => file.endsWith(".md") && changed.includes(file));
+}
+
+/**
+ * Where the run wrote its document: the expected path when it changed there, or else a new or
+ * changed file of the same name elsewhere in the copy, such as requirements/requirements.md for
+ * docs/requirements.md. The project map finds a document by its name, so either counts. For a
+ * folder, such as docs/specs/, it's a new or changed Markdown file in that folder, or failing that
+ * one whose path names the folder, such as specs/cancel-a-pickup.md.
+ */
+export function writtenDocument(dir: string, expected: string, before: string | undefined): string | undefined {
+  const now = readIfFile(join(dir, expected));
+  if (now !== undefined && now !== before) return expected;
+  let changed: string[];
+  try {
+    changed = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: dir, encoding: "utf8" })
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter((line) => line !== "");
+  } catch {
+    return undefined;
+  }
+  if (expected.endsWith("/") || expected.includes("*")) {
+    // A pattern: * stands for the name the skill chose, such as docs/specs/*-design.md.
+    const pattern = expected.endsWith("/") ? `${expected}*.md` : expected;
+    const [folder = "", name = ""] = [pattern.split("/").at(-2), pattern.split("/").at(-1)];
+    const glob = (text: string) =>
+      new RegExp(`^${text.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("*", "[^/]*")}$`);
+    const whole = glob(pattern);
+    const base = glob(name);
+    const markdown = changed.filter((file) => file.endsWith(".md") && !file.startsWith(".peer-ai/"));
+    return (
+      markdown.find((file) => whole.test(file)) ??
+      markdown.find((file) => file.split("/").includes(folder) && base.test(file.split("/").at(-1) ?? ""))
+    );
+  }
+  const name = expected.split("/").at(-1)?.toLowerCase();
+  return changed.find((file) => file !== expected && file.split("/").at(-1)?.toLowerCase() === name);
+}
+
+/** One run of a document skill: a fresh copy, the tool given the prompt, and the document graded. */
+export async function evaluateDocument(
+  sheet: Sheet,
+  skill: SkillId,
+  tool: Tool,
+  runner: ToolRunner,
+  grade: GraderRunner,
+  grader: GraderOptions,
+  into: string,
+  options: EvalOptions = {},
+): Promise<DocumentRun> {
+  const scenario = sheet.documents?.[skill];
+  if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
+  const baseline = options.baseline === true;
+  if (!baseline && !availableSkills().includes(skill)) {
+    throw new Error(`There's no ${skill} skill yet. Run with --baseline to measure the document without one.`);
+  }
+  const dir = prepareFixture(sheet.fixture, into, { skills: !baseline });
+  setUp(dir, scenario.setup);
+  const before = readIfFile(join(dir, scenario.path));
+  const log = `${dir}.log`;
+  const toolRun = await runner(tool, dir, evalPrompt(sheet, skill, baseline), log, options.model);
+  const score = await markDocument(sheet, skill, dir, before, grade, grader);
+  const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
+  return {
+    dir,
+    score,
+    tool: toolRun,
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
+    grader,
+  };
+}
+
+/**
+ * Grades an earlier run's document again, from its copy: when a grader failed, or for a second
+ * opinion from another grader. Whether the run had the skill is read from the copy and its log.
+ */
+export async function regradeDocument(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  grade: GraderRunner,
+  grader: GraderOptions,
+  options: EvalOptions = {},
+): Promise<DocumentRun> {
+  const scenario = sheet.documents?.[skill];
+  if (scenario === undefined) throw new Error(`evals/${sheet.fixture}.json has no document scenario for ${skill}.`);
+  const before = readIfFile(join(REPO, "fixtures", sheet.fixture, scenario.path));
+  const baseline = ![".claude/skills", ".agents/skills"].some((home) =>
+    existsSync(join(dir, home, renderedName(skill))),
+  );
+  const log = `${dir}.log`;
+  const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
+  return {
+    dir,
+    score: await markDocument(sheet, skill, dir, before, grade, grader, options.document),
+    tool: { seconds: 0 },
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
+    grader,
+    regraded: true,
+  };
+}
+
+const describeSkill = (run: { baseline: boolean; skillUsed?: boolean }) =>
+  run.baseline ? "without the skill" : run.skillUsed === true ? "with the skill" : "skill installed, not used";
+
+const where = (span: Span | undefined) =>
+  span === undefined ? "" : span.whole === true ? span.file : `${span.file}:${String(span.line)}`;
+
+export function formatRun(sheet: Sheet, tool: Tool, run: EvalRun, index: number, of: number): string[] {
+  const { score: marked, collected } = run;
+  const found = marked.expected.filter(({ foundBy }) => foundBy.length > 0).length;
+  const model = run.model === undefined ? "" : ` (${run.model})`;
+  const lines = [
+    `${sheet.fixture} · ${marked.skill} · ${TOOL_NAMES[tool]}${model} · ${describeSkill(run)} · run ${String(index)} of ${String(of)}`,
+    "",
+    `Found ${String(found)} of ${String(marked.expected.length)} problems on the answer sheet:`,
+    `  ${SEVERITIES.filter((s) => marked.bySeverity[s].of > 0)
+      .map((s) => `${s} ${String(marked.bySeverity[s].found)} of ${String(marked.bySeverity[s].of)}`)
+      .join(" · ")}`,
+  ];
+  const missed = marked.expected.filter(({ foundBy }) => foundBy.length === 0);
+  if (missed.length > 0) {
+    lines.push("Missed:");
+    for (const { defect } of missed) {
+      lines.push(`  ${defect.id.padEnd(4)} ${defect.severity.padEnd(8)} ${where(defect.spans[0])}  ${defect.title}`);
+    }
+  }
+  if (marked.unmatched.length > 0) {
+    lines.push(`Raised but not on the answer sheet, for a person to judge (${String(marked.unmatched.length)}):`);
+    for (const finding of marked.unmatched) {
+      const at = `${finding.location.file}${finding.location.line === undefined ? "" : `:${String(finding.location.line)}`}`;
+      lines.push(`  ${finding.id.padEnd(4)} ${finding.severity.padEnd(8)} ${at}  ${finding.title}`);
+    }
+  }
+  for (const bad of collected.invalid) lines.push(`Invalid report ${bad.path}: ${bad.errors.slice(0, 3).join("; ")}`);
+  lines.push(`Covered ${String(run.coverage.covered)} of the skill's ${String(run.coverage.of)} rules.`);
+  lines.push(
+    run.grader === undefined
+      ? "Findings were paired with problems by place alone: a person should check each pairing."
+      : `Each pairing was confirmed by ${TOOL_NAMES[run.grader.tool]}${run.grader.model === undefined ? "" : ` (${run.grader.model})`}.`,
+  );
+  const cost = run.tool.costUsd === undefined ? "" : ` · $${run.tool.costUsd.toFixed(2)}`;
+  const turns = run.tool.turns === undefined ? "" : `${String(run.tool.turns)} turns · `;
+  lines.push(
+    run.regraded === true
+      ? `Marked again from the copy in ${run.dir}`
+      : `${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`,
+  );
+  lines.push(
+    "",
+    marked.ready ? "Ready: it found every serious problem." : `Not ready yet: ${marked.reasons.join("; ")}.`,
+  );
+  return lines;
+}
+
+/** Adds a row to the end of the first table under a heading, such as "## Results". */
+export function appendResult(readme: string, heading: string, row: string): void {
+  const lines = readFileSync(readme, "utf8").split("\n");
+  const start = lines.indexOf(heading);
+  const first = lines.findIndex((line, index) => index > start && line.startsWith("|"));
+  if (start === -1 || first === -1) throw new Error(`${readme} has no table under "${heading}" for the new row.`);
+  let last = first;
+  while (lines[last + 1]?.startsWith("|") === true) last++;
+  lines.splice(last + 1, 0, row);
+  writeFileSync(readme, lines.join("\n"));
+}
+
+export const REVIEW_RESULTS = "## Results";
+export const DOCUMENT_RESULTS = "## Document results";
+
+function record(sheet: Sheet, tool: Tool, run: EvalRun): void {
+  const { score: marked } = run;
+  const found = marked.expected.filter(({ foundBy }) => foundBy.length > 0).length;
+  const date = new Date().toISOString().slice(0, 10);
+  const cost = run.tool.costUsd === undefined ? "–" : `$${run.tool.costUsd.toFixed(2)}`;
+  const model = run.model ?? "default";
+  const skillColumn = run.baseline ? "without" : run.skillUsed === true ? "used" : "not used";
+  const rules = `${String(run.coverage.covered)} of ${String(run.coverage.of)}`;
+  appendResult(
+    join(EVALS, "README.md"),
+    REVIEW_RESULTS,
+    `| ${date} | ${sheet.fixture} | ${marked.skill} | ${TOOL_NAMES[tool]} | ${model} | ${skillColumn} | ${String(found)} of ${String(marked.expected.length)} | ${rules} | ${String(marked.unmatched.length)} | ${marked.ready ? "Ready" : "Not ready"} | ${cost} |`,
+  );
+}
+
+export function formatDocumentRun(sheet: Sheet, tool: Tool, run: DocumentRun, index: number, of: number): string[] {
+  const { score: marked } = run;
+  const model = run.model === undefined ? "" : ` (${run.model})`;
+  const lines = [
+    `${sheet.fixture} · ${marked.skill} · ${TOOL_NAMES[tool]}${model} · ${describeSkill(run)} · run ${String(index)} of ${String(of)}`,
+    "",
+  ];
+  const expected = sheet.documents?.[marked.skill]?.path;
+  const pattern = expected !== undefined && (expected.endsWith("/") || expected.includes("*"));
+  if (marked.written && expected !== undefined && !pattern && marked.path !== expected) {
+    lines.push(`Written to ${marked.path}, not ${expected}.`);
+  }
+  if (marked.written) {
+    const met = marked.points.filter((point) => point.met).length;
+    const musts = marked.points.filter((point) => point.must);
+    const graderModel = run.grader.model === undefined ? "" : ` (${run.grader.model})`;
+    lines.push(
+      `Made ${String(met)} of ${String(marked.points.length)} points, and ${String(musts.filter((point) => point.met).length)} of the ${String(musts.length)} it must make. Graded by ${TOOL_NAMES[run.grader.tool]}${graderModel}; check the quotes:`,
+    );
+    for (const point of marked.points) {
+      const quote = point.quote === "" ? "" : ` "${point.quote}"`;
+      lines.push(
+        `  ${point.met ? "✓" : "✗"} ${point.id.padEnd(5)}${point.must ? "must " : "     "}${point.point}${quote}`,
+      );
+    }
+    const check = marked.check;
+    if (check !== undefined) {
+      const checker = SKILL_KINDS[marked.skill] === "work" ? "peer-ai check" : "check_document";
+      lines.push(check.ready ? `${checker} accepted it.` : `${checker} refused it: ${check.problems.join(" ")}`);
+    }
+  }
+  const cost = run.tool.costUsd === undefined ? "" : ` · $${run.tool.costUsd.toFixed(2)}`;
+  const turns = run.tool.turns === undefined ? "" : `${String(run.tool.turns)} turns · `;
+  lines.push(
+    run.regraded === true
+      ? `Graded again from the copy in ${run.dir}`
+      : `${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`,
+  );
+  lines.push("", marked.ready ? "Ready: it made every point it must." : `Not ready yet: ${marked.reasons.join("; ")}.`);
+  return lines;
+}
+
+function recordDocument(sheet: Sheet, tool: Tool, run: DocumentRun): void {
+  const { score: marked } = run;
+  const date = new Date().toISOString().slice(0, 10);
+  const cost = run.tool.costUsd === undefined ? "–" : `$${run.tool.costUsd.toFixed(2)}`;
+  const skillColumn = run.baseline ? "without" : run.skillUsed === true ? "used" : "not used";
+  const met = marked.points.filter((point) => point.met).length;
+  const musts = marked.points.filter((point) => point.must);
+  const check = marked.check === undefined ? "–" : marked.check.ready ? "Accepted" : "Refused";
+  const grader = `${TOOL_NAMES[run.grader.tool]}${run.grader.model === undefined ? "" : ` ${run.grader.model}`}`;
+  appendResult(
+    join(EVALS, "README.md"),
+    DOCUMENT_RESULTS,
+    `| ${date} | ${sheet.fixture} | ${marked.skill} | ${TOOL_NAMES[tool]} | ${run.model ?? "default"} | ${skillColumn} | ${marked.written ? `${String(met)} of ${String(marked.points.length)}` : "No document"} | ${String(musts.filter((point) => point.met).length)} of ${String(musts.length)} | ${check} | ${marked.ready ? "Ready" : "Not ready"} | ${grader} | ${cost} |`,
+  );
+}
+
+const invokedDirectly = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: {
+      skill: { type: "string" },
+      tool: { type: "string", default: "claude-code" },
+      model: { type: "string" },
+      baseline: { type: "boolean" },
+      runs: { type: "string", default: "1" },
+      record: { type: "boolean" },
+      grader: { type: "string", default: "codex" },
+      "grader-model": { type: "string" },
+      regrade: { type: "string" },
+      document: { type: "string" },
+    },
+  });
+  const [name] = positionals;
+  const skill = values.skill as SkillId | undefined;
+  const tool = values.tool as Tool;
+  const graderTool = values.grader as Tool;
+  const tools: string[] = ["claude-code", "codex"];
+  if (name === undefined || skill === undefined || !tools.includes(tool) || !tools.includes(graderTool)) {
+    console.error(
+      `Usage: node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>] [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--regrade <copy> [--document <path>]] [--record]. The answer sheets are: ${sheets().join(", ")}.`,
+    );
+    process.exit(2);
+  }
+  const sheet = loadSheet(name);
+  const runs = Number(values.runs);
+  let allReady = true;
+  const into = () =>
+    // Unique for each run, since runs on different tools may start in the same millisecond.
+    join(tmpdir(), `peer-ai-eval-${name}-${skill}-${tool}-${String(Date.now())}-${randomUUID().slice(0, 8)}`);
+  const options = {
+    baseline: values.baseline === true,
+    ...(values.model === undefined ? {} : { model: values.model }),
+  };
+  const regrade = values.regrade;
+  const pairing: Pairing = {
+    grade: runGrader,
+    grader: { tool: graderTool, ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }) },
+  };
+  if (regrade !== undefined && SKILL_KINDS[skill] === "review") {
+    const result = await regradeReview(sheet, skill, resolve(regrade), pairing, options);
+    console.log(formatRun(sheet, tool, result, 1, 1).join("\n"));
+    if (values.record === true) record(sheet, tool, result);
+    allReady &&= result.score.ready;
+  } else if (regrade !== undefined) {
+    const grader = {
+      tool: graderTool,
+      ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
+    };
+    const result = await regradeDocument(sheet, skill, resolve(regrade), runGrader, grader, {
+      ...options,
+      ...(values.document === undefined ? {} : { document: values.document }),
+    });
+    console.log(formatDocumentRun(sheet, tool, result, 1, 1).join("\n"));
+    if (values.record === true) recordDocument(sheet, tool, result);
+    allReady &&= result.score.ready;
+  }
+  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] !== "review"; i++) {
+    const grader = {
+      tool: graderTool,
+      ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
+    };
+    const result = await evaluateDocument(sheet, skill, tool, runTool, runGrader, grader, into(), options);
+    console.log(formatDocumentRun(sheet, tool, result, i, runs).join("\n"));
+    if (i < runs) console.log("");
+    if (values.record === true) recordDocument(sheet, tool, result);
+    allReady &&= result.score.ready;
+  }
+  for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] === "review"; i++) {
+    const result = await evaluate(sheet, skill, tool, runTool, into(), options, pairing);
+    console.log(formatRun(sheet, tool, result, i, runs).join("\n"));
+    if (i < runs) console.log("");
+    if (values.record === true) record(sheet, tool, result);
+    allReady &&= result.score.ready;
+  }
+  process.exitCode = allReady ? 0 : 1;
+}

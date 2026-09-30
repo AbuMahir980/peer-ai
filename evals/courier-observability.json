@@ -1,0 +1,184 @@
+{
+  "fixture": "courier",
+  "setup": {
+    "peer-ai.config.json": {
+      "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/config.schema.json",
+      "version": 1,
+      "project": {
+        "name": "Courier",
+        "description": "Book a parcel pickup, pay for it, and track it to the door.",
+        "stage": "production",
+        "traits": ["money", "ai-features"],
+        "origin": "existing",
+        "team": "team"
+      },
+      "tools": ["claude-code", "codex", "cursor"],
+      "tracks": [
+        {
+          "id": "web",
+          "kind": "web",
+          "path": "apps/web",
+          "status": "active"
+        },
+        {
+          "id": "api",
+          "kind": "backend",
+          "path": "services/api",
+          "status": "active"
+        }
+      ],
+      "apis": [
+        {
+          "id": "courier-api",
+          "kind": "http",
+          "providedBy": "api",
+          "contract": {
+            "source": "openapi",
+            "location": "services/api/openapi.json"
+          }
+        }
+      ],
+      "tracker": {
+        "kind": "none",
+        "ticketPrefix": "CR"
+      },
+      "commands": {
+        "verify": "python3 -m pytest services/api -q"
+      },
+      "compliance": {
+        "jurisdictions": ["GB"],
+        "industries": ["logistics", "payments"]
+      }
+    },
+    "services/api/app/main.py": "import logging\n\nfrom fastapi import FastAPI, Request\nfrom fastapi.middleware.cors import CORSMiddleware\n\nfrom app.logging_setup import configure\nfrom app.routes import assistant, health, parcels, payments\n\nconfigure()\nlog = logging.getLogger(\"courier.requests\")\n\napp = FastAPI(title=\"Courier API\")\n\n\n@app.middleware(\"http\")\nasync def log_requests(request: Request, call_next):\n    response = await call_next(request)\n    log.info(f\"{request.method} {request.url.path} returned {response.status_code}\")\n    return response\n\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"*\"],\n    allow_credentials=True,\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)\n\napp.include_router(parcels.router)\napp.include_router(payments.router)\napp.include_router(assistant.router)\napp.include_router(health.router)\n",
+    "services/api/app/logging_setup.py": "import logging\n\n\ndef configure() -> None:\n    logging.basicConfig(level=logging.INFO, format=\"%(asctime)s %(levelname)s %(name)s %(message)s\")\n",
+    "services/api/app/routes/health.py": "from fastapi import APIRouter\n\nrouter = APIRouter(tags=[\"health\"])\n\n\n# The load balancer calls this to decide whether to send traffic here.\n@router.get(\"/health\")\ndef health():\n    return {\"status\": \"ok\"}\n",
+    "ops/alerts.yml": "# Alerts, sent to the team's chat channel.\nalerts:\n  - name: any-server-error\n    when: count(status >= 500) > 0 over 1m\n    notify: \"#courier-alerts\"\n  - name: busy-cpu\n    when: cpu > 50% over 1m\n    notify: \"#courier-alerts\"\n"
+  },
+  "prompts": {
+    "observability-review": "Review how Courier is watched in production."
+  },
+  "defects": [
+    {
+      "id": "OO1",
+      "title": "Request logs are sentences built by pasting values together, not fields a search can filter on",
+      "severity": "low",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "match": "log.info(f\"{request.method} {request.url.path} returned {response.status_code}\")"
+        },
+        {
+          "file": "services/api/app/logging_setup.py",
+          "match": "logging.basicConfig(level=logging.INFO, format=\"%(asctime)s %(levelname)s %(name)s %(message)s\")"
+        }
+      ]
+    },
+    {
+      "id": "OO2",
+      "title": "Requests carry no id, so a customer's failed booking can't be followed through the logs",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "whole": true
+        },
+        {
+          "file": "services/api/app/logging_setup.py",
+          "whole": true
+        }
+      ],
+      "rules": ["OPS-08"]
+    },
+    {
+      "id": "OO3",
+      "title": "The health check says ok whatever happens, so the load balancer keeps sending traffic when the database is down",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/health.py",
+          "match": "return {\"status\": \"ok\"}"
+        }
+      ]
+    },
+    {
+      "id": "OO4",
+      "title": "Alerts fire on a single server error and on a busy CPU, and say nothing about what to do, so people learn to ignore them",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "ops/alerts.yml",
+          "match": "- name: any-server-error",
+          "lines": 3
+        },
+        {
+          "file": "ops/alerts.yml",
+          "match": "- name: busy-cpu",
+          "lines": 3
+        }
+      ]
+    },
+    {
+      "id": "OO5",
+      "title": "There are no written targets for booking, paying or tracking, so nothing warns before they fail people",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        },
+        {
+          "file": "ops/alerts.yml",
+          "whole": true
+        }
+      ],
+      "rules": ["OPS-15"]
+    },
+    {
+      "id": "OO6",
+      "title": "Booking writes the recipient's name, phone and addresses to the logs",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OO7",
+      "title": "A request with a bad or expired session token is refused without being logged",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/auth.py",
+          "match": "    except BadSignature:\n",
+          "lines": 2
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OO8",
+      "title": "There's no separate store for security logs that the app can add to but not change",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["OPS-12"],
+      "found": "Not planted: raised by an observability-review baseline on 2026-09-29, and judged real."
+    }
+  ]
+}

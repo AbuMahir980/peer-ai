@@ -1,0 +1,966 @@
+{
+  "fixture": "shelf",
+  "prompts": {
+    "security-review": "Review the Shelf app for security problems.",
+    "code-review": "Review Shelf's code for bugs and problems.",
+    "compliance-review": "Review Shelf for data protection problems. It operates in the United Kingdom.",
+    "accessibility-review": "Review the Shelf app for accessibility problems.",
+    "data-migration-review": "Review how Shelf stores data on the phone, and what happens to that data when the app updates.",
+    "performance-review": "Review the Shelf app for performance problems.",
+    "reliability-review": "Review the Shelf app for reliability problems.",
+    "design-review": "Review the Shelf app against its design system.",
+    "ai-feature-review": "Review Shelf's ask-the-librarian feature, which uses an AI model.",
+    "threat-model": "Write a threat model for Shelf.",
+    "architecture": "Bring Shelf's architecture document up to date with the code.",
+    "product-spec": "Readers want to extend a loan by a week. Write the spec for it.",
+    "system-design": "Readers will be able to extend a loan by a week. Design how it's built.",
+    "api-design": "Readers will be able to extend a loan by a week. Design the API change Shelf needs.",
+    "design-system": "Write down Shelf's design system from its tokens and screens.",
+    "issue-planning": "Readers want to extend a loan by a week. Plan the work. This is the spec we agreed:\n\n\"A reader can extend their own loan by a week, once, unless someone has reserved the book. The lender is told about the extension. With no connection, the Extend button says it needs one. The Shelf API, in its own repository, needs a new endpoint for this.\"",
+    "dependency-review": "Review the Shelf app's dependencies.",
+    "test-strategy": "Write a test strategy for the Shelf app.",
+    "documentation": "New people joining the Shelf team struggle to get started. Write the README they need.",
+    "tech-debt-triage": "Triage the Shelf app's technical debt. What should we fix, and in what order?"
+  },
+  "defects": [
+    {
+      "id": "S1",
+      "title": "A partner signing secret is built into the app, where anyone can extract it",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/config.ts",
+          "match": "export const PARTNER_SECRET = \"shelf-partner-secret-5f2c9e1d\";"
+        },
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "\"X-Partner-Signature\": PARTNER_SECRET,"
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "The app talks to the API over plain HTTP, and both platforms allow unencrypted traffic",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/config.ts",
+          "match": "export const API_URL = \"http://api.shelf.example/v1\";"
+        },
+        {
+          "file": "app.json",
+          "match": "\"NSAppTransportSecurity\": { \"NSAllowsArbitraryLoads\": true }"
+        },
+        {
+          "file": "app.json",
+          "match": "\"usesCleartextTraffic\": true,"
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Signing in writes the reader's password to the device log",
+      "severity": "critical",
+      "skills": ["security-review", "compliance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "console.log(\"Signing in\", email, password);"
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "The session token is kept in unencrypted storage",
+      "severity": "high",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "src/features/auth/session.ts",
+          "match": "await AsyncStorage.setItem(SESSION_KEY, token);"
+        },
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "await AsyncStorage.setItem(\"session\", token);"
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "A link in a QR code opens any web page in an in-app browser with JavaScript on",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/scan/ScanScreen.tsx",
+          "match": "return <WebView source={{ uri: route.params.url }} javaScriptEnabled domStorageEnabled />;"
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "title": "The app asks to track location all the time, when it needs it only while searching",
+      "severity": "high",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "await Location.requestBackgroundPermissionsAsync();"
+        },
+        {
+          "file": "app.json",
+          "match": "\"permissions\": [\"ACCESS_FINE_LOCATION\", \"ACCESS_BACKGROUND_LOCATION\"]"
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "title": "The reader's exact location goes to an analytics service and to the API, not just a rough area",
+      "severity": "high",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "analytics.track(\"nearby_opened\", { lat: coords.latitude, lng: coords.longitude });",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S8",
+      "title": "Version 3.4.0 reads saved books from a new key and never moves the old ones across, so readers lose them",
+      "severity": "high",
+      "skills": ["data-migration-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/storage/savedBooks.ts",
+          "match": "const KEY = \"savedBooks:v2\";"
+        }
+      ]
+    },
+    {
+      "id": "S9",
+      "title": "Adding a book changes the Redux state in place, so the list doesn't update",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/store/booksReducer.js",
+          "match": "state.books.push(action.book);",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "The book list draws every book at once in a ScrollView",
+      "severity": "medium",
+      "skills": ["performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/screens/BookListScreen.js",
+          "match": "{this.props.books.map((book) => ("
+        }
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "The book list keeps polling after the screen closes, because the timer is never cleared",
+      "severity": "medium",
+      "skills": ["reliability-review", "performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/screens/BookListScreen.js",
+          "match": "this.poll = setInterval(() => this.load(), POLL_EVERY_MS);"
+        }
+      ]
+    },
+    {
+      "id": "S12",
+      "title": "Loans load once and ignore a change of account, so the previous reader's loans stay on screen",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/loans/useLoans.ts",
+          "match": "  }, []);"
+        }
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "The return button is an unlabelled icon with a small touch target",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/loans/LoanCard.tsx",
+          "match": "<Pressable onPress={onReturn} style={styles.returnButton}>",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "Profile text ignores the reader's text size setting",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "src/features/profile/ProfileScreen.tsx",
+          "match": "<Text allowFontScaling={false} style={{ fontSize: 13, color: colours.muted }}>"
+        }
+      ]
+    },
+    {
+      "id": "S15",
+      "title": "The loan card hard-codes colours instead of using the design tokens",
+      "severity": "low",
+      "skills": ["design-review"],
+      "locations": [
+        {
+          "file": "src/features/loans/LoanCard.tsx",
+          "match": "card: { padding: 16, backgroundColor: \"#FFFFFF\", borderRadius: 8 },",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S16",
+      "title": "Loading books never checks for a failed response and has no timeout",
+      "severity": "medium",
+      "skills": ["reliability-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "const response = await fetch(`${API_URL}/books`, { headers: await headers() });",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "S17",
+      "title": "Usage data goes to a third-party analytics service with no consent or opt-out",
+      "severity": "medium",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/lib/analytics.ts",
+          "match": "void fetch(\"https://events.analytics.example/v1/track\", {"
+        },
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "analytics.track(\"nearby_opened\", { lat: coords.latitude, lng: coords.longitude });"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
+    },
+    {
+      "id": "S18",
+      "title": "Signing out only forgets the token on the phone, so the session stays valid on the server",
+      "severity": "medium",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/auth/session.ts",
+          "match": "await AsyncStorage.removeItem(SESSION_KEY);"
+        }
+      ],
+      "found": "Not planted: first raised by Peer AI's security-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S19",
+      "title": "The librarian is sent everything the reader has borrowed and their exact location, without telling them",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review", "compliance-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "Everything this reader has borrowed:"
+        },
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });"
+        }
+      ]
+    },
+    {
+      "id": "S20",
+      "title": "Catalogue descriptions from the partner are pasted into the librarian's instructions, so a description can steer it",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "${book.id} ${book.title}: ${book.description}"
+        }
+      ]
+    },
+    {
+      "id": "S21",
+      "title": "A book is reserved because the librarian's reply says so, without the reader confirming",
+      "severity": "high",
+      "skills": ["ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "if (answer.action === \"reserve\" && answer.bookId !== undefined) {"
+        }
+      ]
+    },
+    {
+      "id": "S22",
+      "title": "The librarian's guess at a book's youngest suitable age is shown as fact",
+      "severity": "high",
+      "skills": ["ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "Suitable for ages {reply.minimumAge}+"
+        }
+      ]
+    },
+    {
+      "id": "S23",
+      "title": "The librarian call has no timeout and no limit on how often a reader can ask",
+      "severity": "medium",
+      "skills": ["ai-feature-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "match": "http<LibrarianReply>(\"/librarian\""
+        }
+      ]
+    },
+    {
+      "id": "S24",
+      "title": "The newer features' request helper has no timeout, so a slow API leaves a screen waiting forever",
+      "severity": "medium",
+      "skills": ["code-review", "reliability-review"],
+      "locations": [
+        {
+          "file": "src/lib/http.ts",
+          "match": "const response = await fetch(`${API_URL}${path}`, {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's code-review and ai-feature-review skills on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S25",
+      "title": "The librarian's question field has no label, only a placeholder",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "<TextInput value={question} onChangeText={setQuestion} placeholder=\"What should I read next?\" />"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S26",
+      "title": "The Ask the librarian button is smaller than a finger can reliably tap",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "<Pressable onPress={() => void ask()}>"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S27",
+      "title": "The app has no way to make people on an unsafe version update",
+      "severity": "medium",
+      "skills": ["data-migration-review"],
+      "locations": [
+        {
+          "file": "app.json",
+          "match": "\"expo\": {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's data-migration-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S28",
+      "title": "The librarian screen writes its colour and spacing as values instead of using the design tokens",
+      "severity": "low",
+      "skills": ["design-review"],
+      "locations": [
+        {
+          "file": "src/features/librarian/LibrarianScreen.tsx",
+          "match": "badge: { fontWeight: \"600\", color: \"#188038\" },"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's design-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S29",
+      "title": "The app has no lockfile, so the packages it depends on can change from one install to the next",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-01"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "S30",
+      "title": "Nothing checks the dependencies for known vulnerabilities",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-03"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "S31",
+      "title": "The older screens use @react-native-community/async-storage, which moved to a new name and gets no more fixes",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"@react-native-community/async-storage\": \"1.12.1\","
+        },
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "import AsyncStorage from \"@react-native-community/async-storage\";"
+        }
+      ]
+    },
+    {
+      "id": "S32",
+      "title": "The partner SDK is a private package with a name anyone can claim on the public registry, installed through a registry that also serves public packages",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "match": "\"shelf-partner-sdk\": \"2.3.0\""
+        },
+        {
+          "file": ".npmrc",
+          "match": "registry=https://packages.shelf.example/npm/"
+        }
+      ]
+    },
+    {
+      "id": "S33",
+      "title": "There's no list of the app's dependencies, though it ships to people's phones",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "package.json",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-10"],
+      "found": "Not planted: raised by Peer AI's dependency-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S34",
+      "title": "The API's responses are used without checking their shape",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "src/lib/http.ts",
+          "match": "  return (await response.json()) as T;"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "S35",
+      "title": "There's no threat model, though the app opens links from QR codes and sends readers' details to an AI service",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-25"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "S36",
+      "title": "Nothing security-sensitive has abuse tests, such as signing in or reserving a book",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-08"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "S37",
+      "title": "Nothing scans for secrets on each change: there's no CI at all",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-27"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    }
+  ],
+  "documents": {
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TS1",
+          "point": "Lists the ways in, including signing in, scanning a QR code, finding books nearby, the librarian, and the calls the app makes to the API and to analytics.",
+          "must": true
+        },
+        {
+          "id": "TS2",
+          "point": "Names what's worth protecting, including readers' accounts, their location and what they've borrowed.",
+          "must": true
+        },
+        {
+          "id": "TS3",
+          "point": "Finds that a secret is built into the app, or that the app talks to the API over plain HTTP, and marks it missing.",
+          "must": true
+        },
+        {
+          "id": "TS4",
+          "point": "Finds that signing in writes the password to the device log, or that the session token is kept in unencrypted storage."
+        },
+        {
+          "id": "TS5",
+          "point": "Finds that a link in a QR code can open any web page inside the app."
+        },
+        {
+          "id": "TS6",
+          "point": "Finds that the reader's exact location goes to analytics or to the librarian when it isn't needed."
+        },
+        {
+          "id": "TS7",
+          "point": "Finds that catalogue descriptions from the partner reach the librarian's instructions, or that the librarian's reply can reserve a book without the reader confirming."
+        },
+        {
+          "id": "TS8",
+          "point": "Treats the API as run in another repository, and marks the defences that live there as not checked rather than in place.",
+          "must": true
+        },
+        {
+          "id": "TS9",
+          "point": "Marks at least one defence as in place where the app has one, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TS10",
+          "point": "Considers a lost or shared phone."
+        },
+        {
+          "id": "TS11",
+          "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AS1",
+          "point": "Keeps the rebuild rule: features move from src/legacy to src/features, and the legacy Redux store owns the book list while both halves exist.",
+          "must": true
+        },
+        {
+          "id": "AS2",
+          "point": "Keeps that the Shelf API is a separate service in another repository, and describes only what the app uses of it.",
+          "must": true
+        },
+        {
+          "id": "AS3",
+          "point": "Adds the parts the document is missing, such as the librarian, analytics, QR scanning and finding books nearby."
+        },
+        {
+          "id": "AS4",
+          "point": "Notes that there are two ways to reach the API, the legacy client and the newer helper, and says which new code must use or treats it as a risk."
+        },
+        {
+          "id": "AS5",
+          "point": "Keeps the rule that a change to how data is stored on the phone moves the existing data across."
+        },
+        {
+          "id": "AS6",
+          "point": "Names each outside service the app sends data to, such as the Shelf API and analytics."
+        },
+        {
+          "id": "AS7",
+          "point": "Marks what it worked out from the code as coming from the code."
+        },
+        {
+          "id": "AS8",
+          "point": "States which parts or folders may depend on which, in a direction a reviewer could check."
+        },
+        {
+          "id": "AS9",
+          "point": "Invents no parts, hosting or services the code doesn't show, and doesn't describe the API's insides as known.",
+          "must": true
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PS1",
+          "point": "Says a reader can extend only their own loans, and what the lender can see or do.",
+          "must": true
+        },
+        {
+          "id": "PS2",
+          "point": "Covers a book someone else has reserved or asked for, and what the reader is told when they can't extend.",
+          "must": true
+        },
+        {
+          "id": "PS3",
+          "point": "Gives acceptance criteria for each journey, including the ones that go wrong.",
+          "must": true
+        },
+        {
+          "id": "PS4",
+          "point": "Covers what happens with no connection, since it's a phone app."
+        },
+        {
+          "id": "PS5",
+          "point": "Asks, or proposes, how many times a loan can be extended."
+        },
+        {
+          "id": "PS6",
+          "point": "Covers edge cases around the due date, such as a loan due today, an overdue loan, or the reader's time zone."
+        },
+        {
+          "id": "PS7",
+          "point": "Says whether and how the lender is told about the extension."
+        },
+        {
+          "id": "PS8",
+          "point": "Describes each screen or message in its loading, error and success states."
+        },
+        {
+          "id": "PS9",
+          "point": "Covers use with a screen reader and large enough touch targets."
+        },
+        {
+          "id": "PS10",
+          "point": "Leaves database tables, API endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DS1",
+          "point": "Treats the API as another repository's: writes the contract change the app needs as a request to its owners, and doesn't design the API's insides.",
+          "must": true
+        },
+        {
+          "id": "DS2",
+          "point": "Says what the app does when the request fails, hangs or there's no connection, with a timeout.",
+          "must": true
+        },
+        {
+          "id": "DS3",
+          "point": "Builds the new screen in the newer TypeScript features, not the legacy half, reaching the API through one helper."
+        },
+        {
+          "id": "DS4",
+          "point": "Handles pressing extend twice, so the loan is extended once."
+        },
+        {
+          "id": "DS5",
+          "point": "Checks on the server that the loan belongs to the reader asking, as part of the request to the API's owners."
+        },
+        {
+          "id": "DS6",
+          "point": "Names the tests that prove it, including a failed request and a double press.",
+          "must": true
+        },
+        {
+          "id": "DS7",
+          "point": "Says how the loan's new due date reaches the screen, such as refreshing the loans the app holds."
+        },
+        {
+          "id": "DS8",
+          "point": "Names the files that change in the app."
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAS1",
+          "point": "Writes it as a request to the API's owners in the other repository, not as a change it makes itself.",
+          "must": true
+        },
+        {
+          "id": "PAS2",
+          "point": "Designs the endpoint: what it takes, what it returns, and each error, such as the book being reserved.",
+          "must": true
+        },
+        {
+          "id": "PAS3",
+          "point": "Says only the reader who has the loan may extend it, checked on the server.",
+          "must": true
+        },
+        {
+          "id": "PAS4",
+          "point": "Makes a repeated request extend the loan only once."
+        },
+        {
+          "id": "PAS5",
+          "point": "Adds to the API without breaking the app versions already in use."
+        },
+        {
+          "id": "PAS6",
+          "point": "Uses the API's existing error shape and conventions, or asks what they are."
+        },
+        {
+          "id": "PAS7",
+          "point": "Returns the new due date in one date format."
+        },
+        {
+          "id": "PAS8",
+          "point": "Lists the questions for the API's owners, such as how many extensions are allowed."
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YS1",
+          "point": "Names src/theme/tokens.ts as the one place the tokens come from, and lists its colours, spacing and type sizes.",
+          "must": true
+        },
+        {
+          "id": "YS2",
+          "point": "Finds colours written straight into screens instead of tokens, such as in the loan card or the librarian screen.",
+          "must": true
+        },
+        {
+          "id": "YS3",
+          "point": "Finds the loan card's return button is an icon with no name and a small touch target.",
+          "must": true
+        },
+        {
+          "id": "YS4",
+          "point": "Finds text that ignores the reader's text size setting, such as on the profile screen."
+        },
+        {
+          "id": "YS5",
+          "point": "Gives contrast as ratios worked out from the token values."
+        },
+        {
+          "id": "YS6",
+          "point": "Notes the older and newer halves of the app style screens differently, and says which new screens follow."
+        },
+        {
+          "id": "YS7",
+          "point": "Sets touch target and text size rules suited to a phone."
+        },
+        {
+          "id": "YS8",
+          "point": "Marks proposals as proposed rather than decided."
+        }
+      ]
+    },
+    "issue-planning": {
+      "path": ".peer-ai/work/",
+      "points": [
+        {
+          "id": "IS1",
+          "point": "Makes the request to the Shelf API's owners its own item, and has the app's item depend on it.",
+          "must": true
+        },
+        {
+          "id": "IS2",
+          "point": "Gives the items acceptance criteria from the spec: extending once, refusing when the book is reserved, telling the lender, and the message with no connection.",
+          "must": true
+        },
+        {
+          "id": "IS3",
+          "point": "Plans the app's work in the newer TypeScript features rather than the legacy screens."
+        },
+        {
+          "id": "IS4",
+          "point": "Plans nothing the spec doesn't ask for, such as a second extension or extensions of other lengths.",
+          "must": true
+        },
+        {
+          "id": "IS5",
+          "point": "Names the spec, or where it came from, as each item's source."
+        },
+        {
+          "id": "IS6",
+          "point": "Gives each item a goal and a first action."
+        }
+      ]
+    },
+    "test-strategy": {
+      "path": "docs/test-strategy.md",
+      "points": [
+        {
+          "id": "ES1",
+          "point": "Says the only test is in the older JavaScript half, and the newer TypeScript features have none.",
+          "must": true
+        },
+        {
+          "id": "ES2",
+          "point": "Plans a test that upgrading to version 3.4 keeps each reader's saved books, starting from the older version's saved data.",
+          "must": true
+        },
+        {
+          "id": "ES3",
+          "point": "Plans the main journeys end to end (signing in, lending a book, borrowing one, finding books nearby), on both iOS and Android.",
+          "must": true
+        },
+        {
+          "id": "ES4",
+          "point": "Plans a penetration test before launch and every year, since the app is at the production stage.",
+          "must": true
+        },
+        {
+          "id": "ES5",
+          "point": "Says the existing reducer test only checks adding to an empty list, and what it can't prove."
+        },
+        {
+          "id": "ES6",
+          "point": "Plans how tests meet the lending API, which lives in another repository: a contract both sides check."
+        },
+        {
+          "id": "ES7",
+          "point": "Plans tests that the app sends only a rough area, never the reader's exact location, and that signing out ends the session on the server."
+        },
+        {
+          "id": "ES8",
+          "point": "Plans accessibility checks with VoiceOver and TalkBack, and with larger text sizes."
+        },
+        {
+          "id": "ES9",
+          "point": "Plans tests for the librarian: catalogue text that tries to steer it, and reservations that need the reader to confirm."
+        },
+        {
+          "id": "ES10",
+          "point": "Says nothing runs the tests automatically before a change merges."
+        }
+      ]
+    },
+    "documentation": {
+      "path": "README.md",
+      "points": [
+        {
+          "id": "NS1",
+          "point": "Explains the two halves, the older screens in src/legacy in JavaScript with Redux and the newer features in src/features in TypeScript, and says new work goes in the newer half.",
+          "must": true
+        },
+        {
+          "id": "NS2",
+          "point": "Says the API lives in another repository, the app's API address is fixed in src/config.ts, and there's no setting to point it at another API.",
+          "must": true
+        },
+        {
+          "id": "NS3",
+          "point": "Gives the commands as the project defines them: npm install, npm start to start Expo, and npm test to run the tests.",
+          "must": true
+        },
+        {
+          "id": "NS4",
+          "point": "Never repeats the partner signing secret written in src/config.ts, and reports it as a problem."
+        },
+        {
+          "id": "NS5",
+          "point": "Says how the app reaches the App Store and Google Play, or that nothing is written down about it."
+        },
+        {
+          "id": "NS6",
+          "point": "Keeps the README's existing description of the app being rebuilt one feature at a time."
+        },
+        {
+          "id": "NS7",
+          "point": "Links to the requirements and the architecture rather than copying them."
+        }
+      ]
+    },
+    "tech-debt-triage": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "points": [
+        {
+          "id": "TS1",
+          "point": "Names the half-finished rebuild as the biggest debt, the older JavaScript screens beside the newer TypeScript features, and plans finishing it in slices that each ship.",
+          "must": true
+        },
+        {
+          "id": "TS2",
+          "point": "Raises problems hurting readers now as fixes, such as the password written to the device log, and saved books lost on updating to 3.4.",
+          "must": true
+        },
+        {
+          "id": "TS3",
+          "point": "Creates work items for the top of the list, each with a goal and acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "TS4",
+          "point": "Notes that the older screens use an abandoned storage package that the newer code has replaced."
+        },
+        {
+          "id": "TS5",
+          "point": "Notes there's one test in the whole app, in the older half."
+        },
+        {
+          "id": "TS6",
+          "point": "Keeps a register of the rest, each with what it costs, what it risks and its size."
+        },
+        {
+          "id": "TS7",
+          "point": "Changes no code: the output is a plan."
+        }
+      ]
+    }
+  }
+}

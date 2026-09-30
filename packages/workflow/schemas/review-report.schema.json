@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "skill": {
+      "type": "string",
+      "enum": [
+        "requirements-analysis",
+        "product-spec",
+        "architecture",
+        "system-design",
+        "api-design",
+        "data-modelling",
+        "threat-model",
+        "design-system",
+        "issue-planning",
+        "implement-ticket",
+        "code-review",
+        "security-review",
+        "contract-check",
+        "accessibility-review",
+        "design-review",
+        "performance-review",
+        "reliability-review",
+        "data-migration-review",
+        "dependency-review",
+        "compliance-review",
+        "test-strategy",
+        "qa-acceptance",
+        "ai-feature-review",
+        "release-readiness",
+        "infrastructure-review",
+        "observability-review",
+        "incident-response",
+        "documentation",
+        "tech-debt-triage"
+      ]
+    },
+    "workItem": {
+      "description": "The work item reviewed. Omit it for a review of the whole project.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "description": "The commit the change starts from.",
+          "type": "string",
+          "minLength": 1
+        },
+        "head": {
+          "description": "The commit reviewed.",
+          "type": "string",
+          "minLength": 1
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "What was reviewed."
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Every document, profile, rule pack and decision the review read first."
+    },
+    "inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A stable id for something under review, such as route:GET /orders/{id}."
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What it is: a route, screen, migration, service, dependency, file and so on."
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "endLine": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Everything under review."
+    },
+    "coverage": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The id of the rule checked."
+          },
+          "item": {
+            "description": "The inventory id it was checked against. Omit it for the whole scope.",
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "not-applicable",
+              "not-checked"
+            ]
+          },
+          "evidence": {
+            "description": "For a pass: what was checked, and where.",
+            "type": "string",
+            "minLength": 1
+          },
+          "finding": {
+            "description": "For a fail: the id of the problem found.",
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "description": "For not-applicable or not-checked: why.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "rule",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "description": "How each rule went. A rule is never left out silently."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rule": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "fixed",
+              "accepted"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "endLine": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "additionalProperties": false
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What shows the problem is real."
+          },
+          "fix": {
+            "description": "A suggested fix.",
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptedBy": {
+            "description": "For an accepted risk: who accepted it.",
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "description": "For an accepted risk: why it was accepted.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "rule",
+          "severity",
+          "status",
+          "title",
+          "location",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "incomplete"
+      ],
+      "description": "Must agree with the findings and coverage."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "A short summary for people."
+    }
+  },
+  "required": [
+    "version",
+    "skill",
+    "at",
+    "scope",
+    "inputs",
+    "inventory",
+    "coverage",
+    "findings",
+    "result",
+    "summary"
+  ],
+  "additionalProperties": false,
+  "title": "Peer AI review report",
+  "description": ".peer-ai/reports/<work item>/<skill>-<time>.json: what a review looked at, every rule it checked, and every problem it found."
+}

@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly

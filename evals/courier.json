@@ -1,0 +1,1219 @@
+{
+  "fixture": "courier",
+  "prompts": {
+    "security-review": "Review Courier's web app and API for security problems.",
+    "code-review": "Review Courier's code for bugs and problems.",
+    "compliance-review": "Review Courier for data protection and card payment compliance problems. It operates in the United Kingdom.",
+    "contract-check": "Check that Courier's API does what its OpenAPI contract says.",
+    "accessibility-review": "Review Courier's web app for accessibility problems.",
+    "data-migration-review": "Review Courier's database migrations.",
+    "performance-review": "Review Courier's API and database for performance problems.",
+    "reliability-review": "Review Courier's API for reliability problems.",
+    "ai-feature-review": "Review Courier's support assistant, which uses an AI model.",
+    "requirements-analysis": "Update Courier's requirements with this message from our operations lead:\n\n\"Customers keep ringing to move their pickup to another day. Can they do it themselves in the app, up until the evening before? Drivers also want customers to get a text when the driver is about ten minutes away. And while you're at it, could we add a loyalty scheme, with points for every parcel?\"",
+    "threat-model": "Write a threat model for Courier.",
+    "architecture": "Courier's architecture document is out of date. Bring it up to date with the code.",
+    "product-spec": "Customers want to cancel a pickup themselves and get their money back. Write the spec for it.",
+    "system-design": "Customers will be able to cancel a pickup themselves and get their money back through the payment provider. Design how it's built.",
+    "api-design": "Write down Courier's API design from the code and its contract.",
+    "data-modelling": "Write down Courier's data model from its migrations.",
+    "design-system": "Courier has no design system yet. Write one from its web app's screens.",
+    "issue-planning": "Plan the work for letting customers cancel a pickup and get their money back. This is the spec we agreed:\n\n\"A customer can cancel their own pickup until the driver collects it. Cancelling refunds the full amount through the payment provider. A pickup already collected can't be cancelled. If the refund fails, the pickup stays cancelled and support is told, so they can retry it. Cancelling twice refunds once. The support assistant's cancel does the same as the customer's. Out of scope: partial refunds and cancellation fees.\"",
+    "design-review": "Review the design of Courier's web app screens.",
+    "dependency-review": "Review Courier's dependencies.",
+    "test-strategy": "Write Courier's test strategy.",
+    "documentation": "Courier's README is too thin for new people joining the team. Write it properly.",
+    "tech-debt-triage": "Triage Courier's technical debt. What should we fix, and in what order?"
+  },
+  "defects": [
+    {
+      "id": "D1",
+      "title": "The session signing key is written in the code",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/auth.py",
+          "match": "SECRET_KEY = \"courier-signing-key-2026\""
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "title": "Any website may call the API with a signed-in customer's credentials",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "match": "allow_origins=[\"*\"],",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "D3",
+      "title": "The status filter is pasted into SQL, so it can be used for SQL injection",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "query += f\" AND status = '{status}'\""
+        }
+      ]
+    },
+    {
+      "id": "D4",
+      "title": "Any signed-in customer can read another customer's parcel",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"SELECT id, status, weight_kg, recipient_name, recipient_address, notes FROM parcels WHERE id = %s\",",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "D5",
+      "title": "Booking writes the recipient's name, phone and address to the logs",
+      "severity": "high",
+      "skills": ["security-review", "compliance-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ]
+    },
+    {
+      "id": "D6",
+      "title": "Booking returns recipientName, where the contract promises recipient_name",
+      "severity": "high",
+      "skills": ["contract-check", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"recipientName\": parcel[\"recipient_name\"]}"
+        }
+      ]
+    },
+    {
+      "id": "D7",
+      "title": "Listing parcels returns every one a customer ever booked, with no limit or paging",
+      "severity": "medium",
+      "skills": ["performance-review", "contract-check", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "return db.execute(query + \" ORDER BY created_at DESC\").fetchall()"
+        }
+      ]
+    },
+    {
+      "id": "D8",
+      "title": "Public tracking shows the recipient's name and address to anyone with the link",
+      "severity": "high",
+      "skills": ["security-review", "compliance-review", "contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "\"SELECT status, recipient_name, recipient_address FROM parcels WHERE tracking_code = %s\","
+        }
+      ]
+    },
+    {
+      "id": "D9",
+      "title": "Full card numbers and CVVs are received and stored",
+      "severity": "critical",
+      "skills": ["security-review", "compliance-review", "contract-check", "data-modelling", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    card_number: str",
+          "lines": 3
+        },
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "\"INSERT INTO payments (parcel_id, customer_id, card_number, expiry, cvv, amount_pence) VALUES (%s, %s, %s, %s, %s, %s)\","
+        },
+        {
+          "file": "services/api/migrations/0001_init.sql",
+          "match": "  card_number TEXT NOT NULL,",
+          "lines": 3
+        }
+      ],
+      "rules": ["MONEY-12", "PRIV-03"]
+    },
+    {
+      "id": "D10",
+      "title": "The customer's browser decides how much to pay",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    amount_pence: int"
+        }
+      ],
+      "rules": ["SEC-05", "MONEY-02"]
+    },
+    {
+      "id": "D11",
+      "title": "The geocoding call has no timeout, so a slow provider hangs bookings",
+      "severity": "medium",
+      "skills": ["reliability-review", "performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/geocode.py",
+          "match": "response = requests.get(GEOCODER_URL, params={\"q\": address})"
+        }
+      ]
+    },
+    {
+      "id": "D12",
+      "title": "Parcels are looked up by customer with no index on customer_id",
+      "severity": "medium",
+      "skills": ["performance-review", "data-modelling"],
+      "locations": [
+        {
+          "file": "services/api/migrations/0001_init.sql",
+          "match": "  customer_id INTEGER NOT NULL REFERENCES customers (id),\n  tracking_code"
+        }
+      ]
+    },
+    {
+      "id": "D13",
+      "title": "A migration drops customers' parcel notes, which the API still reads and writes",
+      "severity": "critical",
+      "skills": ["data-migration-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/migrations/0002_delivery_notes.sql",
+          "match": "ALTER TABLE parcels DROP COLUMN notes;"
+        }
+      ]
+    },
+    {
+      "id": "D14",
+      "title": "Prices are worked out in pounds as decimals, while the API charges whole pence",
+      "severity": "critical",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/lib/price.ts",
+          "match": "return 3.5 + weightKg * 0.85;"
+        }
+      ]
+    },
+    {
+      "id": "D15",
+      "title": "Parcel notes are put into the page as HTML, so they can run a script",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "<div dangerouslySetInnerHTML={{ __html: parcel.notes }} />"
+        }
+      ]
+    },
+    {
+      "id": "D16",
+      "title": "A parcel's status is shown only as a colour",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/components/StatusBadge.tsx",
+          "match": "return <span className=\"badge\" style={{ background: COLOURS[status] }} />;"
+        }
+      ]
+    },
+    {
+      "id": "D17",
+      "title": "The booking form's fields have no labels, only placeholders",
+      "severity": "medium",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/BookPickup.tsx",
+          "match": "<input placeholder=\"Weight (kg)\"",
+          "lines": 9
+        }
+      ]
+    },
+    {
+      "id": "D19",
+      "title": "Session tokens never expire and can't be revoked",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/auth.py",
+          "match": "serializer = URLSafeSerializer(SECRET_KEY, salt=\"session\")"
+        },
+        {
+          "file": "services/api/app/auth.py",
+          "match": "        customer_id = serializer.loads(token)"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
+    },
+    {
+      "id": "D18",
+      "title": "The Book button is a div, so a keyboard can't reach or press it",
+      "severity": "high",
+      "skills": ["accessibility-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/BookPickup.tsx",
+          "match": "<div className=\"button\" onClick={() => void submit()}>"
+        }
+      ]
+    },
+    {
+      "id": "D20",
+      "title": "The customer's parcel notes are pasted into the assistant's instructions, so a note can change what it does",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "system = INSTRUCTIONS + \"\\nNotes the customer left on this parcel: \" + parcel[\"notes\"]"
+        }
+      ]
+    },
+    {
+      "id": "D21",
+      "title": "The assistant cancels any parcel the model names, without the customer confirming",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "db.execute(\"UPDATE parcels SET status = 'cancelled' WHERE id = %s\", (arguments[\"parcel_id\"],))"
+        }
+      ]
+    },
+    {
+      "id": "D22",
+      "title": "A staff discount code is written into the assistant's instructions, where anyone can get the model to repeat it",
+      "severity": "medium",
+      "skills": ["ai-feature-review", "security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "If the customer is unhappy, offer the staff discount code STAFF-TREAT-50"
+        }
+      ]
+    },
+    {
+      "id": "D23",
+      "title": "The recipient's name, phone and address go to the AI provider, though a question about the parcel doesn't need them",
+      "severity": "high",
+      "skills": ["ai-feature-review", "security-review", "compliance-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "json.dumps(dict(parcel), default=str)"
+        }
+      ]
+    },
+    {
+      "id": "D24",
+      "title": "The date the model suggests is written to the database without checking it's a real date in the future",
+      "severity": "high",
+      "skills": ["ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "db.execute(\"UPDATE parcels SET pickup_date = %s WHERE id = %s\", (arguments[\"date\"], parcel[\"id\"]))"
+        }
+      ]
+    },
+    {
+      "id": "D25",
+      "title": "The model call has no timeout, no size limit and no limit per customer",
+      "severity": "medium",
+      "skills": ["ai-feature-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "completion = client.chat.completions.create("
+        }
+      ]
+    },
+    {
+      "id": "D26",
+      "title": "A failed booking shows the person nothing",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/BookPickup.tsx",
+          "match": "async function submit(event?: FormEvent) {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review and design-review skills on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D27",
+      "title": "A failed tracking lookup leaves the page on Loading for ever, with no message",
+      "severity": "medium",
+      "skills": ["accessibility-review", "design-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "void api<Tracking>(`/parcels/track/${code}`).then(setParcel);"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's accessibility-review and design-review skills on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D28",
+      "title": "The contract says anyone can ask the assistant, but the API requires sign-in",
+      "severity": "medium",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/openapi.json",
+          "match": "\"/assistant/messages\": {"
+        },
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "def ask(question: Question, customer=Depends(current_customer), db=Depends(get_db)):"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's contract-check skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D29",
+      "title": "The web app's API types are written by hand and never checked against the contract",
+      "severity": "medium",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "apps/web/src/api.ts",
+          "match": "export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {"
+        },
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "interface Tracking {"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's contract-check skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D30",
+      "title": "A customer can pay for any parcel, because the payment never checks the parcel is theirs",
+      "severity": "medium",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "def pay(payment: CardPayment, customer=Depends(current_customer), db=Depends(get_db)):"
+        }
+      ],
+      "rules": ["SEC-01"],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D31",
+      "title": "A payment returns a body the contract doesn't describe",
+      "severity": "low",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "return {\"status\": \"paid\"}"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D32",
+      "title": "The API refuses parcels over 30 kg, which the contract doesn't say",
+      "severity": "low",
+      "skills": ["contract-check"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "weight_kg: float = Field(gt=0, le=30)"
+        }
+      ],
+      "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
+    },
+    {
+      "id": "D33",
+      "title": "Neither the web app nor the API has a lockfile, so the packages they depend on can change from one install to the next",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "apps/web/package.json",
+          "whole": true
+        },
+        {
+          "file": "services/api/requirements.txt",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-01"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "D34",
+      "title": "Nothing checks the dependencies for known vulnerabilities, and the pinned vite, requests and pytest have published ones",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "apps/web/package.json",
+          "whole": true
+        },
+        {
+          "file": "services/api/requirements.txt",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-03"],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "D35",
+      "title": "pytest, a test tool, is installed in production with the API",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "services/api/requirements.txt",
+          "match": "pytest==8.4.2"
+        }
+      ],
+      "found": "Not planted: true of the practice project, and found while preparing dependency-review's evals on 2026-09-29."
+    },
+    {
+      "id": "D36",
+      "title": "python3-dateutil is a look-alike of python-dateutil, not the real package",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "services/api/requirements.txt",
+          "match": "python3-dateutil==2.8.2"
+        }
+      ]
+    },
+    {
+      "id": "D37",
+      "title": "Refused sign-ins are never logged",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/auth.py",
+          "match": "    except BadSignature:"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D38",
+      "title": "Nothing scans for secrets on each change: there's no CI at all",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-27"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D39",
+      "title": "There's no threat model, though the API takes payments and sends customers' details to an AI provider",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-25"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D40",
+      "title": "Nothing security-sensitive has abuse tests, such as another customer's parcel id",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-08"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D41",
+      "title": "No test checks a payment's amount",
+      "severity": "high",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["MONEY-10"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D42",
+      "title": "A payment is reported as paid, though nothing was charged",
+      "severity": "high",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    return {\"status\": \"paid\"}"
+        }
+      ],
+      "rules": ["BE-01"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D43",
+      "title": "A payment sent twice is recorded twice: nothing makes it safe to repeat",
+      "severity": "critical",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "@router.post(\"\", status_code=201)"
+        }
+      ],
+      "rules": ["MONEY-08"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D44",
+      "title": "The tracking page copies the parcel into its own state, not a shared cache",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "  const [parcel, setParcel] = useState<Tracking | null>(null);"
+        }
+      ],
+      "rules": ["FE-01"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D45",
+      "title": "No request body has a size limit",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "match": "app = FastAPI(title=\"Courier API\")"
+        }
+      ],
+      "rules": ["BE-02"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D46",
+      "title": "The assistant changes parcels directly, not through the parcels module",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "            db.execute(\"UPDATE parcels SET status = 'cancelled' WHERE id = %s\", (arguments[\"parcel_id\"],))"
+        }
+      ],
+      "rules": ["ARC-02"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    }
+  ],
+  "documents": {
+    "requirements-analysis": {
+      "path": "docs/requirements.md",
+      "points": [
+        {
+          "id": "C1",
+          "point": "Keeps every existing requirement: signing in and booking a pickup, customers seeing only their own parcels, card payment through the payment provider with no card details stored, the tracking link without the recipient's details, keyboard and screen reader use, and UK GDPR.",
+          "must": true
+        },
+        {
+          "id": "C2",
+          "point": "Adds moving a pickup to another day, with acceptance criteria that allow it until the evening before and refuse it after.",
+          "must": true
+        },
+        {
+          "id": "C3",
+          "point": "Adds a text message when the driver is about ten minutes away, with acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "C4",
+          "point": "Keeps the loyalty scheme out of the agreed scope: out of scope for the backlog, or unclear until someone decides, but not in scope.",
+          "must": true
+        },
+        {
+          "id": "C5",
+          "point": "Asks what time \"the evening before\" ends, or records an assumption about it with what changes if it's wrong."
+        },
+        {
+          "id": "C6",
+          "point": "Asks who gets the text, the customer who booked or someone at the pickup address, or notes that the phone numbers used are personal data sent to a messaging provider."
+        },
+        {
+          "id": "C7",
+          "point": "Lists a text messaging provider as a dependency."
+        },
+        {
+          "id": "C8",
+          "point": "Notes that the code already has an assistant that can cancel and reschedule parcels, which the requirements didn't mention, and asks whether it's meant to."
+        },
+        {
+          "id": "C9",
+          "point": "Says what changed and why, citing the operations lead's message."
+        },
+        {
+          "id": "C10",
+          "point": "Asks about needs nobody gave, such as how many bookings to expect or how available the service must be, instead of inventing them."
+        },
+        {
+          "id": "C11",
+          "point": "Invents no numbers: any count of bookings or users, or any time or target the operations lead's message didn't give, is marked as assumed or asked about.",
+          "must": true
+        }
+      ]
+    },
+    "threat-model": {
+      "path": "docs/threat-model.md",
+      "points": [
+        {
+          "id": "TC1",
+          "point": "Lists the ways in, including booking a pickup, viewing a customer's parcels, the public tracking link, card payment, the support assistant, and the signed token that identifies a customer.",
+          "must": true
+        },
+        {
+          "id": "TC2",
+          "point": "Names what's worth protecting, including customers' and recipients' personal details, payments and customer accounts.",
+          "must": true
+        },
+        {
+          "id": "TC3",
+          "point": "Finds that a signed-in customer can read another customer's parcel by its id, and marks the defence missing.",
+          "must": true
+        },
+        {
+          "id": "TC4",
+          "point": "Finds that the assistant can be steered by parcel notes pasted into its instructions, or can cancel or reschedule parcels without the customer confirming, and marks the defence missing.",
+          "must": true
+        },
+        {
+          "id": "TC5",
+          "point": "Finds that card numbers and security codes reach Courier's own servers, or that the customer's browser decides the amount to pay, and marks it missing."
+        },
+        {
+          "id": "TC6",
+          "point": "Finds that the parcel status filter can be used for SQL injection, and marks it missing."
+        },
+        {
+          "id": "TC7",
+          "point": "Finds that parcel notes are shown as HTML on the tracking page, where they can run a script, and marks it missing."
+        },
+        {
+          "id": "TC8",
+          "point": "Finds that the session signing key is written in the code, or that sessions never expire, and marks it missing."
+        },
+        {
+          "id": "TC9",
+          "point": "Finds personal data going where it shouldn't: into the logs, to anyone with a tracking link, or to the AI provider."
+        },
+        {
+          "id": "TC10",
+          "point": "Marks at least one defence as in place, such as booking needing a signed-in customer, and backs each defence it marks as in place with a file and line, not only a rule's name.",
+          "must": true
+        },
+        {
+          "id": "TC11",
+          "point": "Cites Peer AI rule ids, such as SEC-01, for the defences."
+        },
+        {
+          "id": "TC12",
+          "point": "States an assumption about who can reach the service or where it runs, or asks about it."
+        },
+        {
+          "id": "TC13",
+          "point": "Lists the missing defences as work to do, most serious first."
+        }
+      ]
+    },
+    "architecture": {
+      "path": "docs/architecture.md",
+      "points": [
+        {
+          "id": "AC1",
+          "point": "Keeps what the document already decides: the web app reaches the API only through the contract, each request is authenticated with a signed session token, each route module owns one resource, and database changes are migrations that never lose data.",
+          "must": true
+        },
+        {
+          "id": "AC2",
+          "point": "Adds the parts the document is missing: the support assistant with its AI provider, and card payments.",
+          "must": true
+        },
+        {
+          "id": "AC3",
+          "point": "Notes that the assistant changes parcels itself, although the parcels module owns them, and treats it as a problem or a question, not as the new rule.",
+          "must": true
+        },
+        {
+          "id": "AC4",
+          "point": "Names where the data lives and the one way the code reaches the database."
+        },
+        {
+          "id": "AC5",
+          "point": "States which parts may depend on which, in a direction a reviewer could check."
+        },
+        {
+          "id": "AC6",
+          "point": "Names the API contract file as the one source of truth for what the API offers."
+        },
+        {
+          "id": "AC7",
+          "point": "Marks what it worked out from the code as coming from the code."
+        },
+        {
+          "id": "AC8",
+          "point": "Records a decision the code shows but nobody recorded, such as using an AI provider or a geocoding service, or lists it as one to record."
+        },
+        {
+          "id": "AC9",
+          "point": "Ties the design to needs from the requirements, such as UK GDPR or keeping recipients' details private."
+        },
+        {
+          "id": "AC10",
+          "point": "Invents no parts, hosting or services the code doesn't show; anything it can't see is a question.",
+          "must": true
+        }
+      ]
+    },
+    "product-spec": {
+      "path": "docs/specs/",
+      "points": [
+        {
+          "id": "PC1",
+          "point": "Says who can cancel which pickups: a customer only their own, and anyone else only as the requirements or a person decide.",
+          "must": true
+        },
+        {
+          "id": "PC2",
+          "point": "Covers a pickup that can't be cancelled any more, such as one already collected, with what the customer is told.",
+          "must": true
+        },
+        {
+          "id": "PC3",
+          "point": "Covers the refund going back through the payment provider, and what happens when the refund fails.",
+          "must": true
+        },
+        {
+          "id": "PC4",
+          "point": "Makes sure a pickup cancelled twice, such as by a double tap or two devices, is refunded only once."
+        },
+        {
+          "id": "PC5",
+          "point": "Gives acceptance criteria for each journey, including the ones that go wrong.",
+          "must": true
+        },
+        {
+          "id": "PC6",
+          "point": "Describes each screen or message in its loading, error and success states, with what to do next after an error."
+        },
+        {
+          "id": "PC7",
+          "point": "Asks, or proposes, whether a fee is kept or the refund is partial after some point."
+        },
+        {
+          "id": "PC8",
+          "point": "Notes that the support assistant can already cancel parcels, and asks how the two should agree."
+        },
+        {
+          "id": "PC9",
+          "point": "Covers cancelling from a keyboard and a screen reader, including the confirmation step."
+        },
+        {
+          "id": "PC10",
+          "point": "Lists what's out of scope, such as changing the address instead of cancelling."
+        },
+        {
+          "id": "PC11",
+          "point": "Leaves database tables, API endpoints and code to the system design."
+        }
+      ]
+    },
+    "system-design": {
+      "path": "docs/specs/*-design.md",
+      "points": [
+        {
+          "id": "DC1",
+          "point": "Checks on the server that the pickup belongs to the customer asking, for that record.",
+          "must": true
+        },
+        {
+          "id": "DC2",
+          "point": "Makes a cancel sent twice, from a retry or two devices, refund only once, such as with an idempotency key or a database guarantee.",
+          "must": true
+        },
+        {
+          "id": "DC3",
+          "point": "Stops a pickup being cancelled after it's collected, even when collection and cancelling happen at the same moment, such as with a lock or a conditional update.",
+          "must": true
+        },
+        {
+          "id": "DC4",
+          "point": "Gives the refund call a timeout, and says what happens and what the customer sees when it fails or hangs."
+        },
+        {
+          "id": "DC5",
+          "point": "Verifies any payment provider webhook before acting on it."
+        },
+        {
+          "id": "DC6",
+          "point": "Keeps existing data and clients working: any migration keeps what's stored, and the API changes by adding."
+        },
+        {
+          "id": "DC7",
+          "point": "Has the assistant's cancel go through the same place as the customer's, since one module owns parcels."
+        },
+        {
+          "id": "DC8",
+          "point": "Names the tests that prove it, including two cancels at once and another customer's parcel.",
+          "must": true
+        },
+        {
+          "id": "DC9",
+          "point": "Names the files, tables and routes that change, not only \"the backend\"."
+        },
+        {
+          "id": "DC10",
+          "point": "Keeps money as whole pence, never decimals."
+        }
+      ]
+    },
+    "api-design": {
+      "path": "docs/api-contract.md",
+      "points": [
+        {
+          "id": "PAC1",
+          "point": "Names services/api/openapi.json as the one source of truth, and says whether it's written by hand or generated.",
+          "must": true
+        },
+        {
+          "id": "PAC2",
+          "point": "Lists every endpoint, including booking, listing and viewing parcels, public tracking, payment and the assistant, with who may call each.",
+          "must": true
+        },
+        {
+          "id": "PAC3",
+          "point": "Finds that booking returns recipientName where the contract promises recipient_name, and says which is right.",
+          "must": true
+        },
+        {
+          "id": "PAC4",
+          "point": "Notes that listing parcels isn't paged."
+        },
+        {
+          "id": "PAC5",
+          "point": "Notes that the payment takes the amount from the client, or card details, and that the server should decide the price and a provider should take the card."
+        },
+        {
+          "id": "PAC6",
+          "point": "Sets one error shape for the whole API."
+        },
+        {
+          "id": "PAC7",
+          "point": "Sets money as a whole number in pence with its currency."
+        },
+        {
+          "id": "PAC8",
+          "point": "Gives booking or payment an idempotency key so a retry doesn't repeat it."
+        },
+        {
+          "id": "PAC9",
+          "point": "Says the public tracking endpoint shows nothing personal."
+        },
+        {
+          "id": "PAC10",
+          "point": "Describes how a field changes without breaking clients: add, migrate, then remove."
+        }
+      ]
+    },
+    "data-modelling": {
+      "path": "docs/data-model.md",
+      "points": [
+        {
+          "id": "MC1",
+          "point": "Lists customers, parcels and payments with their fields, from the migrations.",
+          "must": true
+        },
+        {
+          "id": "MC2",
+          "point": "Finds that full card numbers and security codes are stored, and treats it as a critical problem.",
+          "must": true
+        },
+        {
+          "id": "MC3",
+          "point": "Finds that a migration dropped the customers' parcel notes, losing them, and treats it as a problem.",
+          "must": true
+        },
+        {
+          "id": "MC4",
+          "point": "Marks the recipient's name, phone and address, and the pickup address and location, as personal data, with why each is kept."
+        },
+        {
+          "id": "MC5",
+          "point": "Notes that a parcel's status can be any text, and that the database could limit it to the allowed values."
+        },
+        {
+          "id": "MC6",
+          "point": "Keeps money as whole pence, and notes that nothing stops a parcel being paid for twice."
+        },
+        {
+          "id": "MC7",
+          "point": "Asks how long parcels and personal details are kept, and how they're deleted."
+        },
+        {
+          "id": "MC8",
+          "point": "Notes which reads need an index, such as a customer's parcels."
+        },
+        {
+          "id": "MC9",
+          "point": "Names the migrations folder as the one source of the database's structure.",
+          "must": true
+        }
+      ]
+    },
+    "design-system": {
+      "path": "docs/design-system.md",
+      "points": [
+        {
+          "id": "YC1",
+          "point": "Proposes a starting set of tokens from what the screens already use, and marks it as proposed for a designer or the person to decide.",
+          "must": true
+        },
+        {
+          "id": "YC2",
+          "point": "Finds that a parcel's status is shown only by colour, and requires words or an icon too.",
+          "must": true
+        },
+        {
+          "id": "YC3",
+          "point": "Finds that the Book button isn't a real button, so a keyboard can't use it.",
+          "must": true
+        },
+        {
+          "id": "YC4",
+          "point": "Finds that the booking form's fields have placeholders but no labels."
+        },
+        {
+          "id": "YC5",
+          "point": "Gives contrast ratios for the status colours, or asks for them to be checked."
+        },
+        {
+          "id": "YC6",
+          "point": "Lists the shared components the screens need, such as a button, a field and a status badge, with their states."
+        },
+        {
+          "id": "YC7",
+          "point": "Says the danger colour means one thing."
+        },
+        {
+          "id": "YC8",
+          "point": "Invents no designs or brand the code doesn't show."
+        }
+      ]
+    },
+    "issue-planning": {
+      "path": ".peer-ai/work/",
+      "points": [
+        {
+          "id": "IC1",
+          "point": "Splits the work into items that each deliver something a customer or support can use or check, rather than one item per layer, such as one for the database.",
+          "must": true
+        },
+        {
+          "id": "IC2",
+          "point": "Gives the items acceptance criteria from the spec, including a collected pickup being refused and a double cancel refunding once.",
+          "must": true
+        },
+        {
+          "id": "IC3",
+          "point": "Records a dependency only where one item must ship before another, such as the refund needing the cancel.",
+          "must": true
+        },
+        {
+          "id": "IC4",
+          "point": "Plans the assistant's cancel going through the same path as the customer's, as its own item or as a criterion."
+        },
+        {
+          "id": "IC5",
+          "point": "Plans what happens when the refund fails, with support told."
+        },
+        {
+          "id": "IC6",
+          "point": "Plans nothing for partial refunds or cancellation fees.",
+          "must": true
+        },
+        {
+          "id": "IC7",
+          "point": "Names the spec, or where it came from, as each item's source."
+        },
+        {
+          "id": "IC8",
+          "point": "Gives each item a goal and a first action."
+        }
+      ]
+    },
+    "test-strategy": {
+      "path": "docs/test-strategy.md",
+      "points": [
+        {
+          "id": "EC1",
+          "point": "Names the main journeys (booking a pickup, paying for it, tracking a parcel) and says none has an end-to-end test yet.",
+          "must": true
+        },
+        {
+          "id": "EC2",
+          "point": "Says the verify command runs only the API's tests, so the web app's tests never run on a change.",
+          "must": true
+        },
+        {
+          "id": "EC3",
+          "point": "Says the API's tests use a stand-in database that ignores every query, so they can't catch a wrong or unsafe query, and plans tests against a database built by the migrations.",
+          "must": true
+        },
+        {
+          "id": "EC4",
+          "point": "Plans abuse tests that a customer can't see or change another customer's parcel, and that the tracking link doesn't show the recipient's details.",
+          "must": true
+        },
+        {
+          "id": "EC5",
+          "point": "Plans the price as a business rule tested with plain values at its edges, and says the one price test checks a single weight."
+        },
+        {
+          "id": "EC6",
+          "point": "Plans how tests meet the payment provider and the geocoding service: stand-ins for Courier's own handling, including failures, and something that checks the real contract."
+        },
+        {
+          "id": "EC7",
+          "point": "Plans tests for the support assistant: text in a parcel's notes that tries to steer it, and actions that must be confirmed first."
+        },
+        {
+          "id": "EC8",
+          "point": "Says nothing runs the tests automatically before a change merges."
+        },
+        {
+          "id": "EC9",
+          "point": "Lists the gaps most serious first, each with the level it belongs at."
+        }
+      ]
+    },
+    "documentation": {
+      "path": "README.md",
+      "points": [
+        {
+          "id": "NC1",
+          "point": "Names every setting the code reads, DATABASE_URL, ASSISTANT_API_KEY and ASSISTANT_MODEL for the API and VITE_API_URL for the web app, and where each comes from, with no real values.",
+          "must": true
+        },
+        {
+          "id": "NC2",
+          "point": "Says how to set up the database: PostgreSQL, with the SQL files in services/api/migrations applied in order.",
+          "must": true
+        },
+        {
+          "id": "NC3",
+          "point": "Gives the test commands as the project defines them, python3 -m pytest services/api -q for the API and npm test in apps/web for the web app, and says the verify command runs only the API's tests.",
+          "must": true
+        },
+        {
+          "id": "NC4",
+          "point": "Never repeats the session signing key written in the code, and reports it as a problem."
+        },
+        {
+          "id": "NC5",
+          "point": "Explains what each part talks to: the web app calls the API; the API uses PostgreSQL, a geocoding service and an AI model for the support assistant."
+        },
+        {
+          "id": "NC6",
+          "point": "Says how a change reaches production, or that nothing is written down about it yet."
+        },
+        {
+          "id": "NC7",
+          "point": "Links to the requirements, the architecture and the API contract rather than copying them."
+        }
+      ]
+    },
+    "tech-debt-triage": {
+      "path": ".peer-ai/work/",
+      "diff": true,
+      "points": [
+        {
+          "id": "TC1",
+          "point": "Raises at least the card details stored on Courier's own server and the SQL built from pasted-in text as fixes to make now, not debt to schedule.",
+          "must": true
+        },
+        {
+          "id": "TC2",
+          "point": "Ranks the debt by what it costs and risks, most costly first, not by what's easiest.",
+          "must": true
+        },
+        {
+          "id": "TC3",
+          "point": "Creates work items for the top of the list, each with a goal and acceptance criteria.",
+          "must": true
+        },
+        {
+          "id": "TC4",
+          "point": "Finds that prices are worked out in two places, in pounds as decimals in the web app and in pence in the API."
+        },
+        {
+          "id": "TC5",
+          "point": "Finds that the verify command never runs the web app's tests, and that the API's tests use a stand-in database that ignores queries."
+        },
+        {
+          "id": "TC6",
+          "point": "Keeps a register of the rest, each with what it costs, what it risks and its size."
+        },
+        {
+          "id": "TC7",
+          "point": "Changes no code: the output is a plan."
+        }
+      ]
+    }
+  }
+}

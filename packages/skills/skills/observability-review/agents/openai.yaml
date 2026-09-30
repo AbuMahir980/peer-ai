@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI observability review"
+  short_description: "Logs, traces, health checks, alerts and service targets"
+  default_prompt: "Use ${{name}} to review how this product is watched in production, and record the report."

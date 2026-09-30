@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Split Bill",
+    "description": "Splits a bill between people, to the cent.",
+    "stage": "mvp",
+    "origin": "existing",
+    "team": "solo"
+  },
+  "tools": ["claude-code", "codex", "cursor"],
+  "tracks": [{ "id": "core", "kind": "library", "status": "active" }],
+  "tracker": { "kind": "none", "ticketPrefix": "SB" },
+  "commands": { "verify": "node --test" }
+}

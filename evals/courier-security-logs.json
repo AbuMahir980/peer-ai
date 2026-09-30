@@ -1,0 +1,196 @@
+{
+  "fixture": "courier",
+  "setup": {
+    "peer-ai.config.json": {
+      "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/config.schema.json",
+      "version": 1,
+      "project": {
+        "name": "Courier",
+        "description": "Book a parcel pickup, pay for it, and track it to the door.",
+        "stage": "production",
+        "traits": ["money", "ai-features"],
+        "origin": "existing",
+        "team": "team"
+      },
+      "tools": ["claude-code", "codex", "cursor"],
+      "tracks": [
+        {
+          "id": "web",
+          "kind": "web",
+          "path": "apps/web",
+          "status": "active"
+        },
+        {
+          "id": "api",
+          "kind": "backend",
+          "path": "services/api",
+          "status": "active"
+        }
+      ],
+      "apis": [
+        {
+          "id": "courier-api",
+          "kind": "http",
+          "providedBy": "api",
+          "contract": {
+            "source": "openapi",
+            "location": "services/api/openapi.json"
+          }
+        }
+      ],
+      "tracker": {
+        "kind": "none",
+        "ticketPrefix": "CR"
+      },
+      "commands": {
+        "verify": "python3 -m pytest services/api -q"
+      },
+      "compliance": {
+        "jurisdictions": ["GB"],
+        "industries": ["logistics", "payments"]
+      }
+    },
+    "services/api/app/main.py": "from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\n\nfrom app.routes import assistant, parcels, payments, sessions\n\napp = FastAPI(title=\"Courier API\")\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"*\"],\n    allow_credentials=True,\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)\n\napp.include_router(parcels.router)\napp.include_router(payments.router)\napp.include_router(assistant.router)\napp.include_router(sessions.router)\n",
+    "services/api/app/passwords.py": "import hashlib\nimport hmac\n\n\ndef verify(password: str, stored: str) -> bool:\n    salt, digest = stored.split(\"$\", 1)\n    attempt = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), n=2**14, r=8, p=1).hex()\n    return hmac.compare_digest(attempt, digest)\n",
+    "services/api/app/audit.py": "import logging\n\n# Who did what, for the security team.\naudit = logging.getLogger(\"courier.audit\")\naudit.addHandler(logging.FileHandler(\"/var/log/courier/audit.log\"))\naudit.setLevel(logging.INFO)\n\n\ndef record(event: str, **fields) -> None:\n    audit.info(\"%s %s\", event, fields)\n",
+    "services/api/app/routes/sessions.py": "from fastapi import APIRouter, Depends, HTTPException\nfrom pydantic import BaseModel\n\nfrom app.audit import record\nfrom app.auth import serializer\nfrom app.db import get_db\nfrom app.passwords import verify\n\nrouter = APIRouter(prefix=\"/sessions\", tags=[\"sessions\"])\n\n\nclass Credentials(BaseModel):\n    email: str\n    password: str\n\n\n@router.post(\"\", status_code=201)\ndef sign_in(credentials: Credentials, db=Depends(get_db)):\n    customer = db.execute(\n        \"SELECT id, password_hash FROM customers WHERE email = %s\", (credentials.email,)\n    ).fetchone()\n    if customer is None or not verify(credentials.password, customer[\"password_hash\"]):\n        raise HTTPException(status_code=401, detail=\"Wrong email or password\")\n    token = serializer.dumps(customer[\"id\"])\n    record(\"sign-in\", customer=customer[\"id\"], token=token)\n    return {\"token\": token}\n"
+  },
+  "prompts": {
+    "observability-review": "Review Courier's security logging."
+  },
+  "defects": [
+    {
+      "id": "OS1",
+      "title": "A failed sign-in isn't recorded anywhere, so guessing passwords leaves no trace",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/sessions.py",
+          "match": "raise HTTPException(status_code=401, detail=\"Wrong email or password\")"
+        }
+      ]
+    },
+    {
+      "id": "OS2",
+      "title": "The audit log records each new session token, so anyone who reads it can sign in as that customer",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/sessions.py",
+          "match": "record(\"sign-in\", customer=customer[\"id\"], token=token)"
+        }
+      ]
+    },
+    {
+      "id": "OS3",
+      "title": "The audit log is a file on the app's own server, which the app, or an attacker in it, can change or delete",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/audit.py",
+          "match": "audit.addHandler(logging.FileHandler(\"/var/log/courier/audit.log\"))"
+        }
+      ]
+    },
+    {
+      "id": "OS4",
+      "title": "Nothing raises an alert on a burst of failed sign-ins or other signs of attack",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        },
+        {
+          "file": "services/api/app/audit.py",
+          "whole": true
+        }
+      ],
+      "rules": ["OPS-13"]
+    },
+    {
+      "id": "OS5",
+      "title": "Booking writes the recipient's name, phone and addresses to the logs",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OS6",
+      "title": "Log lines are sentences built by pasting values together, not fields a search can filter on",
+      "severity": "low",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/audit.py",
+          "match": "audit.info(\"%s %s\", event, fields)"
+        },
+        {
+          "file": "services/api/app/routes/parcels.py",
+          "match": "log.info(\"Booking pickup: %s\", pickup.model_dump())"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OS7",
+      "title": "Requests carry no id, so a failed request can't be followed through the logs",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-08"]
+    },
+    {
+      "id": "OS8",
+      "title": "There's no health or readiness check",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-10"]
+    },
+    {
+      "id": "OS9",
+      "title": "There are no written targets for booking, paying or tracking",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-15"]
+    }
+  ]
+}

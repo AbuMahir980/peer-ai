@@ -1,0 +1,54 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "Pocketbook",
+    "description": "A local-first household budget that never leaves the device",
+    "stage": "mvp",
+    "origin": "new"
+  },
+  "tools": ["codex"],
+  "design": { "status": "to-be-produced", "reference": "docs/design/", "stopAfterSpecify": true },
+  "tracks": [
+    {
+      "id": "web",
+      "kind": "web",
+      "stack": ["typescript", "react"],
+      "architecture": "feature-first",
+      "targets": ["web"],
+      "uses": ["core"],
+      "consumes": ["repository"],
+      "status": "active"
+    },
+    {
+      "id": "core",
+      "kind": "library",
+      "path": "src/core",
+      "stack": ["typescript"],
+      "status": "active",
+      "note": "Framework-free budgeting maths, shared with a later mobile app."
+    },
+    { "id": "sync", "kind": "backend", "status": "dormant", "note": "Sync arrives in a later version." }
+  ],
+  "apis": [
+    {
+      "id": "repository",
+      "kind": "in-process",
+      "providedBy": "core",
+      "contract": { "source": "types", "location": "src/core/repository.ts", "checkDrift": true }
+    }
+  ],
+  "repo": {
+    "host": "github",
+    "remote": "origin",
+    "commits": "conventional",
+    "mergePolicy": "pull-request",
+    "pushEachCommit": true
+  },
+  "tracker": { "kind": "github" },
+  "standards": { "profiles": ["typescript", "react"] },
+  "compliance": { "jurisdictions": ["NG"], "industries": ["personal-finance"], "packs": ["ndpa"] },
+  "rules": [{ "path": "CONTEXT.md", "description": "Repository rules: no real figures in fixtures, no telemetry." }],
+  "models": { "policy": "none" },
+  "docs": { "backlog": "docs/backlog.md" }
+}

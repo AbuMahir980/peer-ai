@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI release readiness"
+  short_description: "Whether a release is safe to put in front of people"
+  default_prompt: "Use ${{name}} to check whether this release is ready for production, and record the report."

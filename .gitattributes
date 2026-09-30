@@ -1,0 +1,6 @@
+# LF everywhere, whatever the contributor's OS. Mixed line endings and BOMs from
+# Windows editors have broken tooling in projects that used v0.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary

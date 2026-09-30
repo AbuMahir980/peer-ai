@@ -1,0 +1,40 @@
+{
+  "name": "peer-ai-monorepo",
+  "private": true,
+  "description": "Keeps AI coding tools to a senior team's standard: planning, testing, security and compliance, with proof of every check",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check:terms": "node scripts/check-forbidden-terms.ts",
+    "peer-ai": "node packages/peer-ai/src/cli.ts",
+    "changeset": "changeset",
+    "build": "pnpm -r run build",
+    "release": "node scripts/publish.ts",
+    "version-packages": "changeset version && node scripts/render-fixtures.ts"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.3",
+    "@eslint/js": "10.0.1",
+    "peer-ai-skills": "workspace:*",
+    "peer-ai-standards": "workspace:*",
+    "peer-ai-workflow": "workspace:*",
+    "@types/node": "24.19.0",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1",
+    "vitest": "5.0.2",
+    "zod": "4.6.5"
+  }
+}

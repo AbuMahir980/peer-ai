@@ -1,0 +1,54 @@
+name: Forbidden terms
+
+# Scans pull requests from branches in this repository, and every push to main,
+# against the private list of forbidden terms.
+#
+# Pull requests from forks don't receive secrets, so they can't be scanned here. A fork's pull
+# request fails this check with a clear message, and a maintainer scans it before merging.
+# Scanning them with pull_request_target, which GitHub runs from the default branch, is planned
+# as a change of its own, since it hands a secret to a run about outside code.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: forbidden-terms
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Scan files and commit messages
+        env:
+          PEER_AI_FORBIDDEN_TERMS: ${{ secrets.PEER_AI_FORBIDDEN_TERMS }}
+          EVENT: ${{ github.event_name }}
+          FROM_FORK: ${{ github.event.pull_request.head.repo.fork }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ] && [ "$FROM_FORK" = "true" ]; then
+            echo "::error::Pull requests from forks can't be scanned here, because the list of forbidden terms is private. A maintainer will scan this pull request before merging it."
+            exit 1
+          fi
+          if [ "$EVENT" = "pull_request" ]; then
+            range="$PR_BASE..$PR_HEAD"
+          else
+            # On a push, every commit message in the branch's history. A range from the previous
+            # head breaks after a force-push, when that commit no longer exists.
+            range="$PUSH_HEAD"
+          fi
+          node scripts/check-forbidden-terms.ts --root . --range "$range"

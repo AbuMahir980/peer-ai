@@ -1,224 +1,284 @@
 # Peer AI
 
-A portable, agent-agnostic workflow for AI-assisted software development — from a stakeholder's email to a tested, documented app.
+**Keeps AI coding tools to the standard of a careful senior team, from the first brief to production, and proves it.**
 
-> **Peer AI 1.0 is being rebuilt.** This is the v0 playbook: plain Markdown files you copy into a project, and it works today. 1.0 turns it into an open-source, agent-agnostic npm package, with no copied folder, skills that prove what they checked, and standards that cover a full-stack project end to end. See [ROADMAP.md](ROADMAP.md).
+[![CI](https://github.com/AbuMahir980/peer-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AbuMahir980/peer-ai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Peer AI is a set of plain Markdown files. Each one tells an AI coding agent how to run one phase of a build, what document or code it must produce, and where to stop and ask. The agent is interchangeable. The process is not.
+AI coding tools such as Claude Code, Codex, Cursor and GitHub Copilot write code fast. Left to themselves, they skip what makes software safe to ship: nobody writes down what's being built, security and privacy get checked when someone remembers, tests prove less than they claim, and "done" means "the AI said so".
 
----
+Peer AI gives every AI tool the same way of working: the plans, the checklists, the rules and the reviewer a good engineering team would have. It checks that each one was followed, and keeps the proof. You keep using the AI tool you like. Peer AI makes sure its work is planned, tested, secure and compliant before it reaches your users.
 
-## Why it exists
+> **Status: pre-release.** Peer AI 1.0 is being proven on real projects before its first stable release. Everything described here is built and tested in this repository. Report anything that goes wrong: see [Feedback](#feedback).
+>
+> **Needs Node.js 24 or newer,** on macOS, Linux or Windows, and git. Check with `node --version`.
 
-Ad-hoc prompting drifts. Every chat starts from nothing, the agent re-decides things that were settled last week, and the result depends on who happened to be typing. Peer AI replaces that with twelve phases that run in a fixed order, each producing a document the next phase reads first and each pausing for your confirmation at every step. Four specialised agents (code review, contract check, security audit, QA) run at fixed handoff points instead of whenever someone remembers. Two files at the project root, `CONTEXT.md` and `.peer-ai-state.json`, carry the decisions and the current position across sessions, so a fresh chat picks up exactly where the last one stopped. It was built for a product team and has been used on every build since.
+## Contents
 
----
+- [Who it's for](#who-its-for)
+- [What it does for a project](#what-it-does-for-a-project)
+- [How it works](#how-it-works)
+- [Proof, not promises](#proof-not-promises)
+- [Rules and standards](#rules-and-standards)
+- [Strictness that follows the stage](#strictness-that-follows-the-stage)
+- [Works with your AI tools](#works-with-your-ai-tools)
+- [Quickstart](#quickstart)
+- [Privacy](#privacy)
+- [The 29 skills](#the-29-skills)
+- [What's in this repository](#whats-in-this-repository)
+- [Contributing](#contributing)
+- [Feedback](#feedback)
+- [License](#license)
 
-## The twelve phases
+## Who it's for
 
-Phase 0, Setup (`shared/00-setup.md`), runs once per project. It detects the AI tool, writes its rules config, and creates the two continuity files. After that, twelve phases run in order. Every phase file opens with a model-tier recommendation (and, if your tool has a per-phase model selector, waits for you to switch), works step by step with a wait for your input at each step, and ends by handing off to the next file. All but the journal phase also update `.peer-ai-state.json` and `CONTEXT.md` before handing off.
+- **Developers and small teams building with AI tools,** who want the AI's work held to a professional standard without writing that standard themselves.
+- **Products that handle money, health or personal data,** where a missed check becomes a breach, a fine or harm to a person.
+- **Anyone who has to show how software was checked,** to a client, an auditor or a future teammate: every review leaves a record of what it looked at and what it found.
+- **Projects at any point.** A brief with no code, a prototype, or a product already in production with no documents at all.
 
-1. **Understand** (`shared/01-understand.md`) produces `docs/01-requirements-summary.md`: what is being built, a scope table (in, out, unclear), dependencies, questions for the stakeholder, and recorded assumptions. Nothing is architected until you have confirmed the summary.
-2. **Architect** (`shared/02-architect.md`) produces `docs/02-architecture.md`: components, end-to-end data flows, the chosen pattern and its trade-offs, API conventions, cross-cutting concerns, and ADRs. The next phase opens by reading it.
-3. **System Spec** (`shared/03-spec-system.md`) produces `docs/03-system-spec.md`: overview, roles and permissions, MoSCoW user stories, Given/When/Then acceptance criteria, data requirements and non-functional requirements. The API contract is extracted from it.
-4. **API Contract** (`shared/04-spec-api-contract.md`) produces `docs/04-api-contract.md`, optionally with `docs/openapi.yaml`: response envelope, auth flow (or an explicit note that this version has none), exact JSON per endpoint, error codes. Neither frontend nor backend starts building until both have agreed it.
-5. **Shared Rules** (`shared/05-rules-shared.md`) produces `docs/05-coding-standards.md`: Git and PR conventions, environment files, type strictness, naming, linting, documentation, security baseline, dependency pinning. Work then splits into a frontend or backend track.
-6. **Page or Endpoint Specs, then Track Rules** (`frontend/01-spec-pages.md` and `frontend/02-rules.md`, or `backend/01-spec-endpoints.md` and `backend/02-rules.md`) produce `docs/06-page-specs.md` and `docs/07-frontend-coding-rules.md`, or `docs/backend-endpoint-specs.md` and `docs/backend-coding-rules.md`. Every page, or every endpoint group, is specified with its states and errors before any ticket is written.
-7. **Issues** (`shared/06-issues.md`) produces `docs/08-issue-plan.md`: tickets grouped Foundation, Feature, Testing and Documentation, each with acceptance criteria, priority and size, plus a dependency map, critical path and cycle plan. Build takes its tickets from this plan.
-8. **Build** (`frontend/03-build.md` or `backend/03-build.md`) produces working code one ticket at a time. The frontend builds every page against typed mocks of the contract, then swaps in real APIs group by group and runs a design-quality pass; the backend goes foundation, auth, endpoint groups, integrations, migrations, then jobs, webhooks, files, caching, real-time and hardening as specified. Each ticket ends with the project's verify command and an issue-tracker update, and the phase ends by offering the code review and contract check agents.
-9. **Review** (`frontend/04-review.md` or `backend/04-review.md`) produces findings category by category (functionality, code quality, security, accessibility, performance, error handling, contract compliance and the rest), a Critical / Warning / Info rollup, and fixes you approve. It does not call the code clean while Critical findings stand, and it ends by offering the security audit and code review agents.
-10. **Test** (`frontend/05-test.md` or `backend/05-test.md`) produces the automated suite: unit, component or integration, end-to-end and contract tests, plus forms, accessibility and i18n on the frontend or database, jobs, webhooks, files and real-time on the backend, then a full run, fixes and a coverage summary. It ends by handing off to the QA agent.
-11. **Document, then PR Automation** (`shared/07-document.md`, then `shared/09-pr-automation.md`) updates the project README, `CHANGELOG.md` in Keep a Changelog format, ADRs under `docs/adr/`, the API contract, a stakeholder update and handoff notes; then writes `.github/workflows/pr-checks.yml`, branch-protection steps and, optionally, an AI review action and commit-message checks. A new cycle returns to phase 1 or phase 7.
-12. **Dev Journal** (`shared/08-dev-journal.md`) sets up the journal (Notion via MCP, local Markdown under `docs/journal/`, another tool, or none) and records the choice in `docs/journal-config.json`; at the end of a cycle it reads every entry and writes a retrospective. During the cycle, the other phases offer entries at key decisions and at each handoff.
+## What it does for a project
 
-Two rules apply throughout. When a mockup and the API contract disagree, the contract wins on data and the design wins on visuals (`shared/design-data-contract.md`). Whenever a phase saves a document to `docs/`, it offers a PDF-ready HTML copy in `docs-pdf/` (`shared/rules/docs-pdf-export.md`).
+Peer AI covers the whole life of a product. Each area below is handled by one or more **skills**: step-by-step procedures your AI tool follows, each ending in a document or a report that Peer AI checks.
 
----
+| Area | What Peer AI makes sure of |
+|------|----------------------------|
+| **Planning** | Requirements written from a brief, a request or the code itself; an architecture with its decisions recorded; product specs with acceptance criteria; system and API design; the data model; a design system. Work is planned as small items, each with a goal, acceptance criteria and the items it depends on. |
+| **Building** | Each item is built from its acceptance criteria, with tests written first, the smallest change that meets them, and the project's own verify command run and recorded by Peer AI. |
+| **Testing** | A test strategy that names the journeys and rules that must never break and the test that proves each one; abuse tests that attack the product's own code; a tester's check of every acceptance criterion before anything ships. |
+| **Security** | Reviews built on the OWASP standards: who may see and change each record, input and output, secrets, sessions, transport, uploads, phone apps and AI features. A threat model that says what could go wrong and what stops it, with evidence from the code. Secret scanning, dependency checks and code scanning in CI. |
+| **Privacy and compliance** | What personal data is collected, where it goes, consent, logs, how long it's kept, and card details that must never touch your servers. Signals from the code about which laws and standards apply, such as the data protection law where you operate or PCI DSS. |
+| **Accessibility and design** | Keyboard, screen readers, labels, colour and contrast, text size and touch targets, based on WCAG 2.2; design tokens and shared components with every state they need. |
+| **Performance and reliability** | Slow queries, unpaged lists, slow work inside requests, memory leaks, oversized images; timeouts, retries that are safe to repeat, offline use, and apps that still update after they're cached. |
+| **APIs and data** | An API that does what its contract says, field by field; changes that don't break clients; database migrations and on-device data that never lose what people saved. |
+| **Releases and operations** | A release check before anything reaches people: every item's gates, a way back at each step, safe data changes. Infrastructure with environments kept apart and nothing public by accident. Logs, health checks and alerts. A calm, recorded response when something breaks in production. |
+| **Keeping the code healthy** | Dependency reviews (known vulnerabilities, licences, risky packages), technical debt found and ranked by what it costs and risks, and a README a newcomer can follow. |
 
-## Agents
+## How it works
 
-Four prompt files in `agents/`. Each is a role, a checklist and a fixed output format, and each opens with a model recommendation. They are offered automatically at the handoffs below and can be run at any time with `Follow peer-ai/agents/<file>`.
+Peer AI is one npm package. It gives you a command-line tool, `peer-ai`, and it gives your AI tool a connection to Peer AI through the Model Context Protocol (MCP), the standard way AI tools talk to other software.
 
-### Code review (`agents/review-prompt.md`)
+```mermaid
+flowchart LR
+  you([You]) -- "ask in plain words" --> ai[Your AI tool]
+  ai -- "follows" --> skills[Peer AI skills]
+  ai -- "asks and records, over MCP" --> server[Peer AI]
+  server --- map[(Project map,<br/>work items,<br/>rules)]
+  skills -- "reports and documents" --> server
+  ci[CI: peer-ai check] -- "refuses unproven work" --> map
+```
 
-**When:** offered at the end of Build, before Review, and again at the end of Review, before Test. The optional PR review action from phase 11 runs this same prompt against each pull request diff.
+1. **`peer-ai init`** reads your repository (its languages, frameworks, parts, infrastructure, CI and AI tools) and writes one config file, `peer-ai.config.json`. It asks only what it can't work out.
+2. **`peer-ai assess`** maps what the project already has, such as requirements, a threat model, tests or observability, and what its stage still needs. Each item is present, partial or missing, with the files that prove it. Gaps become work to do, never a red build.
+3. **`peer-ai render`** connects each AI tool you use: short instructions, the MCP server, and Peer AI's skills, written where each tool reads them.
+4. **You ask your AI tool for work in plain words,** such as "add booking cancellations" or "review the payments code". It asks Peer AI what to do next, follows the skill for the job, checks every rule that applies, and records what it did. Peer AI refuses a record the evidence doesn't support.
+5. **`peer-ai check` runs in CI** and fails when a piece of work claims more than its record shows: no recorded verify, a failed or incomplete review, or, in production, a review it needed and never had.
 
-**Checks:** naming, structure, duplication and complexity; strict typing with no unjustified `any`; secrets in source, XSS, SQL injection and missing auth checks; error handling and safe user-facing errors; re-renders, N+1 queries and heavy imports; calls and shapes against the API contract; tests for changed code; branch, commit and PR conventions; mock layers labelled as mock.
+Your project keeps one config file, a `.peer-ai/` folder with its map, work items and review reports, and a few lines in each AI tool's settings. The skills are rebuilt from the installed version and stay out of git, so upgrading Peer AI is a one-line version change.
 
-**Output:** a JSON array of findings, each with file, line, severity (`critical`, `warning`, `info`), category, issue and suggestion.
+## Proof, not promises
 
-### Contract check (`agents/contract-check-prompt.md`)
+An AI tool saying "I checked the security" isn't evidence. Peer AI asks for evidence and checks it:
 
-**When:** suggested during the frontend build as soon as the last mock service has been swapped for a real API, and offered at the end of both builds. It needs the contract, the frontend service files and the backend route files in the same context.
+- **Every review proves what it covered.** It lists everything it looked at (each route, screen, job and upload), gives every rule a line with the file and line that show it holds, and describes each problem with its harm, its evidence and a fix. Peer AI refuses a report that skips a rule, or claims a pass its findings don't support.
+- **Verify is run, not claimed.** Peer AI runs the project's own verify command and records the result.
+- **Documents are checked too.** A requirements document, a threat model or a test strategy must fill every part of its template before Peer AI accepts it.
+- **The skills are tested.** Each skill is run against practice projects with problems planted on purpose, and scored on what it finds. The results, including where a skill still falls short, are published in [`evals/README.md`](evals/README.md).
 
-**Checks:** every contract endpoint exists in the backend and every frontend call exists in the contract; query parameters, bodies and headers; response fields, types and nullability; status codes and error bodies, and that the frontend handles them; auth required, enforced and sent; pagination strategy and parameter names; date and ID formats.
+### With and without Peer AI
 
-**Output:** a table of endpoint, check, status (`match`, `mismatch`, `missing`) and details, followed by counts of mismatches and missing endpoints.
+Frontier models are capable, and Peer AI doesn't make them smarter. It makes them thorough and accountable: the whole checklist every time, and no "done" without proof. Here is the same model, Claude Sonnet, on the same practice project, asked the same thing with and without Peer AI:
 
-### Security audit (`agents/security-audit-prompt.md`)
+| Asked for | Without Peer AI | With Peer AI |
+|-----------|-----------------|--------------|
+| A release check before a launch | 8 of 12 problems found | 12 of 12 |
+| A test strategy | 3 of 9 points made | 8 of 9 |
+| A README for a newcomer | 4 of 7, and refused by the document check | 7 of 7 |
+| An accessibility review | 4 of 5 problems | 5 of 5 |
+| A performance review | 2 of 3 | 3 of 3 |
+| A dependency review | 3 of 4 | 4 of 4 |
+| A check of an API against its contract | 6 of 8 | 7 of 8 |
+| A tester's check of a built feature | 4 of 5 | 5 of 5 |
+| A security review of a project built after the skills were written | 15 of 16, missing a serious problem | 16 of 16 |
 
-**When:** offered at the end of Review, before Test. It asks for a mid-tier model rather than the fastest, because it has to reason about attack paths.
+On six other reviews the model did as well on its own: infrastructure, reliability, compliance, data migrations, design and observability. Even there, Peer AI was often cheaper, as with the infrastructure review at half the cost. And without Peer AI, no review could show which rules it had checked; with it, every rule has a line and its evidence. Every run, with its cost, is in [`evals/README.md`](evals/README.md).
 
-**Checks:** authentication (token validation, storage, refresh, expiry, password hashing, login rate limits); authorisation on every protected route, including IDOR; server-side validation and upload limits; output encoding and CSP; HTTPS, HSTS and cookie flags; dependency CVEs and lockfile integrity; secrets, debug mode and source maps in production; stack traces and PII in responses and logs; CORS, rate limiting and security headers.
+## Rules and standards
 
-**Output:** a findings table (category, severity from `Critical` to `Low`, location, issue, remediation) and an overall risk rating with the top one to three remediations.
+Peer AI's standards are **197 rules**, each with an id such as `SEC-07`, a plain statement, why it matters, the stage it applies from, how it's checked, and how serious a break is. Security rules cite the published standard they come from: OWASP ASVS 5.0 for web apps and APIs, OWASP MASVS for phone apps, WCAG 2.2 for accessibility, and the OWASP Top 10 for LLM applications for AI features.
 
-### QA (`agents/qa-prompt.md`)
+| Area | Rules | | Area | Rules |
+|------|------:|-|------|------:|
+| Security | 30 | | Frontend | 9 |
+| Design and accessibility | 16 | | Reliability | 9 |
+| Code quality | 16 | | Architecture | 8 |
+| Infrastructure and operations | 15 | | API design | 8 |
+| Delivery | 12 | | AI features | 8 |
+| Money (for products that handle it) | 12 | | Performance and caching | 7 |
+| Testing | 11 | | System design and scalability | 6 |
+| Mobile | 6 | | Privacy and compliance | 6 |
+| Safety-critical data (for products that need it) | 6 | | Requirements, data | 5 each |
+| Backend | 2 | | | |
 
-**When:** offered at the end of Test, before Document. It reads the page or endpoint spec and the ticket's acceptance criteria as the definition of done.
+**How each rule is checked:** 46 by a tool that fails the build, such as a linter or a scanner; 148 by an AI review that must prove what it checked; and 3 by a person, for decisions only a person can make, such as accepting a risk or granting access to production.
 
-**Checks:** every acceptance criterion is testable and mapped to a case; the happy path; error states (API down, invalid input, unauthorised, empty data); edge cases (long strings, unicode, double submit, large datasets); role-based access; responsive breakpoints; keyboard, screen reader and contrast.
+**Stack profiles** say how to follow the rules in a particular stack, and which tool enforces each automatic rule:
 
-**Output:** a test matrix (test case, steps, expected result, status `pass`, `fail` or `untested`, notes) followed by suggested Playwright and API tests.
+| Profile | Enforced by |
+|---------|-------------|
+| TypeScript, Node, React, React Native, Next.js, Express, NestJS, Fastify | ESLint (through the `peer-ai-eslint-config` package) and the TypeScript compiler |
+| Python, FastAPI | Ruff |
+| GitHub Actions | A security pipeline Peer AI writes: Gitleaks for secrets, OSV-Scanner for vulnerable dependencies, zizmor for workflows, Semgrep for code, SSLyze for TLS, and OWASP ZAP against a running test environment |
 
----
+A project can set a rule aside, with a reason and the name of the person who decided, or change one of its numbers, such as how long a function may grow. `peer-ai doctor` lists every such decision, so nothing is switched off silently. See [`packages/standards`](packages/standards) for every rule.
 
-## Works with
+## Strictness that follows the stage
 
-The workflow files never assume a tool. Setup asks which one you use and writes the matching always-on rules config. The rule content is the same in every case; only the filename and location change. The sources are plain `.md` files in `shared/rules/`, `frontend/rules/` and `backend/rules/`.
+A project says what stage it's at, and Peer AI asks for what that stage needs, and no more:
 
-| Tool | What setup writes |
-|------|-------------------|
-| **Cursor** | `.cursor/rules/shared.mdc`, `.cursor/rules/workflow-driver.mdc` and `frontend.mdc` or `backend.mdc`, copied from the source rules and renamed to `.mdc` so Cursor auto-loads them. `docs-pdf-export.mdc` is optional. |
-| **Claude Code** | `CLAUDE.md` at the project root: states that the project uses Peer AI, summarises the shared standards, instructs reading `.peer-ai-state.json` and `CONTEXT.md` at session start, and lists the phase files. Modelled on this repo's `AGENTS.md`. |
-| **Codex**, and any agent that reads `AGENTS.md` | `AGENTS.md` at the project root, modelled on this repo's own `AGENTS.md` and scoped to the project. |
-| **Copilot**, **cloud agents** and other tools with a rules or memory file | Setup asks which file the tool reads and writes the same content there. |
-| **ChatGPT** and other chat tools with no rules file | Nothing is written. Open the phase file, paste it as instructions, and paste `shared/rules/shared.md` as context. |
+| Stage | What it asks for |
+|-------|------------------|
+| **Prototype** | Nothing is required. Serious problems are still reported, and the basics, such as no secrets in code, apply from day one. |
+| **MVP** | Requirements, an API contract, CI, tests, a threat model, a record of the personal data it holds, and a README. Each change gets the reviews it needs, such as a security review for code, with a warning when one is skipped. |
+| **Production** | Everything above, plus architecture, specs, a data model, a data protection impact assessment, design, written standards, separate environments, infrastructure, observability, service targets, runbooks and load testing. A skipped review stops the release. |
 
-The ambient workflow driver, `shared/rules/workflow-driver.md`, is what lets the agent continue from the state file without being told which phase to follow. Setup copies it as `.mdc` for Cursor and appends its body to the config file for every other tool, then fills in its project settings table with you: verify command, issue tracker and ticket prefix, remote, design reference, branch naming, and whether the tool has a per-phase model selector. Write `none` for a missing remote or tracker and the driver skips the matching push and tracker steps, so a solo local project works too.
+It also shows what the next stage will need, so nothing arrives as a surprise.
 
-Agent prompts also run outside an editor: attach `agents/review-prompt.md` to an issue for a cloud agent, or pass it with the diff to an AI API from a GitHub Action, which is what the optional review workflow in phase 11 does.
+## Works with your AI tools
 
----
+| AI tool | How Peer AI connects |
+|---------|----------------------|
+| Claude Code | Instructions in `CLAUDE.md`, the MCP server in `.mcp.json`, skills in `.claude/skills/` |
+| OpenAI Codex | Instructions in `AGENTS.md`, skills in `.agents/skills/`, and the one command to register the MCP server |
+| Cursor | A rule in `.cursor/rules/`, the MCP server in `.cursor/mcp.json` |
+| GitHub Copilot | Instructions in `.github/copilot-instructions.md`, the MCP server in `.vscode/mcp.json` |
+| Gemini CLI | Instructions in `GEMINI.md`, the MCP server in `.gemini/settings.json` |
+| Any other tool | `AGENTS.md`, the open instructions file most AI tools read |
 
-## How to use it
+The skills follow the open [Agent Skills](https://agentskills.io) format, so every tool that reads skills gets the same procedures. A team can mix tools: one config drives them all. Cloud agents get a setup step that writes the skills before they start.
 
-### 1. Add Peer AI to your project
+## Quickstart
 
-Clone it into a `peer-ai/` folder at the project root, then remove its `.git/` so it is committed as plain files rather than as a nested repository:
+You need Node.js 24 or newer, git, and an AI tool. Peer AI runs on macOS, Linux and Windows.
 
 ```bash
-mkdir my-app && cd my-app
-git init
-git clone https://github.com/AbuMahir980/peer-ai.git peer-ai
-rm -rf peer-ai/.git
+npx peer-ai init
+npx peer-ai assess
+npx peer-ai render
 ```
 
-If you skip the last line, `git add` records `peer-ai/` as an empty gitlink and the playbook never lands in your repo; setup checks for this and removes a leftover `.git/` if it finds one. `peer-ai/` must sit at the project root, not inside `src/` or another subfolder; every phase file refers to `peer-ai/...` paths from there.
+Then open the project in your AI tool and ask for work in plain words, such as "what should we work on next?" or "review this change". To gate your pipeline, add this step to CI after your own checks:
 
-### 2. Run setup once
-
-Open the project in your AI tool and type:
-
-```
-Follow peer-ai/shared/00-setup.md
+```yaml
+- run: npx peer-ai check
 ```
 
-Setup confirms the folder, asks which tool you use and the project basics in a single round of questions, writes the tool's config with the workflow driver appended, copies the two continuity files to the project root and fills them and the driver's project settings in, then offers the optional dev journal and PDF export. A fast model is enough; scaffolding does not need a premium one.
+You never have to remember to check the setup: `peer-ai check` in CI fails when the setup stops working, and your AI tool hears about any problem at the start of each session and fixes it or tells you. `npx peer-ai doctor` shows the details at any time. Every command is described in [`packages/peer-ai`](packages/peer-ai).
 
-### 3. Follow the phases
+## Privacy
 
-With the workflow driver installed, the agent reads `.peer-ai-state.json` at the start of each session and continues from the recorded phase and step. You can also invoke any phase directly:
+Peer AI runs on your machine and in your CI. It sends nothing anywhere, and it has no telemetry. Your AI tool talks to its own model provider as it always does; Peer AI adds nothing to that. The only thing that ever leaves your project is a feedback report you approve.
 
+## The 29 skills
+
+Each skill is a procedure an AI tool follows, and each ends in something Peer AI checks.
+
+<details>
+<summary><strong>15 reviews</strong>: each ends in a report that proves every rule was checked</summary>
+
+| Skill | What it checks |
+|-------|----------------|
+| `security-review` | Security holes and personal-data leaks, against OWASP-based rules |
+| `code-review` | Bugs and maintainability: lost data, races, API breaks, slow queries, leaks, code quality |
+| `ai-feature-review` | Features that use AI models: what's sent, what can steer the model, what its output can do |
+| `compliance-review` | Personal data and card payments: what's collected, where it goes, consent, retention |
+| `accessibility-review` | Keyboard, screen readers, labels, colour, contrast, text size, touch targets, motion |
+| `design-review` | Tokens, shared components and their states, contrast and text size |
+| `contract-check` | That an API does what its contract says, route by route and field by field |
+| `data-migration-review` | Changes to stored data, on servers and on devices, for anything lost or broken |
+| `dependency-review` | Versions and lockfiles, known vulnerabilities, licences and risky packages |
+| `performance-review` | Queries per row, unpaged lists, slow work in requests, leaks, oversized images |
+| `reliability-review` | Timeouts, failures, repeatable jobs, offline use, updates and safe configuration |
+| `infrastructure-review` | Environments kept apart, access, what the internet can reach, secrets, backups |
+| `observability-review` | Logs, request ids, health checks, alerts, security events and service targets |
+| `qa-acceptance` | A built item against its acceptance criteria, as a tester would |
+| `release-readiness` | A release before it reaches people: gates, checks, a way back, safe data changes |
+
+</details>
+
+<details>
+<summary><strong>10 documents</strong>: each fills a template that Peer AI checks</summary>
+
+| Skill | What it writes |
+|-------|----------------|
+| `requirements-analysis` | Requirements from a brief, a request or the code |
+| `architecture` | The parts, what each owns, how they depend on each other, and each decision with its options |
+| `product-spec` | A feature's spec: who can do what, every journey and screen, acceptance criteria and edge cases |
+| `system-design` | How a feature is built across the system, including failures and people acting at once |
+| `api-design` | An API: who may call each endpoint, typed requests and responses, errors, paging, safe retries |
+| `data-modelling` | The data model: entities, guarantees, personal data and how long it's kept |
+| `design-system` | Tokens, shared components with all their states, and the accessibility every screen keeps |
+| `threat-model` | The ways in, what can go wrong through each, and what stops it, with evidence from the code |
+| `test-strategy` | Which test proves each journey and rule, abuse tests, test data and what runs on every change |
+| `documentation` | The README a newcomer needs, checked against the code |
+
+</details>
+
+<details>
+<summary><strong>4 work skills</strong>: each moves work forward and records it</summary>
+
+| Skill | What it does |
+|-------|--------------|
+| `issue-planning` | Plans a feature or the project's gaps as small work items, in the order they can ship |
+| `implement-ticket` | Builds a work item from start to ship: tests first, the smallest change, a proven verify, the reviews it needs |
+| `incident-response` | Handles a production incident, from first report to lessons learned |
+| `tech-debt-triage` | Finds technical debt and ranks it by what it costs and risks against what fixing takes |
+
+</details>
+
+You rarely name a skill yourself. Peer AI picks the skill for each gap, and works out which reviews a change needs from the files it touched: a security review for code at MVP and beyond, an accessibility review for screens, a data-migration review for migrations, and so on.
+
+## What's in this repository
+
+| Folder | What it holds |
+|--------|---------------|
+| [`packages/peer-ai`](packages/peer-ai) | The `peer-ai` command and the MCP server: what people install |
+| [`packages/workflow`](packages/workflow) | Shared definitions: the config format, work items, review reports and their schemas |
+| [`packages/standards`](packages/standards) | The 197 rules and the stack profiles, as data, with a page for each area |
+| [`packages/skills`](packages/skills) | The 29 skills, and the code that builds and validates them |
+| [`packages/eslint-config`](packages/eslint-config) | ESLint settings that enforce a project's stack profiles |
+| [`fixtures`](fixtures) | Practice projects with problems planted on purpose, used to test the skills |
+| [`evals`](evals) | Answer sheets for the practice projects, and every skill's results |
+| [`rfcs`](rfcs) | Written designs for every significant change, and the decision on each |
+| [`scripts`](scripts) | Tools for this repository: the eval runner, the install proof, the forbidden-terms check |
+
+## Contributing
+
+Peer AI is looking for contributors. You don't need to know the whole project to help:
+
+- **Add a stack profile** for a stack you know, such as Django, Rails, Go, Flutter or Spring, with the tool that enforces each rule.
+- **Add a rule** you've seen missed in real projects, with the published source it comes from and a planted problem that tests it.
+- **Build a practice project** in a stack the evals don't cover yet.
+- **Connect another AI tool.**
+- **Report where Peer AI got it wrong:** a missed problem, a wrong finding, a confusing step. These reports are what improve it most.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) to get started, and the [code of conduct](CODE_OF_CONDUCT.md). Significant changes start as an [RFC](rfcs), so the design is agreed before the work. Security issues go through [SECURITY.md](SECURITY.md), never a public issue.
+
+To work on Peer AI itself, you need Node 24 (see `.nvmrc`) and pnpm 12:
+
+```bash
+pnpm install
+pnpm verify
 ```
-Follow peer-ai/shared/01-understand.md
-```
 
-The files, in order, are listed under [The twelve phases](#the-twelve-phases). After setup a project looks like this:
+`pnpm verify` checks formatting, lints, type-checks and runs the tests, as CI does.
 
-```
-my-app/
-  CLAUDE.md, AGENTS.md or .cursor/rules/   tool config written by setup
-  peer-ai/                                  this repo, minus its .git
-  CONTEXT.md                                narrative log
-  .peer-ai-state.json                       workflow pointer
-  docs/                                     phase outputs, created from phase 1 onward
-  src/                                      code, created during Build
-```
+## Feedback
 
-### Why a copy and not a dependency
+When Peer AI gets something wrong in your project, such as a review that misses a problem or a check that blocks you by mistake, your AI tool drafts a report for you. At a natural stopping point it shows you each draft and asks whether to send it; only after your yes does `peer-ai feedback send` open it as an issue here. A report never holds your code: Peer AI refuses a draft with code, keys or email addresses.
 
-Peer AI is cloned into each project and customised there. There is no version pin, no submodule and no update mechanism. The workflow driver expects your own verify command, issue tracker, design guide path and branch naming; the rules phases write standards specific to the project; teams edit phase files when a step does not fit their build. A live link to this repo would turn every one of those edits into a merge problem. Instead, learnings travel the other way: when a change made inside a project proves itself, it is folded back into this repo by hand so the next clone starts from it. The current list is [`docs/peer-ai-feedback.md`](docs/peer-ai-feedback.md), thirty-two items from three end-to-end runs on projects of different shapes, each with the observed problem, its location and a suggested fix; all thirty-two have since been applied here. `CONTRIBUTING.md` describes how to propose the next one — and since nothing in a project reaches this repo on its own, there are now two routes for sending one back: an [issue](https://github.com/AbuMahir980/peer-ai/issues/new?template=framework-defect.yml) for a single defect, or a pull request against `docs/peer-ai-feedback.md` for a batch. Setup copies `templates/peer-ai-feedback.md` into each project so there is somewhere to write them down as they happen.
+You can also [open an issue](https://github.com/AbuMahir980/peer-ai/issues/new/choose) yourself. Include the Peer AI version, the AI tool, the skill and what you expected; leave out private code and names.
 
----
+## License
 
-## Continuity across sessions
-
-AI context windows fill up, and a new chat starts with nothing. Peer AI keeps two files at the project root that every session reads before doing anything else. The state file holds the data; `CONTEXT.md` holds the story.
-
-**`.peer-ai-state.json`** is the structured pointer: phase, step, file, cycle, branch, ticket and ticket lists, last verify result. `currentPhase` takes one of a fixed set of values, one per phase file, listed in `shared/workflow-state.md`. The `notes` field is a one-line pointer to the next action, never a narrative.
-
-```json
-{
-  "currentPhase": "build",
-  "currentStep": 5,
-  "phaseFile": "peer-ai/frontend/03-build.md",
-  "cycle": "M1 — Auth and customer list",
-  "milestoneBranch": "feature/m1-auth-shell",
-  "ticket": "PROJ-14",
-  "ticketTitle": "Customer list page",
-  "ticketsCompleted": ["PROJ-11", "PROJ-12", "PROJ-13"],
-  "ticketsCancelled": [],
-  "ticketsInProgress": ["PROJ-14"],
-  "ticketsRemaining": ["PROJ-15", "PROJ-16"],
-  "pendingAgents": [],
-  "lastVerifyResult": "pass",
-  "lastVerifyTimestamp": "2026-09-07T16:40:12Z",
-  "lastUpdated": "2026-09-07T16:42:03Z",
-  "notes": "READ CONTEXT.md at app root. Next action: finish PROJ-14 empty state, then run verify and merge to milestone."
-}
-```
-
-**`CONTEXT.md`** is the narrative: current state, key decisions, a dated log, what is next, open questions, and where assets live.
-
-```markdown
-# Session Context Log
-
-## Current State
-Build phase on milestone feature/m1-auth-shell. Login and customer detail done;
-customer list in progress against mock data. Next: empty state, then verify.
-
-## Key Decisions
-| Date       | Decision                          | Source              |
-|------------|-----------------------------------|---------------------|
-| 2026-09-02 | Single-page app, no SSR           | stakeholder email   |
-| 2026-09-04 | Offset pagination (page, limit)   | API contract review |
-
-## What Was Done — By Day
-### 2026-09-07 (Monday)
-- Customer list table and filters wired to mocks
-- Contract gap logged: unitsCount missing from GET /customers
-
-## What's Next
-1. Empty and error states on customer list
-2. Run verify, merge PROJ-14 into milestone, update issue tracker
-3. Start PROJ-15 (customer detail drawer)
-
-## Open Questions
-| Question                                                  | Status                 |
-|-----------------------------------------------------------|------------------------|
-| Will backend add unitsCount or should the UI derive it?   | Open, asked 2026-09-07 |
-```
-
-Both files are updated together, as one action, at the end of every phase or ticket, when you say "wrap up", "update the context" or "start a new chat", or when the context window is around 80 per cent full. The agent then confirms: "Context saved. Safe to start a new chat." Both files are committed so the whole team shares the same pointer. The full rules, with good and bad `notes` examples, are in `shared/workflow-state.md`.
-
----
-
-## Repo layout
-
-| Path | What it is |
-|------|------------|
-| `AGENTS.md` | Agent-agnostic entry point. Tools that read `AGENTS.md` pick it up as is; setup mirrors it into `CLAUDE.md` or `.cursor/rules/` for the others. |
-| `shared/` | Phases 0 to 5, 7, 11 and 12, plus `rules/` (always-on rule sources and the workflow driver), `templates/` (requirements summary, PM spec, API contract, ADR, stakeholder review), the workflow-state guide and the design-versus-contract rule. |
-| `frontend/` | Frontend track: page specs, rules, build, review, test, plus `rules/frontend.md` and a page-spec template. |
-| `backend/` | Backend track: endpoint specs, rules, build, review, test, plus `rules/backend.md` and an endpoint-spec template. |
-| `agents/` | The four agent prompts: code review, contract check, security audit, QA. |
-| `templates/` | `CONTEXT.md` and `.peer-ai-state.json` starters that setup copies to a project root. |
-| `docs/` | `peer-ai-feedback.md`, the fix list from the end-to-end runs. |
-| `CONTRIBUTING.md` | How to propose and make changes to phase files and agent prompts without breaking the structure the agents rely on. |
-
----
-
-## Licence
-
-[MIT](LICENSE). Fork it, adapt it, and take it to any project or company.
+[MIT](LICENSE). Use it, change it and ship it, in any project.

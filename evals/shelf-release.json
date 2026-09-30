@@ -1,0 +1,350 @@
+{
+  "fixture": "shelf",
+  "setup": {
+    "docs/releases/3.5.0.md": "# Shelf 3.5.0\n\nGoing to the App Store and Google Play on 2 October.\n\n## In this release\n\n- SH-12: Extend a loan from the loans screen.\n- SH-14: Saved books move to a faster format.\n- SH-15: The librarian suggests two books instead of one.\n\n## Plan\n\n1. Merge to main. CI builds both apps.\n2. Submit to both stores, released to everyone at once.\n\n## If something goes wrong\n\nWe fix forward: a patch release goes through the stores in a day or two.\n",
+    "docs/security/penetration-test-2025-03.md": "# Penetration test, March 2025\n\nCarried out by an outside firm against the API and version 3.1 of both apps, from 10 to 14 March 2025.\n\nThree findings, all fixed in 3.2.0.\n",
+    ".peer-ai/work/SH-12.json": {
+      "version": 1,
+      "id": "SH-12",
+      "title": "Extend a loan from the loans screen",
+      "kind": "feature",
+      "stage": "ship",
+      "track": "app",
+      "goal": "Extend a loan from the loans screen.",
+      "acceptance": ["Given a reader, when they use it, then it works as the spec says."],
+      "sources": ["docs/specs/sh-12.md"],
+      "lastVerify": {
+        "result": "pass",
+        "at": "2026-09-28T16:00:00.000Z"
+      },
+      "reviews": [
+        {
+          "skill": "code-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-12/code-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        },
+        {
+          "skill": "security-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-12/security-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        },
+        {
+          "skill": "qa-acceptance",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-12/qa-acceptance.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        }
+      ],
+      "requiredReviews": [
+        {
+          "skill": "code-review",
+          "reason": "it changes code"
+        },
+        {
+          "skill": "security-review",
+          "reason": "it changes code, at the production stage"
+        },
+        {
+          "skill": "qa-acceptance",
+          "reason": "its work item has acceptance criteria, which must all hold before it ships"
+        }
+      ],
+      "next": "Ship with 3.5.0.",
+      "updatedAt": "2026-09-28T16:00:00.000Z"
+    },
+    ".peer-ai/work/SH-14.json": {
+      "version": 1,
+      "id": "SH-14",
+      "title": "Saved books move to a faster format",
+      "kind": "feature",
+      "stage": "verify",
+      "track": "app",
+      "goal": "Saved books move to a faster format.",
+      "acceptance": ["Given a reader, when they use it, then it works as the spec says."],
+      "sources": ["docs/specs/sh-14.md"],
+      "lastVerify": {
+        "result": "fail",
+        "at": "2026-09-28T16:00:00.000Z"
+      },
+      "reviews": [
+        {
+          "skill": "code-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-14/code-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        },
+        {
+          "skill": "security-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-14/security-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        }
+      ],
+      "requiredReviews": [
+        {
+          "skill": "code-review",
+          "reason": "it changes code"
+        },
+        {
+          "skill": "security-review",
+          "reason": "it changes code, at the production stage"
+        },
+        {
+          "skill": "data-migration-review",
+          "reason": "it changes a migration"
+        },
+        {
+          "skill": "qa-acceptance",
+          "reason": "its work item has acceptance criteria, which must all hold before it ships"
+        }
+      ],
+      "next": "Ship with 3.5.0.",
+      "updatedAt": "2026-09-28T16:00:00.000Z"
+    },
+    ".peer-ai/work/SH-15.json": {
+      "version": 1,
+      "id": "SH-15",
+      "title": "The librarian suggests two books instead of one",
+      "kind": "feature",
+      "stage": "verify",
+      "track": "app",
+      "goal": "The librarian suggests two books instead of one.",
+      "acceptance": ["Given a reader, when they use it, then it works as the spec says."],
+      "sources": ["docs/specs/sh-15.md"],
+      "lastVerify": {
+        "result": "pass",
+        "at": "2026-09-28T16:00:00.000Z"
+      },
+      "reviews": [
+        {
+          "skill": "code-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-15/code-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        },
+        {
+          "skill": "security-review",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-15/security-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        },
+        {
+          "skill": "ai-feature-review",
+          "result": "fail",
+          "report": ".peer-ai/reports/SH-15/ai-feature-review.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        },
+        {
+          "skill": "qa-acceptance",
+          "result": "pass",
+          "report": ".peer-ai/reports/SH-15/qa-acceptance.json",
+          "at": "2026-09-28T16:00:00.000Z"
+        }
+      ],
+      "requiredReviews": [
+        {
+          "skill": "code-review",
+          "reason": "it changes code"
+        },
+        {
+          "skill": "security-review",
+          "reason": "it changes code, at the production stage"
+        },
+        {
+          "skill": "ai-feature-review",
+          "reason": "it changes code that calls an AI model"
+        },
+        {
+          "skill": "qa-acceptance",
+          "reason": "its work item has acceptance criteria, which must all hold before it ships"
+        }
+      ],
+      "next": "Ship with 3.5.0.",
+      "updatedAt": "2026-09-28T16:00:00.000Z"
+    }
+  },
+  "prompts": {
+    "release-readiness": "We're about to release Shelf 3.5.0. Is it ready?"
+  },
+  "defects": [
+    {
+      "id": "RS1",
+      "title": "SH-14 is in the release, but its last verify failed and its data-migration and QA reviews were never done",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".peer-ai/work/SH-14.json",
+          "whole": true
+        },
+        {
+          "file": "docs/releases/3.5.0.md",
+          "match": "- SH-14: Saved books move to a faster format."
+        }
+      ],
+      "rules": ["REQ-05", "DEL-04"]
+    },
+    {
+      "id": "RS2",
+      "title": "SH-15 is in the release, but its AI-feature review failed",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".peer-ai/work/SH-15.json",
+          "whole": true
+        },
+        {
+          "file": "docs/releases/3.5.0.md",
+          "match": "- SH-15: The librarian suggests two books instead of one."
+        },
+        {
+          "file": "src/features/librarian/askLibrarian.ts",
+          "whole": true
+        }
+      ],
+      "rules": ["REQ-05", "DEL-04"]
+    },
+    {
+      "id": "RS3",
+      "title": "There's no way back: the plan is to fix forward through the stores, and the app can't make people update",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "docs/releases/3.5.0.md",
+          "match": "We fix forward: a patch release goes through the stores in a day or two."
+        },
+        {
+          "file": "app.json",
+          "whole": true
+        }
+      ],
+      "rules": ["OPS-14", "MOB-06"]
+    },
+    {
+      "id": "RS4",
+      "title": "The last penetration test was in March 2025, more than a year before this release",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "docs/security/penetration-test-2025-03.md",
+          "whole": true
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-10"]
+    },
+    {
+      "id": "RS5",
+      "title": "SH-14's new saved-books format ships on top of 3.4.0's move to a new storage key, which never copied the old saved books across",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "src/storage/savedBooks.ts",
+          "match": "const KEY = \"savedBooks:v2\";"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "RS6",
+      "title": "The reviews recorded on the release's items point to reports that don't exist, so none of them is proven",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".peer-ai/work/SH-12.json",
+          "whole": true
+        },
+        {
+          "file": ".peer-ai/work/SH-15.json",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["REQ-05"]
+    },
+    {
+      "id": "RS7",
+      "title": "There's no CI at all, though the plan says CI builds both apps, so no required check can stop the release",
+      "severity": "high",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": "docs/releases/3.5.0.md",
+          "match": "1. Merge to main. CI builds both apps."
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["DEL-04", "DEL-05", "DEL-06"]
+    },
+    {
+      "id": "RS8",
+      "title": "There's no list of the app's dependencies for this release",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["DEL-10"]
+    },
+    {
+      "id": "RS9",
+      "title": "There's no written plan for an incident",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-11"]
+    },
+    {
+      "id": "RS10",
+      "title": "There are no service targets for the journeys this release changes",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-15"]
+    },
+    {
+      "id": "RS11",
+      "title": "There's no staging environment for the release to go through first",
+      "severity": "medium",
+      "skills": ["release-readiness"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's release-readiness skill on 2026-09-29, and judged real.",
+      "rules": ["OPS-04"]
+    }
+  ]
+}

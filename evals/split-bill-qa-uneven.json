@@ -1,0 +1,91 @@
+{
+  "fixture": "split-bill",
+  "setup": {
+    ".peer-ai/work/SB-3.json": {
+      "version": 1,
+      "id": "SB-3",
+      "title": "Split unevenly, by weight",
+      "kind": "feature",
+      "stage": "verify",
+      "track": "core",
+      "goal": "A bill can be split by each person's weight, such as the number of dishes they had, and the shares still add up to the cent.",
+      "acceptance": [
+        "Given a bill of 1000 cents and weights 2, 1 and 1, when it's split, then the shares are 500, 250 and 250.",
+        "Given a bill that doesn't divide exactly by the weights, when it's split, then the shares add up to the bill, and each leftover cent goes to the person whose exact share lost the most to rounding, the earliest on a tie.",
+        "Given a weight that is zero, negative or not a whole number, or nobody to pay, when it's split, then it's refused with a clear message.",
+        "Given everyone has the same weight, when it's split, then the shares are exactly what split gives today."
+      ],
+      "sources": ["docs/requirements.md#backlog"],
+      "next": "Check the item against its acceptance criteria before it ships.",
+      "updatedAt": "2026-09-29T09:00:00.000Z"
+    },
+    "src/split.ts": "/**\n * Splits a bill between people, in cents. The shares always add up to the total: when it doesn't\n * divide evenly, the first people pay one cent more.\n */\nexport function split(totalCents: number, people: number): number[] {\n  if (!Number.isInteger(totalCents) || totalCents < 0) {\n    throw new RangeError(\"totalCents must be a whole number of cents, 0 or more\");\n  }\n  if (!Number.isInteger(people) || people < 1) {\n    throw new RangeError(\"people must be a whole number, 1 or more\");\n  }\n  const base = Math.floor(totalCents / people);\n  const remainder = totalCents - base * people;\n  return Array.from({ length: people }, (_, i) => base + (i < remainder ? 1 : 0));\n}\n\n/** Splits a bill by each person's weight, such as the number of dishes they had. */\nexport function splitUneven(totalCents: number, weights: number[]): number[] {\n  if (!Number.isInteger(totalCents) || totalCents < 0) {\n    throw new RangeError(\"totalCents must be a whole number of cents, 0 or more\");\n  }\n  if (weights.some((weight) => !Number.isInteger(weight) || weight < 0)) {\n    throw new RangeError(\"each weight must be a whole number, 0 or more\");\n  }\n  const totalWeight = weights.reduce((sum, weight) => sum + weight);\n  const shares = weights.map((weight) => Math.floor((totalCents * weight) / totalWeight));\n  let left = totalCents - shares.reduce((sum, share) => sum + share, 0);\n  for (let i = 0; left > 0; i++, left--) shares[i % shares.length] += 1;\n  return shares;\n}\n",
+    "src/split.test.ts": "import assert from \"node:assert/strict\";\nimport { describe, it } from \"node:test\";\nimport { split, splitUneven } from \"./split.ts\";\n\ndescribe(\"split\", () => {\n  it(\"divides an even bill equally\", () => {\n    assert.deepEqual(split(3000, 3), [1000, 1000, 1000]);\n  });\n\n  it(\"gives the leftover cents to the first people, so nothing is lost\", () => {\n    assert.deepEqual(split(1000, 3), [334, 333, 333]);\n  });\n\n  it(\"rejects fractions of a cent and nobody to pay\", () => {\n    assert.throws(() => split(10.5, 2), RangeError);\n    assert.throws(() => split(1000, 0), RangeError);\n  });\n});\n\ndescribe(\"splitUneven\", () => {\n  it(\"splits by weight\", () => {\n    assert.deepEqual(splitUneven(1000, [2, 1, 1]), [500, 250, 250]);\n  });\n\n  it(\"keeps the shares adding up when the bill doesn't divide exactly\", () => {\n    assert.deepEqual(splitUneven(1000, [1, 1, 1]), [334, 333, 333]);\n  });\n\n  it(\"matches split when everyone has the same weight\", () => {\n    assert.deepEqual(splitUneven(3000, [1, 1, 1]), split(3000, 3));\n  });\n\n  it(\"refuses a negative weight\", () => {\n    assert.throws(() => splitUneven(1000, [1, -1]), RangeError);\n  });\n});\n"
+  },
+  "prompts": {
+    "qa-acceptance": "SB-3 is built. Check it against its acceptance criteria before it ships."
+  },
+  "defects": [
+    {
+      "id": "QU1",
+      "title": "Leftover cents go round the people in order, not to whoever lost the most to rounding",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.ts",
+          "match": "for (let i = 0; left > 0; i++, left--) shares[i % shares.length] += 1;"
+        }
+      ]
+    },
+    {
+      "id": "QU2",
+      "title": "A weight of zero is accepted, and all zero weights divide by zero",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.ts",
+          "match": "if (weights.some((weight) => !Number.isInteger(weight) || weight < 0)) {"
+        }
+      ]
+    },
+    {
+      "id": "QU3",
+      "title": "Nobody to pay fails with a confusing error from the code, not a clear message",
+      "severity": "high",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.ts",
+          "match": "const totalWeight = weights.reduce((sum, weight) => sum + weight);"
+        }
+      ]
+    },
+    {
+      "id": "QU4",
+      "title": "The test for a bill that doesn't divide exactly uses equal weights, so it can't show who gets the leftover cents",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.test.ts",
+          "match": "assert.deepEqual(splitUneven(1000, [1, 1, 1]), [334, 333, 333]);"
+        }
+      ]
+    },
+    {
+      "id": "QU5",
+      "title": "No test covers refusing a zero weight, a weight that isn't whole, or nobody to pay",
+      "severity": "medium",
+      "skills": ["qa-acceptance"],
+      "locations": [
+        {
+          "file": "src/split.test.ts",
+          "whole": true
+        }
+      ],
+      "rules": ["REQ-02", "TEST-02", "TEST-03"]
+    }
+  ]
+}

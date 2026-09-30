@@ -1,0 +1,112 @@
+{
+  "fixture": "courier",
+  "setup": {
+    "deploy/k8s/api.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: courier-api\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: courier-api\n  template:\n    metadata:\n      labels:\n        app: courier-api\n    spec:\n      serviceAccountName: courier-api\n      containers:\n        - name: api\n          image: registry.courier.example/api:2.4.1\n          ports:\n            - containerPort: 8000\n            - containerPort: 9090\n          env:\n            - name: DATABASE_URL\n              value: postgresql://courier:Courier-Prod-2026!@courier-db:5432/courier\n            - name: SESSION_KEY\n              valueFrom:\n                secretKeyRef:\n                  name: courier-api\n                  key: session-key\n",
+    "deploy/k8s/access.yaml": "apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: courier-api\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata:\n  name: courier-api\nsubjects:\n  - kind: ServiceAccount\n    name: courier-api\n    namespace: default\nroleRef:\n  kind: ClusterRole\n  name: cluster-admin\n  apiGroup: rbac.authorization.k8s.io\n",
+    "deploy/k8s/services.yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: courier-api\nspec:\n  type: LoadBalancer\n  selector:\n    app: courier-api\n  ports:\n    - name: https\n      port: 443\n      targetPort: 8000\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: courier-api-metrics\nspec:\n  type: LoadBalancer\n  selector:\n    app: courier-api\n  ports:\n    - name: metrics\n      port: 9090\n      targetPort: 9090\n",
+    "deploy/k8s/db.yaml": "apiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: courier-db\nspec:\n  serviceName: courier-db\n  replicas: 1\n  selector:\n    matchLabels:\n      app: courier-db\n  template:\n    metadata:\n      labels:\n        app: courier-db\n    spec:\n      containers:\n        - name: postgres\n          image: postgres:17.4\n          volumeMounts:\n            - name: data\n              mountPath: /var/lib/postgresql/data\n      volumes:\n        - name: data\n          emptyDir: {}\n",
+    "docker-compose.yml": "# Local development.\nservices:\n  api:\n    build: services/api\n    ports:\n      - \"8000:8000\"\n    environment:\n      DATABASE_URL: postgresql://courier@courier-db.production.courier.example:5432/courier\n"
+  },
+  "prompts": {
+    "infrastructure-review": "Review how Courier is deployed."
+  },
+  "defects": [
+    {
+      "id": "IK1",
+      "title": "The production database password is written in the API's deployment file",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/k8s/api.yaml",
+          "match": "value: postgresql://courier:Courier-Prod-2026!@courier-db:5432/courier"
+        }
+      ]
+    },
+    {
+      "id": "IK2",
+      "title": "The API's service account is bound to cluster-admin, so it can do anything in the cluster",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/k8s/access.yaml",
+          "match": "name: cluster-admin"
+        }
+      ]
+    },
+    {
+      "id": "IK3",
+      "title": "The API's metrics port has its own public load balancer",
+      "severity": "critical",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/k8s/services.yaml",
+          "match": "name: courier-api-metrics",
+          "lines": 11
+        }
+      ]
+    },
+    {
+      "id": "IK4",
+      "title": "The database keeps its data in a temporary volume with no backups, so a restart loses everything",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/k8s/db.yaml",
+          "match": "emptyDir: {}"
+        }
+      ]
+    },
+    {
+      "id": "IK5",
+      "title": "Local development connects to the production database",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "docker-compose.yml",
+          "match": "DATABASE_URL: postgresql://courier@courier-db.production.courier.example:5432/courier"
+        }
+      ]
+    },
+    {
+      "id": "IK6",
+      "title": "Nothing but people applying the manifests by hand puts a change into the cluster: there's no pipeline",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        },
+        {
+          "file": "deploy/k8s/api.yaml",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-06"],
+      "found": "Not planted: raised by Peer AI's infrastructure-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "IK7",
+      "title": "Public traffic reaches the API with no TLS set up in front of it, and the API reaches the database without TLS",
+      "severity": "high",
+      "skills": ["infrastructure-review"],
+      "locations": [
+        {
+          "file": "deploy/k8s/services.yaml",
+          "match": "- name: https",
+          "lines": 3
+        },
+        {
+          "file": "deploy/k8s/api.yaml",
+          "match": "value: postgresql://courier:Courier-Prod-2026!@courier-db:5432/courier"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's infrastructure-review skill on 2026-09-29, and judged real."
+    }
+  ]
+}

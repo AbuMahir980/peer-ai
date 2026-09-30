@@ -1,0 +1,99 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/map.schema.json",
+  "version": 1,
+  "assessedAt": "2026-09-28T16:58:36.254Z",
+  "items": {
+    "requirements": {
+      "status": "present",
+      "evidence": ["docs/requirements.md"],
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "architecture": {
+      "status": "partial",
+      "evidence": ["."],
+      "inferred": true,
+      "note": "No architecture document. From the code: 1 parts: core (library).",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "threat-model": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "specs": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "api-contract": {
+      "status": "not-applicable",
+      "inferred": true,
+      "note": "No API is provided by this repository.",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "data-model": {
+      "status": "not-applicable",
+      "inferred": true,
+      "note": "No database found in this repository.",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "data-inventory": {
+      "status": "not-applicable",
+      "inferred": true,
+      "note": "No personal-data fields found in the schema or migrations.",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "dpia": {
+      "status": "not-applicable",
+      "inferred": true,
+      "note": "No personal-data fields found in the schema or migrations.",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "design": {
+      "status": "not-applicable",
+      "inferred": true,
+      "note": "No user interface found.",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "standards": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "ci": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "environments": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "tests": {
+      "status": "present",
+      "evidence": ["."],
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "load-testing": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "infrastructure": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "observability": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "slos": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "runbooks": {
+      "status": "missing",
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    },
+    "docs": {
+      "status": "present",
+      "evidence": ["README.md", "docs/"],
+      "checkedAt": "2026-09-28T16:58:36.254Z"
+    }
+  }
+}

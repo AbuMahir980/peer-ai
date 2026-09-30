@@ -1,0 +1,106 @@
+{
+  "fixture": "shelf",
+  "setup": {
+    "package.json": {
+      "name": "shelf",
+      "version": "3.4.0",
+      "private": true,
+      "main": "index.js",
+      "scripts": {
+        "start": "expo start",
+        "test": "jest"
+      },
+      "dependencies": {
+        "@react-native-async-storage/async-storage": "2.1.2",
+        "@react-native-community/async-storage": "1.12.1",
+        "@react-navigation/native": "7.1.14",
+        "@sentry/react-native": "6.20.0",
+        "expo": "53.0.22",
+        "expo-location": "18.1.6",
+        "expo-secure-store": "14.2.4",
+        "react": "19.0.0",
+        "react-native": "0.79.6",
+        "react-native-webview": "13.13.5",
+        "react-redux": "8.1.3",
+        "redux": "4.2.1",
+        "redux-thunk": "2.4.2",
+        "shelf-partner-sdk": "2.3.0"
+      },
+      "devDependencies": {
+        "jest": "29.7.0",
+        "jest-expo": "53.0.10",
+        "typescript": "5.8.3"
+      },
+      "jest": {
+        "preset": "jest-expo"
+      }
+    },
+    "src/lib/monitoring.ts": "import * as Sentry from \"@sentry/react-native\";\n\ninterface Reader {\n  id: string;\n  email: string;\n  lastLocation?: { latitude: number; longitude: number };\n}\n\nSentry.init({\n  dsn: \"https://public@errors.shelf.example/3\",\n  enabled: !__DEV__,\n  sendDefaultPii: true,\n});\n\n// Called from every screen's error boundary.\nexport function reportError(error: unknown, reader: Reader): void {\n  Sentry.setUser({ id: reader.id, email: reader.email });\n  Sentry.captureException(error, { extra: { location: reader.lastLocation } });\n}\n",
+    "docs/monitoring.md": "# Monitoring\n\nCrashes go to our error tracker. We look at its dashboard when a reader reports a problem.\n"
+  },
+  "prompts": {
+    "observability-review": "Review how the Shelf app is monitored."
+  },
+  "defects": [
+    {
+      "id": "OM1",
+      "title": "Every crash report carries the reader's email address and exact location",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "src/lib/monitoring.ts",
+          "match": "Sentry.setUser({ id: reader.id, email: reader.email });",
+          "lines": 2
+        },
+        {
+          "file": "src/lib/monitoring.ts",
+          "match": "sendDefaultPii: true,"
+        }
+      ]
+    },
+    {
+      "id": "OM2",
+      "title": "There are no targets for crashes, and nobody is alerted: people look only when a reader complains",
+      "severity": "medium",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "docs/monitoring.md",
+          "match": "Crashes go to our error tracker. We look at its dashboard when a reader reports a problem."
+        },
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["OPS-15", "OPS-09"]
+    },
+    {
+      "id": "OM3",
+      "title": "Signing in writes the reader's email and password to the device log",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "src/legacy/api/client.js",
+          "match": "console.log(\"Signing in\", email, password);"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "OM4",
+      "title": "The reader's exact location goes to a third-party analytics service",
+      "severity": "high",
+      "skills": ["observability-review"],
+      "locations": [
+        {
+          "file": "src/features/nearby/useNearby.ts",
+          "match": "analytics.track(\"nearby_opened\", { lat: coords.latitude, lng: coords.longitude });"
+        }
+      ],
+      "found": "Not planted: raised by Peer AI's observability-review skill on 2026-09-29, and judged real."
+    }
+  ]
+}

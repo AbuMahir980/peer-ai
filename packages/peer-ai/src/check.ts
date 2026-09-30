@@ -1,0 +1,318 @@
+// peer-ai check: the gate CI runs. It fails when the setup is broken, or when a work item claims
+// more than its record shows: an item at ship or done without a passing verify or reviews, or a
+// gap marked done that a fresh assessment still finds. Gaps on the map never fail it; they are
+// reported, so they become work items instead of blockers. The project's stage sets how strict
+// it is.
+
+import { renderedName } from "peer-ai-skills";
+import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
+import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
+import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
+import { CONFIG_FILE } from "./detect.ts";
+import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
+import type { Output, Stage } from "./init.ts";
+import { mapChanges, readMap, readWorkItems } from "./state.ts";
+
+export interface Verdict {
+  name: string;
+  stage: Stage;
+  ok: boolean;
+  checks: Check[];
+  /** What doctor would fail on, which fails the build too (RFC 0007), and a count of its warnings. */
+  setup: Check[];
+}
+
+/** Doctor's checks that check already makes itself. */
+const CHECKED_HERE = new Set(["config", "tracks", "map", "work-items"]);
+
+/**
+ * The setup checks doctor makes: every failure, and one line counting the warnings. The skills
+ * are left out, since CI never has them.
+ */
+export function setupChecks(root: string, nodeVersion?: string, today?: Date): Check[] {
+  const diagnosis = diagnose(root, nodeVersion, today, { skills: false });
+  const others = diagnosis.checks.filter((check) => !CHECKED_HERE.has(check.id));
+  const warnings = count(others, "warn");
+  return [
+    ...others.filter((check) => check.status === "fail"),
+    ...(warnings === 0
+      ? []
+      : [warn("setup", `${plural(warnings, "setup warning")}.`, "Run npx peer-ai doctor for the details.")]),
+  ];
+}
+
+type Review = NonNullable<WorkItem["reviews"]>[number];
+
+/** Work at these stages says it has been verified and reviewed. */
+const CLAIMS_VERIFIED: WorkItem["stage"][] = ["ship", "done"];
+const OPEN: WorkItem["stage"][] = ["prepare", "build", "verify", "ship"];
+const COMMIT_MAP = `Run peer-ai assess, and commit ${MAP_FILE}.`;
+
+const isKnownItem = (id: string): id is KnownMapItemId => (MAP_ITEM_IDS as readonly string[]).includes(id);
+
+/** The most recent review from each skill: a later pass supersedes an earlier failure. */
+function latestReviews(item: WorkItem): Review[] {
+  const latest = new Map<string, Review>();
+  for (const review of item.reviews ?? []) {
+    const seen = latest.get(review.skill);
+    if (seen === undefined || Date.parse(review.at) >= Date.parse(seen.at)) latest.set(review.skill, review);
+  }
+  return [...latest.values()];
+}
+
+/**
+ * Whether a work item may be at ship or done. `items` are the project's other work items, for its
+ * dependencies (RFC 0005): an item can't ship before the items it depends on have.
+ */
+export function gateWorkItem(
+  item: WorkItem,
+  config: PeerAiConfig,
+  stage: Stage,
+  assessment: Assessment,
+  items: WorkItem[] = [],
+): Check[] {
+  const checks: Check[] = [];
+  const claim = `${item.id} is at ${item.stage}`;
+  const backToBuild = "or move the item back to build.";
+  const verifyCommand = config.commands?.verify ?? undefined;
+
+  for (const id of item.dependsOn ?? []) {
+    const dependency = items.find((other) => other.id === id);
+    if (dependency !== undefined && CLAIMS_VERIFIED.includes(dependency.stage)) continue;
+    checks.push(
+      fail(
+        "gates",
+        dependency === undefined
+          ? `${claim}, but it depends on ${id}, which isn't a work item.`
+          : dependency.stage === "cancelled"
+            ? `${claim}, but it depends on ${id}, which was cancelled.`
+            : `${claim}, but it depends on ${id}, which is only at ${dependency.stage}.`,
+        dependency?.stage === "cancelled" || dependency === undefined
+          ? `Remove ${id} from its dependsOn, ${backToBuild}`
+          : `Ship ${id} first, ${backToBuild}`,
+      ),
+    );
+  }
+
+  if (item.lastVerify?.result === "fail") {
+    checks.push(
+      fail("gates", `${claim}, but its last verify failed.`, `Fix what failed and verify again, ${backToBuild}`),
+    );
+  } else if (item.lastVerify === undefined && verifyCommand !== undefined) {
+    checks.push(
+      fail(
+        "gates",
+        `${claim}, but it has no recorded verify.`,
+        `Run ${verifyCommand} and record the result on the work item, ${backToBuild}`,
+      ),
+    );
+  }
+
+  // The reviews the change needs (RFC 0004): a warning for an MVP, a failure in production. A
+  // prototype is only told, by next_work.
+  const recorded = new Set((item.reviews ?? []).map((review) => review.skill));
+  for (const required of item.requiredReviews ?? []) {
+    if (recorded.has(required.skill) || stage === "prototype") continue;
+    const message = `${claim}, but it has no ${required.skill}, which it needs because ${required.reason}.`;
+    const fix = `Use the ${renderedName(required.skill)} skill and record its review, ${backToBuild}`;
+    checks.push(stage === "production" ? fail("gates", message, fix) : warn("gates", message, fix));
+  }
+
+  for (const review of latestReviews(item)) {
+    // A prototype accepts a review that didn't cover every rule; a failed one still stops it.
+    const allowed = review.result === "pass" || (review.result === "incomplete" && stage === "prototype");
+    if (!allowed) {
+      checks.push(
+        review.result === "fail"
+          ? fail(
+              "gates",
+              `${claim}, but its latest ${review.skill} failed.`,
+              `Fix the findings and review again, ${backToBuild}`,
+            )
+          : fail(
+              "gates",
+              `${claim}, but its latest ${review.skill} is incomplete: it didn't check every rule.`,
+              `Review again until every rule is checked, ${backToBuild}`,
+            ),
+      );
+    } else if (review.report === undefined && stage !== "prototype") {
+      // Without a report, the result is the agent's word (RFC 0002): a warning for an MVP, a
+      // failure in production.
+      const message = `${claim}, but its latest ${review.skill} has no report, so its result is unproven.`;
+      const fix = "Write the review's report, and record the review again with it.";
+      checks.push(stage === "production" ? fail("gates", message, fix) : warn("gates", message, fix));
+    }
+  }
+
+  if (item.kind === "gap" && item.stage === "done" && item.gap !== undefined && isKnownItem(item.gap)) {
+    const status = assessment.items[item.gap].status;
+    if (status !== "present" && status !== "not-applicable") {
+      checks.push(
+        fail(
+          "gates",
+          `${item.id} says the ${item.gap} gap is done, but a fresh assessment finds it ${status}.`,
+          `Finish the work, ${backToBuild}`,
+        ),
+      );
+    }
+  }
+  return checks;
+}
+
+function checkGates(items: WorkItem[], config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
+  const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage));
+  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, items));
+  const failures = results.filter((check) => check.status === "fail");
+  const warnings = results.filter((check) => check.status === "warn");
+  if (failures.length > 0) return [...failures, ...warnings];
+  if (claiming.length === 0) return [ok("gates", "No work items at ship or done yet")];
+  return [
+    ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`),
+    ...warnings,
+  ];
+}
+
+/** Every dependency names a work item that exists, and no items wait on each other in a loop (RFC 0005). */
+function checkDependencies(items: WorkItem[]): Check[] {
+  const ids = new Set(items.map((item) => item.id));
+  const problems: Check[] = [];
+  for (const item of items) {
+    for (const id of item.dependsOn ?? []) {
+      if (!ids.has(id)) {
+        problems.push(
+          fail("plans", `${item.id} depends on ${id}, which isn't a work item.`, `Remove ${id} from its dependsOn.`),
+        );
+      }
+    }
+  }
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const reported = new Set<string>();
+  for (const start of items) {
+    // Follow the dependencies depth first; meeting an item already on the path is a loop.
+    const path: string[] = [];
+    const visit = (id: string): string[] | undefined => {
+      if (path.includes(id)) return [...path.slice(path.indexOf(id)), id];
+      if (reported.has(id)) return undefined;
+      path.push(id);
+      for (const next of byId.get(id)?.dependsOn ?? []) {
+        const loop = visit(next);
+        if (loop !== undefined) return loop;
+      }
+      path.pop();
+      return undefined;
+    };
+    const loop = visit(start.id);
+    if (loop !== undefined && !loop.some((id) => reported.has(id))) {
+      for (const id of loop) reported.add(id);
+      problems.push(
+        fail(
+          "plans",
+          `Work items wait on each other in a loop: ${loop.join(" → ")}.`,
+          "Remove one of the dependencies.",
+        ),
+      );
+    }
+  }
+  if (problems.length > 0) return problems;
+  const planned = items.filter((item) => (item.dependsOn ?? []).length > 0).length;
+  return planned === 0 ? [] : [ok("plans", `${plural(planned, "work item")} with dependencies, each on a real item`)];
+}
+
+function checkVerifyCommand(config: PeerAiConfig, stage: Stage): Check[] {
+  if (stage === "prototype" || (config.commands?.verify ?? undefined) !== undefined) return [];
+  return [
+    warn(
+      "verify",
+      "No verify command is set, so nothing is verified before work is called done.",
+      `Set commands.verify in ${CONFIG_FILE}, for example "npm test" or "make check".`,
+    ),
+  ];
+}
+
+function checkMap(root: string, assessment: Assessment): Check {
+  const read = readMap(root);
+  if (read === undefined) return warn("map", "There is no project map yet.", COMMIT_MAP);
+  if (!read.ok) return fail("map", `${MAP_FILE} ${read.error}`, COMMIT_MAP);
+  const changed = mapChanges(read.value, assessment);
+  if (changed.length > 0) return warn("map", `The project map is out of date: ${changed.join(", ")}.`, COMMIT_MAP);
+  return ok("map", "The project map is up to date");
+}
+
+/** What the stage needs and is missing should each have an open gap work item. */
+function checkGapsTracked(assessment: Assessment, stage: Stage, items: WorkItem[]): Check {
+  if (stage === "prototype") return ok("gaps", "Nothing on the map is required at the prototype stage");
+  const needed = gaps(assessment, stage);
+  if (needed.length === 0) return ok("gaps", `Everything the ${stage} stage needs is in place`);
+  const tracked = new Set(items.filter((item) => item.kind === "gap" && OPEN.includes(item.stage)).map((i) => i.gap));
+  const untracked = needed.filter((id) => !tracked.has(id));
+  if (untracked.length === 0) return ok("gaps", `${plural(needed.length, "gap")} for ${stage}, each with a work item`);
+  return warn(
+    "gaps",
+    `${plural(untracked.length, "gap")} for ${stage} with no work item: ${untracked.join(", ")}.`,
+    "Add a gap work item for each, so they are planned rather than forgotten.",
+  );
+}
+
+export function evaluate(root: string, config: PeerAiConfig): Verdict {
+  const stage = config.project.stage ?? "mvp";
+  const assessment = assess(root, config, stage);
+  const trackFailures = checkTracks(root, config).filter((check) => check.status === "fail");
+  const items = readWorkItems(root).flatMap(({ item }) => (item.ok ? [item.value] : []));
+  const checks = [
+    ok("config", `${CONFIG_FILE} is valid`),
+    ...(trackFailures.length > 0 ? trackFailures : [ok("tracks", "Every track's folder exists")]),
+    checkMap(root, assessment),
+    ...checkWorkItems(root, config),
+    ...checkDependencies(items),
+    ...checkGates(items, config, stage, assessment),
+    ...checkVerifyCommand(config, stage),
+    checkGapsTracked(assessment, stage, items),
+  ];
+  const setup = setupChecks(root);
+  return {
+    name: config.project.name,
+    stage,
+    ok: count(checks, "fail") + count(setup, "fail") === 0,
+    checks,
+    setup,
+  };
+}
+
+export function formatVerdict(verdict: Verdict): string[] {
+  const all = [...verdict.checks, ...verdict.setup];
+  const failures = count(all, "fail");
+  const warnings = count(all, "warn");
+  const andWarnings = warnings === 0 ? "" : `, and ${plural(warnings, "warning")}`;
+  return [
+    `Peer AI check: ${verdict.name} (stage: ${verdict.stage})`,
+    "",
+    ...formatChecks(verdict.checks),
+    ...(verdict.setup.length === 0 ? [] : ["", "Setup, as peer-ai doctor checks it:", ...formatChecks(verdict.setup)]),
+    "",
+    failures > 0
+      ? `Failed: ${plural(failures, "problem")}${andWarnings}.`
+      : `Passed${warnings === 0 ? "" : `, with ${plural(warnings, "warning")}`}.`,
+  ];
+}
+
+export interface CheckOptions {
+  cwd: string;
+  json: boolean;
+}
+
+/** Exit code 0 when it passes, even with warnings; 1 when it fails; 2 without a valid config. */
+export function runCheck(options: CheckOptions, out: Output): number {
+  const { config, errors } = loadConfig(options.cwd);
+  if (config === undefined) {
+    if (errors === undefined) out.error(`There is no ${CONFIG_FILE}. Run peer-ai init first.`);
+    else {
+      out.error(`${CONFIG_FILE} is not valid:`);
+      for (const error of errors) out.error(`  ${error}`);
+    }
+    return 2;
+  }
+  const verdict = evaluate(options.cwd, config);
+  if (options.json) out.log(JSON.stringify(verdict, null, 2));
+  else for (const line of formatVerdict(verdict)) out.log(line);
+  return verdict.ok ? 0 : 1;
+}

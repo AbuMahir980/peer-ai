@@ -1,0 +1,5 @@
+pnpm-lock.yaml
+*.md
+packages/*/schemas/
+# Sample projects keep files exactly as peer-ai writes them, so render --check stays meaningful.
+fixtures/

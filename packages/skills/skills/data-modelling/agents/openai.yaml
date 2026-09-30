@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI data modelling"
+  short_description: "Entities, guarantees, sensitive data and safe changes"
+  default_prompt: "Use ${{name}} to write down this product's data model, with what's personal and how long it's kept."

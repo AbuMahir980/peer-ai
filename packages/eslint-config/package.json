@@ -1,0 +1,70 @@
+{
+  "name": "peer-ai-eslint-config",
+  "version": "1.0.0-next.0",
+  "description": "ESLint settings for the stack profiles a project lists in peer-ai.config.json",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "peer-ai-standards": "workspace:*",
+    "peer-ai-workflow": "workspace:*"
+  },
+  "peerDependencies": {
+    "@next/eslint-plugin-next": "^15.0.0 || ^16.0.0",
+    "eslint": "^10.0.0",
+    "eslint-plugin-jsx-a11y-x": "^0.2.0",
+    "eslint-plugin-react-dom": "^5.20.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript-eslint": "^8.70.1"
+  },
+  "peerDependenciesMeta": {
+    "@next/eslint-plugin-next": {
+      "optional": true
+    },
+    "eslint-plugin-jsx-a11y-x": {
+      "optional": true
+    },
+    "eslint-plugin-react-dom": {
+      "optional": true
+    },
+    "eslint-plugin-react-hooks": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "16.3.6",
+    "eslint-plugin-jsx-a11y-x": "0.2.0",
+    "eslint-plugin-react-dom": "5.20.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "typescript-eslint": "8.70.1"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbuMahir980/peer-ai.git",
+    "directory": "packages/eslint-config"
+  },
+  "homepage": "https://github.com/AbuMahir980/peer-ai#readme",
+  "bugs": {
+    "url": "https://github.com/AbuMahir980/peer-ai/issues"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  }
+}

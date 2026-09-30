@@ -1,0 +1,6 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "version": 1,
+  "project": { "name": "Weekend Planner", "stage": "prototype" },
+  "tracks": [{ "id": "app", "kind": "web", "status": "active" }]
+}

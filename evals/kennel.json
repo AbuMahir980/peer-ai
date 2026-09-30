@@ -1,0 +1,398 @@
+{
+  "fixture": "kennel",
+  "prompts": {
+    "security-review": "Review Kennel's API for security problems.",
+    "code-review": "Review Kennel's code for bugs and problems.",
+    "compliance-review": "Review Kennel for data protection and card payment compliance problems. It operates in Ireland.",
+    "reliability-review": "Review Kennel for what happens when the things it depends on fail.",
+    "performance-review": "Review Kennel's API and database for performance problems.",
+    "data-migration-review": "Review how Kennel changes its database.",
+    "dependency-review": "Review Kennel's dependencies."
+  },
+  "defects": [
+    {
+      "id": "K1",
+      "title": "The database password is written in the code, as a fallback",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/app.module.ts",
+          "match": "password: process.env.DATABASE_PASSWORD ?? \"kennel-db-2026\","
+        }
+      ]
+    },
+    {
+      "id": "K2",
+      "title": "Any signed-in owner can read any booking by changing the id",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/bookings.controller.ts",
+          "match": "return this.bookings.find(Number(id));"
+        },
+        {
+          "file": "services/api/src/bookings/bookings.service.ts",
+          "match": "return this.bookings.findOneByOrFail({ id });"
+        }
+      ]
+    },
+    {
+      "id": "K3",
+      "title": "Anyone can mark any booking paid: the payment webhook isn't checked as coming from the provider",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/payments/payments.controller.ts",
+          "match": "if (event.type === \"payment.succeeded\") await this.bookings.markPaid(event.bookingId);"
+        }
+      ]
+    },
+    {
+      "id": "K4",
+      "title": "The owner lookup builds SQL from the email it's given",
+      "severity": "critical",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/owners/owners.service.ts",
+          "match": "const [owner] = await this.dataSource.query(`SELECT * FROM owners WHERE email = '${email}'`);"
+        }
+      ]
+    },
+    {
+      "id": "K5",
+      "title": "Request bodies are never validated: no validation pipe runs the DTOs' checks, so extra fields such as paid reach the database",
+      "severity": "high",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/main.ts",
+          "match": "const app = await NestFactory.create(AppModule);"
+        },
+        {
+          "file": "services/api/src/bookings/bookings.service.ts",
+          "match": "return this.bookings.save({ ...dto, ownerId, total });"
+        }
+      ]
+    },
+    {
+      "id": "K6",
+      "title": "Any signed-in owner can post updates and photos to any booking, though only staff should",
+      "severity": "high",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/updates/updates.controller.ts",
+          "match": "post(@Param(\"bookingId\") bookingId: string, @Body(\"note\") note: string, @UploadedFile() photo: Express.Multer.File) {"
+        }
+      ]
+    },
+    {
+      "id": "K7",
+      "title": "Uploaded photos are stored under the name the client sends",
+      "severity": "high",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/updates/updates.controller.ts",
+          "match": "filename: (_req, file, done) => done(null, file.originalname),"
+        }
+      ]
+    },
+    {
+      "id": "K8",
+      "title": "Uploads have no size or type limit",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/updates/updates.controller.ts",
+          "match": "FileInterceptor(\"photo\", {"
+        }
+      ]
+    },
+    {
+      "id": "K9",
+      "title": "Any website may call the API with an owner's credentials: CORS echoes the caller's origin",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/main.ts",
+          "match": "app.enableCors({ origin: true, credentials: true });"
+        }
+      ]
+    },
+    {
+      "id": "K10",
+      "title": "Error responses carry the stack trace",
+      "severity": "medium",
+      "skills": ["security-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/common/expose-errors.filter.ts",
+          "match": "response.status(status).json({ statusCode: status, message: exception.message, stack: exception.stack });"
+        }
+      ]
+    },
+    {
+      "id": "K11",
+      "title": "Owners' email, name and phone are written to the log",
+      "severity": "medium",
+      "skills": ["security-review", "compliance-review"],
+      "locations": [
+        {
+          "file": "services/api/src/owners/owners.service.ts",
+          "match": "this.logger.log(`Owner lookup for ${email}: ${owner?.name} ${owner?.phone}`);"
+        }
+      ]
+    },
+    {
+      "id": "K12",
+      "title": "Money is a float of euros, in the database and the nightly rate",
+      "severity": "high",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/booking.entity.ts",
+          "match": "@Column({ type: \"float\" })"
+        },
+        {
+          "file": "services/api/src/bookings/bookings.controller.ts",
+          "match": "const NIGHTLY_RATE = 32.5;"
+        }
+      ]
+    },
+    {
+      "id": "K13",
+      "title": "The price is worked out in the controller, not the bookings service",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/bookings.controller.ts",
+          "match": "const total = nights * NIGHTLY_RATE;"
+        }
+      ]
+    },
+    {
+      "id": "K14",
+      "title": "The call to the vet records service has no timeout",
+      "severity": "high",
+      "skills": ["reliability-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/vet/vet-records.client.ts",
+          "match": "const response = await axios.get(`${process.env.VET_RECORDS_URL}/dogs/${microchip}/vaccinations`);"
+        }
+      ]
+    },
+    {
+      "id": "K15",
+      "title": "A dog is checked in when its vaccinations can't be confirmed: a failed call to the vet records service is swallowed and counts as a yes",
+      "severity": "high",
+      "skills": ["reliability-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/vet/check-in.service.ts",
+          "match": "if (vaccinations === null) return true;"
+        },
+        {
+          "file": "services/api/src/vet/vet-records.client.ts",
+          "match": "} catch {\n      return null;",
+          "lines": 2
+        }
+      ]
+    },
+    {
+      "id": "K16",
+      "title": "Listing an owner's bookings runs one query per booking to count its updates",
+      "severity": "medium",
+      "skills": ["performance-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/bookings.service.ts",
+          "match": "booking.updates = await this.updates.count({ where: { bookingId: booking.id } });"
+        }
+      ]
+    },
+    {
+      "id": "K17",
+      "title": "TypeORM changes the production database's structure itself on start-up, outside the migrations",
+      "severity": "high",
+      "skills": ["data-migration-review", "code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/app.module.ts",
+          "match": "synchronize: true,"
+        }
+      ]
+    },
+    {
+      "id": "K18",
+      "title": "A migration drops the vaccination notes staff typed in, with nothing kept",
+      "severity": "high",
+      "skills": ["data-migration-review"],
+      "locations": [
+        {
+          "file": "services/api/migrations/1727000000000-DropVaccinationNotes.ts",
+          "match": "await queryRunner.query(`ALTER TABLE \"bookings\" DROP COLUMN \"vaccination_notes\"`);"
+        }
+      ]
+    },
+    {
+      "id": "K19",
+      "title": "axios 0.21.1 has published vulnerabilities",
+      "severity": "high",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": "services/api/package.json",
+          "match": "\"axios\": \"0.21.1\","
+        }
+      ]
+    },
+    {
+      "id": "K20",
+      "title": "There's no lockfile, so every install can resolve different versions",
+      "severity": "medium",
+      "skills": ["dependency-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["DEL-01"]
+    },
+    {
+      "id": "K21",
+      "title": "The TypeScript compiler isn't strict",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/tsconfig.json",
+          "match": "\"strict\": false,"
+        }
+      ]
+    },
+    {
+      "id": "K22",
+      "title": "The bookings module reaches into the updates module's entity instead of using what it exports",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/bookings.module.ts",
+          "match": "imports: [TypeOrmModule.forFeature([Booking, Update])],"
+        },
+        {
+          "file": "services/api/src/bookings/bookings.module.ts",
+          "match": "import { Update } from \"../updates/update.entity\";"
+        }
+      ]
+    },
+    {
+      "id": "K23",
+      "title": "Personal data is kept with no retention period and no way to delete it",
+      "severity": "medium",
+      "skills": ["compliance-review", "security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["PRIV-06"],
+      "found": "Not planted: first raised by the Claude Code compliance and security reviews on 2026-09-30, and judged real."
+    },
+    {
+      "id": "K24",
+      "title": "An owner's whole booking history comes back in one response, unpaged",
+      "severity": "medium",
+      "skills": ["performance-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/bookings.controller.ts",
+          "match": "return this.bookings.listForOwner(req.user.id);"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code performance review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "K25",
+      "title": "A microchip number is checked only for its length, then put into the vet records service's URL",
+      "severity": "high",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/bookings/dto/create-booking.dto.ts",
+          "match": "@Length(15, 15)"
+        },
+        {
+          "file": "services/api/src/vet/vet-records.client.ts",
+          "match": "const response = await axios.get(`${process.env.VET_RECORDS_URL}/dogs/${microchip}/vaccinations`);"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "K26",
+      "title": "Refused sign-ins are never logged",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/src/auth/auth.guard.ts",
+          "match": "if (scheme !== \"Bearer\" || !token) throw new UnauthorizedException();"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, with and without the skill, and judged real."
+    },
+    {
+      "id": "K27",
+      "title": "Nothing security-sensitive has abuse tests",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-08"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, with and without the skill, and judged real."
+    },
+    {
+      "id": "K28",
+      "title": "There's no threat model, though the API takes payments' webhooks, uploads and calls another service",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-25"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, with and without the skill, and judged real."
+    },
+    {
+      "id": "K29",
+      "title": "Uploaded photos are stored at full size, never resized",
+      "severity": "medium",
+      "skills": ["performance-review"],
+      "locations": [
+        {
+          "file": "services/api/src/updates/updates.controller.ts",
+          "match": "FileInterceptor(\"photo\", {"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code reliability review on 2026-09-30, and judged real."
+    }
+  ]
+}

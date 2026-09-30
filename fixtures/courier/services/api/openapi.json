@@ -1,0 +1,375 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Courier API",
+    "version": "1.0.0"
+  },
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "PickupRequest": {
+        "type": "object",
+        "properties": {
+          "weight_kg": {
+            "type": "number"
+          },
+          "pickup_address": {
+            "type": "string"
+          },
+          "recipient_name": {
+            "type": "string"
+          },
+          "recipient_phone": {
+            "type": "string"
+          },
+          "recipient_address": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "weight_kg",
+          "pickup_address",
+          "recipient_name",
+          "recipient_phone",
+          "recipient_address"
+        ]
+      },
+      "ParcelCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "recipient_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "recipient_name"
+        ]
+      },
+      "ParcelSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "recipient_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "recipient_name",
+          "created_at"
+        ]
+      },
+      "Parcel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "weight_kg": {
+            "type": "number"
+          },
+          "recipient_name": {
+            "type": "string"
+          },
+          "recipient_address": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "weight_kg",
+          "recipient_name",
+          "recipient_address",
+          "notes"
+        ]
+      },
+      "Tracking": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "parcel_id": {
+            "type": "integer"
+          },
+          "payment_token": {
+            "type": "string",
+            "description": "A one-time token from the payment provider. Courier never receives card details."
+          }
+        },
+        "required": [
+          "parcel_id",
+          "payment_token"
+        ]
+      },
+      "Question": {
+        "type": "object",
+        "required": [
+          "parcel_id",
+          "message"
+        ],
+        "properties": {
+          "parcel_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AssistantReply": {
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "properties": {
+          "reply": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/parcels": {
+      "post": {
+        "summary": "Book a pickup",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PickupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParcelCreated"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "The customer\u2019s parcels, newest first, 20 at a time",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of parcels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "$ref": "#/components/schemas/ParcelSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parcels/{parcel_id}": {
+      "get": {
+        "summary": "One of the customer\u2019s own parcels",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "parcel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The parcel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parcel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such parcel, or it belongs to another customer"
+          }
+        }
+      }
+    },
+    "/parcels/track/{tracking_code}": {
+      "get": {
+        "summary": "Public tracking: the status only",
+        "parameters": [
+          {
+            "name": "tracking_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tracking"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No parcel with that tracking code"
+          }
+        }
+      }
+    },
+    "/payments": {
+      "post": {
+        "summary": "Pay for a booked parcel with a payment provider token",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Payment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Paid"
+          }
+        }
+      }
+    },
+    "/assistant/messages": {
+      "post": {
+        "summary": "Ask the support assistant about a parcel",
+        "operationId": "askAssistant",
+        "tags": [
+          "assistant"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Question"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The assistant's reply",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such parcel for this customer"
+          }
+        }
+      }
+    }
+  }
+}

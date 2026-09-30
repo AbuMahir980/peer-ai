@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--colour-text);
+  background: var(--colour-surface);
+}
+
+.plants {
+  display: grid;
+  gap: var(--space-md);
+  padding: 0;
+  list-style: none;
+}
+
+.muted { color: #b8b8b8; }
+
+.card {
+  padding: var(--space-md);
+  border-radius: 12px;
+}

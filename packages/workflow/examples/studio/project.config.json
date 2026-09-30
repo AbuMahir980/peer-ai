@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schemas/config.schema.json",
+  "extends": "./base.config.json",
+  "version": 1,
+  "project": { "name": "Studio Storefront", "stage": "mvp" },
+  "tracks": [{ "id": "web", "kind": "web", "stack": ["typescript", "react"], "status": "active" }],
+  "standards": { "profiles": ["typescript", "react"] }
+}

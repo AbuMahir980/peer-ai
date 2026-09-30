@@ -1,0 +1,1002 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "extends": {
+      "description": "A shared base config to inherit, as a path or package name. The project's values win; objects merge key by key and lists are replaced.",
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "description": "How strict the gates are: prototype asks for the essentials only, production for everything. Defaults to mvp.",
+          "type": "string",
+          "enum": [
+            "prototype",
+            "mvp",
+            "production"
+          ]
+        },
+        "origin": {
+          "description": "new: nothing is built yet. existing: code or docs already exist; Peer AI reads them first and never overwrites them. Detected when omitted.",
+          "type": "string",
+          "enum": [
+            "new",
+            "existing"
+          ]
+        },
+        "team": {
+          "description": "solo: nobody else reviews, so no second reviewer is asked for. Defaults to solo.",
+          "type": "string",
+          "enum": [
+            "solo",
+            "team"
+          ]
+        },
+        "traits": {
+          "description": "What the product is or does that switches on extra rules: money, safety-critical data, several apps or tenants on one backend, offline use, live connections, uploads, AI features.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "money",
+              "safety-critical",
+              "several-audiences",
+              "offline",
+              "real-time",
+              "uploads",
+              "ai-features"
+            ]
+          }
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "tools": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "claude-code",
+          "codex",
+          "cursor",
+          "copilot",
+          "gemini-cli",
+          "other"
+        ]
+      }
+    },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "description": "Commit the skills peer-ai render writes, for AI tools that can't run a setup step first. Defaults to false: they're rebuilt from the installed version and left out of git, and each tool's setup step writes them.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "design": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "exists",
+            "to-be-produced",
+            "none"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A path relative to the project root, or a URL."
+        },
+        "tokens": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A path relative to the project root, or a URL."
+        },
+        "authoritative": {
+          "description": "When true, layouts, spacing, type and colour are implemented exactly; nothing is invented.",
+          "type": "boolean"
+        },
+        "stopAfterSpecify": {
+          "description": "Designs are made outside the session from the specs; work waits after Specify until they land.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "tracks": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "web",
+              "mobile",
+              "desktop",
+              "backend",
+              "infrastructure",
+              "library",
+              "cli",
+              "data",
+              "extension",
+              "embedded",
+              "other"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A path relative to the project root, or a URL."
+          },
+          "repo": {
+            "description": "For an external track: the repository it lives in, such as acme/platform-api.",
+            "type": "string",
+            "minLength": 1
+          },
+          "stack": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "architecture": {
+            "description": "The architecture style, such as layered, modular-monolith, microservice, hexagonal, feature-first or mvvm. The project's architecture decisions are the source of truth; this label tells reviews and stack profiles what shape to expect.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "targets": {
+            "description": "Platforms this track ships to, such as ios, android, web, macos or chrome.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+            }
+          },
+          "uses": {
+            "description": "Tracks whose code this track shares, such as a core library. A change to one verifies both.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+            }
+          },
+          "consumes": {
+            "description": "Ids of the APIs this track calls.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+            }
+          },
+          "branch": {
+            "description": "The track's long-lived integration branch, when it has one. Work item branches start from it.",
+            "type": "string",
+            "minLength": 1
+          },
+          "deploy": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+                "description": "Where it runs, such as vercel, fly, aws-ecs, app-store or play-store."
+              },
+              "environments": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+                }
+              }
+            },
+            "required": [
+              "target"
+            ],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "dormant",
+              "frozen",
+              "retiring",
+              "external"
+            ],
+            "description": "active: being built or changed. dormant: not started; its activities do not run. frozen: it exists and is documented, not redesigned. retiring: being replaced; its behaviour is the reference until then. external: it lives in another repository and is read here, never changed."
+          },
+          "replacedBy": {
+            "description": "For a retiring track: the tracks replacing it.",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+            }
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "apis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "http",
+              "graphql",
+              "rpc",
+              "websocket",
+              "events",
+              "in-process",
+              "package",
+              "cli"
+            ],
+            "description": "in-process: an interface inside the app, such as a repository over local storage. package and cli: the public surface of a library or a command-line tool."
+          },
+          "providedBy": {
+            "description": "The track that provides this API. Omit it for a third-party or hosted service.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "contract": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "handwritten",
+                  "openapi",
+                  "asyncapi",
+                  "graphql-schema",
+                  "protobuf",
+                  "types",
+                  "docs"
+                ],
+                "description": "Where the contract comes from. A generated source is the truth; any contract document is derived from it."
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A path relative to the project root, or a URL."
+              },
+              "checkDrift": {
+                "description": "Fail CI when the derived contract document no longer matches its source.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "environments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "production": {
+            "type": "boolean"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "repo": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "enum": [
+            "github",
+            "gitlab",
+            "bitbucket",
+            "azure-devops",
+            "other"
+          ]
+        },
+        "remote": {
+          "description": "The git remote, such as origin, or null for a local-only repo.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "defaultBranch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "branchNaming": {
+          "description": "A pattern such as feature/{ticket}-{slug}.",
+          "type": "string",
+          "minLength": 1
+        },
+        "commits": {
+          "type": "string",
+          "enum": [
+            "conventional",
+            "ticket-prefix",
+            "free"
+          ]
+        },
+        "mergePolicy": {
+          "description": "pull-request is required once branch protection is on. local-merge suits only a solo, unprotected repo.",
+          "type": "string",
+          "enum": [
+            "pull-request",
+            "local-merge"
+          ]
+        },
+        "pushEachCommit": {
+          "description": "Push every commit as it lands, for repos whose remote is the backup.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tracker": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "none",
+            "github",
+            "gitlab",
+            "linear",
+            "jira",
+            "other"
+          ]
+        },
+        "ticketPrefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "project": {
+          "description": "The repo slug, project key or URL.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "commands": {
+      "type": "object",
+      "properties": {
+        "verify": {
+          "description": "Run before any work item is called done. null or omitted means none yet; creating one is the first build item.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "test": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "delivery": {
+      "type": "object",
+      "properties": {
+        "ci": {
+          "type": "string",
+          "enum": [
+            "none",
+            "existing"
+          ],
+          "description": "existing: extend the project's pipeline. A second, parallel pipeline is never added."
+        },
+        "pipeline": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A path relative to the project root, or a URL."
+        }
+      },
+      "required": [
+        "ci"
+      ],
+      "additionalProperties": false
+    },
+    "standards": {
+      "type": "object",
+      "properties": {
+        "core": {
+          "description": "Apply Peer AI's core principles. Defaults to true.",
+          "type": "boolean"
+        },
+        "profiles": {
+          "description": "Stack profiles, such as react, express or python-fastapi.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          }
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A path relative to the project root, or a URL."
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "addendum",
+                  "checklist"
+                ]
+              },
+              "scope": {
+                "description": "Track ids this document governs. Omit for the whole project.",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+                }
+              }
+            },
+            "required": [
+              "path",
+              "role"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "precedence": {
+          "description": "Which side wins a conflict. Defaults to project: the project's own documents win.",
+          "type": "string",
+          "enum": [
+            "project",
+            "core"
+          ]
+        },
+        "onExisting": {
+          "description": "What the Standards activity does with existing documents: map each rule to its enforcer, or revise the documents.",
+          "type": "string",
+          "enum": [
+            "map",
+            "revise"
+          ]
+        },
+        "overrides": {
+          "description": "A rule's default changed for this project, such as a larger component size limit, with the reason.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*-\\d{2,}$",
+            "description": "A standards rule id, such as SEC-07."
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                ],
+                "description": "The project's value in place of the profile's default."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "value",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "exceptions": {
+          "description": "Rules this project sets aside, each with a reason and who decided. peer-ai doctor lists them all.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rule": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]*-\\d{2,}$",
+                "description": "A standards rule id, such as SEC-07."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "decidedBy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The person who decided to set the rule aside."
+              },
+              "until": {
+                "description": "When the exception ends, if it's temporary.",
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              }
+            },
+            "required": [
+              "rule",
+              "reason",
+              "decidedBy"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "compliance": {
+      "type": "object",
+      "properties": {
+        "jurisdictions": {
+          "description": "Where the product operates or has users.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^([A-Z]{2}(-[A-Z0-9]{1,3})?|[a-z][a-z0-9]*(-[a-z0-9]+)*)$"
+          }
+        },
+        "industries": {
+          "description": "Such as payments, health, food or maritime.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          }
+        },
+        "packs": {
+          "description": "Rule packs to apply: laws, industry standards, religious or cultural standards, labelling rules, platform policies. peer-ai assess suggests them from the jurisdictions, industries and data it finds.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          }
+        },
+        "dataInventory": {
+          "description": "Where the inventory of personal and sensitive data fields lives.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "rules": {
+      "description": "Project rules every activity respects, wherever they are written, such as a contributing guide.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A path relative to the project root, or a URL."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "models": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": [
+            "none",
+            "tiers",
+            "pinned"
+          ],
+          "description": "none: no model guidance. tiers: Peer AI's tier per activity. pinned: the models named here."
+        },
+        "default": {
+          "type": "string",
+          "minLength": 1
+        },
+        "byActivity": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "understand",
+              "architect",
+              "specify",
+              "contract",
+              "standards",
+              "delivery-setup",
+              "plan",
+              "build",
+              "verify",
+              "test",
+              "ship",
+              "operate",
+              "document",
+              "retro"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ifUnavailable": {
+          "description": "What to do when a pinned model is not offered. Never a weaker model for a gate.",
+          "type": "string",
+          "enum": [
+            "most-capable",
+            "ask"
+          ]
+        }
+      },
+      "required": [
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "gates": {
+      "type": "object",
+      "properties": {
+        "blockOn": {
+          "description": "The lowest open finding severity that blocks a merge. Defaults to critical.",
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "requirements-analysis",
+          "product-spec",
+          "architecture",
+          "system-design",
+          "api-design",
+          "data-modelling",
+          "threat-model",
+          "design-system",
+          "issue-planning",
+          "implement-ticket",
+          "code-review",
+          "security-review",
+          "contract-check",
+          "accessibility-review",
+          "design-review",
+          "performance-review",
+          "reliability-review",
+          "data-migration-review",
+          "dependency-review",
+          "compliance-review",
+          "test-strategy",
+          "qa-acceptance",
+          "ai-feature-review",
+          "release-readiness",
+          "infrastructure-review",
+          "observability-review",
+          "incident-response",
+          "documentation",
+          "tech-debt-triage"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "also": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(\\/[a-z0-9-]+|[a-z0-9-]+:[a-z0-9-]+)$",
+              "description": "An extra skill that feeds Peer AI's own: plugin:skill, or /command for a tool's built-in command."
+            }
+          },
+          "checklists": {
+            "description": "Project checklists the skill works through as well as its own rules.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A path relative to the project root, or a URL."
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "activities": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "understand",
+          "architect",
+          "specify",
+          "contract",
+          "standards",
+          "delivery-setup",
+          "plan",
+          "build",
+          "verify",
+          "test",
+          "ship",
+          "operate",
+          "document",
+          "retro"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "inputs": {
+            "description": "Read these before anything else, and before asking the user anything.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A path relative to the project root, or a URL."
+            }
+          },
+          "notes": {
+            "description": "Project-specific instructions for this activity.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "reviews": {
+            "type": "object",
+            "properties": {
+              "require": {
+                "description": "Reviews every change needs, beyond the ones Peer AI works out from what it touched.",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "requirements-analysis",
+                    "product-spec",
+                    "architecture",
+                    "system-design",
+                    "api-design",
+                    "data-modelling",
+                    "threat-model",
+                    "design-system",
+                    "issue-planning",
+                    "implement-ticket",
+                    "code-review",
+                    "security-review",
+                    "contract-check",
+                    "accessibility-review",
+                    "design-review",
+                    "performance-review",
+                    "reliability-review",
+                    "data-migration-review",
+                    "dependency-review",
+                    "compliance-review",
+                    "test-strategy",
+                    "qa-acceptance",
+                    "ai-feature-review",
+                    "release-readiness",
+                    "infrastructure-review",
+                    "observability-review",
+                    "incident-response",
+                    "documentation",
+                    "tech-debt-triage"
+                  ]
+                }
+              },
+              "skip": {
+                "description": "Reviews this project doesn't need, each with the reason.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "skill": {
+                      "type": "string",
+                      "enum": [
+                        "requirements-analysis",
+                        "product-spec",
+                        "architecture",
+                        "system-design",
+                        "api-design",
+                        "data-modelling",
+                        "threat-model",
+                        "design-system",
+                        "issue-planning",
+                        "implement-ticket",
+                        "code-review",
+                        "security-review",
+                        "contract-check",
+                        "accessibility-review",
+                        "design-review",
+                        "performance-review",
+                        "reliability-review",
+                        "data-migration-review",
+                        "dependency-review",
+                        "compliance-review",
+                        "test-strategy",
+                        "qa-acceptance",
+                        "ai-feature-review",
+                        "release-readiness",
+                        "infrastructure-review",
+                        "observability-review",
+                        "incident-response",
+                        "documentation",
+                        "tech-debt-triage"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "skill",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false,
+            "description": "For verify: add to or remove from the reviews each change needs (RFC 0004)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "docs": {
+      "type": "object",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A path relative to the project root, or a URL."
+        },
+        "preserveStructure": {
+          "description": "Add to the existing docs; never reorganise them.",
+          "type": "boolean"
+        },
+        "backlog": {
+          "description": "Where ideas outside the agreed scope go, instead of becoming work items.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "project",
+    "tracks"
+  ],
+  "additionalProperties": false,
+  "title": "Peer AI project config",
+  "description": "peer-ai.config.json: a project's settings, shape, standards, rule packs and customisations."
+}

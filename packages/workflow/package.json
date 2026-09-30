@@ -1,0 +1,44 @@
+{
+  "name": "peer-ai-workflow",
+  "version": "1.0.0-next.0",
+  "description": "Peer AI's workflow vocabulary, and the schemas for peer-ai.config.json and project state",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-schemas.ts",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./schemas/*": "./schemas/*"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbuMahir980/peer-ai.git",
+    "directory": "packages/workflow"
+  },
+  "homepage": "https://github.com/AbuMahir980/peer-ai#readme",
+  "bugs": {
+    "url": "https://github.com/AbuMahir980/peer-ai/issues"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peer AI data migration review"
+  short_description: "Migrations and device data checked for anything lost"
+  default_prompt: "Use ${{name}} to review these data changes for anything lost or broken, and record the report."
