@@ -76,6 +76,14 @@ export function formatReport(assessment: Assessment, stage: Stage): string[] {
     for (const { profile, evidence } of assessment.suggestedProfiles) lines.push(`  ${profile}: ${evidence}`);
   }
 
+  if (assessment.suggestedStacks.length > 0) {
+    lines.push("");
+    lines.push(`Stacks to add to tracks in ${CONFIG_FILE}, so each stack profile applies only to the parts it fits:`);
+    for (const { track, stack } of assessment.suggestedStacks) {
+      lines.push(`  ${track}: "stack": ${JSON.stringify(stack)}`);
+    }
+  }
+
   const { personalData, cardData, paymentProviders } = assessment.signals;
   if (personalData.length + cardData.length + paymentProviders.length > 0) {
     lines.push("");

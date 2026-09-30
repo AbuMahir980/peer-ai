@@ -111,6 +111,7 @@ export function createServer(options: ServerOptions): McpServer {
         signals: assessment.signals,
         suggestedTraits: assessment.suggestedTraits,
         suggestedProfiles: assessment.suggestedProfiles,
+        suggestedStacks: assessment.suggestedStacks,
         storedMap:
           stored === undefined
             ? "There is no .peer-ai/map.json yet. Run npx peer-ai assess to write it."

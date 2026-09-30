@@ -434,7 +434,7 @@ describe("doctor on stack profiles", () => {
     expect(checksFor(linked, "enforcers")[0]).toEqual({
       id: "enforcers",
       status: "ok",
-      message: "ESLint uses Peer AI's settings for 8 rules",
+      message: "eslint.config.js uses Peer AI's settings for 8 rules",
     });
   });
 
@@ -455,6 +455,36 @@ describe("doctor on stack profiles", () => {
     });
   });
 
+  it("checks the ESLint config nearest each part, as ESLint finds it", () => {
+    const root = project({
+      "peer-ai.config.json": typed("production", ["typescript"]),
+      "apps/web/eslint.config.js": peerAiEslint,
+      "apps/web/tsconfig.json": strict,
+    });
+    expect(checksFor(root, "enforcers")[0]).toEqual({
+      id: "enforcers",
+      status: "ok",
+      message: "apps/web/eslint.config.js uses Peer AI's settings for 8 rules",
+    });
+  });
+
+  it("reads a tsconfig as TypeScript does: comments, and the files a solution tsconfig references", () => {
+    const vite = project({
+      "peer-ai.config.json": typed("production", ["typescript"]),
+      "eslint.config.js": peerAiEslint,
+      "apps/web/tsconfig.json": json({
+        files: [],
+        references: [{ path: "./tsconfig.app.json" }, { path: "./tsconfig.node.json" }],
+      }),
+      "apps/web/tsconfig.app.json": '{\n  // "strict": false,\n  "compilerOptions": { "strict": true, },\n}\n',
+      "apps/web/tsconfig.node.json": json({ compilerOptions: { module: "nodenext" } }),
+    });
+    expect(checksFor(vite, "enforcers").slice(1)).toMatchObject([
+      { status: "ok", message: "apps/web/tsconfig.app.json sets strict to true (TS-01)" },
+      { status: "fail", message: 'apps/web/tsconfig.node.json doesn\'t say "strict": true, which TS-01 needs.' },
+    ]);
+  });
+
   it("warns about an override for a rule with no value to change", () => {
     const root = project({
       "peer-ai.config.json": typed("mvp", ["typescript"], {
@@ -462,6 +492,7 @@ describe("doctor on stack profiles", () => {
           "TS-02": { value: 1, reason: "Tried to change it" },
           "CODE-07": { value: 1, reason: "Tried to change it" },
           "TS-06": { value: 4, reason: "The booking rules nest deeper" },
+          "TS-07": { value: "80", reason: "Written as text" },
         },
       }),
     });
@@ -469,6 +500,10 @@ describe("doctor on stack profiles", () => {
       { status: "warn", message: "TS-02 has no value to change, so the override does nothing." },
       { status: "warn", message: "CODE-07 has no value to change, so the override does nothing." },
       { status: "ok", message: "TS-06 changed to 4: The booking rules nest deeper" },
+      {
+        status: "warn",
+        message: 'TS-07\'s value is a number, such as 60, so "80" is ignored and the default stays.',
+      },
     ]);
   });
 });
