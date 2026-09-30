@@ -37,7 +37,7 @@ Don't change any code. This is triage: the output is a plan.
 
 ## 2. Inventory
 
-Go through every area in [finding.md](references/finding.md), in order: the code, the tests and checks, what it's built on, the data, secrets and settings, and how it's built and run. Run each check it lists, and note what each found, even when that's nothing. The register lists the areas checked, so a gap shows.
+Go through every area in [finding.md](references/finding.md), in order: the code, the tests and checks, what it's built on, the data, secrets and settings, and how it's built and run. Run each check it lists, and record what each found, one line per check, even when that's nothing. The register lists every check, so a skipped one shows.
 
 For each piece of debt, note:
 
@@ -59,7 +59,7 @@ Give each item a one-line reason for its place, so a person can disagree with th
 ## 5. Plan
 
 - **The top of the list:** each becomes a work item with the peer-ai MCP tool `create_work_item`: a goal, acceptance criteria a reviewer could check, its sources, and the items it depends on. Slice big debt so each item ships on its own, such as one screen moved to the newer code at a time.
-- **The rest:** keep a register at `docs/tech-debt.md`, or update the project's own: the areas checked, then each item with what it is, where, its cost, risk and size, and the date it was found. Keep what people wrote in it before.
+- **The rest:** keep a register at `docs/tech-debt.md`, or update the project's own: each check with what it found, then each item with what it is, where, its cost, risk and size, and the date it was found. Keep what people wrote in it before.
 
 Don't stop to wait for answers. Put each question in the hand-over, with who can answer it.
 
