@@ -105,7 +105,7 @@ describe("building a skill", () => {
   it("generates the rules for the skill's domains, with a table of contents", () => {
     const rules = rulesReference(["security", "privacy-compliance"]);
     expect(rules).toContain(
-      "## Contents\n\n- Security: SEC-01 to SEC-29\n- Privacy and compliance: PRIV-01 to PRIV-06",
+      "## Contents\n\n- Security: SEC-01 to SEC-30\n- Privacy and compliance: PRIV-01 to PRIV-06",
     );
     for (const rule of CORE_RULES.filter((rule) => ["security", "privacy-compliance"].includes(rule.domain))) {
       expect(rules).toContain(`### ${rule.id} ${rule.title}`);
@@ -117,7 +117,7 @@ describe("building a skill", () => {
 
   it("adds single rules from other domains, grouped under their own domain", () => {
     const rules = rulesReference(["security"], ["TEST-08", "PRIV-01"]);
-    expect(rules).toContain("- Security: SEC-01 to SEC-29\n- Privacy and compliance: PRIV-01\n- Testing: TEST-08\n");
+    expect(rules).toContain("- Security: SEC-01 to SEC-30\n- Privacy and compliance: PRIV-01\n- Testing: TEST-08\n");
     expect(rules).toContain("## Testing");
     expect(rules).not.toContain("### TEST-01");
   });

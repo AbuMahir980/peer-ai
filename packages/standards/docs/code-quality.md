@@ -181,3 +181,15 @@ Code gives the right answer at the edges of what it can receive: time zones and 
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Medium | Always | – |
+
+## CODE-16 · The framework's own rules are kept
+
+Where a framework needs code written a certain way to work, such as React's rules for hooks, that way is followed, and checked by a tool where one exists.
+
+**Why:** A framework's rules protect assumptions the types can't see. Breaking one gives bugs that appear far from their cause, often only sometimes.
+
+**Ask:** Does this change break a rule its framework depends on?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Prototype | AI review | Medium | Always | – |

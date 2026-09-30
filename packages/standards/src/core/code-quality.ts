@@ -168,4 +168,15 @@ export const codeQuality = [
     check: "ai-review",
     severity: "medium",
   },
+  {
+    id: "CODE-16",
+    domain: "code-quality",
+    title: "The framework's own rules are kept",
+    rule: "Where a framework needs code written a certain way to work, such as React's rules for hooks, that way is followed, and checked by a tool where one exists.",
+    why: "A framework's rules protect assumptions the types can't see. Breaking one gives bugs that appear far from their cause, often only sometimes.",
+    ask: "Does this change break a rule its framework depends on?",
+    stage: "prototype",
+    check: "ai-review",
+    severity: "medium",
+  },
 ] satisfies RuleInput[];

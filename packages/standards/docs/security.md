@@ -349,3 +349,15 @@ Storage, databases, queues, admin and monitoring pages, internal documentation a
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | MVP | AI review | Critical | Always | [OWASP ASVS 5.0, 13.4.5, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md); [OWASP ASVS 5.0, 13.4.2, level 2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md) |
+
+## SEC-30 · Nothing from outside runs as code or a command
+
+Text is never run as code, such as with eval or by building a function from a string, and a system command never goes through a shell with outside data in it: commands take their arguments as a list.
+
+**Why:** Text that runs as code or as a shell command can do anything the process can: read its secrets, change its data, or take over the machine.
+
+**Ask:** Does this change run text as code, or pass outside data to a shell?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| Prototype | AI review | Critical | Always | [OWASP ASVS 5.0, 1.3.2, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md); [OWASP ASVS 5.0, 1.2.5, level 1](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md) |

@@ -218,7 +218,7 @@ describe("assess", () => {
       "services/api/requirements.txt": "fastapi\n",
     };
     expect(assess(project(parts), undefined, "mvp").suggestedProfiles).toEqual([
-      { profile: "typescript", evidence: "web is tagged typescript" },
+      { profile: "react", evidence: "web is tagged react" },
     ]);
     const listed = project({
       ...parts,
@@ -229,7 +229,7 @@ describe("assess", () => {
           { id: "web", kind: "web", path: "apps/web", status: "active" },
           { id: "api", kind: "backend", path: "services/api", status: "active" },
         ],
-        standards: { profiles: ["typescript"] },
+        standards: { profiles: ["react"] },
       }),
     });
     expect(assess(listed, loadConfig(listed).config, "mvp")).toMatchObject({
@@ -242,7 +242,7 @@ describe("assess", () => {
     const out = capture();
     runAssess({ cwd: project(parts), json: false, dryRun: true, now: NOW }, out, formatReport);
     expect(out.text()).toContain(
-      "Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in peer-ai.config.json:\n  typescript: web is tagged typescript",
+      "Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in peer-ai.config.json:\n  react: web is tagged react",
     );
   });
 

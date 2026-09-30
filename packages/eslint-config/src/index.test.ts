@@ -6,7 +6,7 @@ import { validateConfig, type PeerAiConfig } from "@peer-ai/workflow";
 import { ESLint, type Linter } from "eslint";
 import tseslint from "typescript-eslint";
 import { afterEach, describe, expect, it } from "vitest";
-import peerAi, { configFor, findRoot, pluginOf } from "./index.ts";
+import peerAi, { configFor, eslintName, findRoot, pluginOf } from "./index.ts";
 
 /** A valid config for a made-up bicycle repair booking service. */
 function repairs(extra: { stage?: "prototype" | "mvp" | "production"; standards?: unknown; tracks?: unknown[] } = {}) {
@@ -39,13 +39,13 @@ describe("Peer AI's ESLint settings", () => {
       ],
       ["peer-ai/web/typed", ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"].map((glob) => `apps/web/${glob}`)],
     ]);
-    expect(blocks[1]?.rules).toHaveProperty("@typescript-eslint/no-floating-promises", ["error"]);
+    expect(blocks[1]?.rules).toHaveProperty(["peer-ai-typescript/no-floating-promises"], ["error"]);
   });
 
   it("keep to the project's stage", () => {
     expect(ruleNames(configFor(repairs({ stage: "prototype" }), "/repairs"))).toEqual([
-      "@typescript-eslint/no-explicit-any",
-      "no-empty",
+      "peer-ai-typescript/no-explicit-any",
+      "peer-ai/no-empty",
     ]);
   });
 
@@ -60,8 +60,8 @@ describe("Peer AI's ESLint settings", () => {
       }),
       "/repairs",
     );
-    expect(blocks[0]?.rules?.["max-depth"]).toEqual(["error", { max: 4 }]);
-    expect(ruleNames(blocks)).not.toContain("@typescript-eslint/no-non-null-assertion");
+    expect(blocks[0]?.rules?.["peer-ai/max-depth"]).toEqual(["error", { max: 4 }]);
+    expect(ruleNames(blocks)).not.toContain("peer-ai-typescript/no-non-null-assertion");
   });
 
   it("give a part with no path the whole repository, and nothing without profiles", () => {
@@ -90,10 +90,13 @@ describe("Peer AI's ESLint settings", () => {
     ]);
   });
 
-  it("name each rule's plugin by its prefix", () => {
+  it("name each rule's plugin by its prefix, and run it under a name Peer AI owns", () => {
     expect(pluginOf("@typescript-eslint/no-explicit-any")).toBe("@typescript-eslint");
     expect(pluginOf("react-hooks/rules-of-hooks")).toBe("react-hooks");
     expect(pluginOf("max-depth")).toBeUndefined();
+    expect(eslintName("jsx-a11y/alt-text")).toBe("peer-ai-jsx-a11y/alt-text");
+    expect(eslintName("@next/next/no-img-element")).toBe("peer-ai-next/no-img-element");
+    expect(eslintName("max-depth")).toBe("peer-ai/max-depth");
   });
 });
 
@@ -138,7 +141,14 @@ describe("every rule ESLint enforces, run through ESLint", () => {
     writeFileSync(
       join(dir, "tsconfig.json"),
       JSON.stringify({
-        compilerOptions: { strict: true, target: "es2022", module: "esnext", moduleResolution: "bundler", types: [] },
+        compilerOptions: {
+          strict: true,
+          target: "es2022",
+          module: "esnext",
+          moduleResolution: "bundler",
+          jsx: "react-jsx",
+          types: [],
+        },
         include: ["*.ts", "*.tsx"],
       }),
     );
@@ -167,6 +177,34 @@ describe("every rule ESLint enforces, run through ESLint", () => {
     expect(result?.messages).toEqual([]);
   });
 
+  it("sit beside a project's own plugins and settings, whatever they are", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-eslint-"));
+    dirs.push(dir);
+    writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, jsx: "react-jsx" } }));
+    const config = repairs({
+      stage: "production",
+      tracks: [{ id: "app", kind: "mobile", status: "active", stack: ["typescript", "expo"] }],
+      standards: { profiles: ["react-native"] },
+    });
+    // Another package under jsx-a11y, as eslint-config-next registers, and the project's own list.
+    const own: Linter.Config[] = [
+      { plugins: { "jsx-a11y": { rules: {} } } },
+      { rules: { "no-restricted-syntax": ["error", "WithStatement"] } },
+    ];
+    const eslint = new ESLint({
+      cwd: dir,
+      overrideConfigFile: true,
+      overrideConfig: [...configFor(config, dir), ...own],
+    });
+    const code =
+      'import { Text } from "react-native";\nexport const Price = () => <Text allowFontScaling={false}>£45</Text>;\n';
+    writeFileSync(join(dir, "price.tsx"), code);
+    const [result] = await eslint.lintText(code, { filePath: join(dir, "price.tsx") });
+    expect(result?.messages.map((message) => message.ruleId ?? message.message)).toContain(
+      "peer-ai/no-restricted-syntax",
+    );
+  });
+
   const enforced = PROFILES.flatMap((profile) =>
     profile.rules.filter((rule) => rule.enforcer?.tool === "eslint").map((rule) => [rule.id, profile, rule] as const),
   );
@@ -177,12 +215,13 @@ describe("every rule ESLint enforces, run through ESLint", () => {
       if (rule.enforcer?.tool !== "eslint" || rule.examples === undefined) throw new Error("not an ESLint rule");
       const { file, fails, passes } = rule.examples;
       const value = rule.default?.value;
-      expect(await lint(profile, file, text(fails, value))).toContain(rule.enforcer.rule);
+      const name = eslintName(rule.enforcer.rule);
+      expect(await lint(profile, file, text(fails, value))).toContain(name);
       expect(await lint(profile, file, text(passes, value))).toEqual([]);
       if (typeof value === "number") {
         const changed = { [rule.id]: { value: value + 2, reason: "A made-up project's choice." } };
         expect(await lint(profile, file, text(fails, value), changed)).toEqual([]);
-        expect(await lint(profile, file, text(fails, value + 2), changed)).toContain(rule.enforcer.rule);
+        expect(await lint(profile, file, text(fails, value + 2), changed)).toContain(name);
       }
     },
     60_000,
