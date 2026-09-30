@@ -35,7 +35,7 @@ Nothing changes in what `doctor` checks, or in what it marks a failure or a warn
       {
         "check": "enforcers",
         "status": "fail",
-        "message": "web/eslint.config.js doesn't spread @peer-ai/eslint-config, so ESLint doesn't enforce the react profile.",
+        "message": "web/eslint.config.js doesn't spread peer-ai-eslint-config, so ESLint doesn't enforce the react profile.",
         "fix": "Add ...peerAi() to the array eslint.config.js exports."
       }
     ]

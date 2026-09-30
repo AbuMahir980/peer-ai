@@ -1,5 +1,5 @@
 {
-  "name": "@peer-ai/standards",
+  "name": "peer-ai-standards",
   "version": "0.0.0",
   "private": true,
   "description": "Peer AI's engineering standards: 197 rules for every project, and stack profiles with the tools that enforce them",
@@ -13,7 +13,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@peer-ai/workflow": "workspace:*",
+    "peer-ai-workflow": "workspace:*",
     "zod": "4.6.5"
   },
   "engines": {

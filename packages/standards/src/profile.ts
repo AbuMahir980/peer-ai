@@ -1,4 +1,4 @@
-import { CHECKS, SEVERITIES, TRAITS, type Trait } from "@peer-ai/workflow";
+import { CHECKS, SEVERITIES, TRAITS, type Trait } from "peer-ai-workflow";
 import { z } from "zod";
 import { SourceSchema, STAGES, traitsNeeded, type Rule, type Stage } from "./rule.ts";
 

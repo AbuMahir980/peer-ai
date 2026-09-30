@@ -1,13 +1,13 @@
 // Builds a skill from its source folder into the files a tool reads. A skill's own files are kept
 // as they are, and three kinds of reference are generated so they can never drift:
-// - rules.md, from @peer-ai/standards: the domains in metadata.peer-ai-domains, and single rules from
+// - rules.md, from peer-ai-standards: the domains in metadata.peer-ai-domains, and single rules from
 //   other domains in metadata.peer-ai-rules;
 // - severity.md and report.md, shared by every review skill, from shared/.
 // The skill is written under the name the caller chooses, and openai.yaml's {{name}} is filled in.
 
 import { readFileSync } from "node:fs";
-import { CORE_RULES, DOMAIN_INFO, type Rule } from "@peer-ai/standards";
-import { DOMAIN_IDS, SKILL_KINDS, type DomainId, type SkillId } from "@peer-ai/workflow";
+import { CORE_RULES, DOMAIN_INFO, type Rule } from "peer-ai-standards";
+import { DOMAIN_IDS, SKILL_KINDS, type DomainId, type SkillId } from "peer-ai-workflow";
 import { parseSkillMd, type SkillFiles } from "./skill.ts";
 
 const SHARED = new URL("../shared/", import.meta.url);
@@ -93,7 +93,7 @@ export function rulesReference(domains: DomainId[], extra: string[] = []): strin
   const lines = [
     "# Rules",
     "",
-    "Generated from @peer-ai/standards. The peer-ai MCP tool `standards_for_file` returns the rules that apply to a file, filtered by the project's stage and traits, with its stack profile's and add-on's rules too. Use this list to understand a rule; use the tool to know which apply.",
+    "Generated from peer-ai-standards. The peer-ai MCP tool `standards_for_file` returns the rules that apply to a file, filtered by the project's stage and traits, with its stack profile's and add-on's rules too. Use this list to understand a rule; use the tool to know which apply.",
     "",
     "## Contents",
     "",

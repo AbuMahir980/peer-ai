@@ -108,10 +108,10 @@ check(
 // typescript-eslint installed beside them as their peers.
 writeFileSync(
   join(project, "eslint-check.mjs"),
-  'const { default: peerAi } = await import("@peer-ai/eslint-config");\nconsole.log(typeof peerAi);\n',
+  'const { default: peerAi } = await import("peer-ai-eslint-config");\nconsole.log(typeof peerAi);\n',
 );
 check(
-  "@peer-ai/eslint-config loads",
+  "peer-ai-eslint-config loads",
   execFileSync(process.execPath, ["eslint-check.mjs"], { cwd: project, encoding: "utf8" }).trim() === "function",
 );
 

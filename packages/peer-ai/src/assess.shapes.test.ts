@@ -1,4 +1,4 @@
-// assess on every project shape Peer AI supports. Each example config in @peer-ai/workflow is one
+// assess on every project shape Peer AI supports. Each example config in peer-ai-workflow is one
 // shape; this checks that assess reads it the way that shape means, so a change that breaks one
 // fails here before it reaches a real project.
 

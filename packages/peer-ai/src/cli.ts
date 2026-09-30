@@ -6,7 +6,7 @@ import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { CLI_COMMAND_IDS, TOOL_IDS, type CliCommandId, type ToolId } from "@peer-ai/workflow";
+import { CLI_COMMAND_IDS, TOOL_IDS, type CliCommandId, type ToolId } from "peer-ai-workflow";
 import { runAssess } from "./assess.ts";
 import { runCheck } from "./check.ts";
 import { runCheckDocument } from "./document.ts";

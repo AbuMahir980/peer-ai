@@ -2,8 +2,8 @@
 // a package, so render writes them to .peer-ai/enforce/ruff.toml and the project's own Ruff
 // settings extend it. Every automatic rule Ruff enforces is selected, with the project's values.
 
-import { profileRulesFor, type AppliedRule } from "@peer-ai/standards";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import { profileRulesFor, type AppliedRule } from "peer-ai-standards";
+import type { PeerAiConfig } from "peer-ai-workflow";
 import { stringify } from "smol-toml";
 
 export const RUFF_FILE = ".peer-ai/enforce/ruff.toml";

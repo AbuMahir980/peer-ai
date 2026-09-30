@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { availableSkills, skillRuleIds } from "@peer-ai/skills";
-import { SKILL_IDS, WorkItemSchema, validateReport, type ReviewReport } from "@peer-ai/workflow";
+import { availableSkills, skillRuleIds } from "peer-ai-skills";
+import { SKILL_IDS, WorkItemSchema, validateReport, type ReviewReport } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   DOCUMENT_RESULTS,

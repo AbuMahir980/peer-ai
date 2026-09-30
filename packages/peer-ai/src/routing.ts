@@ -3,14 +3,8 @@
 // Only skills that exist are named or required; the rest follow as they're written.
 
 import { execFileSync } from "node:child_process";
-import { availableSkills, renderedName } from "@peer-ai/skills";
-import {
-  MAP_ITEM_SKILLS,
-  type KnownMapItemId,
-  type PeerAiConfig,
-  type SkillId,
-  type WorkItem,
-} from "@peer-ai/workflow";
+import { availableSkills, renderedName } from "peer-ai-skills";
+import { MAP_ITEM_SKILLS, type KnownMapItemId, type PeerAiConfig, type SkillId, type WorkItem } from "peer-ai-workflow";
 import {
   INFRASTRUCTURE_AS_CODE,
   MANIFEST,

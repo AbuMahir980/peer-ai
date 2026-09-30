@@ -11,8 +11,8 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { profileRulesFor, type AppliedRule } from "@peer-ai/standards";
-import { CONFIG_FILE, readConfig, type PeerAiConfig } from "@peer-ai/workflow";
+import { profileRulesFor, type AppliedRule } from "peer-ai-standards";
+import { CONFIG_FILE, readConfig, type PeerAiConfig } from "peer-ai-workflow";
 import type { ESLint, Linter, Rule } from "eslint";
 import { builtinRules } from "eslint/use-at-your-own-risk";
 import tseslint from "typescript-eslint";
@@ -222,7 +222,7 @@ export function findRoot(start: string): string {
  * Peer AI's ESLint settings for the project, read from its peer-ai.config.json, found from the
  * folder ESLint runs in, or up. Spread them into eslint.config.js, before your own settings:
  *
- *     import peerAi from "@peer-ai/eslint-config";
+ *     import peerAi from "peer-ai-eslint-config";
  *     export default [...peerAi(), ...yourOwnSettings];
  */
 export default function peerAi(options: { root?: string } = {}): Linter.Config[] {

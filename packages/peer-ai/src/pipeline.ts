@@ -8,8 +8,8 @@
 // rules a job covers appear only in its steps.
 
 import { createHash } from "node:crypto";
-import { PROFILES, profileRulesFor, type PipelineJob } from "@peer-ai/standards";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import { PROFILES, profileRulesFor, type PipelineJob } from "peer-ai-standards";
+import type { PeerAiConfig } from "peer-ai-workflow";
 
 export const WORKFLOW_FILE = ".github/workflows/peer-ai-security.yml";
 

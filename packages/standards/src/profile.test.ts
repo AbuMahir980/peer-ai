@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DOMAINS } from "@peer-ai/workflow";
+import { DOMAINS } from "peer-ai-workflow";
 import ts from "typescript";
 import { afterEach, describe, expect, it } from "vitest";
 import { CORE_RULES, PROFILES, profileRulesFor, profilesForPart, type ProfileInput } from "./index.ts";
@@ -35,7 +35,7 @@ const profileInput = (id: string, prefix: string, extra: Partial<ProfileInput> =
 
 describe("stack profiles", () => {
   it("enforce every automatic rule with a tool whose examples the tests run", () => {
-    // The compiler's rules are run below, ESLint's in @peer-ai/eslint-config, Ruff's in the CLI,
+    // The compiler's rules are run below, ESLint's in peer-ai-eslint-config, Ruff's in the CLI,
     // and the pipeline's by scripts/pipeline-proof.ts in CI. A rule for any other tool needs its own
     // run before it ships.
     const tools = PROFILES.flatMap((profile) => profile.rules).map((each) => each.enforcer?.tool);

@@ -3,8 +3,8 @@
 // for these before editing a file, instead of loading every rule on every turn.
 
 import { isAbsolute, relative } from "node:path";
-import { PROFILES, profileRulesFor, rulesFor, type Rule, type Value } from "@peer-ai/standards";
-import { DOMAIN_IDS, type DomainId, type PeerAiConfig } from "@peer-ai/workflow";
+import { PROFILES, profileRulesFor, rulesFor, type Rule, type Value } from "peer-ai-standards";
+import { DOMAIN_IDS, type DomainId, type PeerAiConfig } from "peer-ai-workflow";
 
 type ConfigTrack = PeerAiConfig["tracks"][number];
 

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { CORE_RULES } from "@peer-ai/standards";
-import { DOMAINS, ReviewReportSchema, SEVERITIES, SKILL_IDS, SKILL_KINDS, deriveResult } from "@peer-ai/workflow";
+import { CORE_RULES } from "peer-ai-standards";
+import { DOMAINS, ReviewReportSchema, SEVERITIES, SKILL_IDS, SKILL_KINDS, deriveResult } from "peer-ai-workflow";
 import { describe, expect, it } from "vitest";
 import {
   LIMITS,

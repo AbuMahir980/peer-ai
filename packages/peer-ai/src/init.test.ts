@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { validateConfig } from "@peer-ai/workflow";
+import { validateConfig } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { runInit, type InitOptions } from "./init.ts";
 import { capture, cleanUp, project, scripted } from "./test-helpers.ts";

@@ -1,4 +1,4 @@
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import type { PeerAiConfig } from "peer-ai-workflow";
 import { describe, expect, it } from "vitest";
 import {
   JOBS,

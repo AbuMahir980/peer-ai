@@ -1,4 +1,4 @@
-import type { DomainId } from "@peer-ai/workflow";
+import type { DomainId } from "peer-ai-workflow";
 
 /** Each domain's name and what it covers, in plain words, for the generated pages. */
 export const DOMAIN_INFO: Record<DomainId, { title: string; about: string }> = {

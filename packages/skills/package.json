@@ -1,5 +1,5 @@
 {
-  "name": "@peer-ai/skills",
+  "name": "peer-ai-skills",
   "version": "0.0.0",
   "private": true,
   "description": "Peer AI's skills, in the Agent Skills format: each one does the work and proves what it checked",
@@ -14,8 +14,8 @@
     "skills"
   ],
   "dependencies": {
-    "@peer-ai/standards": "workspace:*",
-    "@peer-ai/workflow": "workspace:*",
+    "peer-ai-standards": "workspace:*",
+    "peer-ai-workflow": "workspace:*",
     "yaml": "2.9.1"
   },
   "engines": {

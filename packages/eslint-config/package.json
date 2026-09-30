@@ -1,5 +1,5 @@
 {
-  "name": "@peer-ai/eslint-config",
+  "name": "peer-ai-eslint-config",
   "version": "0.0.0",
   "private": true,
   "description": "ESLint settings for the stack profiles a project lists in peer-ai.config.json",
@@ -9,8 +9,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@peer-ai/standards": "workspace:*",
-    "@peer-ai/workflow": "workspace:*"
+    "peer-ai-standards": "workspace:*",
+    "peer-ai-workflow": "workspace:*"
   },
   "peerDependencies": {
     "@next/eslint-plugin-next": "^15.0.0 || ^16.0.0",

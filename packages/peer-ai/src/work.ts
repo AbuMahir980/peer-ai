@@ -6,7 +6,7 @@
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
-import { availableSkills, skillRuleIds } from "@peer-ai/skills";
+import { availableSkills, skillRuleIds } from "peer-ai-skills";
 import {
   SKILL_IDS,
   deriveResult,
@@ -19,7 +19,7 @@ import {
   type ReviewResult,
   type SkillId,
   type WorkItem,
-} from "@peer-ai/workflow";
+} from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
 import { CONFIG_FILE } from "./detect.ts";

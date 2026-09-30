@@ -1,6 +1,6 @@
 # Peer AI standards
 
-Generated from the rules in `src/core/`. Don't edit these pages by hand: change a rule, then run `pnpm --filter @peer-ai/standards generate`.
+Generated from the rules in `src/core/`. Don't edit these pages by hand: change a rule, then run `pnpm --filter peer-ai-standards generate`.
 
 Every rule has an id, the rule in plain words, why it matters, a question a reviewer can answer, the stage it applies from, how it's checked and how serious breaking it usually is. The design is in [RFC 0003](../../../rfcs/0003-how-a-standard-is-written.md).
 

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { DOMAIN_IDS } from "@peer-ai/workflow";
+import { DOMAIN_IDS } from "peer-ai-workflow";
 import { describe, expect, it } from "vitest";
 import { CORE_RULES, DOMAIN_INFO, checkRules, rulesFor, traitsNeeded, type RuleInput } from "./index.ts";
 

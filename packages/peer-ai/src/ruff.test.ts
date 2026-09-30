@@ -1,6 +1,6 @@
 import { PositionEncoding, Workspace } from "@astral-sh/ruff-wasm-nodejs";
-import { PROFILES, profileRulesFor, type Example, type Value } from "@peer-ai/standards";
-import type { PeerAiConfig } from "@peer-ai/workflow";
+import { PROFILES, profileRulesFor, type Example, type Value } from "peer-ai-standards";
+import type { PeerAiConfig } from "peer-ai-workflow";
 import { parse } from "smol-toml";
 import { describe, expect, it } from "vitest";
 import { ruffFile, ruffSettings, toToml } from "./ruff.ts";

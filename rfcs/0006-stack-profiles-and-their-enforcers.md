@@ -8,7 +8,7 @@
 
 ## Summary
 
-A stack profile becomes data in `@peer-ai/standards`, like the core: each of its rules names the core rule it carries out, the stacks and architectures it applies to, any number a project may change, and, for an automatic check, the tool setting that enforces it. Peer AI ships the settings for those tools: a shared ESLint configuration to extend, and files `peer-ai render` writes for tools that can't extend a package. Every automatic rule comes with an example that must fail and one that must pass, and the tests run the real tool on both. The first profiles are TypeScript, Node, React, React Native, Next.js, Express, NestJS, Fastify, Python, FastAPI, and a pipeline profile for GitHub Actions.
+A stack profile becomes data in `peer-ai-standards`, like the core: each of its rules names the core rule it carries out, the stacks and architectures it applies to, any number a project may change, and, for an automatic check, the tool setting that enforces it. Peer AI ships the settings for those tools: a shared ESLint configuration to extend, and files `peer-ai render` writes for tools that can't extend a package. Every automatic rule comes with an example that must fail and one that must pass, and the tests run the real tool on both. The first profiles are TypeScript, Node, React, React Native, Next.js, Express, NestJS, Fastify, Python, FastAPI, and a pipeline profile for GitHub Actions.
 
 ## Motivation
 
@@ -57,11 +57,11 @@ A profile rule's id uses its prefix, such as `REACT-03`, and is never reused, li
 
 ### 3. Tool settings, shipped and proven
 
-**Shared configurations, where a tool can extend one.** A new package, `@peer-ai/eslint-config`, exports a function that reads `peer-ai.config.json` and returns the ESLint settings for the project's profiles, with its overrides applied:
+**Shared configurations, where a tool can extend one.** A new package, `peer-ai-eslint-config`, exports a function that reads `peer-ai.config.json` and returns the ESLint settings for the project's profiles, with its overrides applied:
 
 ```js
 // eslint.config.js
-import peerAi from "@peer-ai/eslint-config";
+import peerAi from "peer-ai-eslint-config";
 export default [...peerAi(), /* the project's own settings */];
 ```
 
@@ -104,7 +104,7 @@ Node's backend profiles are written as fully as FastAPI's. Other stacks follow t
 
 ## Compatibility
 
-Minor, while Peer AI is `0.x`. The config gains nothing: `standards.profiles` and `standards.overrides` exist. New: the profile data and its generated pages, the `@peer-ai/eslint-config` package, the files render writes under `.peer-ai/enforce/` and the pipeline workflow, doctor's new checks, and profile rules in what `standards_for_file` returns. A project using Peer AI today gets suggestions and warnings, never a changed file of its own.
+Minor, while Peer AI is `0.x`. The config gains nothing: `standards.profiles` and `standards.overrides` exist. New: the profile data and its generated pages, the `peer-ai-eslint-config` package, the files render writes under `.peer-ai/enforce/` and the pipeline workflow, doctor's new checks, and profile rules in what `standards_for_file` returns. A project using Peer AI today gets suggestions and warnings, never a changed file of its own.
 
 ## Drawbacks
 

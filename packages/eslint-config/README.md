@@ -1,10 +1,10 @@
-# @peer-ai/eslint-config
+# peer-ai-eslint-config
 
 The ESLint settings for the stack profiles a project lists in `peer-ai.config.json` ([RFC 0006](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/0006-stack-profiles-and-their-enforcers.md)).
 
 ```js
 // eslint.config.js
-import peerAi from "@peer-ai/eslint-config";
+import peerAi from "peer-ai-eslint-config";
 
 export default [...peerAi(), /* your own settings */];
 ```

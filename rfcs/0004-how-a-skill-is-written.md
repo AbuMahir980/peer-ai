@@ -46,7 +46,7 @@ security-review/
 ├── references/        # read only when a step needs it
 │   ├── access-control.md
 │   ├── input-and-output.md
-│   ├── rules.md       # generated from @peer-ai/standards
+│   ├── rules.md       # generated from peer-ai-standards
 │   ├── severity.md    # generated from the shared rubric
 │   └── report.md      # generated from the report schema, with an example
 └── assets/            # templates the skill fills in
@@ -118,7 +118,7 @@ Anthropic's own skills bundle scripts, usually in Python. Peer AI's deterministi
 
 ### 5. Where skills live, and how tools get them
 
-- **Source:** a new package, `@peer-ai/skills`. The build validates each skill (section 6) and writes the generated references.
+- **Source:** a new package, `peer-ai-skills`. The build validates each skill (section 6) and writes the generated references.
 - **Delivery:** `peer-ai render` writes the skills for each tool in the config, in the folder that tool reads skills from, such as `.claude/skills/` for Claude Code. Each tool's folder is confirmed against its documentation and covered by a test.
 - **Not committed:** render adds the skills to `.gitignore`. A version bump must stay a one-line change (Gate D), and 29 skill folders would change with every release. A fresh clone gets them with `peer-ai render`; a Node project can run that from its `prepare` script. `peer-ai doctor` reports skills that are missing or out of date.
 
@@ -129,7 +129,7 @@ A test fails the build if any skill breaks these rules. They come from the speci
 - The frontmatter is valid: `name` equals the folder name and the skill id, `description` is at most 1,024 characters, is in the third person and says when to use the skill, and nothing contains XML tags.
 - `SKILL.md` is under 500 lines.
 - Every linked file exists and is one level deep, and every reference longer than 100 lines has a table of contents.
-- Every rule id exists in `@peer-ai/standards`, and every tool and command named exists in Peer AI.
+- Every rule id exists in `peer-ai-standards`, and every tool and command named exists in Peer AI.
 - Paths use forward slashes.
 
 **Evals come first.** Each skill has at least three eval scenarios before its instructions are written:
@@ -170,7 +170,7 @@ The map items and their skills:
 | runbooks | incident-response |
 | docs | documentation |
 
-standards, ci and environments have no skill of their own. `next_work` says what to set up for them instead. The table lives in `@peer-ai/workflow` beside the map items, and a test makes sure every skill it names exists.
+standards, ci and environments have no skill of their own. `next_work` says what to set up for them instead. The table lives in `peer-ai-workflow` beside the map items, and a test makes sure every skill it names exists.
 
 **2. Peer AI works out which reviews a change needs, and the gate holds it to them.** When a work item reaches verify, Peer AI reads what the change touched (its files against the base branch, and the parts they belong to) and lists the reviews it requires, each with its reason:
 
@@ -210,7 +210,7 @@ The surface this adds:
 
 ### 9. Order of work
 
-1. **The format, proven on three skills.** The `@peer-ai/skills` package, build and validation test, `check_document`, render support, and the skill routing in section 8, plus security-review, ai-feature-review and code-review. All three already have fixture projects, so the format is proven end to end before 26 more skills are written.
+1. **The format, proven on three skills.** The `peer-ai-skills` package, build and validation test, `check_document`, render support, and the skill routing in section 8, plus security-review, ai-feature-review and code-review. All three already have fixture projects, so the format is proven end to end before 26 more skills are written.
 2. **Plan:** the nine plan skills.
 3. **Build and verify:** implement-ticket and the remaining verify skills.
 4. **Ship and operate.**
@@ -220,7 +220,7 @@ The surface this adds:
 
 This is a minor change. It adds:
 
-- the new `@peer-ai/skills` package;
+- the new `peer-ai-skills` package;
 - the `check_document` MCP tool and `peer-ai check-document` command;
 - skill folders written by `peer-ai render`;
 - a skill for each gap, and the reviews a work item needs, in what `next_work` returns;

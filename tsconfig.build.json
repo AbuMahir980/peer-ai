@@ -5,9 +5,9 @@
     "declaration": true,
     "rewriteRelativeImportExtensions": true,
     "paths": {
-      "@peer-ai/workflow": ["./packages/workflow/dist/index.d.ts"],
-      "@peer-ai/standards": ["./packages/standards/dist/index.d.ts"],
-      "@peer-ai/skills": ["./packages/skills/dist/index.d.ts"]
+      "peer-ai-workflow": ["./packages/workflow/dist/index.d.ts"],
+      "peer-ai-standards": ["./packages/standards/dist/index.d.ts"],
+      "peer-ai-skills": ["./packages/skills/dist/index.d.ts"]
     }
   }
 }

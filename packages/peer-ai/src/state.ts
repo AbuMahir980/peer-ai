@@ -3,7 +3,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import { MAP_ITEM_IDS, validateMap, validateWorkItem, type ProjectMap, type WorkItem } from "@peer-ai/workflow";
+import { MAP_ITEM_IDS, validateMap, validateWorkItem, type ProjectMap, type WorkItem } from "peer-ai-workflow";
 import { MAP_FILE, type Assessment } from "./assess.ts";
 
 export const WORK_DIR = ".peer-ai/work";

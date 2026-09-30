@@ -1,4 +1,4 @@
-import { DOMAIN_IDS, DOMAINS, type DomainId, type Trait } from "@peer-ai/workflow";
+import { DOMAIN_IDS, DOMAINS, type DomainId, type Trait } from "peer-ai-workflow";
 import { aiFeatures } from "./core/ai-features.ts";
 import { apiDesign } from "./core/api-design.ts";
 import { architecture } from "./core/architecture.ts";

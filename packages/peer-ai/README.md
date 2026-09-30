@@ -111,7 +111,7 @@ It also reports what the next stage will need, so nothing arrives as a surprise.
 
 ### Traits to consider
 
-A trait says what the product is or does, and switches on the rules for it (see `@peer-ai/standards`). `assess` suggests the traits the code points to, each with what it found, and leaves out any the config already declares. A person decides: add the ones that fit to `project.traits`.
+A trait says what the product is or does, and switches on the rules for it (see `peer-ai-standards`). `assess` suggests the traits the code points to, each with what it found, and leaves out any the config already declares. A person decides: add the ones that fit to `project.traits`.
 
 | Trait | Suggested by |
 |-------|--------------|
@@ -201,7 +201,7 @@ What render changes, and what it leaves alone:
 
 ### Settings for the tools that enforce the stack profiles
 
-- **ESLint** reads Peer AI's settings from the `@peer-ai/eslint-config` package, which your `eslint.config.js` spreads in. Render writes nothing for it.
+- **ESLint** reads Peer AI's settings from the `peer-ai-eslint-config` package, which your `eslint.config.js` spreads in. Render writes nothing for it.
 - **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`, directly or through a shared file that extends it. Add rules of your own with `extend-select`: a `select` replaces Peer AI's rules instead of adding to them, and doctor fails it, as it does an `ignore` that drops one of Peer AI's codes. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config.
 - **The TypeScript compiler** reads each part's own `tsconfig.json`, which render never edits.
 - **The pipeline's checks,** for a project listing the `github-actions` profile, run from `.github/workflows/peer-ai-security.yml`, which render writes. Each tool is a release checked against its checksum, or an image pinned to its digest:
@@ -250,7 +250,7 @@ npx peer-ai doctor
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
 | Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, a rule set aside twice, and an override for a rule with no value to change, or of the wrong type. |
 | Stack profiles | A listed profile Peer AI has no rules for yet |
-| The tools that enforce them | For each part, that the ESLint config nearest it spreads in `@peer-ai/eslint-config`, that the Ruff settings nearest it extend `.peer-ai/enforce/ruff.toml`, and that its tsconfig files, including those a solution tsconfig references, set what the compiler rules need; and that the pipeline's workflow is there, as render wrote it, and up to date. A warning, and a failure at production. |
+| The tools that enforce them | For each part, that the ESLint config nearest it spreads in `peer-ai-eslint-config`, that the Ruff settings nearest it extend `.peer-ai/enforce/ruff.toml`, and that its tsconfig files, including those a solution tsconfig references, set what the compiler rules need; and that the pipeline's workflow is there, as render wrote it, and up to date. A warning, and a failure at production. |
 | The v0 playbook | A copy left in `peer-ai/`, with how to remove it |
 
 Every check reports, including the ones it had to skip (for example, the tracks can't be checked without a valid config), so a clean report means everything was looked at.

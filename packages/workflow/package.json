@@ -1,5 +1,5 @@
 {
-  "name": "@peer-ai/workflow",
+  "name": "peer-ai-workflow",
   "version": "0.0.0",
   "private": true,
   "description": "Peer AI's workflow vocabulary, and the schemas for peer-ai.config.json and project state",

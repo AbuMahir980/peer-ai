@@ -1,4 +1,4 @@
-import { CHECKS, DOMAIN_IDS, DOMAINS, SEVERITIES, TRAITS, type DomainId, type Trait } from "@peer-ai/workflow";
+import { CHECKS, DOMAIN_IDS, DOMAINS, SEVERITIES, TRAITS, type DomainId, type Trait } from "peer-ai-workflow";
 import { z } from "zod";
 
 // What every rule has (RFC 0003): an id, the rule in plain words, why it matters, a question a

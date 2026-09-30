@@ -13,9 +13,9 @@ import {
   loadSkill,
   templatePath,
   type DocumentProblems,
-} from "@peer-ai/skills";
-import { CORE_RULES } from "@peer-ai/standards";
-import { DOMAINS, SKILL_IDS, SKILL_KINDS, type SkillId } from "@peer-ai/workflow";
+} from "peer-ai-skills";
+import { CORE_RULES } from "peer-ai-standards";
+import { DOMAINS, SKILL_IDS, SKILL_KINDS, type SkillId } from "peer-ai-workflow";
 import type { Output } from "./init.ts";
 import type { Result } from "./work.ts";
 

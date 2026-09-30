@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { availableSkills } from "@peer-ai/skills";
+import { availableSkills } from "peer-ai-skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig, runAssess } from "./assess.ts";
 import { evaluate, setupChecks } from "./check.ts";
@@ -399,7 +399,7 @@ describe("doctor on stack profiles", () => {
       tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active", stack: ["typescript", "react"] }],
       standards: { profiles, ...extra },
     });
-  const peerAiEslint = 'import peerAi from "@peer-ai/eslint-config";\nexport default [...peerAi()];\n';
+  const peerAiEslint = 'import peerAi from "peer-ai-eslint-config";\nexport default [...peerAi()];\n';
   const strict = json({ compilerOptions: { strict: true } });
 
   it("warns about a listed profile Peer AI has no rules for yet", () => {

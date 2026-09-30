@@ -10,8 +10,8 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { SKILL_NAME_PREFIX, availableSkills, loadSkill, readSkillFiles, renderedName } from "@peer-ai/skills";
-import type { PeerAiConfig, ToolId } from "@peer-ai/workflow";
+import { SKILL_NAME_PREFIX, availableSkills, loadSkill, readSkillFiles, renderedName } from "peer-ai-skills";
+import type { PeerAiConfig, ToolId } from "peer-ai-workflow";
 import { loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, type Check } from "./checks.ts";
 import { CONFIG_FILE } from "./detect.ts";

@@ -3,7 +3,7 @@
 // what to change. See AUTHORING.md for the reasons behind each limit.
 
 import { posix } from "node:path";
-import { CLI_COMMAND_IDS, DOMAIN_IDS, MCP_TOOL_IDS, type SkillKind } from "@peer-ai/workflow";
+import { CLI_COMMAND_IDS, DOMAIN_IDS, MCP_TOOL_IDS, type SkillKind } from "peer-ai-workflow";
 import { parse } from "yaml";
 import { documentInfo, templatePath } from "./build.ts";
 import { templateParts } from "./document.ts";

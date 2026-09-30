@@ -6,8 +6,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { CORE_RULES, PROFILE_RULES, PROFILES, overrideFits } from "@peer-ai/standards";
-import { DOMAINS, type PeerAiConfig } from "@peer-ai/workflow";
+import { CORE_RULES, PROFILE_RULES, PROFILES, overrideFits } from "peer-ai-standards";
+import { DOMAINS, type PeerAiConfig } from "peer-ai-workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
@@ -225,7 +225,7 @@ export function checkStandards(config: PeerAiConfig, today: string): Check[] {
       ? warn(
           "standards",
           `${rule} isn't one of Peer AI's rules, so setting it aside or changing it does nothing.`,
-          `Check the rule id in ${CONFIG_FILE}. The rules are listed in @peer-ai/standards.`,
+          `Check the rule id in ${CONFIG_FILE}. The rules are listed in peer-ai-standards.`,
         )
       : undefined;
   };
