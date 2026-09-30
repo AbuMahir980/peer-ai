@@ -200,6 +200,25 @@ describe("the first profiles", () => {
   });
 });
 
+describe("the first profiles", () => {
+  const chain = (listed: string[], stack: string[]) => profilesForPart(listed, { stack }).map((p) => p.id);
+
+  it("reach a part through its framework's tag, with everything they build on", () => {
+    expect(chain(["react-native"], ["typescript", "expo"])).toEqual(["typescript", "react", "react-native"]);
+    expect(chain(["next"], ["typescript", "next"])).toEqual(["typescript", "node", "react", "next"]);
+    expect(chain(["express", "nestjs", "fastify"], ["typescript", "nest"])).toEqual(["typescript", "node", "nestjs"]);
+  });
+
+  it("give a layered Express API its layering rule, and a modular monolith its own", () => {
+    const ids = (architecture: string) =>
+      profileRulesFor({ listed: ["express"], stack: ["express"], architecture, stage: "mvp" }).map((each) => each.id);
+    expect(ids("layered")).toContain("EXPRESS-06");
+    expect(ids("layered")).not.toContain("EXPRESS-07");
+    expect(ids("modular-monolith")).toContain("EXPRESS-07");
+    expect(ids("modular-monolith")).not.toContain("EXPRESS-06");
+  });
+});
+
 describe("the TypeScript profile", () => {
   it("applies to TypeScript parts, and fills in its defaults", () => {
     expect(profilesForPart(["typescript"], { stack: ["typescript", "express"] }).map((p) => p.id)).toEqual([
