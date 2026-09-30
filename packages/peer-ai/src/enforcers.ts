@@ -4,11 +4,12 @@
 // warning, and a failure at production.
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, normalize } from "node:path";
+import { dirname, join, normalize, relative } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser";
 import { profile, profileRulesFor, type AppliedRule } from "@peer-ai/standards";
 import type { PeerAiConfig } from "@peer-ai/workflow";
 import { fail, ok, plural, warn, type Check } from "./checks.ts";
+import { RUFF_FILE } from "./ruff.ts";
 
 const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((extension) => `eslint.config.${extension}`);
 const ESLINT_PACKAGE = "@peer-ai/eslint-config";
@@ -50,16 +51,42 @@ function automaticRules(config: PeerAiConfig): { track: PeerAiConfig["tracks"][n
 
 /** The nearest ESLint config for a part, from its folder up to the root: ESLint looks for it the same way. */
 function eslintConfigFor(root: string, path: string | undefined): string | undefined {
+  for (const folder of upFrom(path)) {
+    const found = ESLINT_CONFIGS.find((name) => existsSync(join(root, folder, name)));
+    if (found !== undefined) return folder === "." ? found : join(folder, found);
+  }
+  return undefined;
+}
+
+/** The folders from a part's folder up to the root, nearest first. */
+function upFrom(path: string | undefined): string[] {
   const folders: string[] = [];
   for (let folder = path === undefined ? "." : normalize(path); ; folder = dirname(folder)) {
     folders.push(folder);
     if (folder === "." || dirname(folder) === folder) break;
   }
-  for (const folder of folders) {
-    const found = ESLINT_CONFIGS.find((name) => existsSync(join(root, folder, name)));
-    if (found !== undefined) return folder === "." ? found : join(folder, found);
+  return folders;
+}
+
+/**
+ * The Ruff settings nearest a part, found as Ruff finds them: in each folder from the part's up,
+ * .ruff.toml, then ruff.toml, then a pyproject.toml with a [tool.ruff] table.
+ */
+function ruffConfigFor(root: string, path: string | undefined): string | undefined {
+  for (const folder of upFrom(path)) {
+    for (const name of [".ruff.toml", "ruff.toml", "pyproject.toml"]) {
+      const file = folder === "." ? name : join(folder, name);
+      if (!existsSync(join(root, file))) continue;
+      if (name !== "pyproject.toml" || /^\[tool\.ruff\]/m.test(readFileSync(join(root, file), "utf8"))) return file;
+    }
   }
   return undefined;
+}
+
+/** The file a Ruff config extends, relative to the root, if it extends one. */
+function ruffExtends(root: string, file: string): string | undefined {
+  const target = /^\s*extend\s*=\s*["']([^"']+)["']/m.exec(readFileSync(join(root, file), "utf8"))?.[1];
+  return target === undefined ? undefined : normalize(join(dirname(file), target));
 }
 
 /** A tsconfig's compiler options, read as TypeScript reads it: comments and trailing commas allowed. */
@@ -119,6 +146,43 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
       );
     } else {
       checks.push(ok("enforcers", `${file} uses Peer AI's settings for ${plural(ids.size, "rule")}`));
+    }
+  }
+
+  // Each Python part is linted by its nearest Ruff settings, which must extend the file render
+  // writes. The file itself must be there: render writes it.
+  const byRuffConfig = new Map<string | undefined, { folder: string; ids: Set<string> }>();
+  for (const { track, rules } of parts) {
+    const ruffIds = rules.filter((rule) => rule.enforcer?.tool === "ruff").map((rule) => rule.id);
+    if (ruffIds.length === 0) continue;
+    const file = ruffConfigFor(root, track.path);
+    const entry = byRuffConfig.get(file) ?? { folder: track.path ?? ".", ids: new Set<string>() };
+    for (const id of ruffIds) entry.ids.add(id);
+    byRuffConfig.set(file, entry);
+  }
+  if (byRuffConfig.size > 0 && !existsSync(join(root, RUFF_FILE))) {
+    checks.push(missing(`${RUFF_FILE} isn't there, so Ruff has no Peer AI settings to extend.`, "Run peer-ai render."));
+  }
+  for (const [file, { folder, ids }] of byRuffConfig) {
+    const listed = list([...ids]);
+    const from = file === undefined ? folder : dirname(file);
+    const line = `extend = "${relative(from, RUFF_FILE)}"`;
+    if (file === undefined) {
+      checks.push(
+        missing(
+          `There are no Ruff settings for ${folder}, so nothing enforces ${listed}.`,
+          `Add [tool.ruff] to ${join(folder, "pyproject.toml")}, with ${line}.`,
+        ),
+      );
+    } else if (ruffExtends(root, file) !== normalize(RUFF_FILE)) {
+      checks.push(
+        missing(
+          `${file} doesn't extend Peer AI's Ruff settings, so nothing enforces ${listed}.`,
+          `In ${file}${file.endsWith("pyproject.toml") ? ", under [tool.ruff]," : ""} add ${line}.`,
+        ),
+      );
+    } else {
+      checks.push(ok("enforcers", `${file} extends Peer AI's Ruff settings for ${plural(ids.size, "rule")}`));
     }
   }
 

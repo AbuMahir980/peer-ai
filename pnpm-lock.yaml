@@ -254,6 +254,10 @@ importers:
       zod:
         specifier: 4.6.5
         version: 4.6.5
+    devDependencies:
+      '@astral-sh/ruff-wasm-nodejs':
+        specifier: 0.16.9
+        version: 0.16.9
 
   packages/skills:
     dependencies:
@@ -283,6 +287,9 @@ importers:
         version: 4.6.5
 
 packages:
+
+  '@astral-sh/ruff-wasm-nodejs@0.16.9':
+    resolution: {integrity: sha512-s81sfQZk4rZ82k8rW9MepbodOXYkIDABk2zl3Q/rH6kjJ9faGMKID3OgLIMmum+EBGPiVYnFQzBReQ3B7D4fIQ==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -1846,6 +1853,8 @@ packages:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
 snapshots:
+
+  '@astral-sh/ruff-wasm-nodejs@0.16.9': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:

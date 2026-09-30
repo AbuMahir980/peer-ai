@@ -35,10 +35,10 @@ const profileInput = (id: string, prefix: string, extra: Partial<ProfileInput> =
 
 describe("stack profiles", () => {
   it("enforce every automatic rule with a tool whose examples the tests run", () => {
-    // The compiler's rules are run below, and ESLint's in @peer-ai/eslint-config. A rule for any
-    // other tool needs its own run before it can ship.
+    // The compiler's rules are run below, ESLint's in @peer-ai/eslint-config, and Ruff's in the
+    // CLI, which writes Ruff's settings. A rule for any other tool needs its own run before it ships.
     const tools = PROFILES.flatMap((profile) => profile.rules).map((each) => each.enforcer?.tool);
-    expect(new Set(tools.filter((tool) => tool !== undefined))).toEqual(new Set(["eslint", "typescript"]));
+    expect(new Set(tools.filter((tool) => tool !== undefined))).toEqual(new Set(["eslint", "ruff", "typescript"]));
   });
 
   it("refuse a rule that carries no core rule, or uses another profile's prefix", () => {

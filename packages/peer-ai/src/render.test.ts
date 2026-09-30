@@ -134,6 +134,28 @@ describe("render", () => {
     expect(text).toContain(`It has ${START} but no ${END} after it.`);
   });
 
+  it("writes Ruff's settings for the project's Python profiles, and --check notices when they fall behind", () => {
+    const python = (overrides: Record<string, unknown> = {}) =>
+      config({
+        tools: ["codex"],
+        tracks: [{ id: "api", kind: "backend", path: "services/api", status: "active", stack: ["python", "fastapi"] }],
+        standards: { profiles: ["python-fastapi"], overrides },
+      });
+    const root = project({ "peer-ai.config.json": python() });
+    render(root);
+    const ruff = read(root, ".peer-ai/enforce/ruff.toml");
+    expect(ruff).toContain('select = ["ANN001", "ANN401", "BLE001", "E722"');
+    expect(ruff).toContain("[lint.pylint]\nmax-statements = 50\n");
+    expect(render(root, true).code).toBe(0);
+    writeFileSync(
+      join(root, "peer-ai.config.json"),
+      python({ "PY-10": { value: 70, reason: "Report builders run long" } }),
+    );
+    expect(render(root, true).code).toBe(1);
+    render(root);
+    expect(read(root, ".peer-ai/enforce/ruff.toml")).toContain("max-statements = 70");
+  });
+
   it("starts the server from the project's pinned copy when it has one", () => {
     expect(serverCommand(project())).toEqual(SERVER);
     const pinned = project({ "package.json": json({ devDependencies: { "peer-ai": "1.0.0" } }) });

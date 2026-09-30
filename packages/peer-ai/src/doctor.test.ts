@@ -485,6 +485,39 @@ describe("doctor on stack profiles", () => {
     ]);
   });
 
+  it("checks the Ruff settings nearest each Python part extend Peer AI's", () => {
+    const api = (files: Record<string, string>) =>
+      project({
+        "peer-ai.config.json": json({
+          version: 1,
+          project: { name: "Repairs", stage: "production" },
+          tools: ["codex"],
+          tracks: [{ id: "api", kind: "backend", path: "services/api", status: "active", stack: ["python"] }],
+          standards: { profiles: ["python"] },
+        }),
+        ".peer-ai/enforce/ruff.toml": "[lint]\n",
+        ...files,
+      });
+    expect(checksFor(api({}), "enforcers")).toMatchObject([
+      {
+        status: "fail",
+        message: expect.stringMatching(
+          /^There are no Ruff settings for services\/api, so nothing enforces PY-01/,
+        ) as string,
+        fix: 'Add [tool.ruff] to services/api/pyproject.toml, with extend = "../../.peer-ai/enforce/ruff.toml".',
+      },
+    ]);
+    const own = api({ "pyproject.toml": "[tool.ruff]\nline-length = 100\n" });
+    expect(checksFor(own, "enforcers")[0]).toMatchObject({
+      status: "fail",
+      message: expect.stringContaining("pyproject.toml doesn't extend Peer AI's Ruff settings") as string,
+    });
+    const linked = api({ "services/api/ruff.toml": 'extend = "../../.peer-ai/enforce/ruff.toml"\n' });
+    expect(checksFor(linked, "enforcers")).toEqual([
+      { id: "enforcers", status: "ok", message: "services/api/ruff.toml extends Peer AI's Ruff settings for 10 rules" },
+    ]);
+  });
+
   it("warns about an override for a rule with no value to change", () => {
     const root = project({
       "peer-ai.config.json": typed("mvp", ["typescript"], {

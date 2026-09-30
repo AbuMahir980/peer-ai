@@ -91,6 +91,12 @@ A trait says what the product is or does, and switches on the rules for it (see 
 | `uploads` | An upload library such as Multer, `python-multipart`, Uppy or an image picker |
 | `ai-features` | An AI model SDK such as OpenAI's, Anthropic's, the Vercel AI SDK, LangChain or Gemini's |
 
+### Stack profiles to consider
+
+A stack profile says how to follow the core rules in one stack, and which tool enforces each automatic rule (RFC 0006). `assess` suggests the most specific profile for each part's stack, such as `react-native` for a part tagged `expo`, which brings React and TypeScript with it. It leaves out profiles the config already lists. Add the ones that fit to `standards.profiles`.
+
+A listed profile applies to every part that names no stack, so `assess` also suggests a `stack` for each track that has none, from what it detects.
+
 ### What it reads
 
 The files git tracks, plus new files git doesn't ignore, so `.gitignore` is respected. Outside a git repository it walks the folder and skips dependency and build folders such as `node_modules/`, `.venv/` and `dist/`. A copy of the v0 playbook in `peer-ai/` is left out, and the report says so.
@@ -161,6 +167,12 @@ What render changes, and what it leaves alone:
 - **The pinned version.** When `package.json` has `peer-ai` in its dependencies, tools start that copy; otherwise they start this exact version with `npx`.
 - **Nothing twice.** A second run changes nothing. `peer-ai doctor` warns when these files or the skills no longer match the config.
 
+### Settings for the tools that enforce the stack profiles
+
+- **ESLint** reads Peer AI's settings from the `@peer-ai/eslint-config` package, which your `eslint.config.js` spreads in. Render writes nothing for it.
+- **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config.
+- **The TypeScript compiler** reads each part's own `tsconfig.json`, which render never edits.
+
 ### Options
 
 | Option | What it does |
@@ -193,7 +205,9 @@ pnpm peer-ai doctor
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
-| Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, and a rule set aside twice. |
+| Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, a rule set aside twice, and an override for a rule with no value to change, or of the wrong type. |
+| Stack profiles | A listed profile Peer AI has no rules for yet |
+| The tools that enforce them | For each part, that the ESLint config nearest it spreads in `@peer-ai/eslint-config`, that the Ruff settings nearest it extend `.peer-ai/enforce/ruff.toml`, and that its tsconfig files, including those a solution tsconfig references, set what the compiler rules need. A warning, and a failure at production. |
 | The v0 playbook | A copy left in `peer-ai/`, with how to remove it |
 
 Every check reports, including the ones it had to skip (for example, the tracks can't be checked without a valid config), so a clean report means everything was looked at.

@@ -19,5 +19,8 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "devDependencies": {
+    "@astral-sh/ruff-wasm-nodejs": "0.16.9"
   }
 }
