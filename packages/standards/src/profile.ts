@@ -15,6 +15,10 @@ const CoreRuleId = z.string().regex(/^[A-Z][A-Z0-9]*-\d{2,}$/, "a core rule id, 
 export type Value = number | string;
 const ValueSchema = z.union([z.number(), Text]);
 
+/** The jobs of Peer AI's pipeline workflow that check a rule automatically (RFC 0006, section 4). */
+export const PIPELINE_JOBS = ["secrets", "dependencies", "workflows", "code"] as const;
+export type PipelineJob = (typeof PIPELINE_JOBS)[number];
+
 /** Where an option holds this, the tool gets the rule's value: its default, or the project's. */
 export const VALUE = "$value";
 
@@ -41,6 +45,11 @@ export const EnforcerSchema = z.discriminatedUnion("tool", [
       .record(z.string(), z.unknown())
       .optional()
       .describe(`Ruff's lint settings the rule reads, such as { pylint: { "max-statements": "${VALUE}" } }.`),
+  }),
+  z.strictObject({
+    tool: z.literal("github-actions"),
+    job: z.enum(PIPELINE_JOBS).describe("The job of Peer AI's pipeline workflow that runs the check."),
+    finding: Text.optional().describe("What the tool reports for this rule, where one job checks several rules."),
   }),
   z.strictObject({
     tool: z.literal("typescript"),

@@ -17,6 +17,7 @@ import { count, fail, formatChecks, ok, plural, skip, type Check } from "./check
 import { CONFIG_FILE } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
+import { WORKFLOW_FILE, unchangedSinceRender, workflowFile } from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 export const START = "<!-- peer-ai:start -->";
@@ -483,6 +484,22 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
       action: existing === undefined ? "create" : existing === ruff ? "unchanged" : "update",
       content: ruff,
     });
+  }
+
+  // The pipeline profile's checks, as one workflow render owns while nobody changes it by hand.
+  const workflow = workflowFile(config);
+  if (workflow !== undefined) {
+    const existing = readText(root, WORKFLOW_FILE);
+    if (existing === undefined) files.push({ path: WORKFLOW_FILE, action: "create", content: workflow });
+    else if (unchangedSinceRender(existing)) {
+      files.push({ path: WORKFLOW_FILE, action: existing === workflow ? "unchanged" : "update", content: workflow });
+    } else {
+      files.push({
+        path: WORKFLOW_FILE,
+        action: "refused",
+        note: "It was changed by hand, so render leaves it. Delete it to have render write it again, or keep your version up to date with the config yourself.",
+      });
+    }
   }
 
   if (uses("claude-code")) files.push(claudeSessionHook(root, command));

@@ -44,14 +44,27 @@ export function renderDomain(domain: DomainId): string | undefined {
   return `${[`# ${title}`, "", about, "", ...rules.flatMap((rule) => [renderRule(rule), ""])].join("\n").trimEnd()}\n`;
 }
 
-const TOOL_NAMES = { eslint: "ESLint", ruff: "Ruff", typescript: "the TypeScript compiler" } as const;
+const TOOL_NAMES = {
+  eslint: "ESLint",
+  ruff: "Ruff",
+  typescript: "the TypeScript compiler",
+  "github-actions": "Peer AI's pipeline workflow",
+} as const;
+
+/** What checks a rule, and in which tool: `max-depth`, in ESLint. */
+function enforcedBy(enforcer: NonNullable<Profile["rules"][number]["enforcer"]>): string {
+  const what =
+    enforcer.tool === "typescript"
+      ? enforcer.option
+      : enforcer.tool === "github-actions"
+        ? `${enforcer.job} job`
+        : enforcer.rule;
+  return `\`${what}\`, in ${TOOL_NAMES[enforcer.tool]}`;
+}
 
 function renderProfileRule(rule: Profile["rules"][number]): string {
   const shown = withValue(rule, rule.default?.value);
-  const enforcer =
-    rule.enforcer === undefined
-      ? "–"
-      : `\`${rule.enforcer.tool === "typescript" ? rule.enforcer.option : rule.enforcer.rule}\`, in ${TOOL_NAMES[rule.enforcer.tool]}`;
+  const enforcer = rule.enforcer === undefined ? "–" : enforcedBy(rule.enforcer);
   const lines = [
     `## ${rule.id} · ${shown.title}`,
     "",

@@ -23,6 +23,7 @@
     "@changesets/cli": "3.0.3",
     "@eslint/js": "10.0.1",
     "@peer-ai/skills": "workspace:*",
+    "@peer-ai/standards": "workspace:*",
     "@peer-ai/workflow": "workspace:*",
     "@types/node": "24.19.0",
     "eslint": "10.11.0",

@@ -9,6 +9,7 @@ import { parse as parseJsonc } from "jsonc-parser";
 import { profile, profileRulesFor, type AppliedRule } from "@peer-ai/standards";
 import type { PeerAiConfig } from "@peer-ai/workflow";
 import { fail, ok, plural, warn, type Check } from "./checks.ts";
+import { WORKFLOW_FILE, pipelineRules, unchangedSinceRender, workflowFile } from "./pipeline.ts";
 import { RUFF_FILE } from "./ruff.ts";
 
 const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((extension) => `eslint.config.${extension}`);
@@ -183,6 +184,30 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
       );
     } else {
       checks.push(ok("enforcers", `${file} extends Peer AI's Ruff settings for ${plural(ids.size, "rule")}`));
+    }
+  }
+
+  // The pipeline's checks run from the workflow render writes.
+  const pipeline = pipelineRules(config).filter((rule) => rule.check === "auto");
+  if (pipeline.length > 0) {
+    const ids = list(pipeline.map((rule) => rule.id));
+    const existing = existsSync(join(root, WORKFLOW_FILE))
+      ? readFileSync(join(root, WORKFLOW_FILE), "utf8")
+      : undefined;
+    if (existing === undefined) {
+      checks.push(missing(`${WORKFLOW_FILE} isn't there, so the pipeline doesn't run ${ids}.`, "Run peer-ai render."));
+    } else if (!unchangedSinceRender(existing)) {
+      checks.push(
+        warn(
+          "enforcers",
+          `${WORKFLOW_FILE} was changed by hand, so render no longer updates it, and doctor can't tell whether it still runs ${ids}.`,
+          "Delete it and run peer-ai render to go back to Peer AI's, or keep it up to date with the config yourself.",
+        ),
+      );
+    } else if (existing !== workflowFile(config)) {
+      checks.push(missing(`${WORKFLOW_FILE} is out of date with the config.`, "Run peer-ai render."));
+    } else {
+      checks.push(ok("enforcers", `${WORKFLOW_FILE} runs ${plural(pipeline.length, "check")}: ${ids}`));
     }
   }
 

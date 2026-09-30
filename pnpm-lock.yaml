@@ -175,6 +175,9 @@ importers:
       '@peer-ai/skills':
         specifier: workspace:*
         version: link:packages/skills
+      '@peer-ai/standards':
+        specifier: workspace:*
+        version: link:packages/standards
       '@peer-ai/workflow':
         specifier: workspace:*
         version: link:packages/workflow

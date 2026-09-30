@@ -156,6 +156,24 @@ describe("render", () => {
     expect(read(root, ".peer-ai/enforce/ruff.toml")).toContain("max-statements = 70");
   });
 
+  it("writes the pipeline's workflow, and leaves it alone once someone changes it by hand", () => {
+    const pipeline = config({
+      tools: ["codex"],
+      repo: { host: "github" },
+      standards: { profiles: ["github-actions"] },
+    });
+    const root = project({ "peer-ai.config.json": pipeline });
+    render(root);
+    const path = ".github/workflows/peer-ai-security.yml";
+    expect(read(root, path)).toContain("  secrets:\n");
+    expect(render(root, true).code).toBe(0);
+    writeFileSync(join(root, path), read(root, path).replace("ubuntu-latest", "ubuntu-24.04"));
+    const refused = render(root);
+    expect(refused.code).toBe(1);
+    expect(refused.text).toContain("It was changed by hand, so render leaves it.");
+    expect(read(root, path)).toContain("ubuntu-24.04");
+  });
+
   it("starts the server from the project's pinned copy when it has one", () => {
     expect(serverCommand(project())).toEqual(SERVER);
     const pinned = project({ "package.json": json({ devDependencies: { "peer-ai": "1.0.0" } }) });
