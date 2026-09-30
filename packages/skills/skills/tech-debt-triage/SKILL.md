@@ -48,11 +48,11 @@ For each piece of debt, note:
 
 ## 3. Separate
 
-Anything hurting people now, or waiting to, isn't debt to schedule: a security hole, data that can be lost or exposed, money worked out wrongly, a broken journey. Raise each as a fix to make first: a `bug` work item, created with the peer-ai MCP tool `create_work_item`, at the top of the hand-over.
+Anything hurting people now, or waiting to, isn't debt to schedule: a security hole, data that can be lost or exposed, money worked out wrongly, a broken journey. Raise each as a fix to make first: a `bug` work item, created with the peer-ai MCP tool `create_work_item`, at the top of the hand-over. Raise a likely harm even when a detail can't be confirmed from the code, such as a value an older version used, and say what to confirm: a harm held back as a question isn't raised.
 
 ## 4. Rank
 
-Rank the debt by what it costs and risks, against what fixing it takes. Put first what's costly and risky, and where work is happening now: debt that most changes pass through costs every day. Something that costs nothing yet ranks on its risk alone. Group items one change pays off together. Easy isn't a reason to go first; cheap and valuable is.
+Rank the debt by what it costs and risks, against what fixing it takes. Put first what's costly and risky, and where work is happening now: debt that most changes pass through costs every day. Something that costs nothing yet ranks on its risk alone. Group items one change pays off together, and name their shared cause as one item, sized as a whole, such as one replacement left unfinished behind several duplicates. Easy isn't a reason to go first; cheap and valuable is.
 
 Give each item a one-line reason for its place, so a person can disagree with the order and not only the list.
 

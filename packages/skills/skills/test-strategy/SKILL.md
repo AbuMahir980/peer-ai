@@ -51,7 +51,7 @@ List from the code and the documents, with an id, a kind and where it is:
 
 ## 3. Rules
 
-Call the peer-ai MCP tool `standards_for_file` for a file in each part. The testing rules it returns say what the strategy must plan for at the product's stage. Each one gets a line under Rules this stage asks for: the test that meets it, the gap, or the check planned and when it runs. A check the stage requires is planned whatever has happened before, with when it runs and who does it; whether it was done in the past is an open question beside the plan, never instead of it. A rule that applies from a later stage goes in the strategy as planned for that stage, not as a gap now.
+Call the peer-ai MCP tool `standards_for_file` for a file in each part. The testing rules it returns say what the strategy must plan for at the product's stage. Each one gets a line under Rules this stage asks for: the test that meets it, the gap, or the check planned and when it runs. A check the stage requires is planned whatever has happened before, with when it runs and who does it, including a rule a person carries out: a person doing it doesn't make it a question. Whether it was done in the past is an open question beside the plan, never instead of it. A rule that applies from a later stage goes in the strategy as planned for that stage, not as a gap now.
 
 ## 4. Write
 
