@@ -30,7 +30,7 @@ A route that takes an id checks the caller may use that record, such as in a dep
 
 ## FASTAPI-03 · Settings are checked when the app starts
 
-Settings are a Pydantic settings class, loaded once at start-up, so the app refuses to start with a setting missing or wrong.
+Settings are a Pydantic settings class, loaded once at start-up, so the app refuses to start with a setting missing or wrong, and an environment name it doesn't know is treated as production.
 
 **Why:** A setting read with os.environ where it's used fails the first request that needs it, long after the deploy looked fine.
 

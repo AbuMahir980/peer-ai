@@ -38,7 +38,7 @@ export const fastapi: ProfileInput = {
     {
       id: "FASTAPI-03",
       title: "Settings are checked when the app starts",
-      rule: "Settings are a Pydantic settings class, loaded once at start-up, so the app refuses to start with a setting missing or wrong.",
+      rule: "Settings are a Pydantic settings class, loaded once at start-up, so the app refuses to start with a setting missing or wrong, and an environment name it doesn't know is treated as production.",
       why: "A setting read with os.environ where it's used fails the first request that needs it, long after the deploy looked fine.",
       ask: "Does this change read a setting outside the settings class?",
       stage: "mvp",

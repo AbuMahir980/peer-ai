@@ -76,7 +76,7 @@ SQL is never built by joining or formatting strings. Values go to the driver as 
 |--------------|------------|----------|---------|---------------|-------------|
 | Prototype | A tool | Critical | [SEC-07](../security.md) | Any | `S608`, in Ruff |
 
-## PY-07 · No code is built from strings
+## PY-07 · No text is run with eval
 
 `eval` isn't used, so no text, least of all text from outside, is ever run as code.
 
@@ -86,7 +86,7 @@ SQL is never built by joining or formatting strings. Values go to the driver as 
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| MVP | A tool | High | [SEC-06](../security.md) | Any | `S307`, in Ruff |
+| Prototype | A tool | Critical | [SEC-30](../security.md) | Any | `S307`, in Ruff |
 
 ## PY-08 · Commands don't go through a shell
 
@@ -98,7 +98,7 @@ SQL is never built by joining or formatting strings. Values go to the driver as 
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| MVP | A tool | High | [SEC-06](../security.md) | Any | `S602`, in Ruff |
+| Prototype | A tool | Critical | [SEC-30](../security.md) | Any | `S602`, in Ruff |
 
 ## PY-09 · Every request to another service has a timeout
 
