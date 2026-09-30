@@ -1,6 +1,6 @@
 # Where debt hides
 
-Go through every area and run each check. Reading files as they come up misses whole areas. Examples are from a made-up bicycle repair booking service.
+Go through every area and run each check, and record each check's result in the register, one line per check, even when it found nothing. Reading files as they come up misses whole areas, and a line for each check shows the one that was skipped. Examples are from a made-up bicycle repair booking service.
 
 ## The code
 
@@ -11,7 +11,7 @@ Go through every area and run each check. Reading files as they come up misses w
 
 ## The tests and checks
 
-- **How many, and where:** count the tests in each part of the product, and compare with how often each part changes.
+- **How many, and where:** count the tests in each part of the product, and compare with how often each part changes. Say what the missing tests leave unprotected, such as data or money nothing else guards.
 - **Which ones run:** read the verify command and the CI workflow, and check that every part's tests are run by them. A test that never runs proves nothing.
 - **What they prove:** read a few tests in each part. Do they check results? Could the stand-ins they use, such as a fake payment service, ever fail?
 - **Checks that don't stop anything:** a check that can fail without blocking a merge.
@@ -19,7 +19,7 @@ Go through every area and run each check. Reading files as they come up misses w
 ## What it's built on
 
 - **Pinned versions:** read each manifest, and check there's a lockfile, so every install gets the same versions (DEL-01).
-- **Known vulnerabilities:** versions with published advisories, from the package manager's audit where it runs. Where it can't run, go through each dependency's version against the advisories you know of, and say which you couldn't check (DEL-03).
+- **Known vulnerabilities:** versions with published advisories, from the package manager's audit where it runs. Where it can't run, go through each dependency's version against the advisories you know of, name each one affected with its advisory, and say which you couldn't check (DEL-03).
 - **Left behind:** versions several major releases old, packages no longer maintained, and packages the newer code has already replaced.
 - **The platform:** a runtime or operating system version near its end of support.
 

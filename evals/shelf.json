@@ -484,6 +484,61 @@
       ],
       "rules": ["DEL-10"],
       "found": "Not planted: raised by Peer AI's dependency-review skill on 2026-09-29, and judged real."
+    },
+    {
+      "id": "S34",
+      "title": "The API's responses are used without checking their shape",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "src/lib/http.ts",
+          "match": "  return (await response.json()) as T;"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "S35",
+      "title": "There's no threat model, though the app opens links from QR codes and sends readers' details to an AI service",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-25"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "S36",
+      "title": "Nothing security-sensitive has abuse tests, such as signing in or reserving a book",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-08"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "S37",
+      "title": "Nothing scans for secrets on each change: there's no CI at all",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-27"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
     }
   ],
   "documents": {

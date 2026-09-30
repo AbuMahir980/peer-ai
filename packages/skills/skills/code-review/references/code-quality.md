@@ -31,7 +31,7 @@ CODE-01 to CODE-15. Size and nesting limits come from the stack profile, through
 ## Edges
 
 - **CODE-15:** edge cases give the right answer. For every unit, try the edges of what it can receive:
-  - dates near midnight, in another time zone, and across a change to daylight saving;
+  - dates near midnight, in another time zone, and across a change to daylight saving. For each "today", "this week" or deadline, ask whose clock decides it, and whether that's the one the product means;
   - an empty list, and a very long one;
   - two equal values competing for one place, such as two bookings for the same slot;
   - the first and the last item;

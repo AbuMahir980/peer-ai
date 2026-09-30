@@ -128,7 +128,7 @@
       "id": "D9",
       "title": "Full card numbers and CVVs are received and stored",
       "severity": "critical",
-      "skills": ["security-review", "compliance-review", "contract-check", "data-modelling"],
+      "skills": ["security-review", "compliance-review", "contract-check", "data-modelling", "code-review"],
       "locations": [
         {
           "file": "services/api/app/routes/payments.py",
@@ -144,7 +144,8 @@
           "match": "  card_number TEXT NOT NULL,",
           "lines": 3
         }
-      ]
+      ],
+      "rules": ["MONEY-12", "PRIV-03"]
     },
     {
       "id": "D10",
@@ -156,7 +157,8 @@
           "file": "services/api/app/routes/payments.py",
           "match": "    amount_pence: int"
         }
-      ]
+      ],
+      "rules": ["SEC-05", "MONEY-02"]
     },
     {
       "id": "D11",
@@ -411,6 +413,7 @@
           "match": "def pay(payment: CardPayment, customer=Depends(current_customer), db=Depends(get_db)):"
         }
       ],
+      "rules": ["SEC-01"],
       "found": "Not planted: raised by a contract-check baseline on 2026-09-29, and judged real."
     },
     {
@@ -507,6 +510,75 @@
           "match": "python3-dateutil==2.8.2"
         }
       ]
+    },
+    {
+      "id": "D37",
+      "title": "Refused sign-ins are never logged",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": "services/api/app/auth.py",
+          "match": "    except BadSignature:"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D38",
+      "title": "Nothing scans for secrets on each change: there's no CI at all",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-27"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D39",
+      "title": "There's no threat model, though the API takes payments and sends customers' details to an AI provider",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["SEC-25"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D40",
+      "title": "Nothing security-sensitive has abuse tests, such as another customer's parcel id",
+      "severity": "medium",
+      "skills": ["security-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["TEST-08"],
+      "found": "Not planted: first raised by the Claude Code security review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D41",
+      "title": "No test checks a payment's amount",
+      "severity": "high",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": ".",
+          "whole": true
+        }
+      ],
+      "rules": ["MONEY-10"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, and judged real."
     }
   ],
   "documents": {

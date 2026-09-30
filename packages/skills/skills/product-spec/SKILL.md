@@ -58,7 +58,8 @@ Copy the [template](assets/product-spec.md) and fill in every part. [writing.md]
 
 - **Permissions per role and per record** (SEC-01, SEC-02): not "users can edit bookings" but "a cyclist can move their own booking; a mechanic can move any booking at their shop".
 - **Every screen in every state** (FE-07, FE-08, FE-09): loading, empty, error with what to do next, and offline where the product works offline.
-- **Acceptance criteria for every journey,** the ones that go wrong included, and how a person undoes a mistake where one can happen: given a situation, when something happens, then a result anyone can see.
+- **Acceptance criteria for every journey,** the ones that go wrong included: given a situation, when something happens, then a result anyone can see.
+- **A way back from every mistake a person can make,** with its own criteria. Where the requirements are silent, propose one. Leaving it out is the person's decision, not yours: ask, and say what the mistake would cost them, such as what it replaces or deletes.
 - **Edge cases** (CODE-15): midnight and time zones, daylight saving, empty and very long input, two people at once, the first and the last item, zero.
 - **Only the data it needs** (PRIV-03): each personal field says why the feature needs it.
 - **Usable by everyone:** keyboard, labels, colour never the only signal, an alternative to dragging, and on phones the person's text size and large enough touch targets (DES-07 to DES-10, DES-12, DES-14, DES-15).

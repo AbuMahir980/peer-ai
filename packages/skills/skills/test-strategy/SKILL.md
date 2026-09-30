@@ -51,16 +51,17 @@ List from the code and the documents, with an id, a kind and where it is:
 
 ## 3. Rules
 
-Call the peer-ai MCP tool `standards_for_file` for a file in each part. The testing rules it returns say what the strategy must plan for at the product's stage. Each one gets a line under Rules this stage asks for: the test that meets it, the gap, or the check planned and when it runs. A rule that applies from a later stage goes in the strategy as planned for that stage, not as a gap now.
+Call the peer-ai MCP tool `standards_for_file` for a file in each part. The testing rules it returns say what the strategy must plan for at the product's stage. Each one gets a line under Rules this stage asks for: the test that meets it, the gap, or the check planned and when it runs. A check the stage requires is planned whatever has happened before, with when it runs and who does it, including a rule a person carries out: a person doing it doesn't make it a question. Whether it was done in the past is an open question beside the plan, never instead of it. A rule that applies from a later stage goes in the strategy as planned for that stage, not as a gap now.
 
 ## 4. Write
 
 Copy the [template](assets/test-strategy.md) and fill in every part. [levels.md](references/levels.md) says which level each kind of check belongs at.
 
 - **Names, not categories.** Each journey, rule and boundary by name, with the test that proves it, such as "Slot capacity: slots.test.ts:40 refuses a booking for a full slot", or "none yet". "Business rules are unit tested" is a wish, not a strategy.
+- **Every requirement gets its check.** Each thing the requirements say the product must do, such as keep a session private or work with a screen reader, names the test or the check a person carries out that proves it, or its gap. A requirement nobody checks is a promise nobody keeps.
 - **Check what the tests really do.** A test that exists but asserts nothing about its rule, or that no command ever runs, isn't coverage. Say so.
 - **Every part, every platform.** Each part of the product gets its tests, and the strategy says what runs for each. A part whose tests never run is a gap. A product that ships to several platforms, such as two phone systems or several browsers, runs its main journeys on each: name the platforms against every journey. Shared code still runs on each platform's own system, with its own permissions, keyboard, screen reader and storage, so a journey proven on one isn't proven on another.
-- **Gaps as work.** Each missing or weak test is a gap, with the test that would close it, described well enough to write: what it sets up, what it does and what it checks. Give its level and the risk while it's missing, most serious first. A gap without its test is a worry, not a plan.
+- **Gaps as work.** Each missing or weak test is a gap, with the test that would close it, described well enough to write: what it sets up, what it does and what it checks. Give its level and the risk while it's missing, most serious first. A gap without its test is a worry, not a plan. Every "none yet" in the journeys, rules and boundaries, and every rule the stage asks for that nothing meets, has its gap under Gaps, so the list of work is complete.
 - **Say where each fact came from:** a test file, the verify command, a document, or proposed by you.
 
 ## 5. Check

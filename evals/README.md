@@ -4,8 +4,8 @@ An eval tests whether a review finds the problems it should, and whether a docum
 
 | Answer sheet | Practice project | Planted problems | Document scenarios |
 |--------------|------------------|------------------|--------------------|
-| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 36: 25 planted, and 11 found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. test-strategy. documentation. tech-debt-triage. |
-| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 33: 23 planted, and 10 found that nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
+| [`courier.json`](courier.json) | [`courier`](../fixtures/courier/): a parcel pickup service, with a React web app and a Python API | 41: 25 planted, and 16 found that nobody planted | requirements-analysis: a change request. threat-model. architecture: bring it up to date. product-spec. system-design. api-design: from the code. data-modelling. design-system: a first one. issue-planning. test-strategy. documentation. tech-debt-triage. |
+| [`shelf.json`](shelf.json) | [`shelf`](../fixtures/shelf/): a book-lending phone app in React Native, half rebuilt | 37: 23 planted, and 14 found that nobody planted | threat-model. architecture: bring it up to date. product-spec. system-design. api-design: a request to another repository. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
 | [`sprout.json`](sprout.json) | [`sprout`](../fixtures/sprout/): a plant-care journal that works offline, with an AI feature | 20: 16 planted, and 4 found that nobody planted | requirements-analysis: from the code. threat-model. product-spec. system-design. data-modelling. design-system. issue-planning. test-strategy. documentation. tech-debt-triage. |
 | [`kennel.json`](kennel.json) | [`kennel`](../fixtures/kennel/): a dog-boarding service's API in NestJS, in production | 29: 22 planted, and 7 found that nobody planted | – |
 | [`refill.json`](refill.json) | [`refill`](../fixtures/refill/): a new product with only a founder's brief | – | requirements-analysis: from a brief. architecture: propose one. api-design: from a brief. data-modelling: from a brief. |
@@ -54,6 +54,7 @@ Each run uses about $1 to $3 of the tool's usage.
 
 - A planted problem counts as **found** when the report names a problem within three lines of it, at a severity no more than one level away.
 - A problem with a **whole file, or the whole project**, such as a missing lockfile, counts as found by a finding that cites one of the problem's rules: on that file, with or without a line, or, for the whole project, anywhere.
+- Where several problems sit within a few lines, a finding that cites one of a problem's rules is paired with it first. Pairing is still by place, so a finding about something else nearby can count: a person reads each pairing before a result is trusted.
 - Problems the report raises that aren't on the answer sheet are listed **for a person to judge**. A real problem nobody planted is added to the answer sheet; a wrong one counts against the review.
 - A review is **ready** when it finds every planted critical and high problem, and at least 80% of the medium ones, in a valid report.
 - **Rules covered** counts how many of the rules the skill answers for have a line in the report. A review with the skill must cover them all; that's the proof a baseline can't give.
@@ -355,6 +356,21 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **The runs raised seven real problems nobody planted,** now on the sheet: a microchip number checked only for its length before it goes into the vet records service's URL; no retention period for personal data; an unpaged list of bookings; photos stored at full size; refused sign-ins unlogged; no abuse tests; and no threat model.
   - **What people judged:** K15, a failed vaccination check counted as a pass, was planted as critical. The severity guide gives a finding its rule's level, and the fitting rules are high (CODE-11) and medium (REL-01), so the sheet now says high: reliability-review had found it, as medium. Code-review placed K22 at the import rather than the line that registers the entity, so the import is on the sheet too.
 
+- **2026-09-30, step 21: each audited skill on its other projects, with Claude Code on Sonnet, graded by Claude Code on Haiku.** The audit's runs covered one project per skill; this round ran the twelve on the rest, 27 runs, then fixed what fell short and ran those scenarios again. A person read every review's pairings and every document the grader marked down; where their count differs from the scorer's or the grader's, the row gives theirs and says so:
+  - **Ready, 23 scenarios:** requirements-analysis on refill 13 of 13 and sprout 10 of 11; architecture on courier 9 of 10 and shelf 9 of 9; product-spec on courier 10 of 11, and sprout 9 of 10 after the fix below; system-design on courier 9 of 10 and sprout 8 of 8; api-design on courier 10 of 10, refill 9 of 9 and shelf 8 of 8; data-modelling on refill 9 of 9 and sprout 7 of 8; design-system on courier 8 of 8, shelf 7 of 8 and sprout 8 of 8; issue-planning on courier 8 of 8 and shelf 5 of 6; threat-model on sprout 10 of 10; ai-feature-review on shelf and sprout, 5 of 5 each; security-review on sprout 3 of 3, and on shelf 15 of 15 after the fixes below.
+  - **security-review on courier isn't ready: 18 of 19 twice, missing a different high problem each time.** The first run missed the browser deciding how much to pay. After the fixes, the second found that and every other payment problem, each as its own finding, but missed the parcel notes that can steer the assistant, which the first had found.
+  - **code-review on courier isn't ready: 13 and then 14 of 17, by a person's reading.** Both missed the booking response's field named differently from the contract, the date the model suggests written unchecked, and paying for another customer's parcel. The scorer counted 17 of 17 for the second, pairing findings about paging, cancelling and "paid" with those three because they sit on nearby lines. Comparing each route with the contract field by field, and watching for a model's reply trusted as the code's own, didn't change what it found.
+  - **code-review on sprout isn't ready: 7 of 8, three of four medium problems.** The first two runs flagged the service worker for its precache paths but never said it serves its first copy forever, 6 of 8 by a person's reading: the skill didn't carry REL-09, an app that caches itself still updates. With it, the third run found that. All three passed "watered today" worked out in UTC, though the skill asks whose clock decides each "today".
+  - **threat-model on shelf isn't ready, in two more runs:** as in Codex's runs, it marked no defence in place. The only candidate is the session token each request carries, and whether the app itself holds that defence, or the API in the other repository does, is a fair question about the point (TS9) as much as the run.
+  - **test-strategy on shelf is ready at last, by a person's reading: 9 of 10, and all four must-haves.** Four runs in a row left the penetration test as an open question, though the skill and then the template said to plan it; a line under TEST-10 saying to plan it even when nobody is named yet did it. The next run missed three of the product's own requirements, so the skill now ties every requirement to its check. The last run planned the upgrade from the old saved books, which the grader quoted and marked missing; its one real miss is a test that signing out ends the session on the server.
+  - **tech-debt-triage, from the round before, is ready on shelf and sprout:** 7 of 7 each. Shelf first made 5 of 7, putting neither the half-finished rebuild first nor the saved books lost on updating among the fixes; it did both once the skill said to raise a likely harm even when a detail can't be confirmed, and to name a shared cause once.
+- **What changed in the skills:**
+  - **security-review** checks that card details never reach the servers (MONEY-12), which threat-model already carried; fails a price or total taken from the request; checks this code's own part where another repository enforces a rule; and keeps one problem to a finding.
+  - **code-review** lists every outside call, AI models included, so each is checked for a timeout; compares each route with the API contract; asks whose clock decides each date; watches for an AI model's reply trusted as if the code had written it; and checks REL-09.
+  - **threat-model** checks each way in for what already holds, starting with how it knows who is asking. **product-spec** gives every mistake a person can make a way back, unless the person decides otherwise: sprout's first spec proposed no undo, though a mistaken tap replaces the last date a plant was watered. **test-strategy** plans every check the stage requires, ties every requirement to its check, plans a contract for an API in another repository, and ends each rule's line in a test, a gap or a plan. **tech-debt-triage** records each check, names each dependency with an advisory, says what missing tests leave unprotected, raises a likely harm, and names a shared cause once.
+- **What changed in the scorer:** it paired findings with problems by place alone, so in courier's payment handler, where three problems share a few lines, the first security run was marked as missing the ownership check, a medium problem, when it had missed the price, a high one. It now pairs a finding first with the problem whose rules it cites, and those three problems name theirs. Pairing is still by place otherwise, which is why a person read every pairing this round.
+- **Added to the sheets:** nine problems the reviews raised that nobody planted, each judged real. On courier: refused sign-ins unlogged, no CI and so no secret scanning, no threat model, no abuse tests, and no test of a payment's amount. On shelf: the API's responses used without checking their shape, no threat model, no abuse tests, and no secret scanning. Courier's stored card numbers now count for code-review too, which carries the money rules.
+
 ## Results
 
 Newest last.
@@ -475,6 +491,18 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-30 | kennel | performance-review | Claude Code | sonnet | used | 3 of 3 | 12 of 12 | 0 | Ready | $0.96 |
 | 2026-09-30 | kennel | data-migration-review | Claude Code | sonnet | used | 2 of 2 | 9 of 9 | 0 | Ready | $0.78 |
 | 2026-09-30 | kennel | dependency-review | Claude Code | sonnet | used | 2 of 2 | 8 of 8 | 0 | Ready | $1.79 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 18 of 19 | 50 of 50 | 0 | Not ready | $1.74 |
+| 2026-09-30 | shelf | security-review | Claude Code | sonnet | used | 12 of 15 | 50 of 50 | 0 | Not ready | $1.54 |
+| 2026-09-30 | sprout | security-review | Claude Code | sonnet | used | 3 of 3 | 50 of 50 | 1 | Ready | $1.41 |
+| 2026-09-30 | courier | code-review | Claude Code | sonnet | used | 13 of 17 | 68 of 68 | 0 | Not ready, by a person's count | $3.15 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 6 of 8 | 68 of 68 | 1 | Not ready, by a person's count | $2.10 |
+| 2026-09-30 | shelf | ai-feature-review | Claude Code | sonnet | used | 5 of 5 | 14 of 14 | 1 | Ready | $0.90 |
+| 2026-09-30 | sprout | ai-feature-review | Claude Code | sonnet | used | 5 of 5 | 14 of 14 | 0 | Ready | $1.07 |
+| 2026-09-30 | shelf | security-review | Claude Code | sonnet | used | 15 of 15 | 51 of 51 | 1 | Ready | $1.56 |
+| 2026-09-30 | courier | security-review | Claude Code | sonnet | used | 18 of 19 | 51 of 51 | 0 | Not ready, by a person's count | $2.01 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 6 of 8 | 68 of 68 | 1 | Not ready, by a person's count | $1.45 |
+| 2026-09-30 | courier | code-review | Claude Code | sonnet | used | 14 of 17 | 68 of 68 | 0 | Not ready, by a person's count | $1.69 |
+| 2026-09-30 | sprout | code-review | Claude Code | sonnet | used | 7 of 8 | 69 of 69 | 0 | Not ready | $1.72 |
 
 ## Document results
 
@@ -596,3 +624,34 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-30 | sprout | tech-debt-triage | Claude Code | sonnet | used | 5 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.75 |
 | 2026-09-30 | sprout | documentation | Claude Code | sonnet | used | 6 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.75 |
 | 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 9 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $0.89 |
+| 2026-09-30 | shelf | api-design | Claude Code | sonnet | used | 8 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.69 |
+| 2026-09-30 | refill | requirements-analysis | Claude Code | sonnet | used | 13 of 13 | 6 of 6 | Accepted | Ready | Claude Code, haiku | $0.34 |
+| 2026-09-30 | refill | data-modelling | Claude Code | sonnet | used | 9 of 9 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.65 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 7 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $1.35 |
+| 2026-09-30 | sprout | requirements-analysis | Claude Code | sonnet | used | 10 of 11 | 5 of 5 | Accepted | Ready | Claude Code, haiku | $0.77 |
+| 2026-09-30 | sprout | data-modelling | Claude Code | sonnet | used | 7 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.59 |
+| 2026-09-30 | shelf | tech-debt-triage | Claude Code | sonnet | used | 5 of 7 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.97 |
+| 2026-09-30 | courier | architecture | Claude Code | sonnet | used | 9 of 10 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $0.90 |
+| 2026-09-30 | courier | design-system | Claude Code | sonnet | used | 8 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.07 |
+| 2026-09-30 | shelf | design-system | Claude Code | sonnet | used | 7 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.78 |
+| 2026-09-30 | shelf | architecture | Claude Code | sonnet | used | 9 of 9 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.86 |
+| 2026-09-30 | courier | product-spec | Claude Code | sonnet | used | 10 of 11 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $0.46 |
+| 2026-09-30 | sprout | design-system | Claude Code | sonnet | used | 8 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.79 |
+| 2026-09-30 | sprout | product-spec | Claude Code | sonnet | used | 9 of 10 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.52 |
+| 2026-09-30 | sprout | tech-debt-triage | Claude Code | sonnet | used | 7 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $2.63 |
+| 2026-09-30 | courier | issue-planning | Claude Code | sonnet | used | 8 of 8 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $1.00 |
+| 2026-09-30 | courier | system-design | Claude Code | sonnet | used | 9 of 10 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $1.92 |
+| 2026-09-30 | shelf | issue-planning | Claude Code | sonnet | used | 5 of 6 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.79 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 6 of 10 | 2 of 4 | Accepted | Not ready | Claude Code, haiku | $1.23 |
+| 2026-09-30 | sprout | system-design | Claude Code | sonnet | used | 8 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.66 |
+| 2026-09-30 | courier | api-design | Claude Code | sonnet | used | 10 of 10 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.57 |
+| 2026-09-30 | shelf | tech-debt-triage | Claude Code | sonnet | used | 7 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.98 |
+| 2026-09-30 | refill | api-design | Claude Code | sonnet | used | 9 of 9 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.62 |
+| 2026-09-30 | shelf | threat-model | Claude Code | sonnet | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Claude Code, haiku | $1.83 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 7 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $1.09 |
+| 2026-09-30 | sprout | threat-model | Claude Code | sonnet | used | 10 of 10 | 4 of 4 | Accepted | Ready | Claude Code, haiku | $1.24 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 8 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $1.10 |
+| 2026-09-30 | sprout | product-spec | Claude Code | sonnet | used | 9 of 10 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.50 |
+| 2026-09-30 | shelf | threat-model | Claude Code | sonnet | used | 10 of 11 | 4 of 5 | Accepted | Not ready | Claude Code, haiku | $1.61 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 7 of 10 | 4 of 4 | Accepted | Not ready | Claude Code, haiku | $0.85 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 9 of 10 | 4 of 4 | Accepted | Ready, by a person's count | Claude Code, haiku | $1.09 |

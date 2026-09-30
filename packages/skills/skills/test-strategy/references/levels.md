@@ -32,7 +32,7 @@ A stand-in for an outside service is fine for testing your own code's handling, 
 - **TEST-06:** integration tests use a database built by the migrations, never a schema made by hand. A change to stored data is tested from the shape it had before, and nothing is lost.
 - **TEST-08:** code that handles sign-in, permissions, money, uploads or input reaching a database has abuse tests: another person's id, bad input, a repeat.
 - **TEST-09:** a new check is seen failing before it's trusted.
-- **TEST-10 (production):** a skilled attacker tests the product before launch and every year.
+- **TEST-10 (production):** a skilled attacker tests the product before launch and every year. Plan it even when nobody is named yet, such as "planned: before launch, then every year, by an outside security tester", and ask who books it under Open questions.
 - **TEST-11 (production):** a parser the project writes itself is fuzz-tested.
 - **PRIV-02:** test data is invented; no real person's details.
 - **DEL-04:** the tests run on every change, as required checks that block a merge.

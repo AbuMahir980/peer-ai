@@ -76,6 +76,8 @@ For each threat, find what stops it. Look as hard for defences that hold as for 
 - **Accepted:** only when a person has decided to live with the risk. Write who, why, and until when. Never accept a risk yourself.
 - **Not checked:** when the proof lives where you can't see it, such as a firewall rule or a provider's setting. Say where it would be.
 
+A model with nothing in place is rare, even for a product built badly. Before you finish, check each way in for what already holds, starting with how it knows who is asking, and mark each with its file and line.
+
 ## 6. Write and check
 
 Copy the [template](assets/threat-model.md) and fill in every part. Keep it short enough to read: a table row per threat, not an essay.

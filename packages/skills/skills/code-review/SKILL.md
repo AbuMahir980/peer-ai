@@ -6,7 +6,7 @@ compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and N
 metadata:
   peer-ai-kind: review
   peer-ai-domains: code-quality architecture frontend backend system-design money safety-critical
-  peer-ai-rules: DATA-03 REL-01 PERF-01 PERF-05 PERF-06 API-06 TEST-01 TEST-04 TEST-07
+  peer-ai-rules: DATA-03 REL-01 REL-09 PERF-01 PERF-05 PERF-06 API-06 TEST-01 TEST-04 TEST-07
 ---
 
 # Code review
@@ -45,6 +45,7 @@ Start from the list of every source file in scope, such as `git ls-files` for ea
 | `component` | `component:RepairQueue` | Screens and components |
 | `route` | `route:POST /bookings` | Endpoints and their handlers |
 | `job` | `job:send-reminders` | Background and scheduled work |
+| `call` | `call:parts-supplier` | Each call to an outside service, AI models included |
 | `migration` | `migration:0004_frames` | Database migrations, and changes to data stored on a device |
 | `contract` | `contract:openapi` | The API contract, and the types that come from it |
 | `test` | `test:slots` | Test files |
@@ -62,7 +63,7 @@ Work through each group. Its reference says what to look for, what counts as evi
 | Rules | Reference |
 |-------|-----------|
 | BE-01, DATA-03, API-06, SYS-01 to SYS-06: doing the right thing, and keeping data | [correctness.md](references/correctness.md) |
-| REL-01, BE-02, PERF-01, PERF-05, PERF-06: outside calls, load and leaks | [performance-and-reliability.md](references/performance-and-reliability.md) |
+| REL-01, REL-09, BE-02, PERF-01, PERF-05, PERF-06: outside calls, updates, load and leaks | [performance-and-reliability.md](references/performance-and-reliability.md) |
 | FE-01 to FE-09: screens and their data | [frontend.md](references/frontend.md) |
 | ARC-01 to ARC-08: where code lives | [architecture.md](references/architecture.md) |
 | CODE-01 to CODE-15: code people can change safely, and edge cases | [code-quality.md](references/code-quality.md) |
@@ -80,7 +81,8 @@ A code review is not a security audit, but it never walks past a serious problem
 - a secret or personal detail written to a log;
 - plain HTTP, or certificate checks switched off;
 - a response that no longer matches the API contract;
-- the client deciding a price or a permission.
+- the client deciding a price or a permission;
+- an AI model's reply trusted as if the code had written it.
 
 Report each as a finding that cites the rule it breaks. The peer-ai MCP tool `standards_for_file` lists every rule for a file. Its severity is that rule's. In the summary, name the specialist review that should follow, such as security-review or contract-check.
 

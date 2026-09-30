@@ -6,7 +6,7 @@ compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and N
 metadata:
   peer-ai-kind: review
   peer-ai-domains: security privacy-compliance
-  peer-ai-rules: REL-03 REL-04 REL-05 DEL-07 TEST-08 MOB-01 MOB-02 MOB-03 MOB-04 MOB-05 AI-01 AI-03 AI-04 AI-06
+  peer-ai-rules: REL-03 REL-04 REL-05 DEL-07 TEST-08 MOB-01 MOB-02 MOB-03 MOB-04 MOB-05 AI-01 AI-03 AI-04 AI-06 MONEY-12
 ---
 
 # Security review
@@ -71,7 +71,7 @@ Work through each group. Its reference says what to look for, what counts as evi
 | SEC-01 to SEC-04, SEC-14, SEC-21: who may do what | [access-control.md](references/access-control.md) |
 | SEC-05 to SEC-09, SEC-22: what comes in and what goes out | [input-and-output.md](references/input-and-output.md) |
 | SEC-10, SEC-11, SEC-26, SEC-27, REL-04, REL-05, DEL-07: secrets and configuration | [secrets-and-config.md](references/secrets-and-config.md) |
-| PRIV-01 to PRIV-06: personal data | [personal-data.md](references/personal-data.md) |
+| PRIV-01 to PRIV-06, MONEY-12: personal data and card details | [personal-data.md](references/personal-data.md) |
 | SEC-12, SEC-13, SEC-24, REL-03: guessing, abuse and security logs | [abuse-and-logging.md](references/abuse-and-logging.md) |
 | SEC-15 to SEC-20, SEC-23: transport, browsers and files | [transport-and-files.md](references/transport-and-files.md) |
 | SEC-25, TEST-08: the threat model and abuse tests | [threat-model-and-tests.md](references/threat-model-and-tests.md) |
@@ -81,9 +81,9 @@ Work through each group. Its reference says what to look for, what counts as evi
 Hold every line to this bar:
 
 - **A pass shows its evidence:** the file and line where the rule holds, such as "orders.ts:43 loads the order by its id and the caller's user id". "Looks fine" isn't evidence, and neither is a comment claiming the check exists.
-- **A failure is a finding:** the harm in plain words, the file and line, what shows it's real, and a fix. Its severity is its rule's, from [severity.md](references/severity.md).
+- **A failure is a finding:** the harm in plain words, the file and line, what shows it's real, and a fix. Its severity is its rule's, from [severity.md](references/severity.md). One problem to a finding, at the file and line its fix changes: two problems in one finding hide one of them.
 - **Every item, not a sample.** A rule about each route is checked on each route.
-- **Only what the code shows.** When the proof lives where you can't see it, such as a hosting platform's settings or another repository, the line is `not-checked` with that reason. Note what an attacker can't do as well, so nothing is overstated.
+- **Only what the code shows.** When the proof lives where you can't see it, such as a hosting platform's settings or another repository, the line is `not-checked` with that reason. This code's own part is still checked, such as whether it calls what the other side provides. Note what an attacker can't do as well, so nothing is overstated.
 - **Deployed, not local.** TLS, HSTS and secure cookies are judged on the production configuration, not on settings for local development.
 - **Tool-checked rules still get a line.** For a rule a tool checks, such as SEC-07 or SEC-10, a pass cites the tool running in CI, and any violation you see is still a finding.
 - **A real problem no rule covers** goes in the summary, with the rule it suggests. Every finding cites a rule.
