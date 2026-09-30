@@ -22,6 +22,8 @@ import {
   regradeDocument,
   scoreDocument,
   changeIn,
+  claudeGraderArgs,
+  claudeRunArgs,
   finalMessage,
   setUp,
   workItemsDocument,
@@ -238,6 +240,18 @@ describe("marking a review", () => {
 });
 
 describe("running an eval", () => {
+  it("keeps the user's own skills and plugins out of Claude Code runs and grading", () => {
+    // In one baseline, a skill installed for the user did the work the eval meant to measure without one.
+    for (const args of [claudeRunArgs("Triage the debt.", "sonnet"), claudeGraderArgs("Grade it.")]) {
+      const at = args.indexOf("--setting-sources");
+      expect(at).toBeGreaterThan(-1);
+      expect(args[at + 1]).toBe("project,local");
+      expect(args).toContain("--strict-mcp-config");
+    }
+    expect(claudeRunArgs("Triage the debt.", "sonnet")).toEqual(expect.arrayContaining(["--model", "sonnet"]));
+    expect(claudeGraderArgs("Grade it.")).not.toContain("--model");
+  });
+
   it("works on a copy without the answers, and marks the reports the tool writes", async () => {
     const sheet = loadSheet("courier");
     const d1 = sheet.defects[0]?.spans[0];

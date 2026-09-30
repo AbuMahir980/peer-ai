@@ -50,6 +50,7 @@ Write `docs/incidents/<yyyy-mm-dd>-<short-name>.md` as you go, starting with the
 
 - **Inside:** whoever leads incidents in the plan, and the owners of anything affected.
 - **The people affected:** what happened to them, what's been done, and what they should do, in plain words, once the facts are sure.
+- **Where it came from:** when the cause came from outside, such as a partner's data, a supplier's service or a dependency, whoever runs it: what happened, and what you need them to do.
 - **Outside, by law:** when people's personal data was exposed, changed or lost, data protection laws commonly require telling the regulator, and sometimes the people, within a set time. Name the likely law for where the product operates, from `compliance` in `peer-ai.config.json`, and its deadline, as a question for someone qualified to decide, never as a conclusion.
 
 Draft the messages; a person sends them.
@@ -63,6 +64,8 @@ Find what caused it, from the change history, the code and the logs: the smalles
 The proper fix goes through the normal way of working: a work item with acceptance criteria, built with a test that fails without the fix and passes with it (TEST-01), verified with the peer-ai MCP tool `run_verify`, and reviewed. Use the implement-ticket skill when it's installed. Undo any containing step once the fix is live, and say when.
 
 Repair what the incident broke, too, where it can be repaired: records changed wrongly, or data that can be recovered from a backup. Anything that can't be recovered is said plainly in the review.
+
+When those records live in a system this repository doesn't own, such as another team's service, the repair is still planned here: a request to its owners saying which records, how to find them from what you have, such as the logs and the times, and what to do with each, with a draft message for the people affected. An open question isn't a repair.
 
 ## 7. Learn
 

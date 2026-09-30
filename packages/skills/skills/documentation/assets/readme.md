@@ -16,11 +16,11 @@
 
 ## How it's put together
 
-{{Each part, what it does, where it lives, and what it talks to, with a link to the architecture document.}}
+{{Each part, what it does, where it lives, and what it talks to, with a link to the architecture document. Where people's data is kept, and what protects it from being lost.}}
 
 ## Shipping it
 
-{{How a change reaches people: the pipeline, the environments, and who can release. For a library, how it's published.}}
+{{How a change reaches people: the pipeline, the environments, and who can release. For a library, how it's published. For an app on people's devices or in their browsers, how the version they run is replaced by the next.}}
 
 ## Working on it
 

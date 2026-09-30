@@ -327,7 +327,7 @@ A planted problem is found in its file by a short piece of the exact code, not b
 - **What people judged in those runs:** findings about something missing everywhere, such as no service targets, were placed at the requirements or at the place an attack starts. They now count wherever they cite their rule, and the baseline's point about sentences in logs counts at the logging setup, where it starts.
 
 - **2026-09-29, incident-response with Claude Code on Sonnet, graded by Claude Code on Haiku, on three incidents, and on courier's without it.** Customers seeing each other's parcels after a release, journals lost on people's devices after an update, and a partner's catalogue text steering the librarian into reserving books nobody asked for. The grader reads the work items, the change and what the run told the person:
-  - **Courier and sprout are ready:** 8 of 8 and 7 of 8. Without the skill, courier made 2 of 8 and wasn't ready: it went straight to a fix, with no containment, no question about the data breach, no timeline, review or runbook.
+  - **Courier and sprout are ready:** 8 of 8 and 7 of 8. The courier run meant to be without the skill used a general incident-response skill installed on the machine instead (see 2026-09-30): it made 2 of 8 and wasn't ready, going straight to a fix, with no containment, no question about the data breach, no timeline, review or runbook.
   - **Shelf isn't ready, at 6 of 8.** It contained the librarian, found the cause and kept the evidence, but didn't plan cancelling the reservations nobody asked for, since they live in the other repository's API, and left telling the partner as an open question.
   - **Sprout's one miss:** it held back the message to the people affected, "to confirm tone first", where the skill says to draft it and let a person send it.
   - **Shelf's run cost $11.09,** in 6 turns over 23 minutes, several times any other run. Keeping an eval run within a set cost is work for the runner.
@@ -338,9 +338,16 @@ A planted problem is found in its file by a short piece of the exact code, not b
   - **Shelf's one miss:** nothing about how the app reaches the stores.
 
 - **2026-09-29, tech-debt-triage with Claude Code on Sonnet, graded by Claude Code on Haiku, on courier, shelf and sprout, and on courier without it:**
-  - **None is ready yet: each made 4 of 7.** With the skill, every run changed no code, wrote work items with a goal and acceptance criteria, and kept a register with each item's cost, risk and size. Without it, courier made 3 of 7 at nearly three times the cost ($2.47 against $0.88): it stopped to ask before creating any work items, and listed the rest without their cost, risk or size.
+  - **None is ready yet: each made 4 of 7.** With the skill, every run changed no code, wrote work items with a goal and acceptance criteria, and kept a register with each item's cost, risk and size. The courier run meant to be without it used a general tech-debt skill installed on the machine instead (see 2026-09-30): it made 3 of 7 at nearly three times the cost ($2.47 against $0.88), stopped to ask before creating any work items, and listed the rest without their cost, risk or size.
   - **What the runs missed is breadth and order.** Each found some of the debt and not the rest. Courier missed prices worked out in two places, and tests that never run or can't fail, as the baseline did. Shelf missed that the whole app has one test, and the saved books lost on updating. Sprout missed the dependencies with published vulnerabilities, the missing lockfile, and the identification key in the app people download, and named the lack of tests without saying why it matters when the device holds the only copy of people's journals. Two ranked wrongly: courier put first an item it said costs nothing yet, and shelf planned finishing its half-finished rebuild, fourth on its list, not first.
   - **Work for the next round:** going through each kind of debt in turn, such as the code, the tests, the dependencies, the data and the build, so none is skipped, and ranking by what each costs and risks before anything else.
+
+- **2026-09-30, the five skills not yet ready, again with Claude Code on Sonnet, graded by Claude Code on Haiku, after fixing each.** Two rounds: the first ran all seven scenarios left, the second the four still not ready:
+  - **Ready now:** release-readiness on the library release, 5 of 5: it diffed the function against the published version and caught the breaking change. tech-debt-triage on courier, 6 of 7. documentation on sprout, 6 of 7 in the second round. incident-response on shelf by a person's reading, 7 of 8: the grader marked the repair as missed because the messages were drafted, not sent, which is what the skill asks for and what counted on courier and sprout. The repair is now planned as a request to the API's owners, naming the readers affected, how to find them in the log and what to do with each. Its one real miss: it asked the API's owners, not the partner who supplied the text.
+  - **Not ready yet:** test-strategy on shelf reached 9 of 10, and now plans the journeys on both iOS and Android, but listed the penetration test as a gap and a question, not a plan. tech-debt-triage on shelf reached 6 of 7 and now puts finishing the rebuild first, but hasn't found the saved books lost on updating in three runs. tech-debt-triage on sprout stayed at 5 of 7: it doesn't name the dependency versions with published advisories, or say why the missing tests matter when the device holds the only copy.
+  - **What changed in the skills:** tech-debt-triage goes through every area with a check for each, records what each found, and gives each ranked item its reason. release-readiness diffs every changed interface against the version people have now, and knows tests rewritten in the same release prove only the new form. documentation says which settings end up in what people download, and checks how a new version reaches them in the code, not its comments. test-strategy lists every testing rule the stage asks for, names the platforms against each journey, and describes the test that closes each gap. incident-response plans a repair in a system it doesn't own as a request to its owners, and tells whoever the cause came from.
+- **What the runs changed in the runner:** Claude Code runs and the grader now load only the copy's own settings. Before, they could see skills and plugins installed for the person running the evals, and two of 328 logged runs used one: the courier baselines for incident-response and tech-debt-triage used a general skill of the same kind, so those rows now say "another skill". Codex runs already ignored the user's own settings.
+- **Why shelf's first incident run cost $11.09:** after containing the incident, it built the fix and ran the five reviews it required, and three of them again, each in a background helper with its own copy of the context, as the skill's normal way of working asks. This time it ran the reviews itself, in one session, for $4.79.
 
 ## Results
 
@@ -453,6 +460,7 @@ The Skill column says whether the run had the skill: without it (a baseline), us
 | 2026-09-29 | courier-security-logs | observability-review | Claude Code | sonnet | used | 9 of 9 | 9 of 9 | 0 | Ready | $1.15 |
 | 2026-09-29 | shelf-monitoring | observability-review | Claude Code | sonnet | used | 4 of 4 | 9 of 9 | 2 | Ready | $1.02 |
 | 2026-09-29 | courier-observability | observability-review | Claude Code | sonnet | without | 8 of 8 | 9 of 9 | 2 | Ready | $1.01 |
+| 2026-09-30 | split-bill-release | release-readiness | Claude Code | sonnet | used | 5 of 5 | 18 of 18 | 0 | Ready | $1.10 |
 
 ## Document results
 
@@ -554,7 +562,7 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | courier-incident | incident-response | Claude Code | sonnet | used | 8 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.33 |
 | 2026-09-29 | sprout-incident | incident-response | Claude Code | sonnet | used | 7 of 8 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.04 |
 | 2026-09-29 | shelf-incident | incident-response | Claude Code | sonnet | used | 6 of 8 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $11.09 |
-| 2026-09-29 | courier-incident | incident-response | Claude Code | sonnet | without | 2 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.60 |
+| 2026-09-29 | courier-incident | incident-response | Claude Code | sonnet | another skill | 2 of 8 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.60 |
 | 2026-09-29 | courier | documentation | Claude Code | sonnet | used | 7 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.03 |
 | 2026-09-29 | shelf | documentation | Claude Code | sonnet | used | 6 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.80 |
 | 2026-09-29 | sprout | documentation | Claude Code | sonnet | used | No document | – | – | Not ready | Claude Code, haiku | $0.38 |
@@ -563,4 +571,14 @@ Newest last. **Points** is how many of the scenario's points the grader found in
 | 2026-09-29 | courier | tech-debt-triage | Claude Code | sonnet | used | 4 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.88 |
 | 2026-09-29 | shelf | tech-debt-triage | Claude Code | sonnet | used | 4 of 7 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.97 |
 | 2026-09-29 | sprout | tech-debt-triage | Claude Code | sonnet | used | 4 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.82 |
-| 2026-09-29 | courier | tech-debt-triage | Claude Code | sonnet | without | 3 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $2.47 |
+| 2026-09-29 | courier | tech-debt-triage | Claude Code | sonnet | another skill | 3 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $2.47 |
+| 2026-09-30 | courier | tech-debt-triage | Claude Code | sonnet | used | 6 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $1.39 |
+| 2026-09-30 | shelf | tech-debt-triage | Claude Code | sonnet | used | 5 of 7 | 1 of 3 | Accepted | Not ready | Claude Code, haiku | $0.79 |
+| 2026-09-30 | sprout | tech-debt-triage | Claude Code | sonnet | used | 5 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.88 |
+| 2026-09-30 | sprout | documentation | Claude Code | sonnet | used | 5 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.80 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 5 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $1.23 |
+| 2026-09-30 | shelf-incident | incident-response | Claude Code | sonnet | used | 6 of 8 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $4.79 |
+| 2026-09-30 | shelf | tech-debt-triage | Claude Code | sonnet | used | 6 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.71 |
+| 2026-09-30 | sprout | tech-debt-triage | Claude Code | sonnet | used | 5 of 7 | 2 of 3 | Accepted | Not ready | Claude Code, haiku | $0.75 |
+| 2026-09-30 | sprout | documentation | Claude Code | sonnet | used | 6 of 7 | 3 of 3 | Accepted | Ready | Claude Code, haiku | $0.75 |
+| 2026-09-30 | shelf | test-strategy | Claude Code | sonnet | used | 9 of 10 | 3 of 4 | Accepted | Not ready | Claude Code, haiku | $0.89 |

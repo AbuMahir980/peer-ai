@@ -41,13 +41,15 @@ List, with where each is defined:
 |------|--------|
 | part | Each part of the product, what it does and where it lives |
 | command | Each command a newcomer needs: install, run, test, migrate, build, release |
-| setting | Each setting the code reads, whether it's required, and where its value comes from |
+| setting | Each setting the code reads, whether it's required, where its value comes from, and whether it stays on a server or is built into what people download |
 | service | Each thing it needs running, such as a database, and each outside service it calls |
 | document | Each document a newcomer should know about |
 
 ## 3. Try it
 
 Where you're free to run commands, follow your own setup steps in a clean copy, as a newcomer would, and fix the README until they work. Where you can't, or running them would need someone's permission, don't stop to ask: check each command against where it's defined, such as a script in a dependency file or the verify command, and each setting against the code that reads it. Mark any step you couldn't confirm as not tried.
+
+Follow a change all the way to the people using it, too: the pipeline, the environments, and how the version they run is replaced by the next. Check each link in the code that does it, not in what a comment or a file's name says it does. Each link you can't confirm is a step marked not tried, or a problem to report.
 
 A step that can't work as the project stands is a problem to report, not to hide.
 
@@ -56,7 +58,7 @@ A step that can't work as the project stands is a problem to report, not to hide
 Copy the [template](assets/readme.md) and fill in every part. [writing.md](references/writing.md) shows the difference between a README that works and one that doesn't.
 
 - **The project's own words for things:** commands exactly as defined, settings by their exact names.
-- **Never a real value:** name each secret and say where it comes from, such as the team's secret store. If the code holds a secret itself, don't repeat it: report it.
+- **Never a real value:** name each secret and say where it comes from, such as the team's secret store. If the code holds a secret itself, don't repeat it: report it. A setting built into what people's browsers or phones download can be read by anyone: say so, and report any secret among them (SEC-10).
 - **Short and in order:** the steps a newcomer takes, in the order they take them. Link to the docs for depth instead of copying them in.
 - **Say where each fact came from,** and mark what you couldn't confirm. Don't stop to wait for answers: put each question in the hand-over, with who can answer it.
 
