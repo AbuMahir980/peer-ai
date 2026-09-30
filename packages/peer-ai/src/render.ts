@@ -17,6 +17,7 @@ import { count, fail, formatChecks, ok, plural, skip, type Check } from "./check
 import { CONFIG_FILE } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
+import { WORKFLOW_FILE, sameFile, unchangedSinceRender, workflowFile } from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 export const START = "<!-- peer-ai:start -->";
@@ -28,7 +29,8 @@ const IMPORTS_AGENTS = /^@AGENTS\.md\s*$/m;
 /** What render does to one file. `content` is the whole file to write, when it changes. */
 export interface Planned {
   path: string;
-  action: "create" | "update" | "unchanged" | "refused";
+  /** kept: a file render owns that someone changed by hand, which render leaves alone on purpose. */
+  action: "create" | "update" | "unchanged" | "refused" | "kept";
   content?: string;
   note?: string;
 }
@@ -485,6 +487,27 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
     });
   }
 
+  // The pipeline profile's checks, as one workflow render owns while nobody changes it by hand.
+  const workflow = workflowFile(config);
+  if (workflow !== undefined) {
+    const existing = readText(root, WORKFLOW_FILE);
+    if (existing === undefined) files.push({ path: WORKFLOW_FILE, action: "create", content: workflow });
+    else if (unchangedSinceRender(existing)) {
+      const same = sameFile(existing, workflow);
+      files.push({
+        path: WORKFLOW_FILE,
+        action: same ? "unchanged" : "update",
+        ...(same ? {} : { content: workflow }),
+      });
+    } else {
+      files.push({
+        path: WORKFLOW_FILE,
+        action: "kept",
+        note: "It was changed by hand, so keeping it up to date with the config is yours now; peer-ai doctor checks it still has every job. Delete it to have render write Peer AI's again.",
+      });
+    }
+  }
+
   if (uses("claude-code")) files.push(claudeSessionHook(root, command));
   if (uses("cursor")) files.push(cursorEnvironment(root, command));
   if (uses("copilot")) files.push(copilotSetupSteps(root, command));
@@ -559,6 +582,8 @@ function toCheck(planned: Planned, checking: boolean): Check {
   switch (planned.action) {
     case "refused":
       return fail("render", `${planned.path} wasn't changed.`, planned.note ?? "");
+    case "kept":
+      return skip("render", `${planned.path} left as it is. ${planned.note ?? ""}`.trim());
     case "unchanged":
       return ok("render", `${planned.path} is up to date.${planned.note === undefined ? "" : ` ${planned.note}`}`);
     default:
@@ -600,7 +625,8 @@ export function runRender(options: RenderOptions, out: Output): number {
   }
   const committed = config.skills?.commit === true;
   if (!options.check) {
-    for (const planned of plan.files) if (planned.action !== "refused") write(options.cwd, planned);
+    for (const planned of plan.files)
+      if (planned.action !== "refused" && planned.action !== "kept") write(options.cwd, planned);
     for (const skill of plan.skills) if (skill.action !== "unchanged") writeSkill(options.cwd, skill);
   }
   // --check is for CI, which sees only what's committed. Skills usually aren't, so it leaves them

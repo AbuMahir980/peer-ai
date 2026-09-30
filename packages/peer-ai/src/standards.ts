@@ -3,7 +3,7 @@
 // for these before editing a file, instead of loading every rule on every turn.
 
 import { isAbsolute, relative } from "node:path";
-import { profileRulesFor, rulesFor, type Rule, type Value } from "@peer-ai/standards";
+import { PROFILES, profileRulesFor, rulesFor, type Rule, type Value } from "@peer-ai/standards";
 import { DOMAIN_IDS, type DomainId, type PeerAiConfig } from "@peer-ai/workflow";
 
 type ConfigTrack = PeerAiConfig["tracks"][number];
@@ -95,6 +95,8 @@ function domainsFor(track: ConfigTrack | undefined): DomainId[] {
   return extra === undefined ? [...DOMAIN_IDS] : [...new Set([...EVERY_FILE, ...extra])];
 }
 
+const WHOLE_PROJECT = new Set(PROFILES.filter((profile) => profile.stacks.length === 0).map((profile) => profile.id));
+
 /** Returns undefined for a file outside the project. */
 export function standardsFor(config: PeerAiConfig, root: string, file: string): StandardsForFile | undefined {
   const path = normalise(isAbsolute(file) ? relative(root, file) : file);
@@ -125,7 +127,14 @@ export function standardsFor(config: PeerAiConfig, root: string, file: string): 
     ...(track?.stack === undefined ? {} : { stack: track.stack }),
     ...(track?.architecture === undefined ? {} : { architecture: track.architecture }),
   })
-    .filter((rule) => domains.includes(rule.domain))
+    // A profile with no stacks, such as the pipeline's, is about the project as a whole: its rules
+    // go with the pipeline's files in .github/, whichever part holds them, and with files outside
+    // every part, not with each part's code.
+    .filter((rule) =>
+      WHOLE_PROJECT.has(rule.profile)
+        ? track === undefined || path.startsWith(".github/")
+        : domains.includes(rule.domain),
+    )
     .map(({ id, title, rule, ask, check, severity, carries, value }) => ({
       id,
       title,

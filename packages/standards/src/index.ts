@@ -32,6 +32,7 @@ import {
 import { express } from "./profiles/express.ts";
 import { fastapi } from "./profiles/fastapi.ts";
 import { fastify } from "./profiles/fastify.ts";
+import { githubActions } from "./profiles/github-actions.ts";
 import { nestjs } from "./profiles/nestjs.ts";
 import { next } from "./profiles/next.ts";
 import { node } from "./profiles/node.ts";
@@ -43,6 +44,7 @@ import { RuleSchema, STAGES, traitsNeeded, type Rule, type RuleInput, type Stage
 
 export { DOMAIN_INFO } from "./domains.ts";
 export {
+  PIPELINE_JOBS,
   checkProfiles,
   overrideFits,
   withValue,
@@ -52,6 +54,7 @@ export {
   type EnforcerTool,
   type Example,
   type Part,
+  type PipelineJob,
   type Profile,
   type ProfileInput,
   type ProfileRule,
@@ -140,6 +143,7 @@ const PROFILE_INPUTS: ProfileInput[] = [
   fastify,
   python,
   fastapi,
+  githubActions,
 ];
 
 const checkedProfiles = checkProfiles(PROFILE_INPUTS, CORE_RULES, Object.values(DOMAINS));

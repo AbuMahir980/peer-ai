@@ -582,6 +582,40 @@ describe("doctor on stack profiles", () => {
     });
   });
 
+  it("checks the pipeline's workflow is there, as render wrote it, and up to date", () => {
+    const pipeline = (stage: string) =>
+      json({
+        version: 1,
+        project: { name: "Repairs", stage },
+        tools: ["codex"],
+        tracks: [{ id: "app", kind: "web", status: "active" }],
+        repo: { host: "github" },
+        standards: { profiles: ["github-actions"] },
+      });
+    const missing = project({ "peer-ai.config.json": pipeline("production") });
+    expect(checksFor(missing, "enforcers")).toMatchObject([
+      { status: "fail", message: expect.stringContaining("peer-ai-security.yml isn't there") as string },
+    ]);
+    const rendered = project({ "peer-ai.config.json": pipeline("mvp") });
+    runRender({ cwd: rendered, check: false }, capture());
+    expect(checksFor(rendered, "enforcers")).toMatchObject([
+      {
+        status: "ok",
+        message: expect.stringMatching(/peer-ai-security\.yml runs GHA-01, GHA-02, GHA-03, GHA-04, GHA-05$/) as string,
+      },
+    ]);
+    const path = join(rendered, ".github/workflows/peer-ai-security.yml");
+    writeFileSync(path, readFileSync(path, "utf8").replace("ubuntu-latest", "ubuntu-24.04"));
+    expect(checksFor(rendered, "enforcers")).toMatchObject([
+      { status: "warn", message: expect.stringContaining("was changed by hand. It still has every job") as string },
+    ]);
+    expect(checksFor(rendered, "render")).toMatchObject([{ status: "ok" }]);
+    writeFileSync(path, readFileSync(path, "utf8").replace("  code:\n", "  lint:\n"));
+    expect(checksFor(rendered, "enforcers")).toMatchObject([
+      { status: "warn", message: expect.stringContaining("no longer has the code job") as string },
+    ]);
+  });
+
   it("warns about an override for a rule with no value to change", () => {
     const root = project({
       "peer-ai.config.json": typed("mvp", ["typescript"], {

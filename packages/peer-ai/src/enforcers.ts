@@ -7,9 +7,20 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, normalize, posix } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser";
 import { parse as parseToml } from "smol-toml";
+import { parse as parseYaml } from "yaml";
 import { profile, profileRulesFor, type AppliedRule } from "@peer-ai/standards";
 import type { PeerAiConfig } from "@peer-ai/workflow";
 import { fail, ok, plural, warn, type Check } from "./checks.ts";
+import {
+  WORKFLOW_FILE,
+  environmentAddresses,
+  pipelineRules,
+  sameFile,
+  unchangedSinceRender,
+  workflowFile,
+  workflowJobs,
+  writtenByRender,
+} from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((extension) => `eslint.config.${extension}`);
@@ -134,6 +145,16 @@ function ruffChain(root: string, file: string): { files: string[]; settings: (Ru
     current = read?.extend;
   }
   return { files, settings };
+}
+
+/** The jobs a workflow file defines, or none when it isn't valid YAML. */
+function jobsIn(content: string): string[] {
+  try {
+    const parsed: unknown = parseYaml(content);
+    return Object.keys(table(table(parsed)?.jobs) ?? {});
+  } catch {
+    return [];
+  }
 }
 
 /** A tsconfig's compiler options, read as TypeScript reads it: comments and trailing commas allowed. */
@@ -280,6 +301,56 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
       continue;
     }
     checks.push(ok("enforcers", `${file} extends Peer AI's Ruff settings for ${plural(rules.length, "rule")}`));
+  }
+
+  // The pipeline's checks run from the workflow render writes.
+  const pipeline = pipelineRules(config);
+  const existing = existsSync(join(root, WORKFLOW_FILE)) ? readFileSync(join(root, WORKFLOW_FILE), "utf8") : undefined;
+  const expected = workflowFile(config);
+  if (expected === undefined) {
+    if (existing !== undefined && writtenByRender(existing)) {
+      checks.push(
+        warn(
+          "enforcers",
+          `${WORKFLOW_FILE} is still there, but the config asks for none of its checks, so render no longer updates it.`,
+          "Delete it, or list the github-actions profile in standards.profiles.",
+        ),
+      );
+    }
+  } else {
+    const ids = list(pipeline.filter((rule) => rule.check === "auto").map((rule) => rule.id));
+    if (existing === undefined) {
+      checks.push(missing(`${WORKFLOW_FILE} isn't there, so the pipeline doesn't run ${ids}.`, "Run peer-ai render."));
+    } else if (unchangedSinceRender(existing)) {
+      if (sameFile(existing, expected)) checks.push(ok("enforcers", `${WORKFLOW_FILE} runs ${ids}`));
+      else checks.push(missing(`${WORKFLOW_FILE} is out of date with the config.`, "Run peer-ai render."));
+    } else {
+      // Changed by hand: the jobs Peer AI's would have must still be there, under their names.
+      const found = jobsIn(existing);
+      const gone = workflowJobs(config).filter((job) => !found.includes(job));
+      checks.push(
+        gone.length === 0
+          ? warn(
+              "enforcers",
+              `${WORKFLOW_FILE} was changed by hand. It still has every job, but doctor can't tell whether each still runs its check.`,
+              "Keep it up to date with the config yourself, or delete it and run peer-ai render to go back to Peer AI's.",
+            )
+          : missing(
+              `${WORKFLOW_FILE} was changed by hand, and no longer has the ${gone.join(", ")} ${gone.length === 1 ? "job" : "jobs"}.`,
+              "Add them back, or delete the file and run peer-ai render to go back to Peer AI's.",
+            ),
+      );
+    }
+    const unusable = environmentAddresses(config).unusable;
+    if (unusable.length > 0 && pipeline.some((rule) => rule.id === "GHA-06" || rule.id === "GHA-07")) {
+      checks.push(
+        warn(
+          "enforcers",
+          `The pipeline leaves out ${list(unusable.map((environment) => `${environment.id} (${environment.url})`))}: an address must be a full http or https URL, without a user name or password.`,
+          "Correct the url in the environments of peer-ai.config.json.",
+        ),
+      );
+    }
   }
 
   for (const { track, rules } of parts) {

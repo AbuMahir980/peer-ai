@@ -47,3 +47,4 @@ A stack profile says how to follow the core rules in one stack, and which tool e
 | [Fastify](profiles/fastify.md) | `fastify` | node | 4 |
 | [Python](profiles/python.md) | `python` | – | 13 |
 | [FastAPI](profiles/python-fastapi.md) | `python-fastapi` | python | 8 |
+| [GitHub Actions](profiles/github-actions.md) | `github-actions` | – | 8 |
