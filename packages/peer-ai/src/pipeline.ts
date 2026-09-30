@@ -100,9 +100,9 @@ export const JOBS: Record<PipelineJob, JobScript> = {
     // is recorded in .gitleaksignore, with why.
     scan: [
       'if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then',
-      '  gitleaks git --no-banner --redact --exit-code 1 --log-opts="$BASE_SHA..$HEAD_SHA" .',
+      '  gitleaks git --no-banner --redact --verbose --exit-code 1 --log-opts="$BASE_SHA..$HEAD_SHA" .',
       "else",
-      "  gitleaks git --no-banner --redact --exit-code 1 .",
+      "  gitleaks git --no-banner --redact --verbose --exit-code 1 .",
       "fi",
     ],
     history: true,
