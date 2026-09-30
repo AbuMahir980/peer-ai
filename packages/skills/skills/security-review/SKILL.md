@@ -50,6 +50,7 @@ List everything an attacker can reach and everything worth protecting. Take it f
 | `upload` | `upload:avatar` | Every place a file comes in |
 | `permission` | `permission:camera` | Each device permission a phone app asks for |
 | `service` | `service:email` | Each outside service that receives personal data: analytics, AI models, payment providers |
+| `prompt` | `prompt:repair-advice` | Each place the code puts together instructions for an AI model, with every piece of text it joins in |
 | `secret` | `secret:PAYMENT_API_KEY` | Each secret the code reads |
 | `store` | `store:customers` | Tables, buckets and on-device stores holding personal or sensitive data |
 | `config` | `config:cors` | CORS, headers, TLS, session and cookie settings |

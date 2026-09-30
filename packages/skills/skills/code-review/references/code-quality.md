@@ -36,3 +36,5 @@ CODE-01 to CODE-15. Size and nesting limits come from the stack profile, through
   - two equal values competing for one place, such as two bookings for the same slot;
   - the first and the last item;
   - zero and negative numbers.
+
+  Record a coverage line for each unit you tried, naming the edges it passed or failed, such as "function:slotsFor: a slot at midnight in the shop's time zone, and an empty day".

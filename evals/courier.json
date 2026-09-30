@@ -254,6 +254,10 @@
         {
           "file": "services/api/app/auth.py",
           "match": "serializer = URLSafeSerializer(SECRET_KEY, salt=\"session\")"
+        },
+        {
+          "file": "services/api/app/auth.py",
+          "match": "        customer_id = serializer.loads(token)"
         }
       ],
       "found": "Not planted: first raised by the Claude Code security review on 2026-09-28, and judged real."
@@ -579,6 +583,76 @@
       ],
       "rules": ["MONEY-10"],
       "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, and judged real."
+    },
+    {
+      "id": "D42",
+      "title": "A payment is reported as paid, though nothing was charged",
+      "severity": "high",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "    return {\"status\": \"paid\"}"
+        }
+      ],
+      "rules": ["BE-01"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D43",
+      "title": "A payment sent twice is recorded twice: nothing makes it safe to repeat",
+      "severity": "critical",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/payments.py",
+          "match": "@router.post(\"\", status_code=201)"
+        }
+      ],
+      "rules": ["MONEY-08"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D44",
+      "title": "The tracking page copies the parcel into its own state, not a shared cache",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "apps/web/src/pages/TrackParcel.tsx",
+          "match": "  const [parcel, setParcel] = useState<Tracking | null>(null);"
+        }
+      ],
+      "rules": ["FE-01"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D45",
+      "title": "No request body has a size limit",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/main.py",
+          "match": "app = FastAPI(title=\"Courier API\")"
+        }
+      ],
+      "rules": ["BE-02"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "D46",
+      "title": "The assistant changes parcels directly, not through the parcels module",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "services/api/app/routes/assistant.py",
+          "match": "            db.execute(\"UPDATE parcels SET status = 'cancelled' WHERE id = %s\", (arguments[\"parcel_id\"],))"
+        }
+      ],
+      "rules": ["ARC-02"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
     }
   ],
   "documents": {

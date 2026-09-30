@@ -9,7 +9,10 @@
 //
 //   node scripts/eval.ts <fixture> --skill <skill> [--tool claude-code|codex] [--model <model>]
 //     [--grader claude-code|codex] [--grader-model <model>] [--baseline] [--runs <n>] [--record]
-//   node scripts/eval.ts <fixture> --skill <document skill> --regrade <copy> [--grader …] [--record]
+//   node scripts/eval.ts <fixture> --skill <skill> --regrade <copy> [--grader …] [--record]
+//
+// A review's findings are paired with the answer sheet's problems by place, and the grader then
+// confirms each pairing, so a finding about something else nearby doesn't count.
 
 import { execFile, execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -201,6 +204,8 @@ export interface Score {
   /** Findings that match no planted problem, for a person to judge. */
   unmatched: Finding[];
   bySeverity: Record<(typeof SEVERITIES)[number], { found: number; of: number }>;
+  /** Whether a grader confirmed each pairing, rather than place alone deciding it. */
+  confirmed: boolean;
   ready: boolean;
   /** Why it isn't ready, in plain words. */
   reasons: string[];
@@ -231,9 +236,10 @@ function distance(finding: Finding, defect: ResolvedDefect, span: Span): number 
  * so where several problems share a few lines, each finding goes to the one it's about; then the
  * nearest.
  */
-function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect[] {
+function candidates(finding: Finding, defects: ResolvedDefect[], allowed: Allowed = () => true): ResolvedDefect[] {
   const ranked: { defect: ResolvedDefect; cited: boolean; lines: number; gap: number }[] = [];
   for (const defect of defects) {
+    if (!allowed(finding, defect)) continue;
     const gap = Math.abs(SEVERITIES.indexOf(finding.severity) - SEVERITIES.indexOf(defect.severity));
     if (gap > 1) continue;
     const lines = Math.min(
@@ -254,14 +260,17 @@ function candidates(finding: Finding, defects: ResolvedDefect[]): ResolvedDefect
     .map(({ defect }) => defect);
 }
 
+/** Whether a finding may be paired with a planted problem, beyond being near it. */
+type Allowed = (finding: Finding, defect: ResolvedDefect) => boolean;
+
 /**
  * Which planted problem each finding is about. Each finding counts for one problem at most, so a
  * single finding can't score twice when two problems sit close together. Findings are paired with
  * problems so that as many problems as possible are found: when two findings both cover the same
  * two problems, each counts for one. A finding left over after that is about its nearest problem.
  */
-function matchFindings(findings: Finding[], expected: ResolvedDefect[], all: ResolvedDefect[]) {
-  const options = new Map(findings.map((finding) => [finding, candidates(finding, expected)]));
+function matchFindings(findings: Finding[], expected: ResolvedDefect[], all: ResolvedDefect[], allowed?: Allowed) {
+  const options = new Map(findings.map((finding) => [finding, candidates(finding, expected, allowed)]));
   const owner = new Map<ResolvedDefect, Finding>();
   // Kuhn's algorithm: a finding takes a problem, or moves the finding that holds it to another.
   const assign = (finding: Finding, tried: Set<ResolvedDefect>): boolean => {
@@ -278,14 +287,103 @@ function matchFindings(findings: Finding[], expected: ResolvedDefect[], all: Res
   };
   for (const finding of findings) assign(finding, new Set());
   const paired = new Map([...owner].map(([defect, finding]) => [finding, defect]));
-  return new Map(findings.map((finding) => [finding, paired.get(finding) ?? candidates(finding, all)[0]]));
+  return new Map(findings.map((finding) => [finding, paired.get(finding) ?? candidates(finding, all, allowed)[0]]));
 }
 
-/** Marks a review's reports against the answer sheet. */
-export function score(sheet: Sheet, skill: SkillId, reports: ReviewReport[]): Score {
-  const findings = reports.filter((report) => report.skill === skill).flatMap((report) => report.findings);
+/** A review's findings, each with a key that's unique across its reports. */
+function keyedFindings(reports: ReviewReport[], skill: SkillId): Map<Finding, string> {
+  const keys = new Map<Finding, string>();
+  const seen = new Map<string, number>();
+  for (const finding of reports.filter((report) => report.skill === skill).flatMap((report) => report.findings)) {
+    const times = (seen.get(finding.id) ?? 0) + 1;
+    seen.set(finding.id, times);
+    keys.set(finding, times === 1 ? finding.id : `${finding.id}#${String(times)}`);
+  }
+  return keys;
+}
+
+const pairKey = (finding: string, problem: string) => `${finding} ${problem}`;
+
+/** Each finding, with the planted problems near enough for it to be about them, for a grader to confirm. */
+export function pairingsToConfirm(sheet: Sheet, skill: SkillId, reports: ReviewReport[]) {
+  return [...keyedFindings(reports, skill)]
+    .map(([finding, key]) => ({
+      finding: {
+        id: key,
+        rule: finding.rule,
+        title: finding.title,
+        evidence: finding.evidence.slice(0, 800),
+        at: `${finding.location.file}${finding.location.line === undefined ? "" : `:${String(finding.location.line)}`}`,
+      },
+      problems: candidates(finding, sheet.defects).map((defect) => ({ id: defect.id, problem: defect.title })),
+    }))
+    .filter(({ problems }) => problems.length > 0);
+}
+
+export const PairingsSchema = z.array(
+  z.strictObject({
+    finding: z.string().min(1),
+    problem: z.string().min(1),
+    same: z.boolean(),
+    quote: z.string().max(1000),
+  }),
+);
+
+/** What the grader is asked. It sees only the findings and the problems near them, never the project. */
+export const PAIRINGS_PROMPT = `Check which problems a code review found. pairs.json lists the review's findings; each has the planted problems in the code near it, by id, that it might be about.
+
+For each finding and each of its problems, decide whether the finding is about that problem: its title or evidence describes the same fault, in substance, even in other words. A finding about something else in the same code, or about a wider concern that only touches the problem, is not about it. A finding can be about more than one of its problems only when it clearly describes each.
+
+Write pairings.json in this folder: a JSON array with one entry for each finding and problem, in the same order, such as {"finding": "F3", "problem": "D9", "same": true, "quote": "..."}. The quote is the finding's own words that describe the problem's fault, at most 200 characters; when there are none, same is false and the quote is empty. Escape any double quotes inside a quote, and check that pairings.json parses as JSON. Change no other file.`;
+
+/**
+ * Has a grader confirm which planted problems each finding is really about, since findings are
+ * paired with problems by place. Undefined when the grader wrote nothing valid, twice.
+ */
+export async function confirmPairings(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  reports: ReviewReport[],
+  grade: GraderRunner,
+  grader: GraderOptions,
+): Promise<ReadonlySet<string> | undefined> {
+  const pairs = pairingsToConfirm(sheet, skill, reports);
+  if (pairs.length === 0) return new Set();
+  const gradeDir = `${dir}-pairings`;
+  rmSync(gradeDir, { recursive: true, force: true });
+  mkdirSync(gradeDir, { recursive: true });
+  writeFileSync(join(gradeDir, "pairs.json"), `${JSON.stringify(pairs, null, 2)}\n`);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    rmSync(join(gradeDir, "pairings.json"), { force: true });
+    await grade(grader.tool, gradeDir, PAIRINGS_PROMPT, `${gradeDir}${attempt === 1 ? "" : "-2"}.log`, grader.model);
+    try {
+      const parsed = PairingsSchema.safeParse(JSON.parse(readFileSync(join(gradeDir, "pairings.json"), "utf8")));
+      if (parsed.success) {
+        // A pairing counts only with the finding's own words to show for it.
+        const shown = parsed.data.filter((pair) => pair.same && pair.quote.trim() !== "");
+        return new Set(shown.map((pair) => pairKey(pair.finding, pair.problem)));
+      }
+    } catch {
+      // Not written, or not JSON: try again.
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Marks a review's reports against the answer sheet. `confirmed` holds the pairings a grader
+ * confirmed; without it, findings are paired with problems by place alone.
+ */
+export function score(sheet: Sheet, skill: SkillId, reports: ReviewReport[], confirmed?: ReadonlySet<string>): Score {
+  const keys = keyedFindings(reports, skill);
+  const findings = [...keys.keys()];
   const own = sheet.defects.filter((defect) => defect.skills.includes(skill));
-  const matched = matchFindings(findings, own, sheet.defects);
+  const allowed: Allowed | undefined =
+    confirmed === undefined
+      ? undefined
+      : (finding, defect) => confirmed.has(pairKey(keys.get(finding) ?? "", defect.id));
+  const matched = matchFindings(findings, own, sheet.defects, allowed);
   const expected = own.map((defect) => ({
     defect,
     foundBy: findings.filter((finding) => matched.get(finding) === defect).map((finding) => finding.id),
@@ -310,7 +408,15 @@ export function score(sheet: Sheet, skill: SkillId, reports: ReviewReport[]): Sc
       `it found ${String(medium.found)} of ${String(medium.of)} medium problems, under ${String(MEDIUM_BAR * 100)}%`,
     );
   }
-  return { skill, expected, unmatched, bySeverity, ready: reasons.length === 0, reasons };
+  return {
+    skill,
+    expected,
+    unmatched,
+    bySeverity,
+    confirmed: confirmed !== undefined,
+    ready: reasons.length === 0,
+    reasons,
+  };
 }
 
 export interface CollectedReports {
@@ -515,6 +621,30 @@ export interface EvalRun {
   skillUsed?: boolean;
   /** How many of the skill's rules the reports covered. */
   coverage: { covered: number; of: number };
+  /** The grader that confirmed the pairings, when one did. */
+  grader?: GraderOptions;
+  /** Marked again from an earlier run's copy, so the run's time and cost aren't known. */
+  regraded?: boolean;
+}
+
+/** A grader to confirm which problem each finding is about. */
+export interface Pairing {
+  grade: GraderRunner;
+  grader: GraderOptions;
+}
+
+/** Marks the reports in a run's copy, with the pairings confirmed by a grader when one is given. */
+async function markReview(sheet: Sheet, skill: SkillId, dir: string, pairing?: Pairing) {
+  const collected = collectReports(dir);
+  const confirmed =
+    pairing === undefined
+      ? undefined
+      : await confirmPairings(sheet, skill, dir, collected.reports, pairing.grade, pairing.grader);
+  return {
+    collected,
+    score: score(sheet, skill, collected.reports, confirmed),
+    ...(confirmed === undefined || pairing === undefined ? {} : { grader: pairing.grader }),
+  };
 }
 
 /** One run: a fresh copy, the tool given the prompt, and its reports marked. */
@@ -525,6 +655,7 @@ export async function evaluate(
   runner: ToolRunner = runTool,
   into?: string,
   options: EvalOptions = {},
+  pairing?: Pairing,
 ): Promise<EvalRun> {
   const baseline = options.baseline === true;
   if (!baseline && !availableSkills().includes(skill)) {
@@ -539,17 +670,41 @@ export async function evaluate(
   }
   const log = `${dir}.log`;
   const toolRun = await runner(tool, dir, prompt, log, options.model);
-  const collected = collectReports(dir);
+  const marked = await markReview(sheet, skill, dir, pairing);
+  const { collected } = marked;
   const logText = existsSync(log) ? readFileSync(log, "utf8") : "";
   return {
     dir,
-    score: score(sheet, skill, collected.reports),
-    collected,
+    ...marked,
     tool: toolRun,
     baseline,
     ...(options.model === undefined ? {} : { model: options.model }),
     ...(baseline ? {} : { skillUsed: usedSkill(logText, skill) }),
     coverage: ruleCoverage(collected.reports, skill),
+  };
+}
+
+/** Marks an earlier review run again from its copy, with its pairings confirmed by a grader. */
+export async function regradeReview(
+  sheet: Sheet,
+  skill: SkillId,
+  dir: string,
+  pairing: Pairing,
+  options: EvalOptions = {},
+): Promise<EvalRun> {
+  const marked = await markReview(sheet, skill, dir, pairing);
+  const baseline = ![".claude/skills", ".agents/skills"].some((home) =>
+    existsSync(join(dir, home, renderedName(skill))),
+  );
+  return {
+    dir,
+    ...marked,
+    tool: { seconds: 0 },
+    baseline,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(baseline ? {} : { skillUsed: true }),
+    coverage: ruleCoverage(marked.collected.reports, skill),
+    regraded: true,
   };
 }
 
@@ -1085,9 +1240,18 @@ export function formatRun(sheet: Sheet, tool: Tool, run: EvalRun, index: number,
   }
   for (const bad of collected.invalid) lines.push(`Invalid report ${bad.path}: ${bad.errors.slice(0, 3).join("; ")}`);
   lines.push(`Covered ${String(run.coverage.covered)} of the skill's ${String(run.coverage.of)} rules.`);
+  lines.push(
+    run.grader === undefined
+      ? "Findings were paired with problems by place alone: a person should check each pairing."
+      : `Each pairing was confirmed by ${TOOL_NAMES[run.grader.tool]}${run.grader.model === undefined ? "" : ` (${run.grader.model})`}.`,
+  );
   const cost = run.tool.costUsd === undefined ? "" : ` · $${run.tool.costUsd.toFixed(2)}`;
   const turns = run.tool.turns === undefined ? "" : `${String(run.tool.turns)} turns · `;
-  lines.push(`${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`);
+  lines.push(
+    run.regraded === true
+      ? `Marked again from the copy in ${run.dir}`
+      : `${turns}${String(Math.round(run.tool.seconds))} s${cost} · copy in ${run.dir}`,
+  );
   lines.push(
     "",
     marked.ready ? "Ready: it found every serious problem." : `Not ready yet: ${marked.reasons.join("; ")}.`,
@@ -1222,7 +1386,16 @@ if (invokedDirectly) {
     ...(values.model === undefined ? {} : { model: values.model }),
   };
   const regrade = values.regrade;
-  if (regrade !== undefined) {
+  const pairing: Pairing = {
+    grade: runGrader,
+    grader: { tool: graderTool, ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }) },
+  };
+  if (regrade !== undefined && SKILL_KINDS[skill] === "review") {
+    const result = await regradeReview(sheet, skill, resolve(regrade), pairing, options);
+    console.log(formatRun(sheet, tool, result, 1, 1).join("\n"));
+    if (values.record === true) record(sheet, tool, result);
+    allReady &&= result.score.ready;
+  } else if (regrade !== undefined) {
     const grader = {
       tool: graderTool,
       ...(values["grader-model"] === undefined ? {} : { model: values["grader-model"] }),
@@ -1247,7 +1420,7 @@ if (invokedDirectly) {
     allReady &&= result.score.ready;
   }
   for (let i = 1; i <= runs && regrade === undefined && SKILL_KINDS[skill] === "review"; i++) {
-    const result = await evaluate(sheet, skill, tool, runTool, into(), options);
+    const result = await evaluate(sheet, skill, tool, runTool, into(), options, pairing);
     console.log(formatRun(sheet, tool, result, i, runs).join("\n"));
     if (i < runs) console.log("");
     if (values.record === true) record(sheet, tool, result);

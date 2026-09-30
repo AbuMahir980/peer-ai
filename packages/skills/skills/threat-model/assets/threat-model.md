@@ -24,6 +24,10 @@
 |----|--------|--------|------|--------|---------------|--------|
 | {{T1}} | {{The way in}} | {{What happens, and who is harmed}} | {{Spoofing, tampering, repudiation, disclosure, denial of service or elevation}} | {{Critical, high, medium or low}} | {{The rule, and the file and line where it holds}} | {{In place, missing, planned, accepted or not checked}} |
 
+## What already holds
+
+{{Each defence the product already has, with the file and line where it holds and the threats it stops: what a change must keep. Check every way in, starting with how it knows who is asking. "None found" only after that, saying what was checked.}}
+
 ## What we'll do about it
 
 {{Each missing defence as work to do, most serious first, with the rule it meets.}}

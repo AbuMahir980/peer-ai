@@ -289,6 +289,84 @@
           "match": "\"@tinymce/tinymce-react\": \"^6.3.0\","
         }
       ]
+    },
+    {
+      "id": "SP21",
+      "title": "Plants saved before version 2 have no position, so the list, sorted by position, leaves them out",
+      "severity": "critical",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "  const plants = useLiveQuery(() => db.plants.orderBy(\"position\").toArray()) ?? [];"
+        },
+        {
+          "file": "src/db.ts",
+          "match": "    this.version(2).stores({ plants: \"++id, name, room, position\", entries: null, journal: \"++id, plantId, at\" });"
+        }
+      ],
+      "rules": ["DATA-03"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "SP22",
+      "title": "The plant list shows nothing at all when there are no plants yet",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "    <ul className=\"plants\">"
+        }
+      ],
+      "rules": ["FE-07"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "SP23",
+      "title": "If the database won't open, the app shows a blank screen",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/main.tsx",
+          "match": "  await db.open();"
+        }
+      ],
+      "rules": ["FE-07", "FE-09"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "SP24",
+      "title": "The identification service's reply is used without checking its shape",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/identify/identify.ts",
+          "match": "  return (await response.json()) as T;"
+        },
+        {
+          "file": "src/features/identify/CareCard.tsx",
+          "match": "      <h2>This is {identification.species}</h2>",
+          "lines": 5
+        }
+      ],
+      "rules": ["SEC-06", "AI-01"],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, once a grader confirmed pairings, and judged real."
+    },
+    {
+      "id": "SP25",
+      "title": "Dragging a plant to reorder it never works: nothing lets the list accept a drop",
+      "severity": "medium",
+      "skills": ["code-review"],
+      "locations": [
+        {
+          "file": "src/features/plants/PlantList.tsx",
+          "match": "        <li key={plant.id} draggable onDragStart={() => setDragging(plant.id ?? null)} onDrop={() => void moveTo(plant.position)}>"
+        }
+      ],
+      "found": "Not planted: first raised by the Claude Code code review on 2026-09-30, and judged real: a drop needs the list to allow it first."
     }
   ],
   "documents": {

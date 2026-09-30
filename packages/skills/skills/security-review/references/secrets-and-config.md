@@ -23,7 +23,7 @@ A secret removed from the code but still in the history has leaked. Report it un
 
 **Fail** when:
 
-- there's no secret scanning;
+- there's no secret scanning, including when the repository has no CI at all: CI is set up in the repository, so its absence is something the code shows, not `not-checked`;
 - it only reports and doesn't fail the build;
 - it doesn't run on every change.
 
