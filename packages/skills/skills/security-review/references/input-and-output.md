@@ -11,6 +11,7 @@ SEC-05 to SEC-09, and SEC-22.
 - a request with no server-side check, even when the app or browser checks it;
 - a whole request body bound straight onto a model, which lets a caller set fields such as `role`, `ownerId` or `price`;
 - a check that runs after the data has been used.
+- a value the server already knows, or must decide, taken from the request instead, such as the price of a repair or the total to charge.
 
 Shell commands, file paths and URLs built from input also fail SEC-05 unless the input is checked against an allow-list. These are command injection, path traversal, and a server made to fetch a URL an attacker chose.
 

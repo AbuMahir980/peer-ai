@@ -45,6 +45,7 @@ Start from the list of every source file in scope, such as `git ls-files` for ea
 | `component` | `component:RepairQueue` | Screens and components |
 | `route` | `route:POST /bookings` | Endpoints and their handlers |
 | `job` | `job:send-reminders` | Background and scheduled work |
+| `call` | `call:parts-supplier` | Each call to an outside service, AI models included |
 | `migration` | `migration:0004_frames` | Database migrations, and changes to data stored on a device |
 | `contract` | `contract:openapi` | The API contract, and the types that come from it |
 | `test` | `test:slots` | Test files |
@@ -80,7 +81,8 @@ A code review is not a security audit, but it never walks past a serious problem
 - a secret or personal detail written to a log;
 - plain HTTP, or certificate checks switched off;
 - a response that no longer matches the API contract;
-- the client deciding a price or a permission.
+- the client deciding a price or a permission;
+- an AI model's reply trusted as if the code had written it.
 
 Report each as a finding that cites the rule it breaks. The peer-ai MCP tool `standards_for_file` lists every rule for a file. Its severity is that rule's. In the summary, name the specialist review that should follow, such as security-review or contract-check.
 

@@ -4,7 +4,7 @@ REL-01, BE-02, PERF-01, PERF-05 and PERF-06.
 
 ## REL-01: every outside call has a timeout and handles failure
 
-For every call to another service or API, including the project's own API from an app, check two things:
+For every `call` item, including the project's own API from an app and an AI model, check two things:
 
 - it sets a timeout;
 - it checks for a failed response before using the body.

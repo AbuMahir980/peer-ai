@@ -1,6 +1,6 @@
 # Personal data
 
-PRIV-01 to PRIV-06. Compare every `service` and `store` item with what the code sends to it and keeps in it.
+PRIV-01 to PRIV-06, and MONEY-12. Compare every `service` and `store` item with what the code sends to it and keeps in it.
 
 ## PRIV-01: no secrets or personal data in logs
 
@@ -50,3 +50,11 @@ The evidence is the code that sets up or sends to the service, and the consent c
 **Pass** when each kind of personal data has a set time it's kept, and a scheduled job deletes it.
 
 **Fail** when personal data is kept for ever by default, or a deletion job exists but never runs.
+
+## MONEY-12: card details never reach the servers
+
+Where the product takes payments.
+
+**Fail** when a full card number or security code could reach the product's own servers, logs or database: a request field, a form that posts to its own API, or a column to keep it in.
+
+**Pass** evidence: the card form belongs to the payment provider, and the server receives only the provider's token and, at most, the last four digits.
