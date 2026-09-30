@@ -1,13 +1,13 @@
 name: Release
 
-# Publishes any package whose version isn't on npm yet, whenever a change lands on next. Versions
+# Publishes any package whose version isn't on npm yet, whenever a change lands on main. Versions
 # change in ordinary pull requests (pnpm changeset version), so CI checks them like any other
 # change. npm trusts this workflow instead of a token (trusted publishing): each package names this
 # repository and this file as its trusted publisher, and npm records where each version was built.
 
 on:
   push:
-    branches: [next]
+    branches: [main]
 
 permissions: {}
 

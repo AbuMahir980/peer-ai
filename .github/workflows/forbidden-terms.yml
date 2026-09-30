@@ -1,18 +1,17 @@
 name: Forbidden terms
 
-# Scans pull requests from branches in this repository, and every push to main and next,
+# Scans pull requests from branches in this repository, and every push to main,
 # against the private list of forbidden terms.
 #
-# Pull requests from forks don't receive secrets, so they can't be scanned here. GitHub only
-# runs pull_request_target (which would give them the secret safely) from the default branch,
-# and this workflow isn't there until 1.0 launches. Until then, a fork's pull request fails
-# this check with a clear message and a maintainer scans it before merging. At launch, fork
-# pull requests move to pull_request_target.
+# Pull requests from forks don't receive secrets, so they can't be scanned here. A fork's pull
+# request fails this check with a clear message, and a maintainer scans it before merging.
+# Scanning them with pull_request_target, which GitHub runs from the default branch, is planned
+# as a change of its own, since it hands a secret to a run about outside code.
 
 on:
   pull_request:
   push:
-    branches: [main, next]
+    branches: [main]
 
 permissions:
   contents: read

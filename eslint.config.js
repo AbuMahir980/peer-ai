@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig(
   // fixtures/ holds sample projects with their own setup; they are not part of this repository's code.
-  { ignores: ["legacy/**", "fixtures/**", "**/dist/**", "**/coverage/**"] },
+  { ignores: ["fixtures/**", "**/dist/**", "**/coverage/**"] },
   {
     files: ["**/*.ts"],
     extends: [js.configs.recommended, tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],

@@ -2,7 +2,7 @@
 
 **Keeps AI coding tools to the standard of a careful senior team, from the first brief to production, and proves it.**
 
-[![CI](https://github.com/AbuMahir980/peer-ai/actions/workflows/ci.yml/badge.svg?branch=next)](https://github.com/AbuMahir980/peer-ai/actions/workflows/ci.yml)
+[![CI](https://github.com/AbuMahir980/peer-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AbuMahir980/peer-ai/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 AI coding tools such as Claude Code, Codex, Cursor and GitHub Copilot write code fast. Left to themselves, they skip what makes software safe to ship: nobody writes down what's being built, security and privacy get checked when someone remembers, tests prove less than they claim, and "done" means "the AI said so".
