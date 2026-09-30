@@ -8,6 +8,7 @@ Small, made-up projects that Peer AI is tested on end to end. Each one is set up
 | [`courier`](courier/) | A parcel pickup service: a React web app and a Python API on PostgreSQL, with 18 problems planted on purpose for the [evals](../evals/) | MVP |
 | [`shelf`](shelf/) | A book-lending phone app in React Native, in production and half rebuilt: older JavaScript screens beside newer TypeScript features, with its API in another repository. 16 problems planted for the [evals](../evals/). | Production |
 | [`sprout`](sprout/) | A plant-care journal that works offline: a React web app with its data in the browser, a service worker, and plant identification by an AI service. Sync is planned. 14 problems planted for the [evals](../evals/). | MVP |
+| [`kennel`](kennel/) | A dog-boarding service's API in NestJS, on PostgreSQL through TypeORM, in production: a modular monolith that takes deposits, stores photo uploads and checks vaccinations with another service. 22 problems planted for the [evals](../evals/), so the reviews are proven on a Node backend as well as Python. | Production |
 | [`refill`](refill/) | A new product with nothing built yet: only a config and a founder's brief, which the [evals](../evals/) give to requirements-analysis | Prototype |
 
 ## Running an AI tool on a fixture

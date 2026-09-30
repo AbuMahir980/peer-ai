@@ -1,0 +1,103 @@
+{
+  "$schema": "https://raw.githubusercontent.com/AbuMahir980/peer-ai/next/packages/workflow/schemas/map.schema.json",
+  "version": 1,
+  "assessedAt": "2026-09-30T10:02:47.116Z",
+  "items": {
+    "requirements": {
+      "status": "present",
+      "evidence": [
+        "docs/requirements.md"
+      ],
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "architecture": {
+      "status": "present",
+      "evidence": [
+        "docs/architecture.md"
+      ],
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "threat-model": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "specs": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "api-contract": {
+      "status": "missing",
+      "note": "No contract file found. Frameworks such as NestJS, FastAPI and ASP.NET Core can generate one: commit it, or set its location in peer-ai.config.json.",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "data-model": {
+      "status": "present",
+      "evidence": [
+        "services/api/migrations/"
+      ],
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "data-inventory": {
+      "status": "missing",
+      "note": "Personal data in 2 fields (email, phone), and no inventory of it.",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "dpia": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "design": {
+      "status": "not-applicable",
+      "inferred": true,
+      "note": "No user interface found.",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "standards": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "ci": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "environments": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "tests": {
+      "status": "present",
+      "evidence": [
+        "services/api"
+      ],
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "load-testing": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "infrastructure": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "observability": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "slos": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "runbooks": {
+      "status": "missing",
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    },
+    "docs": {
+      "status": "present",
+      "evidence": [
+        "README.md",
+        "docs/"
+      ],
+      "checkedAt": "2026-09-30T10:02:47.116Z"
+    }
+  }
+}
