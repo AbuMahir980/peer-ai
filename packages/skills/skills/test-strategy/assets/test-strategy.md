@@ -18,7 +18,7 @@
 
 ## Boundaries
 
-{{Each outside service, database, store on a device or other part the code talks to, and how tests meet it: the real thing, a contract, or a stand-in, and why.}}
+{{Each outside service, database, store on a device or other part the code talks to, and how tests meet it: the real thing, a contract, or a stand-in, and why. Where tests don't meet it yet, the one you plan, with its gap: for an API in another repository, a contract both sides check.}}
 
 ## Security and abuse
 
