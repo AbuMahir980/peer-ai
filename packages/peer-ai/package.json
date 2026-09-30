@@ -1,7 +1,6 @@
 {
   "name": "peer-ai",
-  "version": "0.0.0",
-  "private": true,
+  "version": "1.0.0-next.0",
   "description": "Keeps AI coding tools to a senior team's standard: planning, testing, security and compliance, with proof of every check",
   "license": "MIT",
   "type": "module",
