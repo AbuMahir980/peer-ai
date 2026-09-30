@@ -6,10 +6,11 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { CORE_RULES } from "@peer-ai/standards";
+import { CORE_RULES, PROFILE_RULES, PROFILES, overrideFits } from "@peer-ai/standards";
 import { DOMAINS, type PeerAiConfig } from "@peer-ai/workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
+import { checkEnforcers, checkProfiles } from "./enforcers.ts";
 import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
@@ -192,24 +193,39 @@ function checkDelivery(root: string, config: PeerAiConfig): Check {
 
 const CORE_RULE_IDS = new Set(CORE_RULES.map((rule) => rule.id));
 const CORE_PREFIXES = new Set<string>(Object.values(DOMAINS));
+const PROFILE_PREFIXES = new Set(PROFILES.map((profile) => profile.prefix));
 
 /**
  * Every rule the project sets aside or changes, listed so nothing is switched off silently (RFC
- * 0003). An id with a core prefix must be a core rule; other prefixes belong to stack profiles
- * and project add-ons, which are listed as they are.
+ * 0003). An id with a core or stack profile prefix must be one of Peer AI's rules, and a changed
+ * rule must have a value to change (RFC 0006); other prefixes belong to project add-ons, which
+ * are listed as they are.
  */
 export function checkStandards(config: PeerAiConfig, today: string): Check[] {
   const exceptions = config.standards?.exceptions ?? [];
   const overrides = Object.entries(config.standards?.overrides ?? {});
   if (exceptions.length + overrides.length === 0) return [ok("standards", "No rules set aside or changed")];
-  const unknown = (rule: string) =>
-    CORE_PREFIXES.has(rule.split("-")[0] ?? "") && !CORE_RULE_IDS.has(rule)
+  const unknown = (rule: string) => {
+    const prefix = rule.split("-")[0] ?? "";
+    const ours = CORE_PREFIXES.has(prefix) || PROFILE_PREFIXES.has(prefix);
+    return ours && !CORE_RULE_IDS.has(rule) && !PROFILE_RULES.has(rule)
       ? warn(
           "standards",
           `${rule} isn't one of Peer AI's rules, so setting it aside or changing it does nothing.`,
           `Check the rule id in ${CONFIG_FILE}. The rules are listed in @peer-ai/standards.`,
         )
       : undefined;
+  };
+  // A value of another type than the default can't stand in for it, so the default stays.
+  const wrongType = (rule: string, value: string | number) => {
+    const profiled = PROFILE_RULES.get(rule);
+    if (profiled?.default === undefined || overrideFits(profiled, value)) return undefined;
+    return warn(
+      "standards",
+      `${rule}'s value is a ${typeof profiled.default.value}, such as ${JSON.stringify(profiled.default.value)}, so ${JSON.stringify(value)} is ignored and the default stays.`,
+      `Write the value in standards.overrides as a ${typeof profiled.default.value}.`,
+    );
+  };
   const seen = new Set<string>();
   const listed = exceptions.map((exception): Check => {
     const { rule, reason, decidedBy, until } = exception;
@@ -237,7 +253,15 @@ export function checkStandards(config: PeerAiConfig, today: string): Check[] {
   });
   const changed = overrides.map(
     ([rule, override]): Check =>
-      unknown(rule) ?? ok("standards", `${rule} changed to ${String(override.value)}: ${override.reason}`),
+      unknown(rule) ??
+      (CORE_RULE_IDS.has(rule) || (PROFILE_RULES.has(rule) && PROFILE_RULES.get(rule)?.default === undefined)
+        ? warn(
+            "standards",
+            `${rule} has no value to change, so the override does nothing.`,
+            `Remove it from standards.overrides, or set the rule aside in standards.exceptions with the reason.`,
+          )
+        : (wrongType(rule, override.value) ??
+          ok("standards", `${rule} changed to ${String(override.value)}: ${override.reason}`))),
   );
   return [...listed, ...changed];
 }
@@ -338,6 +362,7 @@ export function diagnose(
     ...(config === undefined
       ? needsConfig("standards", "Rules set aside")
       : checkStandards(config, today.toISOString().slice(0, 10))),
+    ...(config === undefined ? [] : [...checkProfiles(config), ...checkEnforcers(root, config)]),
     checkMap(root, config),
     ...checkWorkItems(root, config),
     checkGit(root),

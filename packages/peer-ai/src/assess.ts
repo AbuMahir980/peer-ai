@@ -8,15 +8,15 @@ import { dirname, join } from "node:path";
 import {
   MAP_ITEM_IDS,
   TRAITS,
-  resolveConfig,
-  validateConfig,
+  readConfig,
   validateMap,
   type KnownMapItemId,
   type PeerAiConfig,
   type ProjectMap,
   type Trait,
 } from "@peer-ai/workflow";
-import { CONFIG_FILE, detect, detectDelivery } from "./detect.ts";
+import { PROFILES, profilesForPart } from "@peer-ai/standards";
+import { CONFIG_FILE, detect, detectDelivery, detectTracks } from "./detect.ts";
 import { listRepoFiles } from "./files.ts";
 import type { Output, Stage } from "./init.ts";
 
@@ -59,6 +59,19 @@ export interface TraitSuggestion {
   evidence: string;
 }
 
+/** A stack found in a part the config lists with no stack of its own. */
+export interface StackSuggestion {
+  track: string;
+  stack: string[];
+}
+
+/** A stack profile that fits a part of the project, which the config doesn't list yet. */
+export interface ProfileSuggestion {
+  profile: string;
+  /** Why it fits, such as "web is tagged expo". */
+  evidence: string;
+}
+
 export interface Assessment {
   name: string;
   stage: Stage;
@@ -67,6 +80,13 @@ export interface Assessment {
   signals: Signals;
   /** Traits to consider adding to project.traits, each switching on extra rules (RFC 0003). */
   suggestedTraits: TraitSuggestion[];
+  /** Stack profiles to consider adding to standards.profiles, each with the tools that enforce it (RFC 0006). */
+  suggestedProfiles: ProfileSuggestion[];
+  /**
+   * Stacks to add to parts that name none. A listed profile applies to every part without a stack,
+   * so each part's stack keeps a profile to the parts it fits.
+   */
+  suggestedStacks: StackSuggestion[];
   /** A copy of the v0 playbook was found and left out of the assessment. */
   legacyPlaybook: boolean;
 }
@@ -582,8 +602,61 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
     items,
     signals,
     suggestedTraits: suggestTraits(ctx, signals, tracks),
+    suggestedProfiles: suggestProfiles(root, config, detected),
+    suggestedStacks: suggestStacks(root, config),
     legacyPlaybook,
   };
+}
+
+/**
+ * Profiles that fit each part's stack, from the config or, where it names none, from detection.
+ * Only the most specific fits: a profile another suggested or listed one extends isn't repeated.
+ */
+function suggestProfiles(
+  root: string,
+  config: PeerAiConfig | undefined,
+  detected: ReturnType<typeof detect> | undefined,
+): ProfileSuggestion[] {
+  const listed = config?.standards?.profiles ?? [];
+  const found = detected?.tracks ?? detectTracks(root, config?.project.name ?? "");
+  const parts = (config?.tracks ?? found)
+    .filter((track) => !("status" in track) || track.status !== "external")
+    .map((track) => ({
+      id: track.id,
+      stack: track.stack ?? found.find((other) => (other.path ?? ".") === (track.path ?? "."))?.stack ?? [],
+    }));
+  const suggestions = new Map<string, string>();
+  for (const part of parts) {
+    const covered = new Set(profilesForPart(listed, { stack: part.stack }).map((profile) => profile.id));
+    const fits = PROFILES.filter(
+      (profile) => profile.stacks.some((tag) => part.stack.includes(tag)) && !covered.has(profile.id),
+    );
+    // The profiles each fit builds on, without itself: a fit another fit builds on isn't repeated.
+    const builtOn = new Set(
+      fits.flatMap((fit) =>
+        profilesForPart([fit.id], {})
+          .filter((base) => base.id !== fit.id)
+          .map((base) => base.id),
+      ),
+    );
+    for (const profile of fits) {
+      if (builtOn.has(profile.id) || suggestions.has(profile.id)) continue;
+      const tag = profile.stacks.find((each) => part.stack.includes(each));
+      if (tag !== undefined) suggestions.set(profile.id, `${part.id} is tagged ${tag}`);
+    }
+  }
+  return [...suggestions].map(([profile, evidence]) => ({ profile, evidence }));
+}
+
+/** The stack detection finds in each part the config lists without one. */
+function suggestStacks(root: string, config: PeerAiConfig | undefined): StackSuggestion[] {
+  if (config === undefined) return [];
+  const found = detectTracks(root, config.project.name);
+  return config.tracks.flatMap((track) => {
+    if (track.stack !== undefined || track.status === "external") return [];
+    const stack = found.find((other) => (other.path ?? ".") === (track.path ?? "."))?.stack ?? [];
+    return stack.length === 0 ? [] : [{ track: track.id, stack }];
+  });
 }
 
 export function gaps(assessment: Assessment, stage: Stage): KnownMapItemId[] {
@@ -618,26 +691,7 @@ export function toMap(assessment: Assessment, now: Date): ProjectMap {
 }
 
 /** Reads peer-ai.config.json, following a relative `extends`. Returns errors instead of throwing. */
-export function loadConfig(root: string): { config?: PeerAiConfig; errors?: string[] } {
-  const path = join(root, CONFIG_FILE);
-  if (!existsSync(path)) return {};
-  const readLayer = (file: string): unknown => JSON.parse(readFileSync(file, "utf8"));
-  try {
-    const own = readLayer(path) as { extends?: unknown };
-    const layers: unknown[] = [];
-    if (typeof own.extends === "string") {
-      if (!own.extends.startsWith(".")) {
-        return { errors: [`extends: only a relative path is supported so far, not "${own.extends}"`] };
-      }
-      layers.push(readLayer(join(dirname(path), own.extends)));
-    }
-    layers.push(own);
-    const result = validateConfig(resolveConfig(layers));
-    return result.ok ? { config: result.value } : { errors: result.errors };
-  } catch (error) {
-    return { errors: [(error as Error).message] };
-  }
-}
+export const loadConfig = readConfig;
 
 export interface AssessOptions {
   cwd: string;

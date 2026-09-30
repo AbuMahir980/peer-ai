@@ -387,3 +387,123 @@ describe("doctor on the repository", () => {
     expect(readFileSync(join(root, "peer-ai.config.json"), "utf8")).toBe(config());
   });
 });
+
+describe("doctor on stack profiles", () => {
+  const typed = (stage: string, profiles: string[], extra: Record<string, unknown> = {}) =>
+    json({
+      version: 1,
+      project: { name: "Shop", stage },
+      tools: ["claude-code"],
+      tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active", stack: ["typescript", "react"] }],
+      standards: { profiles, ...extra },
+    });
+  const peerAiEslint = 'import peerAi from "@peer-ai/eslint-config";\nexport default [...peerAi()];\n';
+  const strict = json({ compilerOptions: { strict: true } });
+
+  it("warns about a listed profile Peer AI has no rules for yet", () => {
+    const root = project({ "peer-ai.config.json": typed("mvp", ["typescript", "vue"]) });
+    expect(checksFor(root, "profiles")).toMatchObject([
+      { status: "warn", message: "Peer AI has no rules yet for vue, so that profile adds nothing for now." },
+    ]);
+  });
+
+  it("says nothing enforces the automatic rules without Peer AI's ESLint settings: a warning, and a failure at production", () => {
+    const files = { "apps/web/tsconfig.json": strict };
+    const mvp = project({ ...files, "peer-ai.config.json": typed("mvp", ["typescript"]) });
+    expect(checksFor(mvp, "enforcers")).toMatchObject([
+      {
+        status: "warn",
+        message: expect.stringMatching(/^There's no ESLint config, so nothing enforces TS-02, TS-03/) as string,
+      },
+      { status: "ok", message: "apps/web/tsconfig.json sets strict to true (TS-01)" },
+    ]);
+    const own = project({
+      ...files,
+      "peer-ai.config.json": typed("production", ["typescript"]),
+      "eslint.config.js": "export default [];\n",
+    });
+    expect(checksFor(own, "enforcers")[0]).toMatchObject({
+      status: "fail",
+      message: expect.stringContaining("eslint.config.js doesn't use Peer AI's settings") as string,
+    });
+    const linked = project({
+      ...files,
+      "peer-ai.config.json": typed("mvp", ["typescript"]),
+      "eslint.config.js": peerAiEslint,
+    });
+    expect(checksFor(linked, "enforcers")[0]).toEqual({
+      id: "enforcers",
+      status: "ok",
+      message: "eslint.config.js uses Peer AI's settings for 8 rules",
+    });
+  });
+
+  it("checks each TypeScript part's tsconfig says what the compiler rules need", () => {
+    const loose = project({
+      "peer-ai.config.json": typed("mvp", ["typescript"]),
+      "eslint.config.js": peerAiEslint,
+      "tsconfig.json": json({ compilerOptions: { strict: false } }),
+    });
+    expect(checksFor(loose, "enforcers")[1]).toMatchObject({
+      status: "warn",
+      message: 'tsconfig.json sets "strict" to false, but TS-01 needs true.',
+    });
+    const none = project({ "peer-ai.config.json": typed("mvp", ["typescript"]), "eslint.config.js": peerAiEslint });
+    expect(checksFor(none, "enforcers")[1]).toMatchObject({
+      status: "warn",
+      message: "web has no tsconfig.json, so the compiler doesn't enforce TS-01.",
+    });
+  });
+
+  it("checks the ESLint config nearest each part, as ESLint finds it", () => {
+    const root = project({
+      "peer-ai.config.json": typed("production", ["typescript"]),
+      "apps/web/eslint.config.js": peerAiEslint,
+      "apps/web/tsconfig.json": strict,
+    });
+    expect(checksFor(root, "enforcers")[0]).toEqual({
+      id: "enforcers",
+      status: "ok",
+      message: "apps/web/eslint.config.js uses Peer AI's settings for 8 rules",
+    });
+  });
+
+  it("reads a tsconfig as TypeScript does: comments, and the files a solution tsconfig references", () => {
+    const vite = project({
+      "peer-ai.config.json": typed("production", ["typescript"]),
+      "eslint.config.js": peerAiEslint,
+      "apps/web/tsconfig.json": json({
+        files: [],
+        references: [{ path: "./tsconfig.app.json" }, { path: "./tsconfig.node.json" }],
+      }),
+      "apps/web/tsconfig.app.json": '{\n  // "strict": false,\n  "compilerOptions": { "strict": true, },\n}\n',
+      "apps/web/tsconfig.node.json": json({ compilerOptions: { module: "nodenext" } }),
+    });
+    expect(checksFor(vite, "enforcers").slice(1)).toMatchObject([
+      { status: "ok", message: "apps/web/tsconfig.app.json sets strict to true (TS-01)" },
+      { status: "fail", message: 'apps/web/tsconfig.node.json doesn\'t say "strict": true, which TS-01 needs.' },
+    ]);
+  });
+
+  it("warns about an override for a rule with no value to change", () => {
+    const root = project({
+      "peer-ai.config.json": typed("mvp", ["typescript"], {
+        overrides: {
+          "TS-02": { value: 1, reason: "Tried to change it" },
+          "CODE-07": { value: 1, reason: "Tried to change it" },
+          "TS-06": { value: 4, reason: "The booking rules nest deeper" },
+          "TS-07": { value: "80", reason: "Written as text" },
+        },
+      }),
+    });
+    expect(checksFor(root, "standards")).toMatchObject([
+      { status: "warn", message: "TS-02 has no value to change, so the override does nothing." },
+      { status: "warn", message: "CODE-07 has no value to change, so the override does nothing." },
+      { status: "ok", message: "TS-06 changed to 4: The booking rules nest deeper" },
+      {
+        status: "warn",
+        message: 'TS-07\'s value is a number, such as 60, so "80" is ignored and the default stays.',
+      },
+    ]);
+  });
+});

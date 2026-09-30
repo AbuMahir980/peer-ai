@@ -203,6 +203,22 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
+  packages/eslint-config:
+    dependencies:
+      '@peer-ai/standards':
+        specifier: workspace:*
+        version: link:../standards
+      '@peer-ai/workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      eslint:
+        specifier: ^10.0.0
+        version: 10.11.0
+    devDependencies:
+      typescript-eslint:
+        specifier: 8.70.1
+        version: 8.70.1(eslint@10.11.0)(typescript@6.0.3)
+
   packages/peer-ai:
     dependencies:
       '@clack/prompts':
@@ -220,6 +236,9 @@ importers:
       '@peer-ai/workflow':
         specifier: workspace:*
         version: link:../workflow
+      jsonc-parser:
+        specifier: 3.3.1
+        version: 3.3.1
       zod:
         specifier: 4.6.5
         version: 4.6.5

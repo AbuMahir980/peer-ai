@@ -7,8 +7,9 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { ToolId } from "@peer-ai/workflow";
+import { CONFIG_FILE } from "@peer-ai/workflow";
 
-export const CONFIG_FILE = "peer-ai.config.json";
+export { CONFIG_FILE };
 
 export type TrackKind = "web" | "mobile" | "desktop" | "backend" | "infrastructure" | "library" | "cli" | "other";
 export type RepoHost = "github" | "gitlab" | "bitbucket" | "azure-devops" | "other";

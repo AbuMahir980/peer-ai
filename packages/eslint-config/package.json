@@ -1,0 +1,25 @@
+{
+  "name": "@peer-ai/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ESLint settings for the stack profiles a project lists in peer-ai.config.json",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@peer-ai/standards": "workspace:*",
+    "@peer-ai/workflow": "workspace:*"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "peerDependencies": {
+    "eslint": "^10.0.0",
+    "typescript-eslint": "^8.70.1"
+  },
+  "devDependencies": {
+    "typescript-eslint": "8.70.1"
+  }
+}

@@ -46,4 +46,22 @@ describe("the rules for a file", () => {
     expect(standards?.peerAiRules.map((rule) => rule.id)).not.toContain("CODE-04");
     expect(standards?.setAside).toEqual([{ rule: "CODE-04", reason: "Generated code" }]);
   });
+
+  it("add the stack profiles' rules for the file's part, with the project's values", () => {
+    const listed: PeerAiConfig = {
+      ...config({}, { profiles: ["typescript"], overrides: { "TS-06": { value: 4, reason: "Deeper booking rules" } } }),
+      tracks: [
+        { id: "web", kind: "web", path: "apps/web", status: "active", stack: ["typescript", "react"] },
+        { id: "api", kind: "backend", path: "services/api", status: "active", stack: ["python", "fastapi"] },
+      ],
+    };
+    const web = standardsFor(listed, "/repo", "apps/web/src/cart.tsx")?.peerAiRules ?? [];
+    expect(web.find((rule) => rule.id === "TS-06")).toMatchObject({
+      title: "Nesting stays 4 levels deep or less",
+      carries: "CODE-09",
+      value: 4,
+    });
+    expect(ids(listed, "services/api/app/main.py").some((id) => id.startsWith("TS-"))).toBe(false);
+    expect(ids(config())).not.toContain("TS-02");
+  });
 });

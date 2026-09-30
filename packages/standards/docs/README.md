@@ -30,3 +30,11 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Code quality](code-quality.md) | 15 |
 | [Money](money.md) | 12 |
 | [Safety-critical data](safety-critical.md) | 6 |
+
+## Stack profiles
+
+A stack profile says how to follow the core rules in one stack, and which tool enforces each automatic rule. The design is in [RFC 0006](../../../rfcs/0006-stack-profiles-and-their-enforcers.md).
+
+| Profile | Id | Builds on | Rules |
+|---------|----|-----------|-------|
+| [TypeScript](profiles/typescript.md) | `typescript` | – | 10 |
