@@ -4,13 +4,14 @@
 // warning, and a failure at production.
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, normalize, relative } from "node:path";
+import { dirname, join, normalize, posix } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser";
+import { parse as parseToml } from "smol-toml";
 import { profile, profileRulesFor, type AppliedRule } from "@peer-ai/standards";
 import type { PeerAiConfig } from "@peer-ai/workflow";
 import { fail, ok, plural, warn, type Check } from "./checks.ts";
 import { WORKFLOW_FILE, pipelineRules, unchangedSinceRender, workflowFile } from "./pipeline.ts";
-import { RUFF_FILE } from "./ruff.ts";
+import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((extension) => `eslint.config.${extension}`);
 const ESLINT_PACKAGE = "@peer-ai/eslint-config";
@@ -69,25 +70,71 @@ function upFrom(path: string | undefined): string[] {
   return folders;
 }
 
+type Toml = Record<string, unknown>;
+const table = (value: unknown): Toml | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Toml) : undefined;
+const strings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
+
+/** A Ruff settings file as Ruff reads it: a pyproject.toml's [tool.ruff], or the whole of any other. */
+interface RuffSettings {
+  /** The file it extends, relative to the root. */
+  extend?: string;
+  /** Whether it sets select, which replaces the rules the files it extends select. */
+  select: boolean;
+  /** The codes and prefixes it ignores. */
+  ignored: string[];
+}
+
+/** The Ruff settings in a file, or undefined when it isn't valid TOML or holds none. */
+function readRuff(root: string, file: string): RuffSettings | undefined {
+  let data: Toml;
+  try {
+    data = parseToml(readFileSync(join(root, file), "utf8"));
+  } catch {
+    return undefined;
+  }
+  const ruff = file.endsWith("pyproject.toml") ? table(table(data.tool)?.ruff) : data;
+  if (ruff === undefined) return undefined;
+  const lint = table(ruff.lint) ?? {};
+  const extend = ruff.extend;
+  return {
+    ...(typeof extend === "string" ? { extend: posix.normalize(posix.join(posix.dirname(file), extend)) } : {}),
+    select: "select" in lint || "select" in ruff,
+    ignored: [lint.ignore, lint["extend-ignore"], ruff.ignore, ruff["extend-ignore"]].flatMap(strings),
+  };
+}
+
 /**
  * The Ruff settings nearest a part, found as Ruff finds them: in each folder from the part's up,
- * .ruff.toml, then ruff.toml, then a pyproject.toml with a [tool.ruff] table.
+ * .ruff.toml, then ruff.toml, then a pyproject.toml with a tool.ruff table, such as [tool.ruff.lint].
  */
 function ruffConfigFor(root: string, path: string | undefined): string | undefined {
   for (const folder of upFrom(path)) {
     for (const name of [".ruff.toml", "ruff.toml", "pyproject.toml"]) {
-      const file = folder === "." ? name : join(folder, name);
+      const file = folder === "." ? name : posix.join(folder, name);
       if (!existsSync(join(root, file))) continue;
-      if (name !== "pyproject.toml" || /^\[tool\.ruff\]/m.test(readFileSync(join(root, file), "utf8"))) return file;
+      if (name !== "pyproject.toml" || readRuff(root, file) !== undefined) return file;
     }
   }
   return undefined;
 }
 
-/** The file a Ruff config extends, relative to the root, if it extends one. */
-function ruffExtends(root: string, file: string): string | undefined {
-  const target = /^\s*extend\s*=\s*["']([^"']+)["']/m.exec(readFileSync(join(root, file), "utf8"))?.[1];
-  return target === undefined ? undefined : normalize(join(dirname(file), target));
+/**
+ * The files a Ruff config reads, following each extend in turn: Ruff allows one per file, and the
+ * file it names can extend another. Stops at Peer AI's file, at a file it can't read, or at a loop.
+ */
+function ruffChain(root: string, file: string): { files: string[]; settings: (RuffSettings | undefined)[] } {
+  const files: string[] = [];
+  const settings: (RuffSettings | undefined)[] = [];
+  for (let current: string | undefined = file; current !== undefined && !files.includes(current);) {
+    files.push(current);
+    if (current === RUFF_FILE || !existsSync(join(root, current))) break;
+    const read = readRuff(root, current);
+    settings.push(read);
+    current = read?.extend;
+  }
+  return { files, settings };
 }
 
 /** A tsconfig's compiler options, read as TypeScript reads it: comments and trailing commas allowed. */
@@ -150,41 +197,90 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
     }
   }
 
-  // Each Python part is linted by its nearest Ruff settings, which must extend the file render
-  // writes. The file itself must be there: render writes it.
-  const byRuffConfig = new Map<string | undefined, { folder: string; ids: Set<string> }>();
+  // Each Python part is linted by its nearest Ruff settings, which must reach the file render
+  // writes through extend, without a select that replaces its rules or an ignore that drops them.
+  const byRuffConfig = new Map<string, { file?: string; folder: string; rules: AppliedRule[] }>();
   for (const { track, rules } of parts) {
-    const ruffIds = rules.filter((rule) => rule.enforcer?.tool === "ruff").map((rule) => rule.id);
-    if (ruffIds.length === 0) continue;
+    const ruffRules = rules.filter((rule) => rule.enforcer?.tool === "ruff");
+    if (ruffRules.length === 0) continue;
     const file = ruffConfigFor(root, track.path);
-    const entry = byRuffConfig.get(file) ?? { folder: track.path ?? ".", ids: new Set<string>() };
-    for (const id of ruffIds) entry.ids.add(id);
-    byRuffConfig.set(file, entry);
+    const folder = track.path ?? ".";
+    const key = file ?? `none:${folder}`;
+    const entry = byRuffConfig.get(key) ?? { ...(file === undefined ? {} : { file }), folder, rules: [] };
+    for (const rule of ruffRules) if (!entry.rules.some((known) => known.id === rule.id)) entry.rules.push(rule);
+    byRuffConfig.set(key, entry);
   }
-  if (byRuffConfig.size > 0 && !existsSync(join(root, RUFF_FILE))) {
-    checks.push(missing(`${RUFF_FILE} isn't there, so Ruff has no Peer AI settings to extend.`, "Run peer-ai render."));
+  if (byRuffConfig.size > 0) {
+    const current = existsSync(join(root, RUFF_FILE)) ? readFileSync(join(root, RUFF_FILE), "utf8") : undefined;
+    if (current === undefined) {
+      checks.push(
+        missing(`${RUFF_FILE} isn't there, so Ruff has no Peer AI settings to extend.`, "Run peer-ai render."),
+      );
+    } else if (current !== ruffFile(config)) {
+      checks.push(missing(`${RUFF_FILE} is out of date with the config.`, "Run peer-ai render."));
+    }
   }
-  for (const [file, { folder, ids }] of byRuffConfig) {
-    const listed = list([...ids]);
-    const from = file === undefined ? folder : dirname(file);
-    const line = `extend = "${relative(from, RUFF_FILE)}"`;
+  const extendLine = (from: string) => `extend = "${posix.relative(from, RUFF_FILE)}"`;
+  for (const { file, folder, rules } of byRuffConfig.values()) {
+    const listed = list(rules.map((rule) => rule.id));
     if (file === undefined) {
       checks.push(
         missing(
           `There are no Ruff settings for ${folder}, so nothing enforces ${listed}.`,
-          `Add [tool.ruff] to ${join(folder, "pyproject.toml")}, with ${line}.`,
+          `Add [tool.ruff] to ${posix.join(folder, "pyproject.toml")}, with ${extendLine(folder)}.`,
         ),
       );
-    } else if (ruffExtends(root, file) !== normalize(RUFF_FILE)) {
+      continue;
+    }
+    const chain = ruffChain(root, file);
+    const unreadable = chain.files.find((_, i) => i < chain.settings.length && chain.settings[i] === undefined);
+    if (unreadable !== undefined) {
+      checks.push(
+        missing(`${unreadable} can't be read as Ruff settings, so Ruff won't run.`, `Fix the TOML in ${unreadable}.`),
+      );
+      continue;
+    }
+    if (!chain.files.includes(RUFF_FILE)) {
+      const last = chain.files.at(-1) ?? file;
+      const table = last.endsWith("pyproject.toml") ? ", under [tool.ruff]," : "";
+      const where =
+        last === file
+          ? `In ${file}${table}`
+          : `${file} extends ${last}, which extends nothing further. In ${last}${table}`;
       checks.push(
         missing(
           `${file} doesn't extend Peer AI's Ruff settings, so nothing enforces ${listed}.`,
-          `In ${file}${file.endsWith("pyproject.toml") ? ", under [tool.ruff]," : ""} add ${line}.`,
+          `${where} add ${extendLine(posix.dirname(last))}. Ruff allows one extend in each file.`,
         ),
       );
-    } else {
-      checks.push(ok("enforcers", `${file} extends Peer AI's Ruff settings for ${plural(ids.size, "rule")}`));
+      continue;
     }
+    const before = chain.settings.filter((read): read is RuffSettings => read !== undefined);
+    const selecting = chain.files.filter((_, i) => before[i]?.select === true);
+    if (selecting.length > 0) {
+      checks.push(
+        missing(
+          `${list(selecting)} ${selecting.length === 1 ? "sets" : "set"} select, which replaces Peer AI's Ruff rules instead of adding to them, so nothing enforces ${listed}.`,
+          `In ${list(selecting)}, rename select to extend-select.`,
+        ),
+      );
+      continue;
+    }
+    const ignored = before.flatMap((read) => read.ignored);
+    const dropped = rules.filter((rule) => {
+      const code = rule.enforcer?.tool === "ruff" ? rule.enforcer.rule : "";
+      return ignored.some((entry) => entry === "ALL" || code.startsWith(entry));
+    });
+    if (dropped.length > 0) {
+      checks.push(
+        missing(
+          `${file}'s Ruff settings ignore the codes of ${list(dropped.map((rule) => rule.id))}, which switches them off without a recorded reason.`,
+          "Take those codes out of ignore, and set any rule that doesn't fit aside in standards.exceptions, with the reason.",
+        ),
+      );
+      continue;
+    }
+    checks.push(ok("enforcers", `${file} extends Peer AI's Ruff settings for ${plural(rules.length, "rule")}`));
   }
 
   // The pipeline's checks run from the workflow render writes.

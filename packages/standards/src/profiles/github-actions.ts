@@ -12,8 +12,8 @@ const fakeToken = () => `${["gh", "p_"].join("")}${"R7kQ2mZ9".repeat(4)}ab4d`;
 const checkout = (pinned: boolean) =>
   pinned ? "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1" : "actions/checkout@v7";
 
-/** A workflow that builds the app, pinned or not, with the permissions given. */
-function workflow(pinned: boolean, permissions: string[]): string {
+/** A workflow that builds the app, pinned or not, with the workflow's permissions, and the job's own or none. */
+function workflow(pinned: boolean, permissions: string[], jobPermissions = true): string {
   return [
     "name: Build",
     "on: pull_request",
@@ -21,8 +21,7 @@ function workflow(pinned: boolean, permissions: string[]): string {
     "jobs:",
     "  build:",
     "    runs-on: ubuntu-latest",
-    "    permissions:",
-    "      contents: read",
+    ...(jobPermissions ? ["    permissions:", "      contents: read"] : []),
     "    steps:",
     `      - uses: ${checkout(pinned)}`,
     "        with:",
@@ -100,7 +99,8 @@ export const githubActions: ProfileInput = {
       enforcer: { tool: "github-actions", job: "workflows", finding: "excessive-permissions" },
       examples: {
         file: ".github/workflows/build.yml",
-        fails: workflow(true, ["permissions: write-all"]),
+        // The job has no permissions of its own, so it runs with the workflow's write-all.
+        fails: workflow(true, ["permissions: write-all"], false),
         passes: workflow(true, ["permissions: {}"]),
       },
     },
