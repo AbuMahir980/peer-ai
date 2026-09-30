@@ -128,8 +128,13 @@ export function standardsFor(config: PeerAiConfig, root: string, file: string): 
     ...(track?.architecture === undefined ? {} : { architecture: track.architecture }),
   })
     // A profile with no stacks, such as the pipeline's, is about the project as a whole: its rules
-    // go with the files outside every part, such as the workflows, not with each part's code.
-    .filter((rule) => domains.includes(rule.domain) && (track === undefined || !WHOLE_PROJECT.has(rule.profile)))
+    // go with the pipeline's files in .github/, whichever part holds them, and with files outside
+    // every part, not with each part's code.
+    .filter((rule) =>
+      WHOLE_PROJECT.has(rule.profile)
+        ? track === undefined || path.startsWith(".github/")
+        : domains.includes(rule.domain),
+    )
     .map(({ id, title, rule, ask, check, severity, carries, value }) => ({
       id,
       title,

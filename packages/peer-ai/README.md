@@ -172,7 +172,15 @@ What render changes, and what it leaves alone:
 - **ESLint** reads Peer AI's settings from the `@peer-ai/eslint-config` package, which your `eslint.config.js` spreads in. Render writes nothing for it.
 - **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`, directly or through a shared file that extends it. Add rules of your own with `extend-select`: a `select` replaces Peer AI's rules instead of adding to them, and doctor fails it, as it does an `ignore` that drops one of Peer AI's codes. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config.
 - **The TypeScript compiler** reads each part's own `tsconfig.json`, which render never edits.
-- **The pipeline's checks,** for a project listing the `github-actions` profile, run from `.github/workflows/peer-ai-security.yml`, which render writes: secret scanning with Gitleaks, dependency checks with OSV-Scanner, workflow checks with zizmor and code scanning with Semgrep, on every change and every day; and, for environments with a `url`, a TLS check with SSLyze and a scan of the running app in staging with OWASP ZAP. Each tool is a release checked against its checksum, or an image pinned to its digest. The file's header records a hash of what render wrote: while it matches, render keeps the file up to date; once someone changes it by hand, render leaves it alone and says so. Make the jobs required checks in your branch protection.
+- **The pipeline's checks,** for a project listing the `github-actions` profile, run from `.github/workflows/peer-ai-security.yml`, which render writes. Each tool is a release checked against its checksum, or an image pinned to its digest:
+  - `peer-ai / secrets`: Gitleaks, on a pull request's commits and on the whole history every day. A secret found in old history that's already been replaced goes in `.gitleaksignore`, with why.
+  - `peer-ai / dependencies`: OSV-Scanner, on every lockfile and manifest it can read, on every change and every day. It warns when it finds none.
+  - `peer-ai / workflows`: zizmor, on the workflows and any actions in the repository.
+  - `peer-ai / code`: Semgrep, with its security rules for the common languages pinned to a commit of `semgrep/semgrep-rules`. Those rules are under the Semgrep Rules License, not an open-source licence.
+  - `peer-ai / tls`: SSLyze, against Mozilla's intermediate profile, every day, for each environment with a `url`.
+  - `peer-ai / running-app`: OWASP ZAP's baseline scan, every day, only in environments marked `"production": false`; one not marked might be production, so it's never scanned. Accept a finding in `.github/zap-rules.tsv`, with the reason. The reports are kept with each run.
+
+  Make the jobs required checks in your branch protection: their names never change. The file's header records a hash of what render wrote: while it matches, render keeps the file up to date; once someone changes it by hand, render leaves it alone, and doctor checks it still has every job.
 
 ### Options
 

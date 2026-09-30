@@ -601,13 +601,18 @@ describe("doctor on stack profiles", () => {
     expect(checksFor(rendered, "enforcers")).toMatchObject([
       {
         status: "ok",
-        message: expect.stringMatching(/runs 5 checks: GHA-01, GHA-02, GHA-03, GHA-04, GHA-05$/) as string,
+        message: expect.stringMatching(/peer-ai-security\.yml runs GHA-01, GHA-02, GHA-03, GHA-04, GHA-05$/) as string,
       },
     ]);
     const path = join(rendered, ".github/workflows/peer-ai-security.yml");
     writeFileSync(path, readFileSync(path, "utf8").replace("ubuntu-latest", "ubuntu-24.04"));
     expect(checksFor(rendered, "enforcers")).toMatchObject([
-      { status: "warn", message: expect.stringContaining("was changed by hand") as string },
+      { status: "warn", message: expect.stringContaining("was changed by hand. It still has every job") as string },
+    ]);
+    expect(checksFor(rendered, "render")).toMatchObject([{ status: "ok" }]);
+    writeFileSync(path, readFileSync(path, "utf8").replace("  code:\n", "  lint:\n"));
+    expect(checksFor(rendered, "enforcers")).toMatchObject([
+      { status: "warn", message: expect.stringContaining("no longer has the code job") as string },
     ]);
   });
 

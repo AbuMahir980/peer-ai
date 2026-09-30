@@ -11,6 +11,8 @@ import { DOMAINS, type PeerAiConfig } from "@peer-ai/workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
+import { WORKFLOW_FILE } from "./pipeline.ts";
+import { RUFF_FILE } from "./ruff.ts";
 import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } from "./detect.ts";
 import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
@@ -166,10 +168,15 @@ function checkTools(root: string, config: PeerAiConfig): Check {
 }
 
 /** What render writes for the AI tools still matches the config. */
+const ENFORCER_FILES = [WORKFLOW_FILE, RUFF_FILE];
+
 function checkRendered(root: string, config: PeerAiConfig): Check {
   const plan = planRender(root, config);
   const stale = [
-    ...plan.files.filter((file) => file.action !== "unchanged").map((file) => file.path),
+    // The tools that enforce the stack profiles are checked on their own, with what each needs.
+    ...plan.files
+      .filter((file) => file.action !== "unchanged" && !ENFORCER_FILES.includes(file.path))
+      .map((file) => file.path),
     ...plan.skills.filter((skill) => skill.action !== "unchanged").map((skill) => `${skill.path}/`),
   ];
   if (stale.length === 0)

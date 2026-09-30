@@ -9,6 +9,8 @@ on:
     paths:
       - packages/peer-ai/src/pipeline.ts
       - packages/standards/src/profiles/github-actions.ts
+      - packages/standards/src/profile.ts
+      - packages/standards/src/index.ts
       - scripts/pipeline-proof.ts
       - .github/workflows/pipeline-proof.yml
   schedule:

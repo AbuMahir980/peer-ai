@@ -97,7 +97,7 @@ export function renderProfile(profile: Profile): string {
   const facts = [
     `List it in \`standards.profiles\` as \`${profile.id}\`.`,
     profile.stacks.length === 0
-      ? "It applies to every part of the project."
+      ? "It applies to the project as a whole: its rules go with the pipeline's files in `.github/`, and with files outside every part."
       : `It applies to parts tagged ${profile.stacks.map((tag) => `\`${tag}\``).join(", ")}.`,
     ...(bases === "" ? [] : [`It builds on ${bases}, which apply wherever it does.`]),
   ];

@@ -64,4 +64,13 @@ describe("the rules for a file", () => {
     expect(ids(listed, "services/api/app/main.py").some((id) => id.startsWith("TS-"))).toBe(false);
     expect(ids(config())).not.toContain("TS-02");
   });
+
+  it("give the pipeline's rules to its files in .github/, even in a project that's one part, and not to the code", () => {
+    const pipeline: PeerAiConfig = {
+      ...config({}, { profiles: ["github-actions"] }),
+      tracks: [{ id: "app", kind: "web", status: "active" }],
+    };
+    expect(ids(pipeline, ".github/workflows/ci.yml")).toEqual(expect.arrayContaining(["GHA-01", "GHA-03", "GHA-05"]));
+    expect(ids(pipeline, "src/cart.tsx").some((id) => id.startsWith("GHA-"))).toBe(false);
+  });
 });

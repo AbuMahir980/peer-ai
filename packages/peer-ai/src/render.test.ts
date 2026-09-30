@@ -168,10 +168,11 @@ describe("render", () => {
     expect(read(root, path)).toContain("  secrets:\n");
     expect(render(root, true).code).toBe(0);
     writeFileSync(join(root, path), read(root, path).replace("ubuntu-latest", "ubuntu-24.04"));
-    const refused = render(root);
-    expect(refused.code).toBe(1);
-    expect(refused.text).toContain("It was changed by hand, so render leaves it.");
+    const kept = render(root);
+    expect(kept.code).toBe(0);
+    expect(kept.text).toContain("left as it is. It was changed by hand");
     expect(read(root, path)).toContain("ubuntu-24.04");
+    expect(render(root, true).code).toBe(0);
   });
 
   it("starts the server from the project's pinned copy when it has one", () => {

@@ -2,11 +2,11 @@
 
 The checks a pipeline on GitHub Actions runs on every change: secrets, dependencies with published vulnerabilities, workflows' own safety, and code scanning; and, where the project has environments with addresses, a TLS check and a scan of the running app in staging. `peer-ai render` writes them as one workflow, each tool pinned to a checked release.
 
-List it in `standards.profiles` as `github-actions`. It applies to every part of the project.
+List it in `standards.profiles` as `github-actions`. It applies to the project as a whole: its rules go with the pipeline's files in `.github/`, and with files outside every part.
 
 ## GHA-01 · Every change is scanned for secrets
 
-Every change, and the history it adds, is scanned for secrets, such as keys and tokens, and the check fails when one is found.
+Every pull request's commits are scanned for secrets, such as keys and tokens, and the whole history is scanned every day; the check fails when one is found. A secret found in old history that has already been replaced is recorded in `.gitleaksignore`, with why.
 
 **Why:** A secret pushed once stays in the history for anyone with a copy, even after the file is fixed.
 
@@ -30,7 +30,7 @@ Every change, and every day, the dependencies in each lockfile and manifest are 
 
 ## GHA-03 · Every action is pinned to a commit
 
-Every action a workflow uses is pinned to a full commit, with its version in a comment, never to a tag or a branch that can move.
+Every action a workflow or an action in the repository uses is pinned to a full commit, never to a tag or a branch that can move. A comment with its version helps a reviewer, and isn't checked.
 
 **Why:** A tag can be moved to other code, so a workflow that uses one runs whatever its owner, or whoever took over the account, puts there next.
 
@@ -38,15 +38,15 @@ Every action a workflow uses is pinned to a full commit, with its version in a c
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| MVP | A tool | High | [DEL-01](../delivery.md) | Any | `workflows job`, in Peer AI's pipeline workflow |
+| Prototype | A tool | High | [DEL-01](../delivery.md) | Any | `workflows job`, in Peer AI's pipeline workflow |
 
-## GHA-04 · A workflow's token has only the access it needs
+## GHA-04 · No job asks for a token that can write everything
 
-A workflow gives its token no permissions by default, with `permissions: {}`, and each job asks for only what it uses, such as `contents: read`.
+No job asks for `write-all`, the token that can change the code, the releases and the settings.
 
-**Why:** A token with write access lets one compromised step change the code or the releases.
+**Why:** With write-all, one compromised step, such as a hijacked action, can change anything the repository holds.
 
-**Ask:** Does every workflow start from no permissions, and every job ask for only what it uses?
+**Ask:** Does any job in the workflows ask for write-all?
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
@@ -54,7 +54,7 @@ A workflow gives its token no permissions by default, with `permissions: {}`, an
 
 ## GHA-05 · Code scanning is a required check
 
-Every change is scanned for insecure code by a code scanner, such as Semgrep or CodeQL, and the check must pass before the change merges.
+Every change is scanned for insecure code by a code scanner, such as Semgrep with a pinned set of rules, or CodeQL, and the check must pass before the change merges.
 
 **Why:** A scanner finds the patterns a reviewer skims past, in every change, including the ones nobody reviews closely.
 
@@ -62,7 +62,7 @@ Every change is scanned for insecure code by a code scanner, such as Semgrep or 
 
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
-| MVP | A tool | Medium | [DEL-04](../delivery.md) | Any | `code job`, in Peer AI's pipeline workflow |
+| MVP | A tool | High | [DEL-04](../delivery.md) | Any | `code job`, in Peer AI's pipeline workflow |
 
 ## GHA-06 · Each environment's TLS is checked
 
@@ -78,7 +78,7 @@ On a schedule, each environment with an address is checked against modern TLS se
 
 ## GHA-07 · The running app is scanned in staging
 
-On a schedule, and before a release, the running app in staging is scanned, such as by OWASP ZAP's baseline scan, never in production. Each finding is fixed or accepted by a person.
+On a schedule, and before a release, the running app is scanned, such as by OWASP ZAP's baseline scan, in each environment the config marks as not production, never in production. Each finding is fixed, or accepted by a person in `.github/zap-rules.tsv`, with the reason.
 
 **Why:** Some problems only show in a running app: headers, cookies and pages left open.
 
@@ -87,3 +87,15 @@ On a schedule, and before a release, the running app in staging is scanned, such
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
 | Production | AI review | Medium | [DEL-08](../delivery.md) | Any | – |
+
+## GHA-08 · A workflow starts from no permissions, and each job asks for what it uses
+
+A workflow gives its token no permissions by default, with `permissions: {}`, and each job asks for only what it uses, such as `contents: read`.
+
+**Why:** The default token can often write, so a workflow that doesn't say otherwise gives every step more than it needs.
+
+**Ask:** Does every workflow start from no permissions, and does each job ask for only what it uses?
+
+| Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
+|--------------|------------|----------|---------|---------------|-------------|
+| MVP | AI review | Medium | [SEC-28](../security.md) | Any | – |

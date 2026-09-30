@@ -11,11 +11,17 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { PROFILES, type Example } from "@peer-ai/standards";
-import { JOBS, WORKFLOW_FILE, workflowFile } from "../packages/peer-ai/src/pipeline.ts";
+import { IMAGES, JOBS, WORKFLOW_FILE, workflowFile } from "../packages/peer-ai/src/pipeline.ts";
 
 const runnerTemp = process.env.RUNNER_TEMP ?? mkdtempSync(join(tmpdir(), "peer-ai-proof-"));
 const tools = join(runnerTemp, "peer-ai-tools");
-const env = { ...process.env, RUNNER_TEMP: runnerTemp, PATH: `${tools}:${process.env.PATH ?? ""}` };
+// Not a pull request, so the secrets scan reads each example repository's whole history.
+const env = {
+  ...process.env,
+  RUNNER_TEMP: runnerTemp,
+  GITHUB_EVENT_NAME: "workflow_dispatch",
+  PATH: `${tools}:${process.env.PATH ?? ""}`,
+};
 
 /** Runs shell lines in a folder, as a workflow step does; returns the exit code and the output. */
 function shell(lines: readonly string[], cwd: string): { code: number; output: string } {
@@ -44,6 +50,15 @@ for (const [id, script] of Object.entries(JOBS)) {
 }
 
 const failures: string[] = [];
+
+// Docker trusts the digest and ignores the tag, so each tag is checked to name the pinned digest.
+for (const image of Object.values(IMAGES)) {
+  const inspected = shell([`docker buildx imagetools inspect ${image.name}:${image.tag}`], runnerTemp);
+  const digest = /^Digest:\s+(sha256:[0-9a-f]{64})$/m.exec(inspected.output)?.[1];
+  if (digest !== image.digest)
+    failures.push(`${image.name}:${image.tag} is ${digest ?? "unknown"}, not the pinned ${image.digest}`);
+  console.log(`${image.name}:${image.tag}: ${digest === image.digest ? "matches its pinned digest" : "doesn't match"}`);
+}
 const rules = PROFILES.flatMap((profile) => profile.rules).filter((rule) => rule.enforcer?.tool === "github-actions");
 for (const rule of rules) {
   if (rule.enforcer?.tool !== "github-actions" || rule.examples === undefined) continue;
