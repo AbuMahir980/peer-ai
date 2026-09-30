@@ -128,7 +128,7 @@
       "id": "D9",
       "title": "Full card numbers and CVVs are received and stored",
       "severity": "critical",
-      "skills": ["security-review", "compliance-review", "contract-check", "data-modelling"],
+      "skills": ["security-review", "compliance-review", "contract-check", "data-modelling", "code-review"],
       "locations": [
         {
           "file": "services/api/app/routes/payments.py",
