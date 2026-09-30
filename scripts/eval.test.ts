@@ -11,6 +11,8 @@ import {
   REVIEW_RESULTS,
   appendResult,
   collectReports,
+  confirmPairings,
+  pairingsToConfirm,
   evalPrompt,
   evaluate,
   evaluateDocument,
@@ -218,6 +220,64 @@ describe("marking a review", () => {
       ["owner", 1],
     ]);
     expect(marked.ready).toBe(false);
+  });
+
+  it("counts a pairing only when the grader confirmed it, and lists a finding it rejected for a person", () => {
+    const payment = (id: string): ResolvedDefect => ({
+      id,
+      title: `Problem ${id}`,
+      severity: "high",
+      skills: ["security-review"],
+      locations: [],
+      spans: [{ file: "payments.py", line: 18, endLine: 18 }],
+    });
+    const sheet: Sheet = { ...SHEET, defects: [payment("owner"), payment("amount")] };
+    const about = finding("payments.py", 18, "high");
+    const elsewhere = finding("payments.py", 19, "high");
+    const reports = [report([about, elsewhere])];
+    // By place, the two findings count for both problems.
+    expect(score(sheet, "security-review", reports).expected.map(({ foundBy }) => foundBy.length)).toEqual([1, 1]);
+    // The grader says the first is about the amount, and the second about neither.
+    const confirmed = new Set([`${about.id} amount`]);
+    const marked = score(sheet, "security-review", reports, confirmed);
+    expect(marked.expected.map(({ defect, foundBy }) => [defect.id, foundBy])).toEqual([
+      ["owner", []],
+      ["amount", [about.id]],
+    ]);
+    expect(marked.unmatched.map(({ id }) => id)).toEqual([elsewhere.id]);
+    expect(marked.confirmed).toBe(true);
+    expect(marked.ready).toBe(false);
+  });
+
+  it("asks a grader about each finding and the problems near it, and tries again once", async () => {
+    const reports = [report([finding("api/parcels.py", 70), finding("web/far.ts", 1)])];
+    const pairs = pairingsToConfirm(SHEET, "security-review", reports);
+    // Only a finding with a problem near it is asked about.
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0]?.problems.map(({ id }) => id)).toEqual(["D2"]);
+    const dir = mkdtempSync(join(tmpdir(), "peer-ai-pairings-"));
+    let calls = 0;
+    const confirmed = await confirmPairings(
+      SHEET,
+      "security-review",
+      dir,
+      reports,
+      (_tool, gradeDir) => {
+        calls++;
+        const asked = JSON.parse(readFileSync(join(gradeDir, "pairs.json"), "utf8")) as { finding: { id: string } }[];
+        // The first time, it writes nothing.
+        if (calls === 2) {
+          const answer = [{ finding: asked[0]?.finding.id, problem: "D2", same: true }];
+          writeFileSync(join(gradeDir, "pairings.json"), JSON.stringify(answer));
+        }
+        return Promise.resolve();
+      },
+      { tool: "claude-code" },
+    );
+    expect(calls).toBe(2);
+    expect([...(confirmed ?? [])]).toEqual([`${String(pairs[0]?.finding.id)} D2`]);
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(`${dir}-pairings`, { recursive: true, force: true });
   });
 
   it("counts a problem found at any of its locations, and only a review's own reports", () => {
