@@ -3,13 +3,19 @@
 // for these before editing a file, instead of loading every rule on every turn.
 
 import { isAbsolute, relative } from "node:path";
-import { rulesFor, type Rule } from "@peer-ai/standards";
+import { profileRulesFor, rulesFor, type Rule, type Value } from "@peer-ai/standards";
 import { DOMAIN_IDS, type DomainId, type PeerAiConfig } from "@peer-ai/workflow";
 
 type ConfigTrack = PeerAiConfig["tracks"][number];
 
-/** A rule as an agent needs it while editing: what to do, and the question it will be reviewed by. */
-export type RuleForFile = Pick<Rule, "id" | "title" | "rule" | "ask" | "check" | "severity">;
+/**
+ * A rule as an agent needs it while editing: what to do, and the question it will be reviewed by.
+ * A stack profile's rule also names the core rule it carries out, and its value for this project.
+ */
+export type RuleForFile = Pick<Rule, "id" | "title" | "rule" | "ask" | "check" | "severity"> & {
+  carries?: string;
+  value?: Value;
+};
 
 export interface StandardsForFile {
   file: string;
@@ -101,9 +107,36 @@ export function standardsFor(config: PeerAiConfig, root: string, file: string): 
   const stage = config.project.stage ?? "mvp";
   const exceptions = standards?.exceptions ?? [];
   const setAside = new Set(exceptions.map((exception) => exception.rule));
-  const peerAiRules = rulesFor({ stage, traits: config.project.traits ?? [], domains: domainsFor(track) })
-    .filter((rule) => !setAside.has(rule.id))
-    .map(({ id, title, rule, ask, check, severity }) => ({ id, title, rule, ask, check, severity }));
+  const traits = config.project.traits ?? [];
+  const domains = domainsFor(track);
+  const core = rulesFor({ stage, traits, domains }).map(({ id, title, rule, ask, check, severity }) => ({
+    id,
+    title,
+    rule,
+    ask,
+    check,
+    severity,
+  }));
+  const profiled = profileRulesFor({
+    listed: standards?.profiles ?? [],
+    stage,
+    traits,
+    overrides: standards?.overrides ?? {},
+    ...(track?.stack === undefined ? {} : { stack: track.stack }),
+    ...(track?.architecture === undefined ? {} : { architecture: track.architecture }),
+  })
+    .filter((rule) => domains.includes(rule.domain))
+    .map(({ id, title, rule, ask, check, severity, carries, value }) => ({
+      id,
+      title,
+      rule,
+      ask,
+      check,
+      severity,
+      carries,
+      ...(value === undefined ? {} : { value }),
+    }));
+  const peerAiRules: RuleForFile[] = [...core, ...profiled].filter((rule) => !setAside.has(rule.id));
   return {
     file: path,
     stage,

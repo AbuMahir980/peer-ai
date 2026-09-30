@@ -44,7 +44,7 @@ export type Rule = z.output<typeof RuleSchema>;
 const SET_TRAITS: Partial<Record<DomainId, Trait>> = { money: "money", "safety-critical": "safety-critical" };
 
 /** The traits a product needs for this rule to apply. */
-export function traitsNeeded(rule: Rule): Trait[] {
+export function traitsNeeded(rule: Pick<Rule, "domain" | "when">): Trait[] {
   const set = SET_TRAITS[rule.domain];
   return [...new Set([...(set === undefined ? [] : [set]), ...(rule.when ?? [])])];
 }

@@ -1,11 +1,12 @@
-// Writes the readable pages in docs/ from the rules: one page per domain, and an index. The
-// rules in src/ are the source; a test fails if the committed pages fall behind them.
+// Writes the readable pages in docs/ from the rules: one page per domain, one per stack profile in
+// docs/profiles/, and an index. The rules in src/ are the source; a test fails if the committed
+// pages fall behind them.
 
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOMAIN_IDS, type DomainId } from "@peer-ai/workflow";
-import { CORE_RULES, DOMAIN_INFO, traitsNeeded, type Rule } from "../src/index.ts";
+import { CORE_RULES, DOMAIN_INFO, PROFILES, traitsNeeded, withValue, type Profile, type Rule } from "../src/index.ts";
 
 export const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "docs");
 
@@ -43,6 +44,55 @@ export function renderDomain(domain: DomainId): string | undefined {
   return `${[`# ${title}`, "", about, "", ...rules.flatMap((rule) => [renderRule(rule), ""])].join("\n").trimEnd()}\n`;
 }
 
+const TOOL_NAMES = { eslint: "ESLint", typescript: "the TypeScript compiler" } as const;
+
+function renderProfileRule(rule: Profile["rules"][number]): string {
+  const shown = withValue(rule, rule.default?.value);
+  const enforcer =
+    rule.enforcer === undefined
+      ? "–"
+      : rule.enforcer.tool === "eslint"
+        ? `\`${rule.enforcer.rule}\`, in ${TOOL_NAMES.eslint}`
+        : `\`${rule.enforcer.option}\`, in ${TOOL_NAMES.typescript}`;
+  const lines = [
+    `## ${rule.id} · ${shown.title}`,
+    "",
+    shown.rule,
+    "",
+    `**Why:** ${rule.why}`,
+    "",
+    `**Ask:** ${shown.ask}`,
+  ];
+  if (rule.default !== undefined) {
+    const unit = rule.default.unit === undefined ? "" : ` ${rule.default.unit}`;
+    lines.push(
+      "",
+      `**Default:** ${String(rule.default.value)}${unit}. A project changes it in \`standards.overrides\`, with its reason.`,
+    );
+  }
+  const architectures = rule.architectures === undefined ? "Any" : rule.architectures.map((a) => `\`${a}\``).join(", ");
+  lines.push(
+    "",
+    "| Applies from | Checked by | Severity | Carries | Architectures | Enforced by |",
+    "|--------------|------------|----------|---------|---------------|-------------|",
+    `| ${STAGE_NAMES[rule.stage]} | ${CHECK_NAMES[rule.check]} | ${capitalise(rule.severity)} | [${rule.carries}](../${rule.domain}.md) | ${architectures} | ${enforcer} |`,
+  );
+  return lines.join("\n");
+}
+
+/** The page for one stack profile. */
+export function renderProfile(profile: Profile): string {
+  const bases = profile.extends.map((id) => `[${id}](${id}.md)`).join(", ");
+  const facts = [
+    `List it in \`standards.profiles\` as \`${profile.id}\`.`,
+    profile.stacks.length === 0
+      ? "It applies to every part of the project."
+      : `It applies to parts tagged ${profile.stacks.map((tag) => `\`${tag}\``).join(", ")}.`,
+    ...(bases === "" ? [] : [`It builds on ${bases}, which apply wherever it does.`]),
+  ];
+  return `${[`# ${profile.name}`, "", profile.about, "", facts.join(" "), "", ...profile.rules.flatMap((rule) => [renderProfileRule(rule), ""])].join("\n").trimEnd()}\n`;
+}
+
 export function renderIndex(): string {
   const rows = DOMAIN_IDS.map((domain) => {
     const count = CORE_RULES.filter((rule) => rule.domain === domain).length;
@@ -63,6 +113,17 @@ export function renderIndex(): string {
     "| Domain | Rules |",
     "|--------|-------|",
     ...rows,
+    "",
+    "## Stack profiles",
+    "",
+    "A stack profile says how to follow the core rules in one stack, and which tool enforces each automatic rule. The design is in [RFC 0006](../../../rfcs/0006-stack-profiles-and-their-enforcers.md).",
+    "",
+    "| Profile | Id | Builds on | Rules |",
+    "|---------|----|-----------|-------|",
+    ...PROFILES.map(
+      (profile) =>
+        `| [${profile.name}](profiles/${profile.id}.md) | \`${profile.id}\` | ${profile.extends.length === 0 ? "–" : profile.extends.join(", ")} | ${String(profile.rules.length)} |`,
+    ),
   ].join("\n")}\n`;
 }
 
@@ -73,14 +134,15 @@ export function renderAll(): Map<string, string> {
     const page = renderDomain(domain);
     if (page !== undefined) pages.set(`${domain}.md`, page);
   }
+  for (const profile of PROFILES) pages.set(`profiles/${profile.id}.md`, renderProfile(profile));
   return pages;
 }
 
 const invokedDirectly = process.argv[1] !== undefined && process.argv[1] === fileURLToPath(import.meta.url);
 if (invokedDirectly) {
-  mkdirSync(DOCS_DIR, { recursive: true });
-  for (const file of readdirSync(DOCS_DIR)) rmSync(join(DOCS_DIR, file));
+  rmSync(DOCS_DIR, { recursive: true, force: true });
   for (const [file, content] of renderAll()) {
+    mkdirSync(dirname(join(DOCS_DIR, file)), { recursive: true });
     writeFileSync(join(DOCS_DIR, file), content);
     console.log(`wrote docs/${file}`);
   }

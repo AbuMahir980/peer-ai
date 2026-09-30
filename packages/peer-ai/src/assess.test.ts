@@ -212,6 +212,34 @@ describe("assess", () => {
     });
   });
 
+  it("suggests stack profiles for each part's stack, from the config or from detection", () => {
+    const parts = {
+      "apps/web/package.json": json({ dependencies: { react: "19.0.0" }, devDependencies: { typescript: "6.0.3" } }),
+      "services/api/requirements.txt": "fastapi\n",
+    };
+    expect(assess(project(parts), undefined, "mvp").suggestedProfiles).toEqual([
+      { profile: "typescript", evidence: "web is tagged typescript" },
+    ]);
+    const listed = project({
+      ...parts,
+      "peer-ai.config.json": json({
+        version: 1,
+        project: { name: "Repairs", stage: "mvp" },
+        tracks: [
+          { id: "web", kind: "web", path: "apps/web", status: "active" },
+          { id: "api", kind: "backend", path: "services/api", status: "active" },
+        ],
+        standards: { profiles: ["typescript"] },
+      }),
+    });
+    expect(assess(listed, loadConfig(listed).config, "mvp").suggestedProfiles).toEqual([]);
+    const out = capture();
+    runAssess({ cwd: project(parts), json: false, dryRun: true, now: NOW }, out, formatReport);
+    expect(out.text()).toContain(
+      "Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in peer-ai.config.json:\n  typescript: web is tagged typescript",
+    );
+  });
+
   it("leaves out traits the config declares, and prints the rest in the report", () => {
     const root = project({
       ...traitProject,

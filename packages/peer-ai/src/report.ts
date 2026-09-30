@@ -68,6 +68,14 @@ export function formatReport(assessment: Assessment, stage: Stage): string[] {
     for (const { trait, evidence } of assessment.suggestedTraits) lines.push(`  ${trait}: ${evidence}`);
   }
 
+  if (assessment.suggestedProfiles.length > 0) {
+    lines.push("");
+    lines.push(
+      `Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in ${CONFIG_FILE}:`,
+    );
+    for (const { profile, evidence } of assessment.suggestedProfiles) lines.push(`  ${profile}: ${evidence}`);
+  }
+
   const { personalData, cardData, paymentProviders } = assessment.signals;
   if (personalData.length + cardData.length + paymentProviders.length > 0) {
     lines.push("");
