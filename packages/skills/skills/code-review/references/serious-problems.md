@@ -16,6 +16,8 @@ For each `route` the `contract` describes:
 
 **Pass** when its request and response match the contract field by field: names, types, and which fields are there. The evidence quotes the fields as the code writes them beside the contract's, such as `{"id", "status", "mechanic_name"}` at bookings.py:52 against `id, status, mechanic_name`: a match you didn't compare isn't a pass.
 
+Names match letter for letter: `mechanicName` and `mechanic_name` are two different fields to a client built from the contract, unless the code converts every name in one place, such as a serializer setting.
+
 **Fail** when they differ, such as a renamed field, a missing one, or a type the contract doesn't promise. Say which is wrong, the code or the contract, when you can tell.
 
 ## SEC-05: the server decides what it knows
