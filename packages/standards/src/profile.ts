@@ -29,6 +29,7 @@ export const EnforcerSchema = z.discriminatedUnion("tool", [
       .min(1)
       .optional()
       .describe("The files it applies to, as globs within the part, such as **/*.tsx. None: every script."),
+    ignores: z.array(Text).min(1).optional().describe("Files within those it leaves alone, such as **/*.test.*."),
   }),
   z.strictObject({
     tool: z.literal("typescript"),

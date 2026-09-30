@@ -54,7 +54,7 @@ Every server action and route handler checks its input against a schema before u
 
 ## NEXT-05 · Every response sets its security headers
 
-The security headers, such as a content security policy, are set for every route, in `next.config` or middleware.
+The security headers, such as a content security policy, are set for every route, in `next.config` or the proxy, which was called middleware before Next.js 16.
 
 **Why:** Without them, a browser lets another site frame the page, and runs any script injected into it.
 

@@ -413,4 +413,19 @@ export const security = [
       { name: ASVS, ref: "13.4.2, level 2", url: V13 },
     ],
   },
+  {
+    id: "SEC-30",
+    domain: "security",
+    title: "Nothing from outside runs as code or a command",
+    rule: "Text is never run as code, such as with eval or by building a function from a string, and a system command never goes through a shell with outside data in it: commands take their arguments as a list.",
+    why: "Text that runs as code or as a shell command can do anything the process can: read its secrets, change its data, or take over the machine.",
+    ask: "Does this change run text as code, or pass outside data to a shell?",
+    stage: "prototype",
+    check: "ai-review",
+    severity: "critical",
+    sources: [
+      { name: ASVS, ref: "1.3.2, level 1", url: V1 },
+      { name: ASVS, ref: "1.2.5, level 1", url: V1 },
+    ],
+  },
 ] satisfies RuleInput[];

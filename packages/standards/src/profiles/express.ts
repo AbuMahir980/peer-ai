@@ -61,8 +61,8 @@ export const express: ProfileInput = {
     {
       id: "EXPRESS-05",
       title: "Cross-origin callers come from a fixed list",
-      rule: "CORS allows only a fixed list of the project's own origins, never `*` for a route that uses cookies or tokens.",
-      why: "An open CORS policy lets any site call the API with the visitor's credentials.",
+      rule: "CORS allows only a fixed list of the project's own origins. It never echoes back whatever origin asked, such as with `origin: true`, least of all with credentials.",
+      why: "Echoing the caller's origin with credentials lets any site call the API as the visitor.",
       ask: "Does the CORS policy allow only a fixed list of origins?",
       stage: "mvp",
       check: "ai-review",

@@ -66,7 +66,7 @@ export const next: ProfileInput = {
     {
       id: "NEXT-05",
       title: "Every response sets its security headers",
-      rule: "The security headers, such as a content security policy, are set for every route, in `next.config` or middleware.",
+      rule: "The security headers, such as a content security policy, are set for every route, in `next.config` or the proxy, which was called middleware before Next.js 16.",
       why: "Without them, a browser lets another site frame the page, and runs any script injected into it.",
       ask: "Do the app's responses set the security headers?",
       stage: "mvp",

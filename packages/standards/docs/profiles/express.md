@@ -56,9 +56,9 @@ The security headers are set for every response, such as with `helmet`, before a
 
 ## EXPRESS-05 · Cross-origin callers come from a fixed list
 
-CORS allows only a fixed list of the project's own origins, never `*` for a route that uses cookies or tokens.
+CORS allows only a fixed list of the project's own origins. It never echoes back whatever origin asked, such as with `origin: true`, least of all with credentials.
 
-**Why:** An open CORS policy lets any site call the API with the visitor's credentials.
+**Why:** Echoing the caller's origin with credentials lets any site call the API as the visitor.
 
 **Ask:** Does the CORS policy allow only a fixed list of origins?
 

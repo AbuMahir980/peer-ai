@@ -20,7 +20,7 @@ Text isn't stopped from scaling with `allowFontScaling={false}`. A layout that b
 
 The app doesn't call `console`. What needs recording goes through the project's logger, which drops personal data and sends nothing from release builds.
 
-**Why:** On a phone, the console goes to the device log, which other apps, crash tools and anyone with the phone on a cable can read.
+**Why:** On a phone, the console goes to the device log, which crash tools collect and anyone with the phone on a cable can read.
 
 **Ask:** Does this change call console?
 
