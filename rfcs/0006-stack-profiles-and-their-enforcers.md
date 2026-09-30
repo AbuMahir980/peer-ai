@@ -120,5 +120,12 @@ Minor, while Peer AI is `0.x`. The config gains nothing: `standards.profiles` an
 
 ## Open questions
 
-- **Which tools for the pipeline profile.** Candidates are OSV-Scanner for dependencies, Gitleaks for secrets and Semgrep for code scanning. Each is checked against section 4's three tests before it's chosen.
+- **Which tools for the pipeline profile.** Settled: see the amendment below.
 - **Other CI platforms.** GitLab's pipeline profile is the next one, when a project on it needs it.
+
+## Amendments
+
+**30 September 2026: the pipeline's tools, and one exception.** Section 4's tools were chosen and pinned: Gitleaks and OSV-Scanner as release binaries checked against their published checksums; zizmor, Semgrep, SSLyze and OWASP ZAP as images pinned to their digests. Each passes the three tests but one: Semgrep's engine is open source (LGPL-2.1), but the security rules it runs, from `semgrep/semgrep-rules`, are under the Semgrep Rules License, which lets any project use them in its own CI but isn't an open-source licence. The maintainer accepted this as an exception, since the rules are free to use, run without an account and are pinned to a commit that git checks by its hash. A project that would rather not use them sets GHA-05 aside, with its reason, and runs another scanner, such as CodeQL.
+
+Building the pipeline also settled two details. Job names never change, such as `peer-ai / secrets`, so a project can make them required checks. And the TLS check and the scan of the running app need a live environment, so those two rules are AI-reviewed: render adds their jobs, and a review confirms they ran.
+
