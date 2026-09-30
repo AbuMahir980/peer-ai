@@ -18,7 +18,9 @@
     "check:terms": "node scripts/check-forbidden-terms.ts",
     "peer-ai": "node packages/peer-ai/src/cli.ts",
     "changeset": "changeset",
-    "build": "pnpm -r run build"
+    "build": "pnpm -r run build",
+    "release": "node scripts/publish.ts",
+    "version-packages": "changeset version && node scripts/render-fixtures.ts"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",

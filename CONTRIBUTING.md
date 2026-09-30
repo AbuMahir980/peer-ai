@@ -49,6 +49,14 @@ Every change to a published package comes with a changeset (`pnpm changeset`). P
 
 The five packages share one version number. Until 1.0.0, pre-releases are versioned `1.0.0-next.N` and may still change without notice.
 
+## Releases
+
+A maintainer versions the packages in an ordinary pull request: `pnpm version-packages` turns the waiting changesets into new versions and changelogs, and renders the practice projects again, since `render` writes the exact version into each AI tool's settings. Once it merges into `next`, the release workflow publishes every package whose version npm doesn't have yet. npm trusts that workflow instead of a token, and records where each version was built, so nobody can publish Peer AI from their own machine.
+
+`pnpm release --dry-run` shows what would be published, without publishing anything.
+
+**A new package** needs its first version published by a maintainer, since npm can't create a package through trusted publishing: `npm login`, then `pnpm release` from `next`. Then point npm at the workflow, once per package: `npm trust github <package> --file release.yml --repository AbuMahir980/peer-ai --allow-publish`. Until then, the release workflow skips it with a warning.
+
 ## Code of conduct
 
 Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
