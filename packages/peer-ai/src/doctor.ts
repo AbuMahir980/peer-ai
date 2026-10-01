@@ -351,13 +351,11 @@ function checkGit(root: string): Check {
 
 function checkLegacy(root: string): Check[] {
   if (!LEGACY_MARKERS.some((marker) => existsSync(join(root, marker)))) return [];
-  return [
-    warn(
-      "legacy",
-      "The peer-ai/ folder is a copy of the v0 playbook, which Peer AI 1.0 doesn't read.",
-      `Move any changes your project made to it into ${CONFIG_FILE}, then remove it with: git rm -r peer-ai`,
-    ),
-  ];
+  // migrate builds the config itself, so it only runs before there is one.
+  const fix = existsSync(join(root, CONFIG_FILE))
+    ? `Move any changes your project made to it into ${CONFIG_FILE}, then remove it with: git rm -r peer-ai`
+    : "Run npx peer-ai migrate. It moves what your project changed into the config, and removes the folder.";
+  return [warn("legacy", "The peer-ai/ folder is a copy of the v0 playbook, which Peer AI 1.0 doesn't read.", fix)];
 }
 
 export function diagnose(

@@ -27,6 +27,7 @@ npm install --save-dev peer-ai
 | Command | What it does |
 |---------|--------------|
 | [`peer-ai init`](#peer-ai-init) | Sets up Peer AI in a repository: one config file, from what it detects |
+| [`peer-ai migrate`](#peer-ai-migrate) | Moves a project from its copy of v0 onto Peer AI 1.0 |
 | [`peer-ai assess`](#peer-ai-assess) | Maps what the project has and what its stage still needs |
 | [`peer-ai render`](#peer-ai-render) | Connects each AI tool: instructions, the MCP server and the skills |
 | [`peer-ai doctor`](#peer-ai-doctor) | Checks the setup and says how to fix what isn't right |
@@ -75,6 +76,40 @@ It never overwrites an existing `peer-ai.config.json`, and it never assumes anyt
 ### Exit codes
 
 `0` success, `1` refused (a config already exists) or cancelled, `2` a usage error.
+
+## `peer-ai migrate`
+
+Moves a project from v0, when Peer AI was a playbook copied into a `peer-ai/` folder, onto the package ([RFC 0008](../../rfcs/0008-moving-a-v0-project-onto-1-0.md)).
+
+```bash
+npx peer-ai migrate --dry-run
+npx peer-ai migrate
+```
+
+It converts what it can read with certainty:
+
+| From v0 | Into |
+|---------|------|
+| The Project settings table in the workflow driver | `commands.verify`, `tracker`, `repo.branchNaming`, `repo.mergePolicy` and `design.reference` |
+| `phase-config.json` | `models`, each skill's add-ons and notes, and each activity's notes. A phase that says a part is dormant marks it `dormant`. |
+| Markdown files in `docs/standards/` | `standards.documents`, as standards or an addendum, each scoped to its part |
+| `.peer-ai-state.json` | A work item for each ticket in progress. The tracker keeps the rest. |
+
+Then it deletes the `peer-ai/` folder and the state file, takes v0's text out of `CLAUDE.md`, `AGENTS.md` and the other instruction files, maps the project and sets up the AI tools, as `assess` and `render` do.
+
+Nothing is dropped silently. Whatever needs judgement, it copies word for word into `docs/peer-ai-migration.md`: the files the project edited in `peer-ai/`, the text it took out of the instruction files, the settings it couldn't place, and anything it left alone that still names v0. A work item, `migrate-v0`, points there, so your AI tool brings each decision up in the next session.
+
+It tells the files the project changed from v0's own by their fingerprints: a list of every file in every v0 version, which ships with the package.
+
+It never commits. It won't start with uncommitted changes, so the migration is a change of its own: review it, commit it on a branch, and open a pull request. `git restore . && git clean -fd` undoes it all.
+
+### Options
+
+The same as `init`. With `--dry-run`, it prints what it would convert, rewrite, delete and leave for a decision, and changes nothing.
+
+### Exit codes
+
+`0` success, `1` refused (a config already exists, there is no v0 copy, the project isn't in git or has uncommitted changes) or cancelled, `2` a usage error.
 
 ## `peer-ai assess`
 
@@ -306,6 +341,15 @@ Run it after the project's own checks:
 
 ```yaml
 - run: npx peer-ai check
+```
+
+That uses the version in the project's `package.json`. A project without one, such as a Python or Flutter project, needs Node 24 on the runner and the version `render` pinned:
+
+```yaml
+- uses: actions/setup-node@v4
+  with:
+    node-version: 24
+- run: npx -y peer-ai@<version> check
 ```
 
 ### Options

@@ -107,6 +107,7 @@ export type McpToolId = (typeof MCP_TOOL_IDS)[number];
 /** The peer-ai commands. Skills name them. */
 export const CLI_COMMAND_IDS = [
   "init",
+  "migrate",
   "assess",
   "render",
   "doctor",

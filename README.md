@@ -173,6 +173,10 @@ Then open the project in your AI tool and ask for work in plain words, such as "
 - run: npx peer-ai check
 ```
 
+A project without a `package.json` needs Node 24 on the runner and the exact version: see [`peer-ai check`](packages/peer-ai#peer-ai-check).
+
+**Moving from v0?** If your project has a `peer-ai/` folder from the old playbook, run `npx peer-ai migrate` instead of `init`. It moves your settings into the config and leaves a list of anything that needs your decision.
+
 You never have to remember to check the setup: `peer-ai check` in CI fails when the setup stops working, and your AI tool hears about any problem at the start of each session and fixes it or tells you. `npx peer-ai doctor` shows the details at any time. Every command is described in [`packages/peer-ai`](packages/peer-ai).
 
 ## Privacy

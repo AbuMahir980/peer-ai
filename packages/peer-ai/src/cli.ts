@@ -13,7 +13,8 @@ import { runCheckDocument } from "./document.ts";
 import { runDoctor } from "./doctor.ts";
 import { runFeedback } from "./feedback.ts";
 import { serveStdio } from "./mcp.ts";
-import { runInit, type Output, type Stage, type Team } from "./init.ts";
+import { runInit, type InitOptions, type Output, type Stage, type Team } from "./init.ts";
+import { runMigrate } from "./migrate.ts";
 import { VERSION } from "./package-info.ts";
 import { createTerminalPrompter, type Prompter } from "./prompter.ts";
 import { formatReport } from "./report.ts";
@@ -26,6 +27,7 @@ const HELP = `peer-ai: from a brief to a shipped product, with any AI tool
 
 Usage:
   peer-ai init [options]      Set up Peer AI in this repository
+  peer-ai migrate [options]   Move a project from its copy of v0 onto Peer AI 1.0
   peer-ai assess [options]    Map what the project has and what its stage still needs
   peer-ai render [options]    Set up each AI tool in the config: instructions and the MCP server
   peer-ai doctor [options]    Check that Peer AI is set up correctly, and how to fix it
@@ -49,6 +51,9 @@ Options for init:
       --team <team>           solo or team
       --tool <tool>           An AI tool you use; repeat for several
                               (${TOOL_IDS.join(", ")})
+
+Options for migrate: the same as init. It never commits, and it won't start on
+uncommitted changes. --dry-run prints what it would do, changing nothing.
 
 Options for assess:
       --target <stage>        Assess against a stage other than the project's own,
@@ -90,7 +95,8 @@ function oneOf<T extends string>(value: string, allowed: readonly T[], flag: str
   throw new Error(`${flag} must be one of: ${allowed.join(", ")}`);
 }
 
-async function init(args: string[], io: Io): Promise<number> {
+/** The options init and migrate share. */
+function initOptions(args: string[], io: Io): InitOptions {
   const { values } = parseArgs({
     args,
     strict: true,
@@ -106,19 +112,23 @@ async function init(args: string[], io: Io): Promise<number> {
   const stage = values.stage === undefined ? undefined : oneOf(values.stage, STAGES, "--stage");
   const team = values.team === undefined ? undefined : oneOf<Team>(values.team, ["solo", "team"], "--team");
   const tools = values.tool?.map((tool) => oneOf<ToolId>(tool, TOOL_IDS, "--tool"));
-  return runInit(
-    {
-      cwd: io.cwd,
-      yes: values.yes === true,
-      dryRun: values["dry-run"] === true,
-      ...(values.name === undefined ? {} : { name: values.name }),
-      ...(stage === undefined ? {} : { stage }),
-      ...(team === undefined ? {} : { team }),
-      ...(tools === undefined ? {} : { tools }),
-    },
-    io.prompter,
-    io.out,
-  );
+  return {
+    cwd: io.cwd,
+    yes: values.yes === true,
+    dryRun: values["dry-run"] === true,
+    ...(values.name === undefined ? {} : { name: values.name }),
+    ...(stage === undefined ? {} : { stage }),
+    ...(team === undefined ? {} : { team }),
+    ...(tools === undefined ? {} : { tools }),
+  };
+}
+
+function init(args: string[], io: Io): Promise<number> {
+  return runInit(initOptions(args, io), io.prompter, io.out);
+}
+
+function migrate(args: string[], io: Io): Promise<number> {
+  return runMigrate(initOptions(args, io), io.prompter, io.out);
 }
 
 function assess(args: string[], io: Io): number {
@@ -216,6 +226,7 @@ async function mcp(args: string[], io: Io): Promise<number> {
 
 const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promise<number>> = {
   init,
+  migrate,
   assess,
   render,
   doctor,
