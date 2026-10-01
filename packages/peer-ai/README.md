@@ -165,7 +165,7 @@ npx peer-ai render
 
 `AGENTS.md` gets the block whenever a tool other than Claude Code is listed, when it already exists, or when `CLAUDE.md` imports it.
 
-The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules. The server serves the detail when it's needed, rather than every rule on every turn.
+The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules, and the project's settings for models, skills and activities when it has any: the models to use, the add-ons, checklists and notes for each skill, and the files to read and notes for each activity. The server serves the detail when it's needed, rather than every rule on every turn.
 
 ### Skills
 

@@ -377,6 +377,74 @@ describe("the instructions", () => {
     expect(text).toContain("Commands: test `make test`, lint `make lint`.");
     expect(text).toContain("Compliance for NG, GB: ndpa, uk-gdpr.");
     expect(text).toContain("- `CONTEXT.md`: Repository rules");
+    expect(text).not.toContain("Models:");
+    expect(text).not.toContain("the project's settings");
+    expect(text).not.toContain("When a work item reaches");
     expect(text.split("\n").length).toBeLessThan(40);
+  });
+
+  function instructionsFor(extra: Record<string, unknown>): string {
+    const root = project({ "peer-ai.config.json": config(extra) });
+    const { config: loaded, errors } = loadConfig(root);
+    if (loaded === undefined) throw new Error(`the test config is not valid: ${(errors ?? []).join("; ")}`);
+    return instructions(loaded);
+  }
+
+  it("name the pinned models, and what to do when one isn't offered", () => {
+    const pinned = instructionsFor({
+      models: { policy: "pinned", default: "model-a", byActivity: { build: "model-b", verify: "model-c" } },
+    });
+    expect(pinned).toContain(
+      "Models: model-a by default; build: model-b; verify: model-c. If one isn't offered, use the most capable one available. Never run a review on a weaker model than the build.",
+    );
+    const ask = instructionsFor({ models: { policy: "pinned", default: "model-a", ifUnavailable: "ask" } });
+    expect(ask).toContain("Models: model-a by default. If one isn't offered, ask the person which to use.");
+    expect(instructionsFor({ models: { policy: "tiers" } })).toContain(
+      "Models: never run a review on a weaker model than the build.",
+    );
+    expect(instructionsFor({ models: { policy: "none" } })).not.toContain("Models:");
+  });
+
+  it("pass each skill's add-ons, checklists and notes to the AI tool", () => {
+    const text = instructionsFor({
+      capabilities: {
+        "code-review": { also: ["engineering:code-review", "/code-review"], notes: ["Quote\n  the line."] },
+        "security-review": { checklists: ["docs/checklists/payments.md", "docs/checklists/uploads.md"] },
+      },
+    });
+    expect(text).toContain(
+      "When you use one of Peer AI's skills, follow the project's settings for it. If an add-on it names isn't available, tell the person; never skip it silently.",
+    );
+    expect(text).toContain("- `peer-ai-code-review`: also use `engineering:code-review` and `/code-review`.");
+    expect(text).toContain("- For `peer-ai-code-review`: Quote the line.");
+    expect(text).toContain(
+      "- `peer-ai-security-review` also checks against `docs/checklists/payments.md` and `docs/checklists/uploads.md`.",
+    );
+  });
+
+  it("only mention add-ons when a skill has some", () => {
+    const text = instructionsFor({ capabilities: { architecture: { notes: ["Keep the modules as they are."] } } });
+    expect(text).toContain("When you use one of Peer AI's skills, follow the project's settings for it.\n");
+    expect(text).not.toContain("never skip it silently");
+    expect(text).toContain("- For `peer-ai-architecture`: Keep the modules as they are.");
+  });
+
+  it("pass each activity's inputs and notes to the AI tool", () => {
+    const text = instructionsFor({
+      activities: {
+        specify: { inputs: ["docs/design/brief.md"], notes: ["Every screen has a way back from a mistake."] },
+        build: { notes: ["Work one ticket at a time.", "Push after each commit."] },
+      },
+    });
+    expect(text).toContain(
+      [
+        "When a work item reaches one of these activities:",
+        "",
+        "- Before `specify`, read `docs/design/brief.md`.",
+        "- During `specify`: Every screen has a way back from a mistake.",
+        "- During `build`: Work one ticket at a time.",
+        "- During `build`: Push after each commit.",
+      ].join("\n"),
+    );
   });
 });

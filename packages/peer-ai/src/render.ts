@@ -11,7 +11,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { SKILL_NAME_PREFIX, availableSkills, loadSkill, readSkillFiles, renderedName } from "peer-ai-skills";
-import type { PeerAiConfig, ToolId } from "peer-ai-workflow";
+import { ACTIVITY_IDS, SKILL_IDS, type PeerAiConfig, type ToolId } from "peer-ai-workflow";
 import { loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, type Check } from "./checks.ts";
 import { CONFIG_FILE } from "./detect.ts";
@@ -140,8 +140,78 @@ export function instructions(config: PeerAiConfig): string {
       lines.push(`- \`${rule.path}\`${rule.description === undefined ? "" : `: ${rule.description}`}`);
     }
   }
+  lines.push(...projectSettings(config));
   lines.push("", "If the peer-ai tools aren't available, run `npx peer-ai doctor`.");
   return lines.join("\n");
+}
+
+const code = (text: string) => `\`${text}\``;
+
+/** "a", "a and b", "a, b and c". */
+function inWords(items: string[]): string {
+  return items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1) ?? ""}`;
+}
+
+/** A note on one line, so it can't break the list it sits in. */
+const oneLine = (note: string) => note.replace(/\s+/g, " ").trim();
+
+// The project's own settings for models, skills and activities (RFC 0001), written where the AI
+// tool reads them (RFC 0008). Only the keys a project sets produce a line.
+function projectSettings(config: PeerAiConfig): string[] {
+  const lines: string[] = [];
+  const models = config.models;
+  if (models?.policy === "pinned" && models.default !== undefined) {
+    const byActivity = Object.entries(models.byActivity ?? {}).map(([activity, model]) => `${activity}: ${model}`);
+    const unavailable =
+      models.ifUnavailable === "ask"
+        ? "If one isn't offered, ask the person which to use."
+        : "If one isn't offered, use the most capable one available.";
+    lines.push(
+      "",
+      `Models: ${[`${models.default} by default`, ...byActivity].join("; ")}. ${unavailable} Never run a review on a weaker model than the build.`,
+    );
+  } else if (models?.policy === "tiers") {
+    lines.push("", "Models: never run a review on a weaker model than the build.");
+  }
+
+  const skills = SKILL_IDS.flatMap((skill) => {
+    const capability = config.capabilities?.[skill];
+    if (capability === undefined) return [];
+    const name = code(renderedName(skill));
+    return [
+      ...((capability.also ?? []).length > 0
+        ? [`- ${name}: also use ${inWords((capability.also ?? []).map(code))}.`]
+        : []),
+      ...((capability.checklists ?? []).length > 0
+        ? [`- ${name} also checks against ${inWords((capability.checklists ?? []).map(code))}.`]
+        : []),
+      ...(capability.notes ?? []).map((note) => `- For ${name}: ${oneLine(note)}`),
+    ];
+  });
+  if (skills.length > 0) {
+    const addOns = SKILL_IDS.some((skill) => (config.capabilities?.[skill]?.also ?? []).length > 0);
+    lines.push(
+      "",
+      `When you use one of Peer AI's skills, follow the project's settings for it.${addOns ? " If an add-on it names isn't available, tell the person; never skip it silently." : ""}`,
+      "",
+      ...skills,
+    );
+  }
+
+  const activities = ACTIVITY_IDS.flatMap((activity) => {
+    const settings = config.activities?.[activity];
+    if (settings === undefined) return [];
+    return [
+      ...((settings.inputs ?? []).length > 0
+        ? [`- Before ${code(activity)}, read ${inWords((settings.inputs ?? []).map(code))}.`]
+        : []),
+      ...(settings.notes ?? []).map((note) => `- During ${code(activity)}: ${oneLine(note)}`),
+    ];
+  });
+  if (activities.length > 0) {
+    lines.push("", "When a work item reaches one of these activities:", "", ...activities);
+  }
+  return lines;
 }
 
 const block = (body: string) => `${START}\n${GENERATED}\n\n${body}\n${END}`;
