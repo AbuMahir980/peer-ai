@@ -1,5 +1,18 @@
 # peer-ai
 
+## 1.0.0-next.2
+
+### Minor Changes
+
+- f6f543e: `render` sets up the CI gate, `peer-ai check`, so no one has to remember to (RFC 0009). On GitHub Actions it writes `.github/workflows/peer-ai.yml`, which installs Node 24 and runs the exact version of Peer AI, so it works with or without a `package.json`; for any other CI it prints the step to add. `peer-ai doctor` warns when no CI runs the gate, and `migrate` notes that the check should be made required. `delivery.gate: false` turns it off.
+
+### Patch Changes
+
+- Updated dependencies [f6f543e]
+  - peer-ai-workflow@1.0.0-next.2
+  - peer-ai-skills@1.0.0-next.2
+  - peer-ai-standards@1.0.0-next.2
+
 ## 1.0.0-next.1
 
 ### Minor Changes

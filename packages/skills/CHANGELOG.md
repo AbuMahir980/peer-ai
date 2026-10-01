@@ -1,5 +1,13 @@
 # peer-ai-skills
 
+## 1.0.0-next.2
+
+### Patch Changes
+
+- Updated dependencies [f6f543e]
+  - peer-ai-workflow@1.0.0-next.2
+  - peer-ai-standards@1.0.0-next.2
+
 ## 1.0.0-next.1
 
 ### Patch Changes
