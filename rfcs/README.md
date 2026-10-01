@@ -33,6 +33,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0005](0005-work-items-that-carry-their-plan.md) | Work items that carry their plan | Accepted |
 | [0006](0006-stack-profiles-and-their-enforcers.md) | Stack profiles and the tools that enforce them | Accepted |
 | [0007](0007-setup-checks-and-feedback-that-run-themselves.md) | Setup checks and feedback that run themselves | Accepted |
+| [0008](0008-moving-a-v0-project-onto-1-0.md) | Moving a v0 project onto 1.0 | Draft |
 
 ## What carries weight
 
