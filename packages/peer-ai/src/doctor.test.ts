@@ -369,6 +369,11 @@ describe("doctor on the repository", () => {
   it("points out a copy of the v0 playbook, only when it is one", () => {
     const legacy = project({ "peer-ai/shared/00-setup.md": "", "peer-ai/phase-config.json": "{}" });
     expect(checksFor(legacy, "legacy")).toMatchObject([
+      { status: "warn", fix: expect.stringContaining("Run npx peer-ai migrate.") as string },
+    ]);
+    // migrate builds the config, so once there is one, the folder goes by hand.
+    const configured = project({ "peer-ai.config.json": config(), "peer-ai/shared/00-setup.md": "" });
+    expect(checksFor(configured, "legacy")).toMatchObject([
       { status: "warn", fix: expect.stringContaining("git rm -r peer-ai") as string },
     ]);
     expect(checksFor(project({ "peer-ai/notes.md": "" }), "legacy")).toEqual([]);

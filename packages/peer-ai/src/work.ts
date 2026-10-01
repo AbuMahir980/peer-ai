@@ -54,7 +54,8 @@ export function loadWorkItem(root: string, id: string): Result<WorkItem> {
   return file.item.ok ? file.item : failed(`${file.path} ${file.item.error}`);
 }
 
-function save(root: string, config: PeerAiConfig, item: WorkItem): Result<WorkItem> {
+/** Writes a work item after checking it. migrate uses it to carry over an item at the stage it had. */
+export function saveWorkItem(root: string, config: PeerAiConfig, item: WorkItem): Result<WorkItem> {
   const result = validateWorkItem({ $schema: WORK_ITEM_SCHEMA_URL, ...item });
   if (!result.ok) return failed(`The work item would not be valid: ${result.errors.join("; ")}`);
   if (item.track !== undefined && !tracksOf(config).includes(item.track)) {
@@ -124,7 +125,7 @@ export function createWorkItem(root: string, config: PeerAiConfig, input: NewWor
     next: input.next ?? "Read what this item needs, then plan it.",
     updatedAt: now.toISOString(),
   } as WorkItem;
-  return save(root, config, item);
+  return saveWorkItem(root, config, item);
 }
 
 export interface WorkItemChanges {
@@ -153,7 +154,7 @@ export function updateWorkItem(
 ): Result<WorkItem> {
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
-  return save(root, config, { ...loaded.value, ...defined(changes), updatedAt: now.toISOString() });
+  return saveWorkItem(root, config, { ...loaded.value, ...defined(changes), updatedAt: now.toISOString() });
 }
 
 export interface ReviewInput {
@@ -322,7 +323,7 @@ export function recordReview(
     entry = { ...checked.value, at };
   }
   const reviews = [...(loaded.value.reviews ?? []), entry];
-  return save(root, config, { ...loaded.value, reviews, updatedAt: at });
+  return saveWorkItem(root, config, { ...loaded.value, reviews, updatedAt: at });
 }
 
 export function recordVerify(
@@ -335,7 +336,7 @@ export function recordVerify(
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
   const at = now.toISOString();
-  return save(root, config, { ...loaded.value, lastVerify: { result, at }, updatedAt: at });
+  return saveWorkItem(root, config, { ...loaded.value, lastVerify: { result, at }, updatedAt: at });
 }
 
 /**
@@ -368,7 +369,7 @@ export function advanceWorkItem(
       }
     };
     const requiredReviews = reviewsFor(changedFiles(root), config, projectStage(config), read, undefined, item);
-    return save(root, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
+    return saveWorkItem(root, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
@@ -382,7 +383,7 @@ export function advanceWorkItem(
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
     }
   }
-  return save(root, config, { ...item, stage: target, updatedAt: now.toISOString() });
+  return saveWorkItem(root, config, { ...item, stage: target, updatedAt: now.toISOString() });
 }
 
 export interface CommandResult {

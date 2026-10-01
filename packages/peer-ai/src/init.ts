@@ -29,7 +29,7 @@ export interface Output {
   error: (line: string) => void;
 }
 
-interface Answers {
+export interface Answers {
   name: string;
   description: string;
   tracks: DetectedTrack[];
@@ -79,8 +79,8 @@ function parseStack(text: string): string[] {
     .filter((part) => part !== "");
 }
 
-async function ask(detected: Detected, prompter: Prompter): Promise<Answers> {
-  prompter.intro("peer-ai init");
+export async function ask(detected: Detected, prompter: Prompter, title = "peer-ai init"): Promise<Answers> {
+  prompter.intro(title);
   if (detected.tracks.length > 0) {
     prompter.note(detected.tracks.map(describeTrack).join("\n"), "Found in this repository");
   }
@@ -123,7 +123,7 @@ async function ask(detected: Detected, prompter: Prompter): Promise<Answers> {
   return { name, description, tracks, team, stage, tools };
 }
 
-function defaults(detected: Detected, options: InitOptions): Answers {
+export function defaults(detected: Detected, options: InitOptions): Answers {
   return {
     name: options.name ?? detected.name,
     description: detected.description ?? "",
