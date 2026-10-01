@@ -81,10 +81,15 @@ It never overwrites an existing `peer-ai.config.json`, and it never assumes anyt
 
 Moves a project from v0, when Peer AI was a playbook copied into a `peer-ai/` folder, onto the package ([RFC 0008](../../rfcs/0008-moving-a-v0-project-onto-1-0.md)).
 
-```bash
-npx peer-ai migrate --dry-run
-npx peer-ai migrate
-```
+In the project's folder:
+
+1. **Commit or stash any work in progress.** `migrate` won't start with uncommitted changes, so the move is a change of its own.
+2. **Make a branch:** `git switch -c peer-ai-1.0`
+3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
+4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found.
+5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
+6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
+7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
 
 It converts what it can read with certainty:
 
@@ -101,7 +106,7 @@ Nothing is dropped silently. Whatever needs judgement, it copies word for word i
 
 It tells the files the project changed from v0's own by their fingerprints: a list of every file in every v0 version, which ships with the package.
 
-It never commits. It won't start with uncommitted changes, so the migration is a change of its own: review it, commit it on a branch, and open a pull request. `git restore . && git clean -fd` undoes it all.
+It never commits. It won't start with uncommitted changes, so the migration is a change of its own: review it, commit it on a branch, and open a pull request. `git stash --include-untracked` undoes it all. It deletes only files git can bring back, leaves files git ignores where they are, and refuses to write outside the project.
 
 ### Options
 

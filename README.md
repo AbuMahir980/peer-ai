@@ -171,7 +171,19 @@ Then open the project in your AI tool and ask for work in plain words, such as "
 
 `render` also sets up the gate in your CI: `peer-ai check`, which holds every change to its record. On GitHub Actions it writes `.github/workflows/peer-ai.yml`, which works with or without a `package.json`; for any other CI, it prints the step to add. Make `peer-ai check` a required check in your repository's settings, so nothing merges without it.
 
-**Moving from v0?** If your project has a `peer-ai/` folder from the old playbook, run `npx peer-ai migrate` instead of `init`. It moves your settings into the config and leaves a list of anything that needs your decision.
+### Moving a project from v0
+
+If your project has a `peer-ai/` folder from the old playbook, run `migrate` instead of `init`. It moves your settings into the config, removes the folder, and leaves a list of anything that needs your decision. In the project's folder:
+
+1. **Commit or stash any work in progress.** `migrate` won't start with uncommitted changes, so the move is a change of its own.
+2. **Make a branch:** `git switch -c peer-ai-1.0`
+3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
+4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found.
+5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
+6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
+7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
+
+What it converts, and what it never does, is in [`peer-ai migrate`](packages/peer-ai#peer-ai-migrate).
 
 You never have to remember to check the setup: `peer-ai check` in CI fails when the setup stops working, and your AI tool hears about any problem at the start of each session and fixes it or tells you. `npx peer-ai doctor` shows the details at any time. Every command is described in [`packages/peer-ai`](packages/peer-ai).
 
