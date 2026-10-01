@@ -70,11 +70,11 @@ flowchart LR
 
 1. **`peer-ai init`** reads your repository (its languages, frameworks, parts, infrastructure, CI and AI tools) and writes one config file, `peer-ai.config.json`. It asks only what it can't work out.
 2. **`peer-ai assess`** maps what the project already has, such as requirements, a threat model, tests or observability, and what its stage still needs. Each item is present, partial or missing, with the files that prove it. Gaps become work to do, never a red build.
-3. **`peer-ai render`** connects each AI tool you use: short instructions, the MCP server, and Peer AI's skills, written where each tool reads them.
+3. **`peer-ai render`** connects each AI tool you use: short instructions, the MCP server, and Peer AI's skills, written where each tool reads them. It also puts the gate, `peer-ai check`, in your CI.
 4. **You ask your AI tool for work in plain words,** such as "add booking cancellations" or "review the payments code". It asks Peer AI what to do next, follows the skill for the job, checks every rule that applies, and records what it did. Peer AI refuses a record the evidence doesn't support.
-5. **`peer-ai check` runs in CI** and fails when a piece of work claims more than its record shows: no recorded verify, a failed or incomplete review, or, in production, a review it needed and never had.
+5. **`peer-ai check` runs in CI,** where `render` set it up, and fails when a piece of work claims more than its record shows: no recorded verify, a failed or incomplete review, or, in production, a review it needed and never had.
 
-Your project keeps one config file, a `.peer-ai/` folder with its map, work items and review reports, and a few lines in each AI tool's settings. The skills are rebuilt from the installed version and stay out of git, so upgrading Peer AI is a one-line version change.
+Your project keeps one config file, a `.peer-ai/` folder with its map, work items and review reports, a few lines in each AI tool's settings, and, on GitHub Actions, one workflow for the gate. The skills are rebuilt from the installed version and stay out of git, so upgrading Peer AI is a one-line version change.
 
 ## Proof, not promises
 
@@ -167,15 +167,23 @@ npx peer-ai assess
 npx peer-ai render
 ```
 
-Then open the project in your AI tool and ask for work in plain words, such as "what should we work on next?" or "review this change". To gate your pipeline, add this step to CI after your own checks:
+Then open the project in your AI tool and ask for work in plain words, such as "what should we work on next?" or "review this change".
 
-```yaml
-- run: npx peer-ai check
-```
+`render` also sets up the gate in your CI: `peer-ai check`, which holds every change to its record. On GitHub Actions it writes `.github/workflows/peer-ai.yml`, which works with or without a `package.json`; for any other CI, it prints the step to add. Make `peer-ai check` a required check in your repository's settings, so nothing merges without it.
 
-A project without a `package.json` needs Node 24 on the runner and the exact version: see [`peer-ai check`](packages/peer-ai#peer-ai-check).
+### Moving a project from v0
 
-**Moving from v0?** If your project has a `peer-ai/` folder from the old playbook, run `npx peer-ai migrate` instead of `init`. It moves your settings into the config and leaves a list of anything that needs your decision.
+If your project has a `peer-ai/` folder from the old playbook, run `migrate` instead of `init`. It moves your settings into the config, removes the folder, and leaves a list of anything that needs your decision. In the project's folder:
+
+1. **Commit or stash any work in progress.** `migrate` won't start with uncommitted changes, so the move is a change of its own.
+2. **Make a branch:** `git switch -c peer-ai-1.0`
+3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
+4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found.
+5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
+6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
+7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
+
+What it converts, and what it never does, is in [`peer-ai migrate`](packages/peer-ai#peer-ai-migrate).
 
 You never have to remember to check the setup: `peer-ai check` in CI fails when the setup stops working, and your AI tool hears about any problem at the start of each session and fixes it or tells you. `npx peer-ai doctor` shows the details at any time. Every command is described in [`packages/peer-ai`](packages/peer-ai).
 

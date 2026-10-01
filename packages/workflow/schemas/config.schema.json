@@ -488,6 +488,10 @@
           "type": "string",
           "minLength": 1,
           "description": "A path relative to the project root, or a URL."
+        },
+        "gate": {
+          "description": "Whether CI runs peer-ai check. render sets it up and peer-ai doctor asks for it unless this is false. Defaults to true.",
+          "type": "boolean"
         }
       },
       "required": [

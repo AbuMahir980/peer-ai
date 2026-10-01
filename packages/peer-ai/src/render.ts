@@ -18,7 +18,8 @@ import { CONFIG_FILE } from "./detect.ts";
 import { FEEDBACK_DIR } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
-import { WORKFLOW_FILE, sameFile, unchangedSinceRender, workflowFile } from "./pipeline.ts";
+import { planGate } from "./gate.ts";
+import { CHECKOUT, SETUP_NODE, WORKFLOW_FILE, sameFile, unchangedSinceRender, workflowFile } from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
 export const START = "<!-- peer-ai:start -->";
@@ -424,9 +425,6 @@ function cursorEnvironment(root: string, command: string): Planned {
   );
 }
 
-const CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1";
-const SETUP_NODE = "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0";
-
 /**
  * Copilot's cloud agent runs the copilot-setup-steps job before it starts. A workflow that already
  * exists is left to its owner, with the step to add.
@@ -577,6 +575,11 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
       });
     }
   }
+
+  // The CI gate, peer-ai check (RFC 0009): a workflow of its own on GitHub Actions, a step to add elsewhere.
+  const gate = planGate(root, config);
+  if (gate.planned !== undefined) files.push(gate.planned);
+  if (gate.manual !== undefined) manual.push(gate.manual);
 
   if (uses("claude-code")) files.push(claudeSessionHook(root, command));
   if (uses("cursor")) files.push(cursorEnvironment(root, command));

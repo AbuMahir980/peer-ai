@@ -22,6 +22,7 @@ import { dirname, join, sep } from "node:path";
 import { validateConfig, type ActivityId, type WorkItem } from "peer-ai-workflow";
 import { LEGACY_MARKERS, loadConfig, runAssess } from "./assess.ts";
 import { CONFIG_FILE, detect, type Detected, type DetectedTrack } from "./detect.ts";
+import { GATE_FILE, onGitHubActions } from "./gate.ts";
 import { ask, buildConfig, defaults, type Answers, type InitOptions, type Output } from "./init.ts";
 import { Cancelled, type Prompter } from "./prompter.ts";
 import { runRender } from "./render.ts";
@@ -588,6 +589,14 @@ export function planMigration(
   }
   if (leftAlone.length > 0) {
     decisions.push({ title: "Left as they were", body: leftAlone.map((line) => `- ${line}`) });
+  }
+  if (onGitHubActions(root)) {
+    decisions.push({
+      title: "Make Peer AI's CI gate a required check",
+      body: [
+        `\`render\` added ${code(GATE_FILE)}, which runs \`peer-ai check\` on every pull request (RFC 0009). Only the repository's owner can make a check required: in GitHub, add the status check \`peer-ai check\` to the main branch's rules, so no change merges without it.`,
+      ],
+    });
   }
 
   // The config: init's, plus everything converted.

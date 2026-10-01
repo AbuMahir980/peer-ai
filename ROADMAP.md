@@ -83,7 +83,7 @@ The stack profiles so far are TypeScript, Node, React, React Native, Next.js, Ex
 | 4 | **Real projects**: a pre-release on npm, `peer-ai migrate` for projects running v0 | Each project runs on the package with no `peer-ai/` folder, and a version bump lands as a one-line pull request | In progress |
 | 5 | **Public 1.0**: docs, quickstart, examples, a demo, the npm release | Peer AI is proven on real projects, and every problem they report is fixed or planned | Next |
 
-**Done in Milestone 4 so far:** the pre-release on npm; a feedback route, where an AI tool drafts a report of anything Peer AI got wrong and a person approves sending it; and `peer-ai migrate`, which moves a v0 project onto the package.
+**Done in Milestone 4 so far:** the pre-release on npm; a feedback route, where an AI tool drafts a report of anything Peer AI got wrong and a person approves sending it; `peer-ai migrate`, which moves a v0 project onto the package; and the CI gate, `peer-ai check`, which `render` now sets up itself.
 
 **Coming next:** moving real projects onto 1.0, and reviews that work in small passes, most important rules first.
 

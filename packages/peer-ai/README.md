@@ -81,10 +81,15 @@ It never overwrites an existing `peer-ai.config.json`, and it never assumes anyt
 
 Moves a project from v0, when Peer AI was a playbook copied into a `peer-ai/` folder, onto the package ([RFC 0008](../../rfcs/0008-moving-a-v0-project-onto-1-0.md)).
 
-```bash
-npx peer-ai migrate --dry-run
-npx peer-ai migrate
-```
+In the project's folder:
+
+1. **Commit or stash any work in progress.** `migrate` won't start with uncommitted changes, so the move is a change of its own.
+2. **Make a branch:** `git switch -c peer-ai-1.0`
+3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
+4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found.
+5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
+6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
+7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
 
 It converts what it can read with certainty:
 
@@ -101,7 +106,7 @@ Nothing is dropped silently. Whatever needs judgement, it copies word for word i
 
 It tells the files the project changed from v0's own by their fingerprints: a list of every file in every v0 version, which ships with the package.
 
-It never commits. It won't start with uncommitted changes, so the migration is a change of its own: review it, commit it on a branch, and open a pull request. `git restore . && git clean -fd` undoes it all.
+It never commits. It won't start with uncommitted changes, so the migration is a change of its own: review it, commit it on a branch, and open a pull request. `git stash --include-untracked` undoes it all. It deletes only files git can bring back, leaves files git ignores where they are, and refuses to write outside the project.
 
 ### Options
 
@@ -200,6 +205,18 @@ npx peer-ai render
 
 `AGENTS.md` gets the block whenever a tool other than Claude Code is listed, when it already exists, or when `CLAUDE.md` imports it.
 
+### The CI gate
+
+Render sets up `peer-ai check` in the project's CI, so no one has to remember to ([RFC 0009](../../rfcs/0009-the-ci-gate-set-up-by-render.md)):
+
+- **On GitHub Actions,** it writes `.github/workflows/peer-ai.yml`: one job, `peer-ai check`, that installs Node 24 and runs the exact version of Peer AI render ran as, so it works with or without a `package.json`. Its actions are pinned to commits. Render keeps the file up to date while it's as render left it, and leaves it alone once someone changes it by hand; `doctor` then checks it still runs the gate. A version bump updates it.
+- **On any other CI,** it prints the step to add.
+- **When a workflow of the project's own already runs `peer-ai check`,** it adds nothing.
+
+Make `peer-ai check` a required check in the repository's settings, so nothing merges without it. To run the gate some other way, set `"delivery": { "gate": false }`.
+
+### Instructions
+
 The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules, and the project's settings for models, skills and activities when it has any: the models to use, the add-ons, checklists and notes for each skill, and the files to read and notes for each activity. The server serves the detail when it's needed, rather than every rule on every turn.
 
 ### Skills
@@ -280,6 +297,7 @@ npx peer-ai doctor
 | AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
 | What render writes | Instructions or MCP registrations that no longer match the config, or skills that are missing or out of date |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
+| The CI gate | A pipeline that doesn't run `peer-ai check`, or a gate workflow that's out of date or no longer runs it. Through `next_work`, the AI tool hears about it in every session. |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
@@ -337,20 +355,7 @@ A review's result is worked out from its report when it is recorded, so an open 
 
 ### In CI
 
-Run it after the project's own checks:
-
-```yaml
-- run: npx peer-ai check
-```
-
-That uses the version in the project's `package.json`. A project without one, such as a Python or Flutter project, needs Node 24 on the runner and the version `render` pinned:
-
-```yaml
-- uses: actions/setup-node@v4
-  with:
-    node-version: 24
-- run: npx -y peer-ai@<version> check
-```
+`render` sets it up: see [the CI gate](#the-ci-gate). By hand, it's a step after the project's own checks that runs, with Node 24, `npx -y peer-ai@<version> check`.
 
 ### Options
 

@@ -11,6 +11,7 @@ import { DOMAINS, type PeerAiConfig } from "peer-ai-workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
+import { GATE_FILE, checkGate } from "./gate.ts";
 import { WORKFLOW_FILE } from "./pipeline.ts";
 import { RUFF_FILE } from "./ruff.ts";
 import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } from "./detect.ts";
@@ -173,7 +174,8 @@ function checkTools(root: string, config: PeerAiConfig): Check {
 }
 
 /** What render writes for the AI tools still matches the config. */
-const ENFORCER_FILES = [WORKFLOW_FILE, RUFF_FILE];
+/** Files with a check of their own: the enforcers, and the CI gate. */
+const ENFORCER_FILES = [WORKFLOW_FILE, RUFF_FILE, GATE_FILE];
 
 function checkRendered(root: string, config: PeerAiConfig, skills: boolean): Check {
   const plan = planRender(root, config);
@@ -377,6 +379,7 @@ export function diagnose(
       ? needsConfig("render", "What render writes")
       : [checkRendered(root, config, options.skills ?? true)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
+    ...(config === undefined ? needsConfig("gate", "The CI gate") : checkGate(root, config)),
     ...(config === undefined
       ? needsConfig("standards", "Rules set aside")
       : checkStandards(config, today.toISOString().slice(0, 10))),
