@@ -70,11 +70,11 @@ flowchart LR
 
 1. **`peer-ai init`** reads your repository (its languages, frameworks, parts, infrastructure, CI and AI tools) and writes one config file, `peer-ai.config.json`. It asks only what it can't work out.
 2. **`peer-ai assess`** maps what the project already has, such as requirements, a threat model, tests or observability, and what its stage still needs. Each item is present, partial or missing, with the files that prove it. Gaps become work to do, never a red build.
-3. **`peer-ai render`** connects each AI tool you use: short instructions, the MCP server, and Peer AI's skills, written where each tool reads them.
+3. **`peer-ai render`** connects each AI tool you use: short instructions, the MCP server, and Peer AI's skills, written where each tool reads them. It also puts the gate, `peer-ai check`, in your CI.
 4. **You ask your AI tool for work in plain words,** such as "add booking cancellations" or "review the payments code". It asks Peer AI what to do next, follows the skill for the job, checks every rule that applies, and records what it did. Peer AI refuses a record the evidence doesn't support.
-5. **`peer-ai check` runs in CI** and fails when a piece of work claims more than its record shows: no recorded verify, a failed or incomplete review, or, in production, a review it needed and never had.
+5. **`peer-ai check` runs in CI,** where `render` set it up, and fails when a piece of work claims more than its record shows: no recorded verify, a failed or incomplete review, or, in production, a review it needed and never had.
 
-Your project keeps one config file, a `.peer-ai/` folder with its map, work items and review reports, and a few lines in each AI tool's settings. The skills are rebuilt from the installed version and stay out of git, so upgrading Peer AI is a one-line version change.
+Your project keeps one config file, a `.peer-ai/` folder with its map, work items and review reports, a few lines in each AI tool's settings, and, on GitHub Actions, one workflow for the gate. The skills are rebuilt from the installed version and stay out of git, so upgrading Peer AI is a one-line version change.
 
 ## Proof, not promises
 
