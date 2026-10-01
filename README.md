@@ -167,13 +167,9 @@ npx peer-ai assess
 npx peer-ai render
 ```
 
-Then open the project in your AI tool and ask for work in plain words, such as "what should we work on next?" or "review this change". To gate your pipeline, add this step to CI after your own checks:
+Then open the project in your AI tool and ask for work in plain words, such as "what should we work on next?" or "review this change".
 
-```yaml
-- run: npx peer-ai check
-```
-
-A project without a `package.json` needs Node 24 on the runner and the exact version: see [`peer-ai check`](packages/peer-ai#peer-ai-check).
+`render` also sets up the gate in your CI: `peer-ai check`, which holds every change to its record. On GitHub Actions it writes `.github/workflows/peer-ai.yml`, which works with or without a `package.json`; for any other CI, it prints the step to add. Make `peer-ai check` a required check in your repository's settings, so nothing merges without it.
 
 **Moving from v0?** If your project has a `peer-ai/` folder from the old playbook, run `npx peer-ai migrate` instead of `init`. It moves your settings into the config and leaves a list of anything that needs your decision.
 

@@ -198,6 +198,12 @@ const Delivery = z.strictObject({
     .enum(["none", "existing"])
     .describe("existing: extend the project's pipeline. A second, parallel pipeline is never added."),
   pipeline: Path.optional(),
+  gate: z
+    .boolean()
+    .optional()
+    .describe(
+      "Whether CI runs peer-ai check. render sets it up and peer-ai doctor asks for it unless this is false. Defaults to true.",
+    ),
 });
 
 const StandardsDocument = z.strictObject({

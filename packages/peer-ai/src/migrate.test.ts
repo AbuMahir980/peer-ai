@@ -396,6 +396,18 @@ describe("peer-ai migrate", () => {
     expect(existsSync(join(root, "peer-ai.config.json"))).toBe(true);
   });
 
+  it("sets up the CI gate on GitHub Actions, and notes that only the owner can make it required", async () => {
+    const root = committed({
+      ...pantry(),
+      ".github/workflows/ci.yml":
+        "name: CI\non: pull_request\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm test\n",
+    });
+    expect(await runMigrate(options(root), undefined, capture())).toBe(0);
+    expect(read(root, ".github/workflows/peer-ai.yml")).toContain("name: peer-ai check");
+    expect(read(root, NOTES_FILE)).toContain("Make Peer AI's CI gate a required check");
+    expect(diagnose(root, "24.3.0").checks.find((check) => check.id === "gate")?.status).toBe("ok");
+  });
+
   it("asks init's questions in a terminal", async () => {
     const root = committed(pantry());
     const prompter = scripted(["Pantry", "", true, "team", "production"]);

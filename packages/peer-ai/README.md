@@ -200,6 +200,18 @@ npx peer-ai render
 
 `AGENTS.md` gets the block whenever a tool other than Claude Code is listed, when it already exists, or when `CLAUDE.md` imports it.
 
+### The CI gate
+
+Render sets up `peer-ai check` in the project's CI, so no one has to remember to ([RFC 0009](../../rfcs/0009-the-ci-gate-set-up-by-render.md)):
+
+- **On GitHub Actions,** it writes `.github/workflows/peer-ai.yml`: one job, `peer-ai check`, that installs Node 24 and runs the exact version of Peer AI render ran as, so it works with or without a `package.json`. Its actions are pinned to commits. Render keeps the file up to date while it's as render left it, and leaves it alone once someone changes it by hand; `doctor` then checks it still runs the gate. A version bump updates it.
+- **On any other CI,** it prints the step to add.
+- **When a workflow of the project's own already runs `peer-ai check`,** it adds nothing.
+
+Make `peer-ai check` a required check in the repository's settings, so nothing merges without it. To run the gate some other way, set `"delivery": { "gate": false }`.
+
+### Instructions
+
 The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules, and the project's settings for models, skills and activities when it has any: the models to use, the add-ons, checklists and notes for each skill, and the files to read and notes for each activity. The server serves the detail when it's needed, rather than every rule on every turn.
 
 ### Skills
@@ -280,6 +292,7 @@ npx peer-ai doctor
 | AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
 | What render writes | Instructions or MCP registrations that no longer match the config, or skills that are missing or out of date |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
+| The CI gate | A pipeline that doesn't run `peer-ai check`, or a gate workflow that's out of date or no longer runs it. Through `next_work`, the AI tool hears about it in every session. |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
@@ -337,20 +350,7 @@ A review's result is worked out from its report when it is recorded, so an open 
 
 ### In CI
 
-Run it after the project's own checks:
-
-```yaml
-- run: npx peer-ai check
-```
-
-That uses the version in the project's `package.json`. A project without one, such as a Python or Flutter project, needs Node 24 on the runner and the version `render` pinned:
-
-```yaml
-- uses: actions/setup-node@v4
-  with:
-    node-version: 24
-- run: npx -y peer-ai@<version> check
-```
+`render` sets it up: see [the CI gate](#the-ci-gate). By hand, it's a step after the project's own checks that runs, with Node 24, `npx -y peer-ai@<version> check`.
 
 ### Options
 
