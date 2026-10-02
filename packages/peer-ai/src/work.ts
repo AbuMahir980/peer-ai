@@ -22,7 +22,7 @@ import {
 } from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
-import { changesFor, currentBranch, headCommit } from "./commits.ts";
+import { changesFor, commitExists, currentBranch, filesSince, headCommit } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { diagnose } from "./doctor.ts";
@@ -410,7 +410,11 @@ export function advanceWorkItem(
         return "";
       }
     };
-    const requiredReviews = reviewsFor(changedFiles(home), config, projectStage(config), read, undefined, item);
+    // From the item's own commits when it knows where it started, so a stacked branch isn't asked
+    // for its parents' reviews and a merge can't erase them (RFC 0010).
+    const touched =
+      item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
+    const requiredReviews = reviewsFor(touched, config, projectStage(config), read, undefined, item);
     return saveWorkItem(home, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
   if (target === "ship" || target === "done") {

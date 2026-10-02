@@ -8,7 +8,8 @@ import { renderedName } from "peer-ai-skills";
 import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
-import { changesFor, currentBranch, shortCommit } from "./commits.ts";
+import { changesFor, currentBranch } from "./commits.ts";
+import { latestReviews, staleEvidence, type GateContext } from "./evidence.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
 import type { Output, Stage } from "./init.ts";
@@ -42,93 +43,12 @@ export function setupChecks(root: string, nodeVersion?: string, today?: Date): C
   ];
 }
 
-type Review = NonNullable<WorkItem["reviews"]>[number];
-
 /** Work at these stages says it has been verified and reviewed. */
 const CLAIMS_VERIFIED: WorkItem["stage"][] = ["ship", "done"];
 const OPEN: WorkItem["stage"][] = ["prepare", "build", "verify", "ship"];
 const COMMIT_MAP = `Run peer-ai assess, and commit ${MAP_FILE}.`;
 
 const isKnownItem = (id: string): id is KnownMapItemId => (MAP_ITEM_IDS as readonly string[]).includes(id);
-
-/** The most recent review from each skill: a later pass supersedes an earlier failure. */
-function latestReviews(item: WorkItem): Review[] {
-  const latest = new Map<string, Review>();
-  for (const review of item.reviews ?? []) {
-    const seen = latest.get(review.skill);
-    if (seen === undefined || Date.parse(review.at) >= Date.parse(seen.at)) latest.set(review.skill, review);
-  }
-  return [...latest.values()];
-}
-
-/** What the gate knows about the change being made now (RFC 0010). */
-export interface GateContext {
-  /** The branch checked out: its work item is the change being made now, held to every rule. */
-  branch?: string | undefined;
-  /** The stage the item is moving to now, when the gate is asked before a move. */
-  moving?: WorkItem["stage"] | undefined;
-  /** The files changed since a commit, outside .peer-ai/; undefined when the commit isn't in this history. */
-  changedSince?: ((commit: string) => string[] | undefined) | undefined;
-}
-
-const listed = (files: string[]): string =>
-  files.length <= 3 ? files.join(", ") : `${files.slice(0, 3).join(", ")} and ${String(files.length - 3)} more`;
-
-/**
- * The verify and required reviews of an item at ship must be on the branch's latest commit, or on
- * one with no change since outside .peer-ai/ (RFC 0010). A record from before records named their
- * commit counts only until the item next moves to ship.
- */
-function staleEvidence(item: WorkItem, claim: string, context: GateContext, moving: boolean): Check[] {
-  const changed = context.changedSince;
-  if (changed === undefined) return [];
-  const required = new Set((item.requiredReviews ?? []).map((review) => review.skill));
-  const evidence = [
-    ...(item.lastVerify === undefined
-      ? []
-      : [{ what: "verify", commit: item.lastVerify.commit, again: "Verify again" }]),
-    ...latestReviews(item)
-      .filter((review) => required.has(review.skill))
-      .map((review) => ({
-        what: review.skill,
-        commit: review.commit,
-        again: `Review it again with ${renderedName(review.skill)}`,
-      })),
-  ];
-  const checks: Check[] = [];
-  for (const { what, commit, again } of evidence) {
-    if (commit === undefined) {
-      if (moving) {
-        checks.push(
-          fail(
-            "gates",
-            `${claim}, but its ${what} doesn't say which commit it looked at.`,
-            `${again}, on the latest commit.`,
-          ),
-        );
-      }
-      continue;
-    }
-    const files = changed(commit);
-    if (files === undefined) {
-      const message = `${claim}, but its ${what} looked at ${shortCommit(commit)}, which isn't in this repository's history.`;
-      checks.push(
-        moving
-          ? fail("gates", message, `${again}, on the latest commit.`)
-          : warn("gates", message, `${again}, on the latest commit.`),
-      );
-    } else if (files.length > 0) {
-      checks.push(
-        fail(
-          "gates",
-          `${claim}, but its ${what} looked at ${shortCommit(commit)}, and ${listed(files)} changed since.`,
-          `${again}, on the latest commit.`,
-        ),
-      );
-    }
-  }
-  return checks;
-}
 
 /**
  * Whether a work item may be at ship or done. `items` are the project's other work items, for its
@@ -339,7 +259,28 @@ function checkGapsTracked(assessment: Assessment, stage: Stage, items: WorkItem[
   );
 }
 
-export function evaluate(root: string, config: PeerAiConfig): Verdict {
+/**
+ * On a pull request, the branch's work item must be at ship or done, so a change can't merge
+ * before it's verified and reviewed (RFC 0010). A branch with no work item, such as a dependency
+ * update, passes, and says so. A prototype is only told.
+ */
+function checkPullRequest(items: WorkItem[], branch: string, stage: Stage): Check {
+  const item = items.find((candidate) => candidate.branch === branch && candidate.stage !== "cancelled");
+  if (item === undefined) return ok("pull-request", `No work item is on ${branch}, so there's no record to hold it to`);
+  if (CLAIMS_VERIFIED.includes(item.stage)) return ok("pull-request", `${item.id}, on ${branch}, is at ${item.stage}`);
+  const message = `${item.id} is at ${item.stage}, so the change on ${branch} isn't verified and reviewed yet.`;
+  const fix = `Move ${item.id} to ship before this merges: verify it, record the reviews it needs, then advance it.`;
+  return stage === "prototype" ? warn("pull-request", message, fix) : fail("pull-request", message, fix);
+}
+
+export interface EvaluateOptions {
+  /** The branch a pull request is for, when the check runs on one. */
+  pullRequest?: string | undefined;
+}
+
+export type { GateContext };
+
+export function evaluate(root: string, config: PeerAiConfig, options: EvaluateOptions = {}): Verdict {
   const stage = config.project.stage ?? "mvp";
   const assessment = assess(root, config, stage);
   const trackFailures = checkTracks(root, config).filter((check) => check.status === "fail");
@@ -351,9 +292,10 @@ export function evaluate(root: string, config: PeerAiConfig): Verdict {
     ...checkWorkItems(root, config),
     ...checkDependencies(items),
     ...checkGates(items, config, stage, assessment, {
-      branch: currentBranch(root),
+      branch: options.pullRequest ?? currentBranch(root),
       changedSince: changesFor(root),
     }),
+    ...(options.pullRequest === undefined ? [] : [checkPullRequest(items, options.pullRequest, stage)]),
     ...checkVerifyCommand(config, stage),
     checkGapsTracked(assessment, stage, items),
   ];
@@ -387,6 +329,8 @@ export function formatVerdict(verdict: Verdict): string[] {
 export interface CheckOptions {
   cwd: string;
   json: boolean;
+  /** The branch a pull request is for: --branch, or GITHUB_HEAD_REF on GitHub Actions. */
+  branch?: string | undefined;
 }
 
 /** Exit code 0 when it passes, even with warnings; 1 when it fails; 2 without a valid config. */
@@ -400,7 +344,7 @@ export function runCheck(options: CheckOptions, out: Output): number {
     }
     return 2;
   }
-  const verdict = evaluate(options.cwd, config);
+  const verdict = evaluate(options.cwd, config, { pullRequest: options.branch });
   if (options.json) out.log(JSON.stringify(verdict, null, 2));
   else for (const line of formatVerdict(verdict)) out.log(line);
   return verdict.ok ? 0 : 1;

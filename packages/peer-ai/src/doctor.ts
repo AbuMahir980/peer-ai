@@ -11,6 +11,7 @@ import { DOMAINS, type PeerAiConfig } from "peer-ai-workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
+import { checkRecord } from "./evidence.ts";
 import { GATE_FILE, checkGate } from "./gate.ts";
 import { WORKFLOW_FILE } from "./pipeline.ts";
 import { RUFF_FILE } from "./ruff.ts";
@@ -380,6 +381,7 @@ export function diagnose(
       : [checkRendered(root, config, options.skills ?? true)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
     ...(config === undefined ? needsConfig("gate", "The CI gate") : checkGate(root, config)),
+    ...(config === undefined ? [] : checkRecord(root)),
     ...(config === undefined
       ? needsConfig("standards", "Rules set aside")
       : checkStandards(config, today.toISOString().slice(0, 10))),

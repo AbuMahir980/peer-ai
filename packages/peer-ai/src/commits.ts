@@ -36,6 +36,38 @@ export function changedSince(root: string, commit: string): string[] | undefined
   return [...changed].sort();
 }
 
+/** Whether a commit is in this repository's history. */
+export const commitExists = (root: string, commit: string): boolean =>
+  git(root, ["cat-file", "-e", `${commit}^{commit}`]) !== undefined;
+
+/**
+ * The files a change touched since its base, committed or not, leaving out .peer-ai/ and files
+ * whose only changes are whitespace or blank lines (RFC 0010), such as a formatter's.
+ */
+export function filesSince(root: string, base: string): string[] {
+  const changed = new Set([
+    ...lines(git(root, ["diff", "-w", "--ignore-blank-lines", "--name-only", base, "--", ".", OWN_FILES])),
+    ...lines(git(root, ["ls-files", "--others", "--exclude-standard", "--", ".", OWN_FILES])),
+  ]);
+  return [...changed].sort();
+}
+
+/** How many commits since a base change anything outside .peer-ai/. */
+export function commitsSince(root: string, base: string): number {
+  return Number(git(root, ["rev-list", "--count", `${base}..HEAD`, "--", ".", OWN_FILES])?.trim() ?? "0") || 0;
+}
+
+/** Where the branch left the main line: its merge base with the remote's default branch, main or master. */
+export function forkPoint(root: string): string | undefined {
+  const remote = git(root, ["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"])?.trim();
+  for (const candidate of [remote, "main", "master"]) {
+    if (candidate === undefined || candidate === "") continue;
+    const base = git(root, ["merge-base", "HEAD", candidate])?.trim();
+    if (base !== undefined && base !== "") return base;
+  }
+  return undefined;
+}
+
 /** The branch checked out, or undefined on a detached HEAD or outside a git repository. */
 export function currentBranch(root: string): string | undefined {
   const branch = git(root, ["symbolic-ref", "--short", "-q", "HEAD"])?.trim();
