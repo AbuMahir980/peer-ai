@@ -5,8 +5,10 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { TOOL_IDS, validateConfig, type ToolId } from "peer-ai-workflow";
+import { assess } from "./assess.ts";
 import { CONFIG_FILE, detect, type Detected, type DetectedTrack, type TrackKind } from "./detect.ts";
 import { Cancelled, type Choice, type Prompter } from "./prompter.ts";
+import { adopt, choose, describeUptake, suggestionsOf, takeAll, type Uptake } from "./suggestions.ts";
 
 export const SCHEMA_URL =
   "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/config.schema.json";
@@ -176,9 +178,22 @@ export async function runInit(options: InitOptions, prompter: Prompter | undefin
     return 2;
   }
 
+  const invalid = (errors: string[]): number => {
+    out.error("The config init built is not valid. This is a bug in peer-ai; please report it with these details:");
+    for (const error of errors) out.error(`  ${error}`);
+    return 2;
+  };
   let answers: Answers;
+  let config: Record<string, unknown>;
+  let uptake: Uptake;
   try {
     answers = options.yes || prompter === undefined ? defaults(detected, options) : await ask(detected, prompter);
+    const built = validateConfig(buildConfig(detected, answers));
+    if (!built.ok) return invalid(built.errors);
+    // The profiles and traits that fit the code found, taken up unless the person says no (RFC 0011).
+    const suggestions = suggestionsOf(assess(options.cwd, built.value, answers.stage));
+    uptake = options.yes || prompter === undefined ? takeAll(suggestions) : await choose(suggestions, prompter);
+    config = adopt(buildConfig(detected, answers), uptake);
   } catch (error) {
     if (error instanceof Cancelled) {
       out.error("Cancelled. Nothing was written.");
@@ -186,14 +201,8 @@ export async function runInit(options: InitOptions, prompter: Prompter | undefin
     }
     throw error;
   }
-
-  const config = buildConfig(detected, answers);
   const result = validateConfig(config);
-  if (!result.ok) {
-    out.error("The config init built is not valid. This is a bug in peer-ai; please report it with these details:");
-    for (const error of result.errors) out.error(`  ${error}`);
-    return 2;
-  }
+  if (!result.ok) return invalid(result.errors);
 
   const json = `${JSON.stringify(config, null, 2)}\n`;
   if (options.dryRun) {
@@ -202,6 +211,7 @@ export async function runInit(options: InitOptions, prompter: Prompter | undefin
   }
   writeFileSync(join(options.cwd, CONFIG_FILE), json, { flag: "wx" });
   const summary = `Wrote ${CONFIG_FILE}: ${String(answers.tracks.length)} ${answers.tracks.length === 1 ? "part" : "parts"}, ${answers.stage} stage.`;
+  for (const line of describeUptake(uptake)) out.log(line);
   if (prompter !== undefined && !options.yes) prompter.outro(summary);
   else out.log(summary);
   out.log("Edit it any time. Your editor checks it against the schema as you type.");

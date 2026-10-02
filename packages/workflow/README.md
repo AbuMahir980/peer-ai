@@ -57,6 +57,7 @@ Only `version`, `project.name` and `tracks` are required. This is a complete con
 | `capabilities` | Per skill: add-ons from other tools that feed it (`plugin:skill` or `/command`), extra checklists, notes |
 | `activities` | Per activity: files to read first, and project-specific instructions |
 | `docs` | Where docs live, whether to keep their structure, and where out-of-scope ideas go |
+| `declined` | Stack profiles and traits `peer-ai assess` suggests that the project decided not to take up, each with why, so they aren't suggested again (RFC 0011) |
 
 Every object is strict. A misspelt key, activity or skill is an error, never a setting that silently does nothing. References are checked too: a track can only consume an API that exists, use a track that exists, and deploy to an environment that exists.
 

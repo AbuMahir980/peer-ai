@@ -257,7 +257,7 @@ describe("assess", () => {
     const out = capture();
     runAssess({ cwd: project(parts), json: false, dryRun: true, now: NOW }, out, formatReport);
     expect(out.text()).toContain(
-      "Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in peer-ai.config.json:\n  react: web is tagged react\n  python-fastapi: api is tagged fastapi",
+      "Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in peer-ai.config.json, and list the rest in declined, with why:\n  react: web is tagged react\n  python-fastapi: api is tagged fastapi",
     );
   });
 
@@ -283,7 +283,7 @@ describe("assess", () => {
     const out = capture();
     runAssess({ cwd: root, json: false, dryRun: true, now: NOW }, out, formatReport);
     expect(out.text()).toContain(
-      "Traits to consider, each switching on extra rules. Add the ones that fit to project.traits in peer-ai.config.json:\n  several-audiences: 2 apps (web, mobile) share a backend\n",
+      "Traits to consider, each switching on extra rules. Add the ones that fit to project.traits in peer-ai.config.json, and list the rest in declined, with why:\n  several-audiences: 2 apps (web, mobile) share a backend\n",
     );
   });
 

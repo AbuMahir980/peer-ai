@@ -20,12 +20,13 @@ import {
 } from "node:fs";
 import { dirname, join, sep } from "node:path";
 import { validateConfig, type ActivityId, type WorkItem } from "peer-ai-workflow";
-import { LEGACY_MARKERS, loadConfig, runAssess } from "./assess.ts";
+import { LEGACY_MARKERS, assess, loadConfig, runAssess } from "./assess.ts";
 import { CONFIG_FILE, detect, type Detected, type DetectedTrack } from "./detect.ts";
 import { GATE_FILE, onGitHubActions } from "./gate.ts";
 import { ask, buildConfig, defaults, type Answers, type InitOptions, type Output } from "./init.ts";
 import { Cancelled, type Prompter } from "./prompter.ts";
 import { runRender } from "./render.ts";
+import { adopt, choose, describeUptake, suggestionsOf, takeAll, type Uptake } from "./suggestions.ts";
 import {
   PHASE_ACTIVITY,
   V0_FINGERPRINTS,
@@ -824,12 +825,31 @@ export async function runMigrate(
     ...(base === undefined || base === "" ? {} : { base }),
   };
   const plan = planMigration(root, detected, answers, options.fingerprints ?? V0_FINGERPRINTS, repo);
-  const valid = validateConfig(plan.config);
-  if (!valid.ok) {
+  const invalid = (errors: string[]): number => {
     out.error("The config migrate built is not valid. This is a bug in peer-ai; please report it with these details:");
-    for (const error of valid.errors) out.error(`  ${error}`);
+    for (const error of errors) out.error(`  ${error}`);
     return 2;
+  };
+  const built = validateConfig(plan.config);
+  if (!built.ok) return invalid(built.errors);
+  // The profiles and traits that fit the code, taken up unless the person says no, as init does.
+  const suggestions = suggestionsOf(assess(root, built.value, answers.stage));
+  let uptake: Uptake;
+  try {
+    uptake =
+      options.yes || options.dryRun || prompter === undefined
+        ? takeAll(suggestions)
+        : await choose(suggestions, prompter);
+  } catch (error) {
+    if (error instanceof Cancelled) {
+      out.error("Cancelled. Nothing was changed.");
+      return 1;
+    }
+    throw error;
   }
+  plan.config = adopt(plan.config, uptake);
+  const valid = validateConfig(plan.config);
+  if (!valid.ok) return invalid(valid.errors);
 
   if (options.dryRun) {
     const say = (...lines: string[]) => {
@@ -934,6 +954,7 @@ export async function runMigrate(
   out.log(
     `  ✓ Wrote ${CONFIG_FILE}, converting ${String(plan.converted.length)} ${plan.converted.length === 1 ? "setting" : "settings"} from v0.`,
   );
+  for (const line of describeUptake(uptake)) out.log(`  ✓ ${line}`);
   const instructions = plan.edits.filter((edit) => edit.path !== "package.json").map((edit) => edit.path);
   if (instructions.length > 0) out.log(`  ✓ Took v0's text out of ${instructions.join(", ")}.`);
   if (plan.edits.some((edit) => edit.path === "package.json"))

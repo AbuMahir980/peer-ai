@@ -410,14 +410,18 @@ describe("peer-ai migrate", () => {
 
   it("asks init's questions in a terminal", async () => {
     const root = committed(pantry());
-    const prompter = scripted(["Pantry", "", true, "team", "production"]);
+    const prompter = scripted(["Pantry", "", true, "team", "production", [], "Not yet: the pantry is a prototype."]);
     expect(await runMigrate(options(root, { yes: false }), prompter, capture())).toBe(0);
     expect(prompter.asked[0]).toBe("What are you building? Give it a name.");
-    expect(readJson(root, "peer-ai.config.json").project).toMatchObject({
+    const config = readJson(root, "peer-ai.config.json");
+    expect(config.project).toMatchObject({
       name: "Pantry",
       team: "team",
       stage: "production",
     });
+    // What assess suggests is asked about too, as init asks (RFC 0011): turned down here, with why.
+    expect(prompter.asked[5]).toContain("Untick any that don't fit.");
+    expect(config.declined).toContainEqual(expect.objectContaining({ reason: "Not yet: the pantry is a prototype." }));
   });
 
   it("runs from the command line", async () => {

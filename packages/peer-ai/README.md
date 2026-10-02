@@ -60,6 +60,8 @@ It reads the repository first and works out what it can:
 
 Then it asks four things: what you're building, whether the parts it found are right (or what kind of thing it is, if it found none), whether it's just you or a team, and what stage the project is at. It asks which AI tools you use only if it found none.
 
+**It takes up what `assess` suggests.** Once it knows the parts, `init` works out what `assess` would suggest: the stack profiles that fit each part's stack, and the traits the code points to, such as `money` for a payment provider. It shows each one with why, all ticked, and adds them to `standards.profiles` and `project.traits` unless you untick them. For any you untick, it asks why, and records it in `declined`, so they aren't suggested again. `--yes` takes them all. `peer-ai doctor` warns about a suggestion the config has neither taken up nor declined (RFC 0011). Since an existing codebase starts at `report`, as below, taking up a profile doesn't turn its CI red.
+
 For an existing codebase, it sets `standards.enforcement` to `report`, so Peer AI's enforcement reports what it finds without failing a build until the codebase catches up; a new project enforces from the start (see [Adopting enforcement in stages](#adopting-enforcement-in-stages)).
 
 It never overwrites an existing `peer-ai.config.json`, and it never assumes anything it didn't find. A project with nothing to detect gets a part of kind `other` until you decide. A project with no infrastructure or CI yet simply has none in its config; `peer-ai assess` records those as gaps to fill when the project's stage calls for them.
@@ -88,7 +90,7 @@ In the project's folder:
 1. **Commit or stash any work in progress.** `migrate` won't start with uncommitted changes, so the move is a change of its own.
 2. **Make a branch:** `git switch -c peer-ai-1.0`
 3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
-4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found, and like `init` it starts an existing codebase's enforcement at `report`.
+4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found. Like `init`, it takes up the profiles and traits `assess` suggests unless you say no, and starts an existing codebase's enforcement at `report`.
 5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
 6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
 7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
@@ -153,7 +155,7 @@ It also reports what the next stage will need, so nothing arrives as a surprise.
 
 ### Traits to consider
 
-A trait says what the product is or does, and switches on the rules for it (see `peer-ai-standards`). `assess` suggests the traits the code points to, each with what it found, and leaves out any the config already declares. A person decides: add the ones that fit to `project.traits`.
+A trait says what the product is or does, and switches on the rules for it (see `peer-ai-standards`). `assess` suggests the traits the code points to, each with what it found, and leaves out any the config already declares or has declined. A person decides: add the ones that fit to `project.traits`, and list the rest in `declined`, with why. `init` and `migrate` take them up unless you say no (see [`peer-ai init`](#peer-ai-init)).
 
 | Trait | Suggested by |
 |-------|--------------|
@@ -167,7 +169,7 @@ A trait says what the product is or does, and switches on the rules for it (see 
 
 ### Stack profiles to consider
 
-A stack profile says how to follow the core rules in one stack, and which tool enforces each automatic rule (RFC 0006). `assess` suggests the most specific profile for each part's stack, such as `react-native` for a part tagged `expo`, which brings React and TypeScript with it. It leaves out profiles the config already lists. Add the ones that fit to `standards.profiles`.
+A stack profile says how to follow the core rules in one stack, and which tool enforces each automatic rule (RFC 0006). `assess` suggests the most specific profile for each part's stack, such as `react-native` for a part tagged `expo`, which brings React and TypeScript with it. It leaves out profiles the config already lists or has declined. Add the ones that fit to `standards.profiles`, and list the rest in `declined`, with why.
 
 A listed profile applies to every part that names no stack, so `assess` also suggests a `stack` for each track that has none, from what it detects.
 
@@ -329,6 +331,7 @@ npx peer-ai doctor
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
 | Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, a rule set aside twice, and an override for a rule with no value to change, or of the wrong type. |
+| Suggested profiles and traits | A stack profile or trait `assess` suggests that the config has neither taken up nor listed in `declined`, with what suggested it (RFC 0011) |
 | Stack profiles | A listed profile Peer AI has no rules for yet |
 | The tools that enforce them | For each part, that the ESLint config nearest it spreads in `peer-ai-eslint-config`, that the Ruff settings nearest it extend `.peer-ai/enforce/ruff.toml`, and that its tsconfig files, including those a solution tsconfig references, set what the compiler rules need; and that the pipeline's workflow is there, as render wrote it, and up to date. A warning, and a failure at production unless enforcement only reports or the rule is deferred. It lists the enforcement stage, each deferral and when it ends, and each check covered elsewhere, and suggests `report` to an existing codebase that hasn't chosen a stage (RFC 0011). |
 | The v0 playbook | A copy left in `peer-ai/`, with how to remove it |

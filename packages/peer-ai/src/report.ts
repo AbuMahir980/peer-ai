@@ -63,7 +63,7 @@ export function formatReport(assessment: Assessment, stage: Stage): string[] {
   if (assessment.suggestedTraits.length > 0) {
     lines.push("");
     lines.push(
-      `Traits to consider, each switching on extra rules. Add the ones that fit to project.traits in ${CONFIG_FILE}:`,
+      `Traits to consider, each switching on extra rules. Add the ones that fit to project.traits in ${CONFIG_FILE}, and list the rest in declined, with why:`,
     );
     for (const { trait, evidence } of assessment.suggestedTraits) lines.push(`  ${trait}: ${evidence}`);
   }
@@ -71,7 +71,7 @@ export function formatReport(assessment: Assessment, stage: Stage): string[] {
   if (assessment.suggestedProfiles.length > 0) {
     lines.push("");
     lines.push(
-      `Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in ${CONFIG_FILE}:`,
+      `Stack profiles to consider, each with the tools that enforce its rules. Add the ones that fit to standards.profiles in ${CONFIG_FILE}, and list the rest in declined, with why:`,
     );
     for (const { profile, evidence } of assessment.suggestedProfiles) lines.push(`  ${profile}: ${evidence}`);
   }
