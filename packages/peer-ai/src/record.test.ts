@@ -77,7 +77,8 @@ describe("the reviews an item needs (RFC 0010)", () => {
     git(root, "switch", "-qc", "feature/SHOP-2-notes");
     value(createWorkItem(root, config, { title: "Notes", kind: "chore", track: "web" }, NOW));
     value(advanceWorkItem(root, config, "SHOP-2", "build", NOW));
-    writeFileSync(join(root, "apps/web/Cart.tsx"), SCREEN.replace("<main>", "<main>  ").replace("\n", "\n\n"));
+    // Only whitespace and a blank line change, as a formatter might.
+    writeFileSync(join(root, "apps/web/Cart.tsx"), "export const Cart = () => <main>  Cart</main>;\n\n");
     writeFileSync(join(root, "apps/web/NOTES.md"), "Notes.\n");
     commitAll(root);
     const own = value(advanceWorkItem(root, config, "SHOP-2", "verify", NOW));
