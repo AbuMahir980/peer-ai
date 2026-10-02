@@ -14,7 +14,7 @@ export interface Prompter {
   note(message: string, title?: string): void;
   text(message: string, options?: { initial?: string; placeholder?: string; required?: boolean }): Promise<string>;
   select<T extends string>(message: string, choices: Choice<T>[], initial?: T): Promise<T>;
-  multiselect<T extends string>(message: string, choices: Choice<T>[]): Promise<T[]>;
+  multiselect<T extends string>(message: string, choices: Choice<T>[], initial?: T[]): Promise<T[]>;
   confirm(message: string, initial?: boolean): Promise<boolean>;
   outro(message: string): void;
 }
@@ -64,8 +64,13 @@ export function createTerminalPrompter(): Prompter {
       });
       return answer<string>(value) as T;
     },
-    multiselect: async <T extends string>(message: string, choices: Choice<T>[]) => {
-      const value = await clack.multiselect<string>({ message, options: options(choices), required: false });
+    multiselect: async <T extends string>(message: string, choices: Choice<T>[], initial?: T[]) => {
+      const value = await clack.multiselect<string>({
+        message,
+        options: options(choices),
+        required: false,
+        ...(initial === undefined ? {} : { initialValues: initial }),
+      });
       return answer<string[]>(value) as T[];
     },
     confirm: async (message, initial = true) =>

@@ -413,6 +413,17 @@ const configShape = {
   capabilities: z.partialRecord(z.enum(SKILL_IDS), Capability).optional(),
   activities: z.partialRecord(z.enum(ACTIVITY_IDS), Activity).optional(),
   docs: Docs.optional(),
+  declined: z
+    .array(
+      z.union([
+        z.strictObject({ profile: Slug, reason: Note }),
+        z.strictObject({ trait: z.enum(TRAITS), reason: Note }),
+      ]),
+    )
+    .optional()
+    .describe(
+      "Stack profiles and traits peer-ai assess suggests that the project decided not to take up, each with why, so doctor stops suggesting them (RFC 0011).",
+    ),
 };
 
 type Config = z.output<z.ZodObject<typeof configShape>>;
@@ -481,6 +492,15 @@ function checkConfig(config: Config, report: Issue): void {
 
   config.standards?.documents?.forEach((doc, i) => {
     checkRefs(doc.scope, trackIds, ["standards", "documents", i, "scope"], "a track id", report);
+  });
+
+  config.declined?.forEach((entry, i) => {
+    if ("profile" in entry && config.standards?.profiles?.includes(entry.profile) === true) {
+      report({ path: ["declined", i, "profile"], message: `"${entry.profile}" is listed in standards.profiles too` });
+    }
+    if ("trait" in entry && config.project.traits?.includes(entry.trait) === true) {
+      report({ path: ["declined", i, "trait"], message: `"${entry.trait}" is listed in project.traits too` });
+    }
   });
 }
 

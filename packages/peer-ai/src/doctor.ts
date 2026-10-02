@@ -8,7 +8,7 @@ import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { CORE_RULES, PROFILE_RULES, PROFILES, overrideFits } from "peer-ai-standards";
 import { DOMAINS, type PeerAiConfig } from "peer-ai-workflow";
-import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig } from "./assess.ts";
+import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
 import { checkRecord } from "./evidence.ts";
@@ -19,6 +19,7 @@ import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } fr
 import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
 import { planRender } from "./render.ts";
+import { checkSuggestions } from "./suggestions.ts";
 import { WORK_DIR, mapChanges, readMap, readWorkItems } from "./state.ts";
 
 export interface Diagnosis {
@@ -288,13 +289,15 @@ export function checkStandards(config: PeerAiConfig, today: string): Check[] {
 }
 
 /** The map is valid, and still says what a fresh assessment would. */
-function checkMap(root: string, config: PeerAiConfig | undefined): Check {
+function checkMap(root: string, assessment: Assessment | undefined): Check {
   const read = readMap(root);
   if (read === undefined) return warn("map", "There is no project map yet.", "Run peer-ai assess.");
   if (!read.ok) return fail("map", `${MAP_FILE} ${read.error}`, "Run peer-ai assess to write it again.");
   const date = read.value.assessedAt.slice(0, 10);
-  if (config === undefined) return skip("map", `The project map from ${date} is valid; not compared, ${NEEDS_CONFIG}`);
-  const changed = mapChanges(read.value, assess(root, config, config.project.stage ?? "mvp"));
+  if (assessment === undefined) {
+    return skip("map", `The project map from ${date} is valid; not compared, ${NEEDS_CONFIG}`);
+  }
+  const changed = mapChanges(read.value, assessment);
   if (changed.length > 0) {
     return warn("map", `The project map from ${date} is out of date: ${changed.join(", ")}.`, "Run peer-ai assess.");
   }
@@ -371,6 +374,7 @@ export function diagnose(
   const { check: configCheck, config } = checkConfig(root);
   const needsConfig = (id: string, what: string): Check[] =>
     config === undefined ? [skip(id, `${what} not checked: ${NEEDS_CONFIG}`)] : [];
+  const assessment = config === undefined ? undefined : assess(root, config, config.project.stage ?? "mvp");
   const checks = [
     checkNode(nodeVersion),
     configCheck,
@@ -386,8 +390,11 @@ export function diagnose(
     ...(config === undefined
       ? needsConfig("standards", "Rules set aside")
       : checkStandards(config, today.toISOString().slice(0, 10))),
+    ...(config === undefined || assessment === undefined
+      ? needsConfig("suggestions", "Suggested profiles and traits")
+      : [checkSuggestions(config, assessment)]),
     ...(config === undefined ? [] : [...checkProfiles(config), ...checkEnforcers(root, config)]),
-    checkMap(root, config),
+    checkMap(root, assessment),
     ...checkWorkItems(root, config),
     checkGit(root),
     ...checkLegacy(root),

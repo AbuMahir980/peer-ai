@@ -240,8 +240,9 @@ function trackEvidence(tracks: Track[]): string[] {
 }
 
 /**
- * Traits the code suggests, with what suggested each. Traits the config already declares are left
- * out. Several apps on one backend count, even when the backend lives in another repository.
+ * Traits the code suggests, with what suggested each. Traits the config already declares or has
+ * declined are left out. Several apps on one backend count, even when the backend lives in another
+ * repository.
  */
 function suggestTraits(ctx: Context, signals: Signals, tracks: Track[]): TraitSuggestion[] {
   const found = new Map<Trait, string>();
@@ -268,10 +269,13 @@ function suggestTraits(ctx: Context, signals: Signals, tracks: Track[]): TraitSu
   suggest("offline", worker === undefined ? undefined : `a service worker, ${worker}`);
   for (const [trait, pattern] of TRAIT_LIBRARIES) suggest(trait, first(scan(ctx, manifests, pattern)));
 
-  const declared: readonly Trait[] = ctx.config?.project.traits ?? [];
+  const decided: readonly Trait[] = [
+    ...(ctx.config?.project.traits ?? []),
+    ...(ctx.config?.declined ?? []).flatMap((entry) => ("trait" in entry ? [entry.trait] : [])),
+  ];
   return TRAITS.flatMap((trait) => {
     const evidence = found.get(trait);
-    return evidence === undefined || declared.includes(trait) ? [] : [{ trait, evidence }];
+    return evidence === undefined || decided.includes(trait) ? [] : [{ trait, evidence }];
   });
 }
 
@@ -613,7 +617,8 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
 
 /**
  * Profiles that fit each part's stack, from the config or, where it names none, from detection.
- * Only the most specific fits: a profile another suggested or listed one extends isn't repeated.
+ * Only the most specific fits: a profile another suggested or listed one extends isn't repeated, and
+ * a profile the config has declined isn't suggested again.
  */
 function suggestProfiles(
   root: string,
@@ -621,6 +626,7 @@ function suggestProfiles(
   detected: ReturnType<typeof detect> | undefined,
 ): ProfileSuggestion[] {
   const listed = config?.standards?.profiles ?? [];
+  const declined = (config?.declined ?? []).flatMap((entry) => ("profile" in entry ? [entry.profile] : []));
   const found = detected?.tracks ?? detectTracks(root, config?.project.name ?? "");
   const parts = (config?.tracks ?? found)
     .filter((track) => !("status" in track) || track.status !== "external")
@@ -643,7 +649,7 @@ function suggestProfiles(
       ),
     );
     for (const profile of fits) {
-      if (builtOn.has(profile.id) || suggestions.has(profile.id)) continue;
+      if (builtOn.has(profile.id) || suggestions.has(profile.id) || declined.includes(profile.id)) continue;
       const tag = profile.stacks.find((each) => part.stack.includes(each));
       if (tag !== undefined) suggestions.set(profile.id, `${part.id} is tagged ${tag}`);
     }

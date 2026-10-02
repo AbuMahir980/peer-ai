@@ -36,8 +36,16 @@ function assessed(files: Record<string, string>, options: { git?: boolean } = { 
   return root;
 }
 
+// Set up correctly includes deciding on what assess suggests: here, declining the react profile,
+// whose enforcers would need ESLint settings of their own.
 const healthy = () =>
-  assessed({ "peer-ai.config.json": config(), "CLAUDE.md": "# Shop", "apps/web/package.json": web });
+  assessed({
+    "peer-ai.config.json": config({
+      declined: [{ profile: "react", reason: "The shop's own ESLint settings cover React for now." }],
+    }),
+    "CLAUDE.md": "# Shop",
+    "apps/web/package.json": web,
+  });
 
 const checksFor = (root: string, id: string): Check[] => diagnose(root, NODE).checks.filter((c) => c.id === id);
 const statuses = (root: string) => Object.fromEntries(diagnose(root, NODE).checks.map((c) => [c.id, c.status]));

@@ -1070,6 +1070,58 @@
         }
       },
       "additionalProperties": false
+    },
+    "declined": {
+      "description": "Stack profiles and traits peer-ai assess suggests that the project decided not to take up, each with why, so doctor stops suggesting them (RFC 0011).",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "profile": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "profile",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "trait": {
+                "type": "string",
+                "enum": [
+                  "money",
+                  "safety-critical",
+                  "several-audiences",
+                  "offline",
+                  "real-time",
+                  "uploads",
+                  "ai-features"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "trait",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
     }
   },
   "additionalProperties": false,
