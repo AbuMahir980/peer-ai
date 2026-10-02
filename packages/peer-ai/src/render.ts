@@ -19,8 +19,17 @@ import { FEEDBACK_DIR, FEEDBACK_REPO } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
 import { GATE_FILE, planGate } from "./gate.ts";
-import { CHECKOUT, SETUP_NODE, WORKFLOW_FILE, sameFile, unchangedSinceRender, workflowFile } from "./pipeline.ts";
+import {
+  CHECKOUT,
+  SETUP_NODE,
+  WORKFLOW_FILE,
+  sameFile,
+  unchangedSinceRender,
+  workflowFile,
+  workflowSummary,
+} from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
+import { enforcementFor } from "./stages.ts";
 
 export const START = "<!-- peer-ai:start -->";
 export const END = "<!-- peer-ai:end -->";
@@ -561,27 +570,38 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   const command = skillsCommand(root);
   // Ruff reads settings from a file, not a package, so its settings for the project's stack
   // profiles are written where the project's own Ruff settings can extend them (RFC 0006).
-  const ruff = ruffFile(config);
+  // Where the project stands in adopting enforcement: reporting or enforcing, rules deferred, and
+  // checks its own workflows already run (RFC 0011).
+  const enforcement = enforcementFor(root, config);
+  const ruff = ruffFile(config, enforcement);
   if (ruff !== undefined) {
     const existing = readText(root, RUFF_FILE);
+    const action = existing === undefined ? "create" : existing === ruff ? "unchanged" : "update";
     files.push({
       path: RUFF_FILE,
-      action: existing === undefined ? "create" : existing === ruff ? "unchanged" : "update",
+      action,
       content: ruff,
+      ...(action === "unchanged"
+        ? {}
+        : {
+            note: "Ruff reads it only when your own Ruff settings extend it, and it adds rules without replacing yours.",
+          }),
     });
   }
 
   // The pipeline profile's checks, as one workflow render owns while nobody changes it by hand.
-  const workflow = workflowFile(config);
+  const workflow = workflowFile(config, enforcement);
+  // Every security check render adds is named, with whether it blocks, so nothing arrives silently.
+  const summary = workflowSummary(config, enforcement) ?? "";
   if (workflow !== undefined) {
     const existing = readText(root, WORKFLOW_FILE);
-    if (existing === undefined) files.push({ path: WORKFLOW_FILE, action: "create", content: workflow });
+    if (existing === undefined) files.push({ path: WORKFLOW_FILE, action: "create", content: workflow, note: summary });
     else if (unchangedSinceRender(existing)) {
       const same = sameFile(existing, workflow);
       files.push({
         path: WORKFLOW_FILE,
         action: same ? "unchanged" : "update",
-        ...(same ? {} : { content: workflow }),
+        ...(same ? {} : { content: workflow, note: summary }),
       });
     } else {
       files.push({

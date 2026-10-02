@@ -633,6 +633,83 @@
             ],
             "additionalProperties": false
           }
+        },
+        "enforcement": {
+          "description": "report: the tools that enforce the profiles run and report, but never fail a build, for an existing codebase adopting them. enforce: they fail it. Defaults to enforce (RFC 0011).",
+          "type": "string",
+          "enum": [
+            "report",
+            "enforce"
+          ]
+        },
+        "deferred": {
+          "description": "Rules whose enforcement only reports until a date or a work item; reviews still apply them (RFC 0011). peer-ai doctor lists them all.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rule": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]*-\\d{2,}$",
+                "description": "A standards rule id, such as SEC-07."
+              },
+              "until": {
+                "description": "The day the rule's enforcement starts to block.",
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "untilItem": {
+                "description": "The work item that, once done, starts the rule's enforcement blocking.",
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "decidedBy": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The person who decided to defer it."
+              }
+            },
+            "required": [
+              "rule",
+              "reason",
+              "decidedBy"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "coveredBy": {
+          "description": "Rules the project's own tools already enforce, so render adds no second check (RFC 0011).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rule": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]*-\\d{2,}$",
+                "description": "A standards rule id, such as SEC-07."
+              },
+              "by": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The project's own file that enforces the rule, such as a CI workflow."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "rule",
+              "by",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false

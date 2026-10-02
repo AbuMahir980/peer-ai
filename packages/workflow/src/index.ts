@@ -6,6 +6,7 @@ import { ReviewReportSchema, type ReviewReport } from "./report.ts";
 import { MapSchema, WorkItemSchema, type ProjectMap, type WorkItem } from "./state.ts";
 
 export * from "./ids.ts";
+export { adoptionOf, reportsOnly, type Adoption, type Covered, type Deferral } from "./adoption.ts";
 export { ConfigLayerSchema, ConfigSchema, mergeConfigs, resolveConfig, type PeerAiConfig } from "./config.ts";
 export {
   ReviewReportSchema,

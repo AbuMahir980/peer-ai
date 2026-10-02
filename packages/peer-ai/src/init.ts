@@ -159,6 +159,9 @@ export function buildConfig(detected: Detected, answers: Answers): Record<string
     })),
     repo: { ...(detected.repo.host === undefined ? {} : { host: detected.repo.host }), remote: detected.repo.remote },
     ...(detected.delivery === undefined ? {} : { delivery: detected.delivery }),
+    // An existing codebase adopts enforcement in stages: it reports first, and blocks once the code
+    // passes. A new one enforces from the first commit (RFC 0011).
+    standards: { enforcement: detected.origin === "existing" ? "report" : "enforce" },
   };
 }
 

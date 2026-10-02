@@ -112,6 +112,7 @@ function referencedFiles(config: PeerAiConfig): { field: string; path: string }[
     { field: "compliance.dataInventory", path: config.compliance?.dataInventory },
     ...(config.apis ?? []).map((api) => ({ field: `apis "${api.id}" contract`, path: api.contract?.location })),
     ...(config.standards?.documents ?? []).map((doc) => ({ field: "standards.documents", path: doc.path })),
+    ...(config.standards?.coveredBy ?? []).map((covered) => ({ field: "standards.coveredBy", path: covered.by })),
     ...(config.rules ?? []).map((rule) => ({ field: "rules", path: rule.path })),
     ...Object.entries(config.capabilities ?? {}).flatMap(([skill, capability]) =>
       (capability.checklists ?? []).map((path) => ({ field: `capabilities.${skill}.checklists`, path })),

@@ -9,7 +9,8 @@
 
 import { createHash } from "node:crypto";
 import { PROFILES, profileRulesFor, type PipelineJob } from "peer-ai-standards";
-import type { PeerAiConfig } from "peer-ai-workflow";
+import { reportsOnly, type PeerAiConfig } from "peer-ai-workflow";
+import { ENFORCING, type Enforcement } from "./stages.ts";
 
 export const WORKFLOW_FILE = ".github/workflows/peer-ai-security.yml";
 
@@ -208,12 +209,16 @@ export function pipelineRules(config: PeerAiConfig) {
 
 const indent = (lines: readonly string[], by: number) => lines.map((line) => `${" ".repeat(by)}${line}`);
 
+/** A job that reports what it finds without failing the build, while its rules only report (RFC 0011). */
+const REPORTS = "    continue-on-error: true";
+
 /** One job: check out the repository, install the tool, run it. */
-function job(id: string, script: JobScript, rules: readonly string[]): string[] {
+function job(id: string, script: JobScript, rules: readonly string[], reports: boolean): string[] {
   return [
     `  ${id}:`,
     `    name: ${script.name}`,
     "    runs-on: ubuntu-latest",
+    ...(reports ? [REPORTS] : []),
     "    permissions:",
     "      contents: read",
     "    steps:",
@@ -236,28 +241,33 @@ function job(id: string, script: JobScript, rules: readonly string[]): string[] 
 
 const SCHEDULED = "    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'";
 
+/** The rules the workflow's jobs enforce: those that apply, less those the project's own tools cover. */
+function enforcedRules(config: PeerAiConfig, enforcement: Enforcement) {
+  return pipelineRules(config).filter((rule) => !enforcement.adoption.coveredBy.has(rule.id));
+}
+
 /** The workflow's jobs for the rules that apply, and the environments with usable addresses. */
-function jobs(config: PeerAiConfig): string[] {
-  const rules = pipelineRules(config);
+function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): string[] {
+  const rules = enforcedRules(config, enforcement);
+  const reports = (ids: readonly string[]) => ids.some((id) => reportsOnly(enforcement.adoption, id));
   const lines: string[] = [];
   for (const id of Object.keys(JOBS) as PipelineJob[]) {
+    // A tool the project's own workflow runs already gets no second job (RFC 0011).
+    if (enforcement.runByProject.has(id)) continue;
     const covered = rules.filter((rule) => rule.enforcer?.tool === "github-actions" && rule.enforcer.job === id);
-    if (covered.length > 0)
-      lines.push(
-        ...job(
-          id,
-          JOBS[id],
-          covered.map((rule) => rule.id),
-        ),
-      );
+    if (covered.length > 0) {
+      const ids = covered.map((rule) => rule.id);
+      lines.push(...job(id, JOBS[id], ids, reports(ids)));
+    }
   }
   const ids = new Set(rules.map((rule) => rule.id));
   const { usable } = environmentAddresses(config);
-  if (ids.has("GHA-06") && usable.length > 0) {
+  if (ids.has("GHA-06") && usable.length > 0 && !enforcement.runByProject.has("tls")) {
     lines.push(
       "  tls:",
       "    name: peer-ai / tls",
       "    runs-on: ubuntu-latest",
+      ...(reports(["GHA-06"]) ? [REPORTS] : []),
       SCHEDULED,
       "    permissions: {}",
       "    steps:",
@@ -267,11 +277,12 @@ function jobs(config: PeerAiConfig): string[] {
   }
   // Only an environment the config marks as not production is scanned: one it doesn't mark might be.
   const staging = usable.filter((address) => address.production === false);
-  if (ids.has("GHA-07") && staging.length > 0) {
+  if (ids.has("GHA-07") && staging.length > 0 && !enforcement.runByProject.has("running-app")) {
     lines.push(
       "  running-app:",
       "    name: peer-ai / running-app",
       "    runs-on: ubuntu-latest",
+      ...(reports(["GHA-07"]) ? [REPORTS] : []),
       SCHEDULED,
       "    permissions:",
       "      contents: read",
@@ -300,8 +311,8 @@ function jobs(config: PeerAiConfig): string[] {
 }
 
 /** The workflow's body, below its header, or undefined when no job applies. */
-export function workflowBody(config: PeerAiConfig): string | undefined {
-  const body = jobs(config);
+export function workflowBody(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): string | undefined {
+  const body = jobs(config, enforcement);
   if (body.length === 0) return undefined;
   const branch = config.repo?.defaultBranch;
   return [
@@ -321,8 +332,8 @@ export function workflowBody(config: PeerAiConfig): string | undefined {
 }
 
 /** The jobs the workflow render writes would run: the keys under jobs:. */
-export function workflowJobs(config: PeerAiConfig): string[] {
-  return [...(workflowBody(config) ?? "").matchAll(/^ {2}([a-z-]+):$/gm)]
+export function workflowJobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): string[] {
+  return [...(workflowBody(config, enforcement) ?? "").matchAll(/^ {2}([a-z-]+):$/gm)]
     .map((match) => match[1] ?? "")
     .filter((id) => !["pull_request", "push", "schedule", "workflow_dispatch"].includes(id));
 }
@@ -336,17 +347,42 @@ export const withHash = (header: string[], body: string): string =>
   [...header, `# peer-ai sha256: ${hash(body)}`, body].join("\n");
 
 /** The whole file render writes: a header recording the body's hash, then the body. */
-export function workflowFile(config: PeerAiConfig): string | undefined {
-  const body = workflowBody(config);
+export function workflowFile(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): string | undefined {
+  const body = workflowBody(config, enforcement);
   if (body === undefined) return undefined;
   return withHash(
     [
       "# Generated by peer-ai render from peer-ai.config.json: the checks of the github-actions stack profile.",
       "# Change the config, not this file. Render writes it again while it's as render left it, and leaves",
-      "# it alone once someone changes it by hand. Make each job a required check: their names never change.",
+      body.includes(REPORTS)
+        ? "# it alone once someone changes it by hand. A job with continue-on-error only reports for now, in the\n# report stage or for a deferred rule (RFC 0011): make a job a required check once it enforces."
+        : "# it alone once someone changes it by hand. Make each job a required check: their names never change.",
     ],
     body,
   );
+}
+
+/** What the workflow does, for render to say: each job, whether it only reports, and what's covered elsewhere. */
+export function workflowSummary(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): string | undefined {
+  const body = workflowBody(config, enforcement);
+  if (body === undefined) return undefined;
+  const rules = enforcedRules(config, enforcement);
+  const parts = workflowJobs(config, enforcement).map((id) => {
+    const ids = rules
+      .filter(
+        (rule) =>
+          (rule.enforcer?.tool === "github-actions" && rule.enforcer.job === id) ||
+          ({ tls: "GHA-06", "running-app": "GHA-07" } as Record<string, string>)[id] === rule.id,
+      )
+      .map((rule) => rule.id);
+    const reports = ids.some((rule) => reportsOnly(enforcement.adoption, rule));
+    return `${id} (${ids.join(", ")})${reports ? ", reporting only" : ""}`;
+  });
+  const elsewhere = [
+    ...[...enforcement.runByProject].map(([job, where]) => `${job} is covered by ${where}`),
+    ...[...enforcement.adoption.coveredBy.values()].map((covered) => `${covered.rule} is covered by ${covered.by}`),
+  ];
+  return `It runs ${parts.join("; ")}.${elsewhere.length === 0 ? "" : ` ${elsewhere.join("; ")}.`}`;
 }
 
 /** Whether a file was written by render: it records a hash in its header. */
