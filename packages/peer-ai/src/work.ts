@@ -3,7 +3,7 @@
 // written, and a move to ship or done must pass the same gates as `peer-ai check`, so what an
 // agent records is what CI will accept.
 
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { availableSkills, skillRuleIds } from "peer-ai-skills";
@@ -23,6 +23,7 @@ import {
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
 import { changesFor, currentBranch, headCommit } from "./commits.ts";
+import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
@@ -50,9 +51,19 @@ function tracksOf(config: PeerAiConfig): string[] {
 }
 
 export function loadWorkItem(root: string, id: string): Result<WorkItem> {
+  const located = locate(root, id);
+  if (located !== undefined) return { ok: true, value: located.item };
   const file = readWorkItems(root).find(({ path }) => path === `${WORK_DIR}/${id}.json`);
   if (file === undefined) return failed(`There is no work item "${id}".`);
   return file.item.ok ? file.item : failed(`${file.path} ${file.item.error}`);
+}
+
+/** A work item and its home, the working copy where its branch is checked out (RFC 0010). */
+function locateItem(root: string, id: string): Result<Located> {
+  const located = locate(root, id);
+  if (located !== undefined) return { ok: true, value: located };
+  const loaded = loadWorkItem(root, id);
+  return loaded.ok ? { ok: true, value: { home: root, item: loaded.value } } : loaded;
 }
 
 /** Writes a work item after checking it. migrate uses it to carry over an item at the stage it had. */
@@ -71,10 +82,13 @@ export function saveWorkItem(root: string, config: PeerAiConfig, item: WorkItem)
 export function nextId(root: string, config: PeerAiConfig): string {
   const prefix = (config.tracker?.ticketPrefix ?? DEFAULT_PREFIX).replace(/-+$/, "");
   const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(\\d+)$`);
-  const numbers = readWorkItems(root).flatMap(({ path }) => {
-    const match = pattern.exec(path.slice(WORK_DIR.length + 1, -".json".length));
-    return match?.[1] === undefined ? [] : [Number(match[1])];
-  });
+  // Every working copy's items count, so two agents on two branches never take the same id.
+  const numbers = worktrees(root).flatMap((worktree) =>
+    readWorkItems(worktree.path).flatMap(({ path }) => {
+      const match = pattern.exec(path.slice(WORK_DIR.length + 1, -".json".length));
+      return match?.[1] === undefined ? [] : [Number(match[1])];
+    }),
+  );
   return `${prefix}-${String(Math.max(0, ...numbers) + 1)}`;
 }
 
@@ -108,7 +122,9 @@ export interface NewWorkItem {
 
 export function createWorkItem(root: string, config: PeerAiConfig, input: NewWorkItem, now: Date): Result<WorkItem> {
   const id = input.id ?? nextId(root, config);
-  if (existsSync(join(root, WORK_DIR, `${id}.json`))) return failed(`A work item "${id}" already exists.`);
+  if (existsSync(join(root, WORK_DIR, `${id}.json`)) || locate(root, id) !== undefined) {
+    return failed(`A work item "${id}" already exists.`);
+  }
   const ownTracks = config.tracks.filter((track) => track.status !== "external");
   // With a single track there is nothing to choose, so the item is on it.
   const track = input.track ?? (ownTracks.length === 1 ? ownTracks[0]?.id : undefined);
@@ -126,7 +142,9 @@ export function createWorkItem(root: string, config: PeerAiConfig, input: NewWor
     next: input.next ?? "Read what this item needs, then plan it.",
     updatedAt: now.toISOString(),
   } as WorkItem;
-  return saveWorkItem(root, config, item);
+  // The item lives on its branch: where that's checked out, or here until it is.
+  const home = branch === undefined ? root : (homeOf(root, branch) ?? root);
+  return saveWorkItem(home, config, item);
 }
 
 export interface WorkItemChanges {
@@ -153,9 +171,10 @@ export function updateWorkItem(
   changes: WorkItemChanges,
   now: Date,
 ): Result<WorkItem> {
-  const loaded = loadWorkItem(root, id);
-  if (!loaded.ok) return loaded;
-  return saveWorkItem(root, config, { ...loaded.value, ...defined(changes), updatedAt: now.toISOString() });
+  const located = locateItem(root, id);
+  if (!located.ok) return located;
+  const { home, item } = located.value;
+  return saveWorkItem(home, config, { ...item, ...defined(changes), updatedAt: now.toISOString() });
 }
 
 export interface ReviewInput {
@@ -317,10 +336,11 @@ export function recordReview(
   review: ReviewInput,
   now: Date,
 ): Result<WorkItem> {
-  const loaded = loadWorkItem(root, id);
-  if (!loaded.ok) return loaded;
+  const located = locateItem(root, id);
+  if (!located.ok) return located;
+  const { home, item } = located.value;
   const at = now.toISOString();
-  const commit = headCommit(root);
+  const commit = headCommit(home);
   let entry: NonNullable<WorkItem["reviews"]>[number];
 
   if (review.report === undefined) {
@@ -335,14 +355,14 @@ export function recordReview(
         `${review.report} isn't under ${REPORTS_DIR}/. Save the report there, in the work item's folder, and record it from there.`,
       );
     }
-    const checked = checkReport(root, config, { ...review, report: review.report }, id);
+    const checked = checkReport(home, config, { ...review, report: review.report }, id);
     if (!checked.ok) return checked;
     entry = { ...checked.value, at };
   }
   if (commit !== undefined) entry = { ...entry, commit };
   // One review per skill: recording a skill again replaces the earlier entry, which git keeps.
-  const reviews = [...(loaded.value.reviews ?? []).filter((recorded) => recorded.skill !== review.skill), entry];
-  return saveWorkItem(root, config, { ...loaded.value, reviews, updatedAt: at });
+  const reviews = [...(item.reviews ?? []).filter((recorded) => recorded.skill !== review.skill), entry];
+  return saveWorkItem(home, config, { ...item, reviews, updatedAt: at });
 }
 
 export function recordVerify(
@@ -353,11 +373,12 @@ export function recordVerify(
   now: Date,
   commit?: string,
 ): Result<WorkItem> {
-  const loaded = loadWorkItem(root, id);
-  if (!loaded.ok) return loaded;
+  const located = locateItem(root, id);
+  if (!located.ok) return located;
+  const { home, item } = located.value;
   const at = now.toISOString();
   const lastVerify = { result, at, ...(commit === undefined ? {} : { commit }) };
-  return saveWorkItem(root, config, { ...loaded.value, lastVerify, updatedAt: at });
+  return saveWorkItem(home, config, { ...item, lastVerify, updatedAt: at });
 }
 
 /**
@@ -371,9 +392,9 @@ export function advanceWorkItem(
   to: ItemStage | undefined,
   now: Date,
 ): Result<WorkItem> {
-  const loaded = loadWorkItem(root, id);
-  if (!loaded.ok) return loaded;
-  const item = loaded.value;
+  const located = locateItem(root, id);
+  if (!located.ok) return located;
+  const { home, item } = located.value;
   if (CLOSED.includes(item.stage) && (to === undefined || to === item.stage)) {
     return failed(`${item.id} is already ${item.stage}.`);
   }
@@ -384,29 +405,37 @@ export function advanceWorkItem(
     // so CI can hold it to them without the branch's history.
     const read = (file: string) => {
       try {
-        return readFileSync(join(root, file), "utf8");
+        return readFileSync(join(home, file), "utf8");
       } catch {
         return "";
       }
     };
-    const requiredReviews = reviewsFor(changedFiles(root), config, projectStage(config), read, undefined, item);
-    return saveWorkItem(root, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
+    const requiredReviews = reviewsFor(changedFiles(home), config, projectStage(config), read, undefined, item);
+    return saveWorkItem(home, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
-    const others = readWorkItems(root).flatMap(({ item: other }) => (other.ok ? [other.value] : []));
-    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage), others, {
+    const others = allWorkItems(root).map((other) => other.item);
+    const failures = gateWorkItem(moved, config, stage, assess(home, config, stage), others, {
       moving: target,
-      branch: currentBranch(root),
-      changedSince: changesFor(root),
+      branch: currentBranch(home),
+      changedSince: changesFor(home),
     }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
       const reasons = failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd());
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
     }
   }
-  return saveWorkItem(root, config, { ...item, stage: target, updatedAt: now.toISOString() });
+  // Build starts the change: the commit it starts from is the item's base, so its required reviews
+  // come from its own commits, not a parent branch's (RFC 0010).
+  const base = target === "build" && item.base === undefined ? headCommit(home) : undefined;
+  return saveWorkItem(home, config, {
+    ...item,
+    stage: target,
+    ...(base === undefined ? {} : { base }),
+    updatedAt: now.toISOString(),
+  });
 }
 
 export interface CommandResult {
@@ -448,6 +477,22 @@ export interface VerifyOutcome {
 }
 
 /** Runs commands.verify and records the result, so a pass is proven rather than claimed. */
+/** Changes not yet committed in a working copy, outside .peer-ai/. */
+function uncommittedFiles(home: string): string[] {
+  try {
+    return execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", ".", ":(exclude).peer-ai"], {
+      cwd: home,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .split("\n")
+      .filter((line) => line.trim() !== "")
+      .map((line) => line.slice(3).split(" -> ").at(-1) ?? line);
+  } catch {
+    return [];
+  }
+}
+
 export async function runVerify(
   root: string,
   config: PeerAiConfig,
@@ -455,17 +500,36 @@ export async function runVerify(
   now: () => Date,
   run: CommandRunner = runCommand,
 ): Promise<Result<VerifyOutcome>> {
-  const loaded = loadWorkItem(root, id);
-  if (!loaded.ok) return loaded;
+  const located = locateItem(root, id);
+  if (!located.ok) return located;
+  const { home, item } = located.value;
   const command = config.commands?.verify ?? undefined;
   if (command === undefined) {
     return failed(
       "There is no verify command. Set commands.verify in peer-ai.config.json to the command that checks the project, such as its tests and linter.",
     );
   }
-  // The commit the verify ran on, taken before it runs, so the record names what was tested (RFC 0010).
-  const commit = headCommit(root);
-  const { code, output } = await run(command, root);
+  // In git, a verify proves a commit on the item's own branch (RFC 0010): it runs where that branch
+  // is checked out, on nothing that isn't committed.
+  const commit = headCommit(home);
+  if (commit !== undefined) {
+    if (item.branch !== undefined && homeOf(root, item.branch) === undefined) {
+      return failed(
+        `${item.id}'s branch, ${item.branch}, isn't checked out anywhere, so there's nothing of it to verify. Check it out, with git switch ${item.branch} or git worktree add <folder> ${item.branch}, then verify.`,
+      );
+    }
+    const uncommitted = uncommittedFiles(home);
+    if (uncommitted.length > 0) {
+      const shown =
+        uncommitted.length <= 3
+          ? uncommitted.join(", ")
+          : `${uncommitted.slice(0, 3).join(", ")} and ${String(uncommitted.length - 3)} more`;
+      return failed(
+        `The verify for ${item.id} runs on a commit, and ${shown} isn't committed. Commit it, then verify.`,
+      );
+    }
+  }
+  const { code, output } = await run(command, home);
   const result = code === 0 ? "pass" : "fail";
   const recorded = recordVerify(root, config, id, result, now(), commit);
   return recorded.ok ? { ok: true, value: { item: recorded.value, command, result, output } } : recorded;
@@ -521,19 +585,17 @@ export function setupProblems(root: string, nodeVersion?: string, today?: Date):
   );
 }
 
-export function nextWork(root: string, config: PeerAiConfig): NextWork {
+export function nextWork(root: string, config: PeerAiConfig, onBranch?: string): NextWork {
   const problems = setupProblems(root);
-  const branch = currentBranch(root);
-  const open = readWorkItems(root)
-    .flatMap(({ item }) => (item.ok && !CLOSED.includes(item.value.stage) ? [item.value] : []))
+  // An agent in a worktree of its own names its branch; otherwise it's the one checked out here.
+  const branch = onBranch ?? currentBranch(root);
+  const items = allWorkItems(root).map((located) => located.item);
+  const open = items
+    .filter((item) => !CLOSED.includes(item.stage))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const current = branch === undefined ? undefined : open.find((item) => item.branch === branch);
   const reviews = current === undefined ? [] : reviewsToDo(current);
-  const shipped = new Set(
-    readWorkItems(root).flatMap(({ item }) =>
-      item.ok && (item.value.stage === "ship" || item.value.stage === "done") ? [item.value.id] : [],
-    ),
-  );
+  const shipped = new Set(items.flatMap((item) => (item.stage === "ship" || item.stage === "done" ? [item.id] : [])));
   const waiting = Object.fromEntries(
     open
       .map((item) => [item.id, (item.dependsOn ?? []).filter((id) => !shipped.has(id))] as const)
