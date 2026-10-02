@@ -1,5 +1,20 @@
 # peer-ai
 
+## 1.0.0-next.5
+
+### Minor Changes
+
+- e9ce810: `init` and `migrate` take up the stack profiles and traits `assess` suggests (RFC 0011). They show each one with why it was suggested, all ticked, and ask why about any you untick; `--yes` takes them all. A new top-level `declined` records a suggestion the project decided against, with why, so it isn't suggested again.
+  
+  `peer-ai doctor` now warns about a suggestion the config has neither taken up nor declined. On a project set up before this release, run `npx peer-ai doctor` after updating: for each one, add it to `standards.profiles` or `project.traits`, or list it in `declined` with the reason. If the project's enforcement isn't staged yet, set `standards.enforcement` to `report` first, so a new profile reports before it blocks.
+
+### Patch Changes
+
+- Updated dependencies [e9ce810]
+  - peer-ai-workflow@1.0.0-next.5
+  - peer-ai-skills@1.0.0-next.5
+  - peer-ai-standards@1.0.0-next.5
+
 ## 1.0.0-next.4
 
 ### Minor Changes
