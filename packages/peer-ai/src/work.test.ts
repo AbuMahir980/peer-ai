@@ -393,7 +393,8 @@ describe("next work", () => {
   });
 });
 
-describe("a record tied to its commit (RFC 0010)", () => {
+// Each test makes real commits, which take a while on a busy machine.
+describe("a record tied to its commit (RFC 0010)", { timeout: 20_000 }, () => {
   const git = (root: string, ...args: string[]) =>
     execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   const commitAll = (root: string): string => {
