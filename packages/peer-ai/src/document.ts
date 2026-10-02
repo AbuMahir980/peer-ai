@@ -16,6 +16,7 @@ import {
 } from "peer-ai-skills";
 import { CORE_RULES } from "peer-ai-standards";
 import { DOMAINS, SKILL_IDS, SKILL_KINDS, type SkillId } from "peer-ai-workflow";
+import { homeOf } from "./homes.ts";
 import type { Output } from "./init.ts";
 import type { Result } from "./work.ts";
 
@@ -89,6 +90,25 @@ export interface CheckDocumentOptions extends DocumentInput {
  * person that works in a shell. Exit code 0 when the document is ready; 1 when it isn't, or can't
  * be checked.
  */
+/**
+ * A document on a branch: the copy where that branch is checked out, so an agent in a worktree of
+ * its own checks its own copy rather than the main working copy's (RFC 0010). Without a branch, the
+ * root's copy.
+ */
+export function checkDocumentOn(
+  root: string,
+  input: DocumentInput & { branch?: string | undefined },
+): Result<CheckedDocument> {
+  if (input.branch === undefined) return checkDocumentFile(root, input);
+  const home = homeOf(root, input.branch);
+  if (home === undefined) {
+    return failed(
+      `${input.branch} isn't checked out anywhere, so there's no copy of ${input.path} on it to check. Check it out, then check the document again.`,
+    );
+  }
+  return checkDocumentFile(home, input);
+}
+
 export function runCheckDocument(options: CheckDocumentOptions, out: Output): number {
   const checked = checkDocumentFile(options.cwd, options);
   if (options.json) {

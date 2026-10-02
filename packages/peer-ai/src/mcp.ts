@@ -11,7 +11,7 @@ import { ACTIVITY_IDS, MapItemIdSchema, SKILL_IDS, WorkItemSchema, type PeerAiCo
 import { z } from "zod";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
-import { checkDocumentFile } from "./document.ts";
+import { checkDocumentOn } from "./document.ts";
 import { draftFeedback } from "./feedback.ts";
 import { VERSION } from "./package-info.ts";
 import { standardsFor } from "./standards.ts";
@@ -284,17 +284,30 @@ export function createServer(options: ServerOptions): McpServer {
           .min(1)
           .optional()
           .describe("Which of the skill's templates it follows, when it has several. Defaults to the main one."),
+        branch: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            "Your branch, when you work in a git worktree of your own: the document is read where it's checked out.",
+          ),
       },
       annotations: READ_ONLY,
     },
-    withProject((root, _config, input: { skill: string; path: string; template?: string | undefined }) => {
-      const checked = checkDocumentFile(root, input);
-      if (!checked.ok) return refuse(checked.error);
-      if (checked.value.ready) return reply(checked.value);
-      return refuse(
-        `${input.path} isn't ready yet. Fix these, then call check_document again:\n${checked.value.problems.map((problem) => `- ${problem}`).join("\n")}`,
-      );
-    }),
+    withProject(
+      (
+        root,
+        _config,
+        input: { skill: string; path: string; template?: string | undefined; branch?: string | undefined },
+      ) => {
+        const checked = checkDocumentOn(root, input);
+        if (!checked.ok) return refuse(checked.error);
+        if (checked.value.ready) return reply(checked.value);
+        return refuse(
+          `${input.path} isn't ready yet. Fix these, then call check_document again:\n${checked.value.problems.map((problem) => `- ${problem}`).join("\n")}`,
+        );
+      },
+    ),
   );
 
   server.registerTool(
