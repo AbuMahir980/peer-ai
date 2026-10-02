@@ -209,7 +209,7 @@ npx peer-ai render
 
 Render sets up `peer-ai check` in the project's CI, so no one has to remember to ([RFC 0009](../../rfcs/0009-the-ci-gate-set-up-by-render.md)):
 
-- **On GitHub Actions,** it writes `.github/workflows/peer-ai.yml`: one job, `peer-ai check`, that installs Node 24 and runs the exact version of Peer AI render ran as, so it works with or without a `package.json`. Its actions are pinned to commits. Render keeps the file up to date while it's as render left it, and leaves it alone once someone changes it by hand; `doctor` then checks it still runs the gate. A version bump updates it.
+- **On GitHub Actions,** it writes `.github/workflows/peer-ai.yml`: one job, `peer-ai check`, that checks out the pull request's own commit with its history, installs Node 24 and runs the exact version of Peer AI render ran as, so it works with or without a `package.json`. Its actions are pinned to commits. Render keeps the file up to date while it's as render left it, and leaves it alone once someone changes it by hand; `doctor` then checks it still runs the gate. A version bump updates it.
 - **On any other CI,** it prints the step to add.
 - **When a workflow of the project's own already runs `peer-ai check`,** it adds nothing.
 
@@ -298,6 +298,7 @@ npx peer-ai doctor
 | What render writes | Instructions or MCP registrations that no longer match the config, or skills that are missing or out of date |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
 | The CI gate | A pipeline that doesn't run `peer-ai check`, or a gate workflow that's out of date or no longer runs it. Through `next_work`, the AI tool hears about it in every session. |
+| The record | The work item of the branch checked out is still at `prepare` while its branch has commits, or its verify or a review looked at an older commit with changes since (RFC 0010). A warning, which reaches the AI tool through `next_work`. |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
@@ -338,6 +339,7 @@ npx peer-ai check
 | A work item at `ship` or `done` has a review whose latest result failed, or is incomplete | A review that didn't check every rule hasn't passed. A later passing review from the same skill replaces an earlier failure. At the `prototype` stage, an incomplete review is allowed; a failed one never is. |
 | A production project's work item at `ship` or `done` has a review with no report | Without a report, the result is only the agent's word. For an MVP this is a warning; for a prototype it's allowed. |
 | A work item at `ship` or `done` is missing a review it needs | When an item reaches verify, Peer AI works out the reviews it needs from the files it touched, such as a security review for code at MVP or production. Missing one fails in production, and at the MVP stage for the work item of the branch checked out or one moving to ship (RFC 0010); for an MVP item finished before, it's a warning. `activities.verify.reviews` in the config can require more, or skip one with a reason. |
+| On a pull request, the work item on its branch isn't at `ship` or `done` yet | A change merges only once it's verified and reviewed (RFC 0010). `check` reads the branch from the pull request on GitHub Actions, or from `--branch`. A branch with no work item, such as a dependency update, passes, and says so; at the `prototype` stage it's a warning. |
 | A gap work item is at `done`, but a fresh assessment still finds the gap | The work didn't fill it |
 | A work item at `ship` or `done` depends on an item that hasn't shipped | Changes land in the order they depend on (RFC 0005). Building before a dependency ships is fine. |
 | A work item depends on an item that doesn't exist, or items depend on each other in a loop | The plan can't be followed |
@@ -363,6 +365,7 @@ A review's result is worked out from its report when it is recorded, so an open 
 | Option | What it does |
 |--------|--------------|
 | `--json` | Print the checks as JSON |
+| `--branch <branch>` | The branch a pull request is for, whose work item must be at ship. On GitHub Actions, `check` reads it from the pull request. |
 
 ### Exit codes
 

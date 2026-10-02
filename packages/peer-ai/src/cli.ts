@@ -79,6 +79,10 @@ Options for check-document:
 Options for doctor and check:
       --json                  Print the checks as JSON
 
+Options for check:
+      --branch <branch>       The branch a pull request is for: its work item must be at
+                              ship. On GitHub Actions, check reads it from the pull request.
+
 Other:
   -h, --help                  Show this help
   -v, --version               Show the version`;
@@ -160,8 +164,15 @@ function doctor(args: string[], io: Io): number {
 }
 
 function check(args: string[], io: Io): number {
-  const { values } = parseArgs({ args, strict: true, options: { json: { type: "boolean" } } });
-  return runCheck({ cwd: io.cwd, json: values.json === true }, io.out);
+  const { values } = parseArgs({
+    args,
+    strict: true,
+    options: { json: { type: "boolean" }, branch: { type: "string" } },
+  });
+  // On a pull request in GitHub Actions, the branch it's for (RFC 0010).
+  const fromActions = process.env.GITHUB_HEAD_REF;
+  const branch = values.branch ?? (fromActions === undefined || fromActions === "" ? undefined : fromActions);
+  return runCheck({ cwd: io.cwd, json: values.json === true, branch }, io.out);
 }
 
 function checkReportCommand(args: string[], io: Io): number {

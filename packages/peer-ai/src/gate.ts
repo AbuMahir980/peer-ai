@@ -61,6 +61,9 @@ export function gateWorkflow(config: PeerAiConfig): string {
     "    steps:",
     `      - uses: ${CHECKOUT}`,
     "        with:",
+    // The pull request's own commit, with its history, so the commits each record names are there.
+    "          ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+    "          fetch-depth: 0",
     "          persist-credentials: false",
     `      - uses: ${SETUP_NODE}`,
     "        with:",
