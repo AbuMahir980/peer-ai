@@ -36,6 +36,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0008](0008-moving-a-v0-project-onto-1-0.md) | Moving a v0 project onto 1.0 | Accepted |
 | [0009](0009-the-ci-gate-set-up-by-render.md) | The CI gate, set up by render | Accepted |
 | [0010](0010-a-record-that-follows-the-branch.md) | A record that follows the branch and its commits | Accepted |
+| [0011](0011-adopting-peer-ai-on-an-existing-codebase.md) | Adopting Peer AI on an existing codebase | Draft |
 
 ## What carries weight
 
