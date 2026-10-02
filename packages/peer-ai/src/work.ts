@@ -3,7 +3,7 @@
 // written, and a move to ship or done must pass the same gates as `peer-ai check`, so what an
 // agent records is what CI will accept.
 
-import { execFileSync, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { availableSkills, skillRuleIds } from "peer-ai-skills";
@@ -22,6 +22,7 @@ import {
 } from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
+import { changesFor, currentBranch, headCommit } from "./commits.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
@@ -301,6 +302,14 @@ export function runCheckReport(options: CheckReportOptions, out: Output): number
   return checked.ok ? 0 : 1;
 }
 
+const REPORTS_DIR = ".peer-ai/reports";
+
+/** Whether a report's path is inside .peer-ai/reports/, as the project root sees it. */
+function isReportPath(path: string): boolean {
+  const normalised = path.replaceAll("\\", "/").replace(/^\.\//, "");
+  return normalised.startsWith(`${REPORTS_DIR}/`) && !normalised.split("/").includes("..");
+}
+
 export function recordReview(
   root: string,
   config: PeerAiConfig,
@@ -311,6 +320,7 @@ export function recordReview(
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
   const at = now.toISOString();
+  const commit = headCommit(root);
   let entry: NonNullable<WorkItem["reviews"]>[number];
 
   if (review.report === undefined) {
@@ -318,11 +328,20 @@ export function recordReview(
     const summary = review.summary === undefined ? {} : { summary: review.summary };
     entry = { skill: review.skill, result: review.result, ...summary, unproven: true, at };
   } else {
+    // A report kept anywhere else, such as in a worktree that will be removed, would leave the
+    // record pointing at nothing (RFC 0010).
+    if (!isReportPath(review.report)) {
+      return failed(
+        `${review.report} isn't under ${REPORTS_DIR}/. Save the report there, in the work item's folder, and record it from there.`,
+      );
+    }
     const checked = checkReport(root, config, { ...review, report: review.report }, id);
     if (!checked.ok) return checked;
     entry = { ...checked.value, at };
   }
-  const reviews = [...(loaded.value.reviews ?? []), entry];
+  if (commit !== undefined) entry = { ...entry, commit };
+  // One review per skill: recording a skill again replaces the earlier entry, which git keeps.
+  const reviews = [...(loaded.value.reviews ?? []).filter((recorded) => recorded.skill !== review.skill), entry];
   return saveWorkItem(root, config, { ...loaded.value, reviews, updatedAt: at });
 }
 
@@ -332,11 +351,13 @@ export function recordVerify(
   id: string,
   result: "pass" | "fail",
   now: Date,
+  commit?: string,
 ): Result<WorkItem> {
   const loaded = loadWorkItem(root, id);
   if (!loaded.ok) return loaded;
   const at = now.toISOString();
-  return saveWorkItem(root, config, { ...loaded.value, lastVerify: { result, at }, updatedAt: at });
+  const lastVerify = { result, at, ...(commit === undefined ? {} : { commit }) };
+  return saveWorkItem(root, config, { ...loaded.value, lastVerify, updatedAt: at });
 }
 
 /**
@@ -375,9 +396,11 @@ export function advanceWorkItem(
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
     const others = readWorkItems(root).flatMap(({ item: other }) => (other.ok ? [other.value] : []));
-    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage), others).filter(
-      (check) => check.status === "fail",
-    );
+    const failures = gateWorkItem(moved, config, stage, assess(root, config, stage), others, {
+      moving: target,
+      branch: currentBranch(root),
+      changedSince: changesFor(root),
+    }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
       const reasons = failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd());
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
@@ -440,25 +463,15 @@ export async function runVerify(
       "There is no verify command. Set commands.verify in peer-ai.config.json to the command that checks the project, such as its tests and linter.",
     );
   }
+  // The commit the verify ran on, taken before it runs, so the record names what was tested (RFC 0010).
+  const commit = headCommit(root);
   const { code, output } = await run(command, root);
   const result = code === 0 ? "pass" : "fail";
-  const recorded = recordVerify(root, config, id, result, now());
+  const recorded = recordVerify(root, config, id, result, now(), commit);
   return recorded.ok ? { ok: true, value: { item: recorded.value, command, result, output } } : recorded;
 }
 
 /** The checked-out branch, even before the first commit; undefined when detached or not in git. */
-export function currentBranch(root: string): string | undefined {
-  try {
-    const branch = execFileSync("git", ["symbolic-ref", "--short", "-q", "HEAD"], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    return branch === "" ? undefined : branch;
-  } catch {
-    return undefined;
-  }
-}
 
 /** A setup problem doctor finds, for the AI tool to fix or tell the person about before other work. */
 export interface SetupProblem {
@@ -542,3 +555,5 @@ export function nextWork(root: string, config: PeerAiConfig): NextWork {
   const later = next === undefined ? [] : gaps(assessment, next).filter((id) => !needed.includes(id));
   return { ...result, gaps: { stage, needed, later, useSkill: gapSkills([...needed, ...later]) } };
 }
+
+export { currentBranch };

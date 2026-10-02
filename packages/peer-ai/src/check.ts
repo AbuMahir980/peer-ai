@@ -8,6 +8,7 @@ import { renderedName } from "peer-ai-skills";
 import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
+import { changesFor, currentBranch, shortCommit } from "./commits.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
 import type { Output, Stage } from "./init.ts";
@@ -60,9 +61,80 @@ function latestReviews(item: WorkItem): Review[] {
   return [...latest.values()];
 }
 
+/** What the gate knows about the change being made now (RFC 0010). */
+export interface GateContext {
+  /** The branch checked out: its work item is the change being made now, held to every rule. */
+  branch?: string | undefined;
+  /** The stage the item is moving to now, when the gate is asked before a move. */
+  moving?: WorkItem["stage"] | undefined;
+  /** The files changed since a commit, outside .peer-ai/; undefined when the commit isn't in this history. */
+  changedSince?: ((commit: string) => string[] | undefined) | undefined;
+}
+
+const listed = (files: string[]): string =>
+  files.length <= 3 ? files.join(", ") : `${files.slice(0, 3).join(", ")} and ${String(files.length - 3)} more`;
+
+/**
+ * The verify and required reviews of an item at ship must be on the branch's latest commit, or on
+ * one with no change since outside .peer-ai/ (RFC 0010). A record from before records named their
+ * commit counts only until the item next moves to ship.
+ */
+function staleEvidence(item: WorkItem, claim: string, context: GateContext, moving: boolean): Check[] {
+  const changed = context.changedSince;
+  if (changed === undefined) return [];
+  const required = new Set((item.requiredReviews ?? []).map((review) => review.skill));
+  const evidence = [
+    ...(item.lastVerify === undefined
+      ? []
+      : [{ what: "verify", commit: item.lastVerify.commit, again: "Verify again" }]),
+    ...latestReviews(item)
+      .filter((review) => required.has(review.skill))
+      .map((review) => ({
+        what: review.skill,
+        commit: review.commit,
+        again: `Review it again with ${renderedName(review.skill)}`,
+      })),
+  ];
+  const checks: Check[] = [];
+  for (const { what, commit, again } of evidence) {
+    if (commit === undefined) {
+      if (moving) {
+        checks.push(
+          fail(
+            "gates",
+            `${claim}, but its ${what} doesn't say which commit it looked at.`,
+            `${again}, on the latest commit.`,
+          ),
+        );
+      }
+      continue;
+    }
+    const files = changed(commit);
+    if (files === undefined) {
+      const message = `${claim}, but its ${what} looked at ${shortCommit(commit)}, which isn't in this repository's history.`;
+      checks.push(
+        moving
+          ? fail("gates", message, `${again}, on the latest commit.`)
+          : warn("gates", message, `${again}, on the latest commit.`),
+      );
+    } else if (files.length > 0) {
+      checks.push(
+        fail(
+          "gates",
+          `${claim}, but its ${what} looked at ${shortCommit(commit)}, and ${listed(files)} changed since.`,
+          `${again}, on the latest commit.`,
+        ),
+      );
+    }
+  }
+  return checks;
+}
+
 /**
  * Whether a work item may be at ship or done. `items` are the project's other work items, for its
- * dependencies (RFC 0005): an item can't ship before the items it depends on have.
+ * dependencies (RFC 0005): an item can't ship before the items it depends on have. The item on the
+ * branch being worked on, or one moving now, is held to the strictest rules (RFC 0010); items
+ * finished on other branches keep the rules they were finished under.
  */
 export function gateWorkItem(
   item: WorkItem,
@@ -70,9 +142,12 @@ export function gateWorkItem(
   stage: Stage,
   assessment: Assessment,
   items: WorkItem[] = [],
+  context: GateContext = {},
 ): Check[] {
   const checks: Check[] = [];
   const claim = `${item.id} is at ${item.stage}`;
+  const moving = context.moving !== undefined;
+  const current = moving || (context.branch !== undefined && item.branch === context.branch);
   const backToBuild = "or move the item back to build.";
   const verifyCommand = config.commands?.verify ?? undefined;
 
@@ -108,15 +183,20 @@ export function gateWorkItem(
     );
   }
 
-  // The reviews the change needs (RFC 0004): a warning for an MVP, a failure in production. A
-  // prototype is only told, by next_work.
+  // The reviews the change needs (RFC 0004): a failure in production, and at the MVP stage for the
+  // change being made now (RFC 0010); a warning for an MVP item finished before. A prototype is
+  // only told, by next_work.
   const recorded = new Set((item.reviews ?? []).map((review) => review.skill));
   for (const required of item.requiredReviews ?? []) {
     if (recorded.has(required.skill) || stage === "prototype") continue;
     const message = `${claim}, but it has no ${required.skill}, which it needs because ${required.reason}.`;
     const fix = `Use the ${renderedName(required.skill)} skill and record its review, ${backToBuild}`;
-    checks.push(stage === "production" ? fail("gates", message, fix) : warn("gates", message, fix));
+    checks.push(stage === "production" || current ? fail("gates", message, fix) : warn("gates", message, fix));
   }
+
+  // At ship, the evidence must be from the latest commit; done is past the branch, so it isn't asked.
+  const shipping = context.moving === "ship" || (!moving && item.stage === "ship");
+  if (current && shipping) checks.push(...staleEvidence(item, claim, context, moving));
 
   for (const review of latestReviews(item)) {
     // A prototype accepts a review that didn't cover every rule; a failed one still stops it.
@@ -159,9 +239,15 @@ export function gateWorkItem(
   return checks;
 }
 
-function checkGates(items: WorkItem[], config: PeerAiConfig, stage: Stage, assessment: Assessment): Check[] {
+function checkGates(
+  items: WorkItem[],
+  config: PeerAiConfig,
+  stage: Stage,
+  assessment: Assessment,
+  context: GateContext,
+): Check[] {
   const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage));
-  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, items));
+  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, items, context));
   const failures = results.filter((check) => check.status === "fail");
   const warnings = results.filter((check) => check.status === "warn");
   if (failures.length > 0) return [...failures, ...warnings];
@@ -264,7 +350,10 @@ export function evaluate(root: string, config: PeerAiConfig): Verdict {
     checkMap(root, assessment),
     ...checkWorkItems(root, config),
     ...checkDependencies(items),
-    ...checkGates(items, config, stage, assessment),
+    ...checkGates(items, config, stage, assessment, {
+      branch: currentBranch(root),
+      changedSince: changesFor(root),
+    }),
     ...checkVerifyCommand(config, stage),
     checkGapsTracked(assessment, stage, items),
   ];

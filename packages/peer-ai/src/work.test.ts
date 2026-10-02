@@ -4,18 +4,21 @@ import { join } from "node:path";
 import { MAP_ITEM_SKILLS, type KnownMapItemId, type PeerAiConfig } from "peer-ai-workflow";
 import { availableSkills, renderedName, skillRuleIds } from "peer-ai-skills";
 import { afterEach, describe, expect, it } from "vitest";
-import { loadConfig } from "./assess.ts";
+import { assess, loadConfig } from "./assess.ts";
+import { gateWorkItem } from "./check.ts";
 import { cleanUp, project } from "./test-helpers.ts";
 import {
   advanceWorkItem,
   branchFor,
   createWorkItem,
   currentBranch,
+  loadWorkItem,
   nextWork,
   recordReview,
   recordVerify,
   runCommand,
   runVerify,
+  saveWorkItem,
   updateWorkItem,
   type CommandRunner,
 } from "./work.ts";
@@ -289,7 +292,7 @@ describe("recording reviews", () => {
       /is not a valid review report:\n- coverage/,
     );
     expect(error(record(root, config, { report: "../elsewhere.json" }))).toBe(
-      "../elsewhere.json is outside the project. Save the report under .peer-ai/reports/.",
+      "../elsewhere.json isn't under .peer-ai/reports/. Save the report there, in the work item's folder, and record it from there.",
     );
     expect(error(record(root, config, { report: ".peer-ai/reports/none.json" }))).toBe(
       "There is no report at .peer-ai/reports/none.json.",
@@ -387,5 +390,161 @@ describe("next work", () => {
       open: [],
       gaps: { stage: "mvp", needed, later, useSkill },
     });
+  });
+});
+
+describe("a record tied to its commit (RFC 0010)", () => {
+  const git = (root: string, ...args: string[]) =>
+    execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  const commitAll = (root: string): string => {
+    git(root, "add", "-A");
+    git(
+      root,
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.com",
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "-qm",
+      "change",
+    );
+    return git(root, "rev-parse", "HEAD");
+  };
+  const passes: CommandRunner = () => Promise.resolve({ code: 0, output: "ok" });
+
+  /** A shop on its own branch, with SHOP-1 at verify needing a code review. */
+  function atVerify(): { root: string; config: PeerAiConfig; first: string } {
+    const [root, config] = shop(SHOP, { git: true });
+    commitAll(root);
+    git(root, "switch", "-qc", "feature/SHOP-1-cart");
+    value(createWorkItem(root, config, { title: "Cart", kind: "feature", track: "web" }, NOW));
+    value(advanceWorkItem(root, config, "SHOP-1", "build", NOW));
+    writeFileSync(join(root, "apps/web/cart.ts"), "export const cart = 1;\n");
+    const first = commitAll(root);
+    value(advanceWorkItem(root, config, "SHOP-1", "verify", NOW));
+    const item = value(loadWorkItem(root, "SHOP-1"));
+    value(
+      saveWorkItem(root, config, { ...item, requiredReviews: [{ skill: "code-review", reason: "it changes code" }] }),
+    );
+    return { root, config, first };
+  }
+
+  it("records the commit each verify and review looked at, and won't ship on an older one", async () => {
+    const { root, config, first } = atVerify();
+    const verified = value(await runVerify(root, config, "SHOP-1", () => later(1), passes));
+    expect(verified.item.lastVerify).toEqual({ result: "pass", at: later(1).toISOString(), commit: first });
+    const reviewed = value(recordReview(root, config, "SHOP-1", { skill: "code-review", result: "pass" }, later(2)));
+    expect(reviewed.reviews).toEqual([
+      { skill: "code-review", result: "pass", unproven: true, at: later(2).toISOString(), commit: first },
+    ]);
+
+    // Committing Peer AI's own files doesn't make the record stale; a change to the code does.
+    commitAll(root);
+    expect(
+      gateWorkItem(
+        { ...reviewed, lastVerify: verified.item.lastVerify },
+        config,
+        "mvp",
+        assess(root, config, "mvp"),
+        [],
+        {
+          moving: "ship",
+          changedSince: () => [],
+        },
+      ),
+    ).toEqual([expect.objectContaining({ status: "warn" })]);
+    writeFileSync(join(root, "apps/web/cart.ts"), "export const cart = 2;\n");
+    commitAll(root);
+    const short = first.slice(0, 7);
+    expect(error(advanceWorkItem(root, config, "SHOP-1", "ship", NOW))).toBe(
+      [
+        "SHOP-1 can't move to ship yet:",
+        `- SHOP-1 is at ship, but its verify looked at ${short}, and apps/web/cart.ts changed since. Verify again, on the latest commit.`,
+        `- SHOP-1 is at ship, but its code-review looked at ${short}, and apps/web/cart.ts changed since. Review it again with ${renderedName("code-review")}, on the latest commit.`,
+      ].join("\n"),
+    );
+
+    // A change not yet committed counts too.
+    value(await runVerify(root, config, "SHOP-1", () => later(3), passes));
+    value(recordReview(root, config, "SHOP-1", { skill: "code-review", result: "pass" }, later(4)));
+    writeFileSync(join(root, "apps/web/total.ts"), "export const total = 0;\n");
+    expect(error(advanceWorkItem(root, config, "SHOP-1", "ship", NOW))).toContain("apps/web/total.ts changed since");
+    git(root, "clean", "-qf", "apps/web/total.ts");
+    expect(value(advanceWorkItem(root, config, "SHOP-1", "ship", NOW)).stage).toBe("ship");
+  });
+
+  it("keeps one review per skill, and takes reports only from .peer-ai/reports/", () => {
+    const { root, config } = atVerify();
+    value(recordReview(root, config, "SHOP-1", { skill: "code-review", result: "fail" }, later(1)));
+    const again = value(recordReview(root, config, "SHOP-1", { skill: "code-review", result: "pass" }, later(2)));
+    expect(again.reviews?.map((review) => [review.skill, review.result])).toEqual([["code-review", "pass"]]);
+    mkdirSync(join(root, "reports"), { recursive: true });
+    writeFileSync(join(root, "reports/code-review.json"), "{}");
+    expect(
+      error(recordReview(root, config, "SHOP-1", { skill: "code-review", report: "reports/code-review.json" }, NOW)),
+    ).toBe(
+      "reports/code-review.json isn't under .peer-ai/reports/. Save the report there, in the work item's folder, and record it from there.",
+    );
+    expect(
+      error(recordReview(root, config, "SHOP-1", { skill: "code-review", report: ".peer-ai/reports/../x.json" }, NOW)),
+    ).toContain("isn't under .peer-ai/reports/");
+  });
+
+  it("holds the item being worked on to every required review, and leaves items finished before as they were", () => {
+    const [root, config] = shop();
+    const assessment = assess(root, config, "mvp");
+    const finished = {
+      version: 1 as const,
+      id: "SHOP-2",
+      title: "Search",
+      kind: "feature" as const,
+      stage: "done" as const,
+      branch: "feature/SHOP-2-search",
+      lastVerify: { result: "pass" as const, at: NOW.toISOString() },
+      requiredReviews: [{ skill: "security-review" as const, reason: "it changes sign-in" }],
+      next: "Nothing",
+      updatedAt: NOW.toISOString(),
+    };
+    const statuses = (context: Parameters<typeof gateWorkItem>[5], stage: "mvp" | "prototype" = "mvp") =>
+      gateWorkItem(finished, config, stage, assessment, [], context).map((check) => check.status);
+    expect(statuses({ branch: "feature/SHOP-3-other" })).toEqual(["warn"]);
+    expect(statuses({ branch: "feature/SHOP-2-search" })).toEqual(["fail"]);
+    expect(statuses({ moving: "done" })).toEqual(["fail"]);
+    expect(statuses({ moving: "done" }, "prototype")).toEqual([]);
+  });
+
+  it("accepts a record from before records named commits until the item next moves to ship", () => {
+    const [root, config] = shop();
+    const assessment = assess(root, config, "mvp");
+    const shipped = {
+      version: 1 as const,
+      id: "SHOP-4",
+      title: "Basket",
+      kind: "feature" as const,
+      stage: "ship" as const,
+      branch: "feature/SHOP-4-basket",
+      lastVerify: { result: "pass" as const, at: NOW.toISOString() },
+      next: "Merge it",
+      updatedAt: NOW.toISOString(),
+    };
+    const context = { branch: "feature/SHOP-4-basket", changedSince: () => [] };
+    expect(gateWorkItem(shipped, config, "mvp", assessment, [], context)).toEqual([]);
+    expect(gateWorkItem(shipped, config, "mvp", assessment, [], { ...context, moving: "ship" })).toEqual([
+      expect.objectContaining({
+        status: "fail",
+        message: "SHOP-4 is at ship, but its verify doesn't say which commit it looked at.",
+      }),
+    ]);
+    const unknown = { ...shipped, lastVerify: { ...shipped.lastVerify, commit: "abcdef1" } };
+    expect(gateWorkItem(unknown, config, "mvp", assessment, [], { ...context, changedSince: () => undefined })).toEqual(
+      [
+        expect.objectContaining({
+          status: "warn",
+          message: "SHOP-4 is at ship, but its verify looked at abcdef1, which isn't in this repository's history.",
+        }),
+      ],
+    );
   });
 });

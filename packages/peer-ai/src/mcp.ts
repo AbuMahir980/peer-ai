@@ -209,7 +209,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Run verify",
       description:
-        "Run the project's verify command (commands.verify in peer-ai.config.json) and record the result on the work item, with the end of its output. A work item can't move to ship or done without a passing verify, and only this tool records one.",
+        "Run the project's verify command (commands.verify in peer-ai.config.json) and record the result on the work item, with the commit it ran on and the end of its output. A work item can't move to ship or done without a passing verify on its latest commit, and only this tool records one.",
       inputSchema: { id: itemId },
       annotations: { ...WRITES, openWorldHint: true },
     },
@@ -226,7 +226,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Record a review",
       description:
-        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format) and pass its path: Peer AI checks the report, including that every rule the skill answers for has a coverage line, and works out pass, fail or incomplete from it. If it refuses, fix what it names and call it again. A review recorded without a report is marked unproven. Record failed and incomplete reviews too. For a review of the whole project, which has no work item, leave out the id: Peer AI checks the report the same way and gives its result, without recording it anywhere.",
+        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format; a report anywhere else is refused) and pass its path: Peer AI checks the report, including that every rule the skill answers for has a coverage line, and works out pass, fail or incomplete from it. If it refuses, fix what it names and call it again. A review recorded without a report is marked unproven. Record failed and incomplete reviews too. The review is recorded with the commit it looked at, and recording the same skill again replaces the earlier one. For a review of the whole project, which has no work item, leave out the id: Peer AI checks the report the same way and gives its result, without recording it anywhere.",
       inputSchema: {
         id: itemId.optional().describe("The work item reviewed. Leave it out for a review of the whole project."),
         skill: z.enum(SKILL_IDS),
