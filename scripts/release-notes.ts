@@ -96,7 +96,21 @@ function run(command: string, args: string[]): { ok: boolean; out: string } {
   return { ok: result.status === 0, out: `${result.stdout}${result.stderr}` };
 }
 
-function main(): void {
+const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/**
+ * Whether npm serves the version. A version just published takes a few minutes to show, so this
+ * asks again for up to five minutes before giving up.
+ */
+async function onNpm(version: string, tries = 20): Promise<boolean> {
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    if (run("npm", ["view", `peer-ai@${version}`, "version", "--prefer-online"]).ok) return true;
+    if (attempt < tries) await sleep(15_000);
+  }
+  return false;
+}
+
+async function main(): Promise<void> {
   const { values } = parseArgs({
     options: { version: { type: "string" }, target: { type: "string" }, "dry-run": { type: "boolean" } },
   });
@@ -120,8 +134,10 @@ function main(): void {
     console.log(`The release ${tag} exists already.`);
     return;
   }
-  if (!run("npm", ["view", `peer-ai@${version}`, "version"]).ok) {
-    console.log(`npm doesn't have peer-ai@${version} yet, so there is nothing to release.`);
+  if (!(await onNpm(version))) {
+    console.log(
+      `::warning::npm still doesn't show peer-ai@${version}, so its release notes weren't written. Run this again once it does.`,
+    );
     return;
   }
   const dir = mkdtempSync(join(tmpdir(), "peer-ai-notes-"));
@@ -151,4 +167,4 @@ function main(): void {
 
 const invokedDirectly =
   process.argv[1] !== undefined && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
-if (invokedDirectly) main();
+if (invokedDirectly) await main();
