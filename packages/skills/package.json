@@ -1,6 +1,6 @@
 {
   "name": "peer-ai-skills",
-  "version": "1.0.0-next.4",
+  "version": "1.0.0-next.5",
   "description": "Peer AI's skills, in the Agent Skills format: each one does the work and proves what it checked",
   "license": "MIT",
   "type": "module",
