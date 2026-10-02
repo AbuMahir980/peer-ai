@@ -9,7 +9,8 @@ This project uses Peer AI at the prototype stage. Its MCP server, `peer-ai`, hol
 - Keep the item's stage current with `advance_work_item`: `build` before you change code, `verify` once the change is complete, `ship` when it is verified, reviewed and ready to merge, and `done` once it is merged or released. When it refuses, fix what it lists.
 - Before editing a file, call `standards_for_file` and follow what it returns.
 - Record progress with `update_work_item`, so the next session resumes where this one stopped.
-- Verify with `run_verify`. Never report a verify result yourself.
+- Verify with `run_verify`. Never report a verify result yourself. It verifies the item's latest commit, so commit first.
+- Working in a git worktree of your own, give your branch to `next_work`. The tools find each work item on its own branch, wherever it's checked out.
 - Peer AI's skills are named `peer-ai-…`, such as `peer-ai-security-review`. `next_work` names the one to use for a gap, and the reviews a work item needs; follow each skill step by step. If none are installed, run `npx peer-ai render --skills`.
 - For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.
 - For every document a skill writes, such as the requirements, check it with `check_document` and fix what it names.

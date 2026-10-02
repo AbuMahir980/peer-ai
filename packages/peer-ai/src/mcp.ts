@@ -33,7 +33,8 @@ import {
 const INSTRUCTIONS = `Peer AI keeps this project's map, its work items and the gates work must pass.
 Start a session with next_work: it returns the work item for the current git branch and where it stopped.
 Before editing a file, call standards_for_file and follow what it returns.
-Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself.
+Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself; it verifies the item's latest commit, so commit first.
+Working in a git worktree of your own, give your branch to next_work: the tools find each work item on its own branch, wherever it's checked out.
 Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
 Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
@@ -130,10 +131,19 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Next work",
       description:
-        "The work to continue: the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill).",
+        "The work to continue: the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill). Working in a git worktree of your own, give your branch: the tools find each work item on its own branch, wherever it's checked out.",
+      inputSchema: {
+        branch: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            "Your branch, when you work in a worktree of your own. Leave it out to use the branch checked out here.",
+          ),
+      },
       annotations: READ_ONLY,
     },
-    withProject((root, config) => reply(nextWork(root, config))),
+    withProject((root, config, { branch }: { branch?: string | undefined }) => reply(nextWork(root, config, branch))),
   );
 
   server.registerTool(
