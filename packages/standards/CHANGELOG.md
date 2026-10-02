@@ -1,5 +1,14 @@
 # peer-ai-standards
 
+## 1.0.0-next.3
+
+### Patch Changes
+
+- 546ee9b: Each package now ships its changelog, and every release has notes on GitHub that gather what changed across all five packages, with how to update. When `render` moves a project to a new version, it says which version it moves from and links to what changed.
+- Updated dependencies [2462b24]
+- Updated dependencies [546ee9b]
+  - peer-ai-workflow@1.0.0-next.3
+
 ## 1.0.0-next.2
 
 ### Patch Changes

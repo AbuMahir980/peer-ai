@@ -1,5 +1,24 @@
 # peer-ai
 
+## 1.0.0-next.3
+
+### Minor Changes
+
+- 1d8a859: `check_document` takes the branch of an agent working in a git worktree of its own, and checks that worktree's copy of the document instead of the main working copy's (RFC 0010).
+- 84bdfa2: A work item now lives on its branch, wherever that's checked out (RFC 0010). The tools read and write it, and `run_verify` runs, in the working copy where the item's branch is checked out, the main one or any git worktree, so agents working in parallel worktrees never touch each other's items, and switching branches never rolls one back. `next_work` takes the branch of an agent in a worktree of its own. `run_verify` refuses while that working copy has changes not yet committed, since a verify proves a commit. New ids are unique across worktrees, and moving an item to build records the commit it starts from.
+- 47779fb: On a pull request, `peer-ai check` now fails until the work item on its branch is at ship, so a change can't merge before it's verified and reviewed (RFC 0010). It reads the branch from the pull request on GitHub Actions, or from the new `--branch`; a branch with no work item, such as a dependency update, passes. The reviews an item needs now come from its own commits since it started, so a stacked branch isn't asked for its parents' reviews and a merge can't erase them, and whitespace-only changes no longer count. `peer-ai doctor`, and through it `next_work`, warns when an item is still at prepare while its branch has commits, or when its verify or a review looked at an older commit. The CI gate's workflow now checks out the pull request's own commit, with its history.
+- 2462b24: A work item's record now names the commit each verify and review looked at, and moving to ship needs them on the branch's latest commit, or on one with no change since outside `.peer-ai/` (RFC 0010). At the MVP stage, a missing required review now fails for the item being worked on, where it only warned before; items finished before keep the old rule. `record_review` takes reports only from `.peer-ai/reports/`, and recording the same skill again replaces the earlier review instead of adding one. Records made before this change count until the item next moves to ship.
+
+### Patch Changes
+
+- c1852e1: `peer-ai assess` no longer counts a document in a folder of retired ones, such as `docs/archive/` or `docs/retired/`, as evidence for the project map: a spec moved there is history, not the project's current spec.
+- 546ee9b: Each package now ships its changelog, and every release has notes on GitHub that gather what changed across all five packages, with how to update. When `render` moves a project to a new version, it says which version it moves from and links to what changed.
+- Updated dependencies [2462b24]
+- Updated dependencies [546ee9b]
+  - peer-ai-workflow@1.0.0-next.3
+  - peer-ai-standards@1.0.0-next.3
+  - peer-ai-skills@1.0.0-next.3
+
 ## 1.0.0-next.2
 
 ### Minor Changes
