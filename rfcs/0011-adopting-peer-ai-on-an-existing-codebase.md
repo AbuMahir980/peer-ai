@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Author | @AbuMahir980 |
-| Status | Draft |
+| Status | Accepted |
 | Proposal issue | #140 |
 
 ## Summary
