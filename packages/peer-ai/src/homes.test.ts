@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
+import { checkDocumentOn } from "./document.ts";
 import { allWorkItems, homeOf, locate, worktrees } from "./homes.ts";
 import { cleanUp, project } from "./test-helpers.ts";
 import {
@@ -140,6 +141,19 @@ describe("a work item's home (RFC 0010)", { timeout: 20_000 }, () => {
 
     git(root, "worktree", "remove", "--force", agent);
     expect(error(await runVerify(root, config, "SHOP-1", () => NOW))).toContain("There is no work item");
+  });
+
+  it("is where check_document reads a document an agent wrote on its branch", () => {
+    const { root, agent } = withAgent();
+    writeFileSync(join(agent, "docs-requirements.md"), "# Requirements\n");
+    const input = { skill: "requirements-analysis", path: "docs-requirements.md" };
+    expect(checkDocumentOn(root, input)).toEqual({ ok: false, error: "There is no document at docs-requirements.md." });
+    expect(checkDocumentOn(root, { ...input, branch: "feature/SHOP-1-cart" }).ok).toBe(true);
+    expect(checkDocumentOn(root, { ...input, branch: "feature/nowhere" })).toEqual({
+      ok: false,
+      error:
+        "feature/nowhere isn't checked out anywhere, so there's no copy of docs-requirements.md on it to check. Check it out, then check the document again.",
+    });
   });
 
   it("refuses to verify a branch that isn't checked out anywhere", async () => {
