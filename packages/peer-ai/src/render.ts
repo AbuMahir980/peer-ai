@@ -18,7 +18,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import { FEEDBACK_DIR, FEEDBACK_REPO } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
-import { GATE_FILE, planGate } from "./gate.ts";
+import { planGate } from "./gate.ts";
 import {
   CHECKOUT,
   SETUP_NODE,
@@ -30,6 +30,7 @@ import {
 } from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 import { enforcementFor } from "./stages.ts";
+import { renderedVersion } from "./versions.ts";
 
 export const START = "<!-- peer-ai:start -->";
 export const END = "<!-- peer-ai:end -->";
@@ -509,15 +510,6 @@ function ignoreBlock(root: string, folders: string[]): Planned {
   ];
   const markers = { start: IGNORE_START, end: IGNORE_END, block: lines.join("\n") };
   return withBlock(".gitignore", readText(root, ".gitignore"), "", markers);
-}
-
-/** The Peer AI version the project's tools were last set up with, from the files render wrote. */
-function renderedVersion(root: string): string | undefined {
-  for (const path of [".mcp.json", ".cursor/mcp.json", ".vscode/mcp.json", ".gemini/settings.json", GATE_FILE]) {
-    const version = /peer-ai@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)/.exec(readText(root, path) ?? "")?.[1];
-    if (version !== undefined) return version;
-  }
-  return undefined;
 }
 
 export function planRender(root: string, config: PeerAiConfig): RenderPlan {

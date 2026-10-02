@@ -20,6 +20,7 @@ import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
 import { planRender } from "./render.ts";
 import { checkSuggestions } from "./suggestions.ts";
+import { checkVersion } from "./versions.ts";
 import { WORK_DIR, mapChanges, readMap, readWorkItems } from "./state.ts";
 
 export interface Diagnosis {
@@ -377,6 +378,7 @@ export function diagnose(
   const assessment = config === undefined ? undefined : assess(root, config, config.project.stage ?? "mvp");
   const checks = [
     checkNode(nodeVersion),
+    checkVersion(root),
     configCheck,
     ...(config === undefined ? needsConfig("tracks", "Tracks") : checkTracks(root, config)),
     ...(config === undefined ? needsConfig("references", "Files the config names") : checkReferences(root, config)),

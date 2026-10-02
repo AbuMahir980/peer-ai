@@ -185,6 +185,10 @@ If your project has a `peer-ai/` folder from the old playbook, run `migrate` ins
 
 What it converts, and what it never does, is in [`peer-ai migrate`](packages/peer-ai#peer-ai-migrate).
 
+### Updating
+
+On a branch, run `npx --prefer-online peer-ai@latest render`, then review, commit and merge what it changes. Then reconnect each AI tool to Peer AI, or restart it, so its MCP server runs the new version too; `next_work` tells any agent still on the old one. With agents at work, see [Updating while agents work](packages/peer-ai#updating-while-agents-work).
+
 You never have to remember to check the setup: `peer-ai check` in CI fails when the setup stops working, and your AI tool hears about any problem at the start of each session and fixes it or tells you. `npx peer-ai doctor` shows the details at any time. Every command is described in [`packages/peer-ai`](packages/peer-ai).
 
 ## Privacy

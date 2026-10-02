@@ -22,6 +22,25 @@ Then open the project in your AI tool and ask for work in plain words. In a Node
 npm install --save-dev peer-ai
 ```
 
+## Updating
+
+In the project's folder, on a branch:
+
+```bash
+npx --prefer-online peer-ai@latest render
+```
+
+It moves every file it wrote to the new version, and says which version it moved from, with a link to what changed. Review the change, commit it and merge it. In a project with `peer-ai` in its `package.json`, update it there and install it, then run `npx peer-ai render`.
+
+### Updating while agents work
+
+CI runs the new version as soon as the change merges, but an AI tool's MCP server keeps the version it started with, and an agent's branch keeps the files of the version it was cut from. So:
+
+1. **Let running agents finish, or pause them** at a commit.
+2. **Update and merge,** as above.
+3. **Reconnect each AI tool to Peer AI, or restart it,** so its server and skills come from the new version. An agent working on a branch of its own merges the main branch first, so its files name the new version too.
+4. **Resume.** `next_work` tells any agent whose server is still on the old version, and `peer-ai doctor` says the same from a terminal ([RFC 0011](../../rfcs/0011-adopting-peer-ai-on-an-existing-codebase.md)).
+
 ## Commands
 
 | Command | What it does |
@@ -319,6 +338,7 @@ npx peer-ai doctor
 | It checks | A problem looks like |
 |-----------|----------------------|
 | Node.js | A version older than the one Peer AI needs |
+| Peer AI's version | The Peer AI running isn't the version the project uses: the exact version in `package.json`, the one installed, or the one `render` pinned. An AI tool whose server is older is told to reconnect, through `next_work`; a project behind the version run is told how to move to it. A warning. |
 | `peer-ai.config.json` | Missing, or not valid, with each error |
 | Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |
 | Files the config names | A contract, design, standards document, data inventory, checklist, input or workflow named in `standards.coveredBy` that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
