@@ -20,7 +20,8 @@
   },
   "files": [
     "dist",
-    "schemas"
+    "schemas",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public",

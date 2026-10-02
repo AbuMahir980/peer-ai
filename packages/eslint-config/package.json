@@ -44,7 +44,8 @@
     "node": ">=24"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public",

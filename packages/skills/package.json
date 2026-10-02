@@ -10,7 +10,8 @@
   "files": [
     "dist",
     "shared",
-    "skills"
+    "skills",
+    "CHANGELOG.md"
   ],
   "dependencies": {
     "peer-ai-standards": "workspace:*",
