@@ -192,8 +192,11 @@ interface Context {
 const clip = (text: string, max = 200): string => (text.length <= max ? text : `${text.slice(0, max - 1)}…`);
 const unique = <T>(values: T[]): T[] => [...new Set(values)];
 
+/** A folder of documents the project has retired, such as docs/archive/: they're history, not evidence. */
+const RETIRED_FOLDER = /(^|\/)_?(archives?|archived|retired|deprecated|superseded|obsolete)\//i;
+
 function matching(ctx: Context, pattern: RegExp): string[] {
-  return ctx.files.filter((file) => pattern.test(file));
+  return ctx.files.filter((file) => pattern.test(file) && !RETIRED_FOLDER.test(file));
 }
 
 /** Up to five pieces of evidence, preferring the folder when many files share one. */
