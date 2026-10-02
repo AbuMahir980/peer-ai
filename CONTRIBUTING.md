@@ -39,7 +39,7 @@ pnpm verify
 
 ## Versions
 
-Every change to a published package comes with a changeset (`pnpm changeset`). Pick the level by what a user of Peer AI would notice:
+Every change to a published package comes with a changeset (`pnpm changeset`). Write it for a person deciding whether to update: say what changes for a project that already uses Peer AI, such as a new file `render` writes, a rule that's new or different, or a skill that reviews differently. Pick the level by what a user of Peer AI would notice:
 
 | Level | For |
 |-------|-----|
@@ -51,7 +51,7 @@ The five packages share one version number. Until 1.0.0, pre-releases are versio
 
 ## Releases
 
-A maintainer versions the packages in an ordinary pull request: `pnpm version-packages` turns the waiting changesets into new versions and changelogs, and renders the practice projects again, since `render` writes the exact version into each AI tool's settings. Once it merges into `main`, the release workflow publishes every package whose version npm doesn't have yet. npm trusts that workflow instead of a token, and records where each version was built, so nobody can publish Peer AI from their own machine.
+A maintainer versions the packages in an ordinary pull request: `pnpm version-packages` turns the waiting changesets into new versions and changelogs, and renders the practice projects again, since `render` writes the exact version into each AI tool's settings. Once it merges into `main`, the release workflow publishes every package whose version npm doesn't have yet, then writes the version's release notes on GitHub from the changelogs (`scripts/release-notes.ts`). The changelogs also ship in each package. npm trusts that workflow instead of a token, and records where each version was built, so nobody can publish Peer AI from their own machine.
 
 `pnpm release --dry-run` shows what would be published, without publishing anything.
 

@@ -354,6 +354,24 @@ describe("render", () => {
   });
 });
 
+describe("updating", () => {
+  it("says which version the project moves from, and where to read what changed", () => {
+    const older = project({
+      "peer-ai.config.json": config(),
+      ".mcp.json": JSON.stringify({
+        mcpServers: { "peer-ai": { command: "npx", args: ["-y", "peer-ai@0.9.0", "mcp"] } },
+      }),
+    });
+    const { config: loaded } = loadConfig(older);
+    if (loaded === undefined) throw new Error("the test config is not valid");
+    expect(planRender(older, loaded).manual).toContain(
+      `This moves the project from Peer AI 0.9.0 to ${VERSION}. What changed: https://github.com/AbuMahir980/peer-ai/releases/tag/v${VERSION}`,
+    );
+    runRender({ cwd: older, check: false }, capture());
+    expect(planRender(older, loaded).manual.some((line) => line.startsWith("This moves the project"))).toBe(false);
+  });
+});
+
 describe("the instructions", () => {
   it("tell the agent how to work, and describe the project briefly", () => {
     const root = project({

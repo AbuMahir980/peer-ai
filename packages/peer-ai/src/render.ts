@@ -15,10 +15,10 @@ import { ACTIVITY_IDS, SKILL_IDS, type PeerAiConfig, type ToolId } from "peer-ai
 import { loadConfig } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, type Check } from "./checks.ts";
 import { CONFIG_FILE } from "./detect.ts";
-import { FEEDBACK_DIR } from "./feedback.ts";
+import { FEEDBACK_DIR, FEEDBACK_REPO } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
-import { planGate } from "./gate.ts";
+import { GATE_FILE, planGate } from "./gate.ts";
 import { CHECKOUT, SETUP_NODE, WORKFLOW_FILE, sameFile, unchangedSinceRender, workflowFile } from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 
@@ -501,12 +501,27 @@ function ignoreBlock(root: string, folders: string[]): Planned {
   return withBlock(".gitignore", readText(root, ".gitignore"), "", markers);
 }
 
+/** The Peer AI version the project's tools were last set up with, from the files render wrote. */
+function renderedVersion(root: string): string | undefined {
+  for (const path of [".mcp.json", ".cursor/mcp.json", ".vscode/mcp.json", ".gemini/settings.json", GATE_FILE]) {
+    const version = /peer-ai@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)/.exec(readText(root, path) ?? "")?.[1];
+    if (version !== undefined) return version;
+  }
+  return undefined;
+}
+
 export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   const tools: ToolId[] = config.tools ?? [];
   const body = instructions(config);
   const server = serverCommand(root);
   const files: Planned[] = [];
   const manual: string[] = [];
+  const previous = renderedVersion(root);
+  if (previous !== undefined && previous !== VERSION) {
+    manual.push(
+      `This moves the project from Peer AI ${previous} to ${VERSION}. What changed: https://github.com/${FEEDBACK_REPO}/releases/tag/v${VERSION}`,
+    );
+  }
   const uses = (tool: ToolId) => tools.includes(tool);
   const imports = (path: string) => IMPORTS_AGENTS.test(readText(root, path) ?? "");
 
