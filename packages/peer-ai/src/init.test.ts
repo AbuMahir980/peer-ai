@@ -38,6 +38,8 @@ describe("peer-ai init --yes", () => {
     expect(config.project).toEqual({ name: "acme", stage: "mvp", origin: "existing", team: "solo" });
     expect(config.tools).toEqual(["claude-code"]);
     expect(config.repo).toEqual({ host: "github", remote: "origin" });
+    // An existing codebase adopts enforcement in stages (RFC 0011).
+    expect(config.standards).toEqual({ enforcement: "report" });
     expect((config.tracks as unknown as { id: string }[]).map((track) => track.id)).toEqual(["web", "api"]);
     expect(readFileSync(join(root, "peer-ai.config.json"), "utf8").endsWith("}\n")).toBe(true);
     expect(out.text()).toContain("Wrote peer-ai.config.json: 2 parts, mvp stage.");
@@ -82,6 +84,7 @@ describe("peer-ai init --yes", () => {
     await runInit(options(root, { yes: true }), undefined, capture());
     const config = readConfig(root);
     expect(config.project?.origin).toBe("new");
+    expect(config.standards).toEqual({ enforcement: "enforce" });
     expect(config.tracks).toEqual([
       { id: "app", kind: "other", status: "active", note: "Set the kind and stack once they are decided." },
     ]);

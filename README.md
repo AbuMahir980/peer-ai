@@ -130,7 +130,7 @@ Peer AI's standards are **197 rules**, each with an id such as `SEC-07`, a plain
 | Python, FastAPI | Ruff |
 | GitHub Actions | A security pipeline Peer AI writes: Gitleaks for secrets, OSV-Scanner for vulnerable dependencies, zizmor for workflows, Semgrep for code, SSLyze for TLS, and OWASP ZAP against a running test environment |
 
-A project can set a rule aside, with a reason and the name of the person who decided, or change one of its numbers, such as how long a function may grow. `peer-ai doctor` lists every such decision, so nothing is switched off silently. See [`packages/standards`](packages/standards) for every rule.
+A project can set a rule aside, with a reason and the name of the person who decided, or change one of its numbers, such as how long a function may grow. An existing codebase adopts enforcement in stages: the tools report without failing a build until it catches up, a rule can be deferred until a date or a piece of work, and a check the project already runs isn't added twice. `peer-ai doctor` lists every such decision, so nothing is switched off silently. See [`packages/standards`](packages/standards) for every rule.
 
 ## Strictness that follows the stage
 
