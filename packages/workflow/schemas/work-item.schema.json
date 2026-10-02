@@ -49,6 +49,11 @@
       "type": "string",
       "minLength": 1
     },
+    "base": {
+      "description": "The commit the item's branch started from, so its required reviews come from its own commits (RFC 0010).",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
     "gap": {
       "description": "For kind gap: the map item this work fills.",
       "anyOf": [
@@ -210,6 +215,11 @@
           "type": "string",
           "format": "date-time",
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "commit": {
+          "description": "The commit the verify ran on (RFC 0010).",
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,64}$"
         }
       },
       "required": [
@@ -283,6 +293,11 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "commit": {
+            "description": "The commit the review looked at (RFC 0010).",
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,64}$"
           }
         },
         "required": [

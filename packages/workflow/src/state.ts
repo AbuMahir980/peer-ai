@@ -57,6 +57,12 @@ const ActivityProgress = z
     }
   });
 
+/** A git commit's id, in full or abbreviated. */
+const CommitId = z
+  .string()
+  .regex(/^[0-9a-f]{7,64}$/, "use a git commit id")
+  .describe("A git commit's id.");
+
 export const WorkItemIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "use letters, digits, dots, hyphens and underscores");
@@ -73,6 +79,9 @@ export const WorkItemSchema = z
     stage: z.enum(["prepare", "build", "verify", "ship", "done", "cancelled"]),
     track: z.string().min(1).optional(),
     branch: z.string().min(1).optional(),
+    base: CommitId.optional().describe(
+      "The commit the item's branch started from, so its required reviews come from its own commits (RFC 0010).",
+    ),
     gap: MapItemIdSchema.optional().describe("For kind gap: the map item this work fills."),
     goal: z
       .string()
@@ -98,7 +107,13 @@ export const WorkItemSchema = z
       .strictObject({ activity: z.enum(ACTIVITY_IDS), step: z.number().int().positive() })
       .optional()
       .describe("Where work stopped, so the next session resumes exactly there."),
-    lastVerify: z.strictObject({ result: z.enum(["pass", "fail"]), at: Timestamp }).optional(),
+    lastVerify: z
+      .strictObject({
+        result: z.enum(["pass", "fail"]),
+        at: Timestamp,
+        commit: CommitId.optional().describe("The commit the verify ran on (RFC 0010)."),
+      })
+      .optional(),
     reviews: z
       .array(
         z.strictObject({
@@ -111,6 +126,7 @@ export const WorkItemSchema = z
             .optional()
             .describe("Recorded without a report, so the result is the agent's word rather than proven."),
           at: Timestamp,
+          commit: CommitId.optional().describe("The commit the review looked at (RFC 0010)."),
         }),
       )
       .optional(),
