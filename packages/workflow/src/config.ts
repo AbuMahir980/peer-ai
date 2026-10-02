@@ -249,6 +249,46 @@ const Standards = z.strictObject({
     )
     .optional()
     .describe("Rules this project sets aside, each with a reason and who decided. peer-ai doctor lists them all."),
+  enforcement: z
+    .enum(["report", "enforce"])
+    .optional()
+    .describe(
+      "report: the tools that enforce the profiles run and report, but never fail a build, for an existing codebase adopting them. enforce: they fail it. Defaults to enforce (RFC 0011).",
+    ),
+  deferred: z
+    .array(
+      z
+        .strictObject({
+          rule: RuleId,
+          until: z.iso.date().optional().describe("The day the rule's enforcement starts to block."),
+          untilItem: z
+            .string()
+            .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+            .optional()
+            .describe("The work item that, once done, starts the rule's enforcement blocking."),
+          reason: Note,
+          decidedBy: Note.describe("The person who decided to defer it."),
+        })
+        .superRefine((deferral, ctx) => {
+          if ((deferral.until === undefined) === (deferral.untilItem === undefined)) {
+            ctx.addIssue({ code: "custom", path: ["until"], message: "give either until or untilItem" });
+          }
+        }),
+    )
+    .optional()
+    .describe(
+      "Rules whose enforcement only reports until a date or a work item; reviews still apply them (RFC 0011). peer-ai doctor lists them all.",
+    ),
+  coveredBy: z
+    .array(
+      z.strictObject({
+        rule: RuleId,
+        by: Path.describe("The project's own file that enforces the rule, such as a CI workflow."),
+        reason: Note,
+      }),
+    )
+    .optional()
+    .describe("Rules the project's own tools already enforce, so render adds no second check (RFC 0011)."),
 });
 
 const Compliance = z.strictObject({

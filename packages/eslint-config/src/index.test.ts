@@ -64,6 +64,26 @@ describe("Peer AI's ESLint settings", () => {
     expect(ruleNames(blocks)).not.toContain("peer-ai-typescript/no-non-null-assertion");
   });
 
+  it("only warn while the project reports, or a rule is deferred (RFC 0011)", () => {
+    const report = configFor(repairs({ standards: { profiles: ["typescript"], enforcement: "report" } }), "/repairs");
+    const levels = report.flatMap((block) =>
+      Object.values(block.rules ?? {}).map((setting) => (Array.isArray(setting) ? setting[0] : setting)),
+    );
+    expect(new Set(levels)).toEqual(new Set(["warn"]));
+
+    const deferred = repairs({
+      standards: {
+        profiles: ["typescript"],
+        deferred: [{ rule: "TS-06", until: "2026-11-02", reason: "After the launch.", decidedBy: "Ada" }],
+      },
+    });
+    const before = configFor(deferred, "/repairs", new Date("2026-10-02T09:00:00Z"));
+    expect(before[0]?.rules?.["peer-ai/max-depth"]).toEqual(["warn", { max: 3 }]);
+    expect(before[1]?.rules?.["peer-ai-typescript/no-floating-promises"]).toEqual(["error"]);
+    const after = configFor(deferred, "/repairs", new Date("2026-11-02T09:00:00Z"));
+    expect(after[0]?.rules?.["peer-ai/max-depth"]).toEqual(["error", { max: 3 }]);
+  });
+
   it("give a part with no path the whole repository, and nothing without profiles", () => {
     const whole = configFor(repairs({ tracks: [{ id: "app", kind: "web", status: "active" }] }), "/repairs");
     expect(whole[0]?.files).toContain("**/*.ts");

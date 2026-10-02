@@ -9,8 +9,8 @@ import { parse as parseJsonc } from "jsonc-parser";
 import { parse as parseToml } from "smol-toml";
 import { parse as parseYaml } from "yaml";
 import { profile, profileRulesFor, type AppliedRule } from "peer-ai-standards";
-import type { PeerAiConfig } from "peer-ai-workflow";
-import { fail, ok, plural, warn, type Check } from "./checks.ts";
+import { reportsOnly, type PeerAiConfig } from "peer-ai-workflow";
+import { fail, ok, plural, skip, warn, type Check } from "./checks.ts";
 import {
   WORKFLOW_FILE,
   environmentAddresses,
@@ -22,6 +22,7 @@ import {
   writtenByRender,
 } from "./pipeline.ts";
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
+import { enforcementFor, type Enforcement } from "./stages.ts";
 
 const ESLINT_CONFIGS = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((extension) => `eslint.config.${extension}`);
 const ESLINT_PACKAGE = "peer-ai-eslint-config";
@@ -185,10 +186,15 @@ function tsconfigsFor(root: string, path: string, option: string): string[] {
 }
 
 /** Each enforcing tool is set up to use Peer AI's settings. */
-export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
+export function checkEnforcers(root: string, config: PeerAiConfig, today: Date = new Date()): Check[] {
   const production = config.project.stage === "production";
-  const missing = (message: string, fix: string) =>
-    production ? fail("enforcers", message, fix) : warn("enforcers", message, fix);
+  const enforcement = enforcementFor(root, config, today);
+  // A gap fails only where enforcement blocks: at production, outside the report stage, and for a
+  // rule that isn't deferred (RFC 0011).
+  const missing = (message: string, fix: string, rules: readonly string[] = []) =>
+    production && !enforcement.adoption.report && !rules.some((rule) => reportsOnly(enforcement.adoption, rule))
+      ? fail("enforcers", message, fix)
+      : warn("enforcers", message, fix);
   const parts = automaticRules(config);
   const checks: Check[] = [];
 
@@ -236,7 +242,7 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
       checks.push(
         missing(`${RUFF_FILE} isn't there, so Ruff has no Peer AI settings to extend.`, "Run peer-ai render."),
       );
-    } else if (current !== ruffFile(config)) {
+    } else if (current !== ruffFile(config, enforcement)) {
       checks.push(missing(`${RUFF_FILE} is out of date with the config.`, "Run peer-ai render."));
     }
   }
@@ -306,7 +312,7 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
   // The pipeline's checks run from the workflow render writes.
   const pipeline = pipelineRules(config);
   const existing = existsSync(join(root, WORKFLOW_FILE)) ? readFileSync(join(root, WORKFLOW_FILE), "utf8") : undefined;
-  const expected = workflowFile(config);
+  const expected = workflowFile(config, enforcement);
   if (expected === undefined) {
     if (existing !== undefined && writtenByRender(existing)) {
       checks.push(
@@ -327,7 +333,7 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
     } else {
       // Changed by hand: the jobs Peer AI's would have must still be there, under their names.
       const found = jobsIn(existing);
-      const gone = workflowJobs(config).filter((job) => !found.includes(job));
+      const gone = workflowJobs(config, enforcement).filter((job) => !found.includes(job));
       checks.push(
         gone.length === 0
           ? warn(
@@ -384,10 +390,71 @@ export function checkEnforcers(root: string, config: PeerAiConfig): Check[] {
               ? `${file} doesn't say "${option}": ${wanted}, which ${rule.id} needs.`
               : `${file} sets "${option}" to ${JSON.stringify(set)}, but ${rule.id} needs ${wanted}.`,
             `Set "${option}": ${wanted} in the compilerOptions of ${file}, in the file itself, so it holds whatever it extends.`,
+            [rule.id],
           ),
         );
       }
     }
+  }
+  checks.push(...adoptionChecks(config, enforcement, parts.length > 0, today));
+  return checks;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Where the project stands in adopting enforcement (RFC 0011): its stage, each rule deferred and
+ * when that ends, each deferral that has ended, and the rules its own tools cover.
+ */
+function adoptionChecks(config: PeerAiConfig, enforcement: Enforcement, enforcing: boolean, today: Date): Check[] {
+  const { adoption, runByProject } = enforcement;
+  const checks: Check[] = [];
+  if (adoption.report) {
+    checks.push(
+      skip(
+        "enforcers",
+        "Enforcement reports only (standards.enforcement is report): the tools run, and nothing they find fails a build.",
+      ),
+    );
+  } else if (enforcing && config.standards?.enforcement === undefined && config.project.origin === "existing") {
+    checks.push(
+      warn(
+        "enforcers",
+        "This is an existing codebase, and Peer AI's enforcement fails builds from the start.",
+        'To adopt it in stages, set "enforcement": "report" under standards in peer-ai.config.json, then "enforce" once the codebase passes (RFC 0011).',
+      ),
+    );
+  }
+  for (const deferral of adoption.deferred.values()) {
+    const ends = deferral.until ?? `${deferral.untilItem ?? ""} is done`;
+    const soon =
+      deferral.until !== undefined && Date.parse(deferral.until) - today.getTime() <= 7 * DAY
+        ? deferral.until
+        : undefined;
+    const message = `${deferral.rule} only reports until ${ends}: ${deferral.reason} (decided by ${deferral.decidedBy})`;
+    checks.push(
+      soon === undefined
+        ? skip("enforcers", message)
+        : warn(
+            "enforcers",
+            message,
+            `Its enforcement blocks from ${soon}: fix what it finds before then, or defer it again with a reason.`,
+          ),
+    );
+  }
+  for (const deferral of adoption.ended) {
+    const when = deferral.until ?? `${deferral.untilItem ?? ""} is done or gone`;
+    checks.push(
+      warn(
+        "enforcers",
+        `${deferral.rule}'s deferral has ended (${when}), so its enforcement blocks again.`,
+        `Run peer-ai render, fix what it finds, and take ${deferral.rule} out of standards.deferred, or defer it again with a reason.`,
+      ),
+    );
+  }
+  for (const [job, where] of runByProject) checks.push(ok("enforcers", `The ${job} check is covered by ${where}`));
+  for (const covered of adoption.coveredBy.values()) {
+    checks.push(ok("enforcers", `${covered.rule} is covered by ${covered.by}: ${covered.reason}`));
   }
   return checks;
 }

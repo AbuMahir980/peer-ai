@@ -60,6 +60,8 @@ It reads the repository first and works out what it can:
 
 Then it asks four things: what you're building, whether the parts it found are right (or what kind of thing it is, if it found none), whether it's just you or a team, and what stage the project is at. It asks which AI tools you use only if it found none.
 
+For an existing codebase, it sets `standards.enforcement` to `report`, so Peer AI's enforcement reports what it finds without failing a build until the codebase catches up; a new project enforces from the start (see [Adopting enforcement in stages](#adopting-enforcement-in-stages)).
+
 It never overwrites an existing `peer-ai.config.json`, and it never assumes anything it didn't find. A project with nothing to detect gets a part of kind `other` until you decide. A project with no infrastructure or CI yet simply has none in its config; `peer-ai assess` records those as gaps to fill when the project's stage calls for them.
 
 ### Options
@@ -86,7 +88,7 @@ In the project's folder:
 1. **Commit or stash any work in progress.** `migrate` won't start with uncommitted changes, so the move is a change of its own.
 2. **Make a branch:** `git switch -c peer-ai-1.0`
 3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
-4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found.
+4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found, and like `init` it starts an existing codebase's enforcement at `report`.
 5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
 6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
 7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
@@ -254,7 +256,7 @@ What render changes, and what it leaves alone:
 ### Settings for the tools that enforce the stack profiles
 
 - **ESLint** reads Peer AI's settings from the `peer-ai-eslint-config` package, which your `eslint.config.js` spreads in. Render writes nothing for it.
-- **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`, directly or through a shared file that extends it. Add rules of your own with `extend-select`: a `select` replaces Peer AI's rules instead of adding to them, and doctor fails it, as it does an `ignore` that drops one of Peer AI's codes. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config.
+- **Ruff** reads settings from a file, so render writes `.peer-ai/enforce/ruff.toml`, with every Ruff rule of the project's profiles and its values. Your own Ruff settings extend it, such as `extend = ".peer-ai/enforce/ruff.toml"` under `[tool.ruff]` in `pyproject.toml`, directly or through a shared file that extends it. Add rules of your own with `extend-select`: a `select` replaces Peer AI's rules instead of adding to them, and doctor fails it, as it does an `ignore` that drops one of Peer AI's codes. Commit the file, so CI's Ruff uses it; `render --check` fails when it falls behind the config. Ruff has no warnings, so a rule that only reports for now is left out of the file, and its header lists it.
 - **The TypeScript compiler** reads each part's own `tsconfig.json`, which render never edits.
 - **The pipeline's checks,** for a project listing the `github-actions` profile, run from `.github/workflows/peer-ai-security.yml`, which render writes. Each tool is a release checked against its checksum, or an image pinned to its digest:
   - `peer-ai / secrets`: Gitleaks, on a pull request's commits and on the whole history every day. A secret found in old history that's already been replaced goes in `.gitleaksignore`, with why.
@@ -264,7 +266,31 @@ What render changes, and what it leaves alone:
   - `peer-ai / tls`: SSLyze, against Mozilla's intermediate profile, every day, for each environment with a `url`.
   - `peer-ai / running-app`: OWASP ZAP's baseline scan, every day, only in environments marked `"production": false`; one not marked might be production, so it's never scanned. Accept a finding in `.github/zap-rules.tsv`, with the reason. The reports are kept with each run.
 
-  Make the jobs required checks in your branch protection: their names never change. The file's header records a hash of what render wrote: while it matches, render keeps the file up to date; once someone changes it by hand, render leaves it alone, and doctor checks it still has every job.
+  Make each job a required check in your branch protection once it enforces: their names never change. A job the project's own workflows already run is left out, as below. The file's header records a hash of what render wrote: while it matches, render keeps the file up to date; once someone changes it by hand, render leaves it alone, and doctor checks it still has every job.
+
+### Adopting enforcement in stages
+
+An existing codebase rarely passes every rule on its first day, so Peer AI's enforcement can arrive in stages ([RFC 0011](../../rfcs/0011-adopting-peer-ai-on-an-existing-codebase.md)), with every decision in `peer-ai.config.json`:
+
+```json
+"standards": {
+  "profiles": ["github-actions", "python"],
+  "enforcement": "report",
+  "deferred": [
+    { "rule": "GHA-03", "until": "2026-11-02", "reason": "Workflow checks after the launch.", "decidedBy": "Ada Obi" },
+    { "rule": "GHA-05", "untilItem": "SHOP-41", "reason": "Fix the known findings first.", "decidedBy": "Ada Obi" }
+  ],
+  "coveredBy": [
+    { "rule": "GHA-02", "by": ".github/workflows/ci.yml", "reason": "Trivy scans the dependencies and fails on critical findings." }
+  ]
+}
+```
+
+- **`enforcement`** is `report` or `enforce`. In `report`, the tools run and report but never fail a build: each job of the security workflow runs with `continue-on-error`, ESLint runs Peer AI's rules as warnings, and Ruff's settings leave Peer AI's rules out. `init` and `migrate` write `report` for an existing codebase and `enforce` for a new one. A config without the setting enforces, as before. Move to `enforce` once the codebase passes; no date moves it for you.
+- **`deferred`** holds back one rule's enforcement until a date, or until a work item is done, with why and who decided. Reviews and `standards_for_file` still apply the rule, so new code follows it; only its enforcement reports. A job that checks several rules reports while any of them is deferred, since one run of the tool checks them all. When the date passes or the item is done, the rule enforces again at the next `render`. A deferral is not an exception: `standards.exceptions` sets a rule aside entirely, reviews included.
+- **A check the project already runs isn't added twice.** When one of the project's own workflows runs gitleaks, osv-scanner, zizmor, Semgrep, SSLyze or ZAP, render leaves that job out of the security workflow. A tool in a commented-out line doesn't count. When the project covers a rule with a different tool, `coveredBy` says so, with the workflow that does it and why, and render leaves it out the same way.
+
+Render says what it wrote: for the security workflow, each job with the rules it checks, which only report, and what's covered elsewhere and by what. The workflow's header says when its jobs only report. `doctor` lists the stage, each deferral with its reason and end, and each check covered elsewhere. It warns a week before a deferral ends, and again once it has.
 
 ### Options
 
@@ -293,7 +319,7 @@ npx peer-ai doctor
 | Node.js | A version older than the one Peer AI needs |
 | `peer-ai.config.json` | Missing, or not valid, with each error |
 | Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |
-| Files the config names | A contract, design, standards document, data inventory, checklist or input that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
+| Files the config names | A contract, design, standards document, data inventory, checklist, input or workflow named in `standards.coveredBy` that doesn't exist. URLs, glob patterns and places still to be made, such as `docs.dir`, are left alone. |
 | AI tools | A tool set up in the repository, such as a `CLAUDE.md` or `.cursor/`, that the config doesn't list |
 | What render writes | Instructions or MCP registrations that no longer match the config, or skills that are missing or out of date |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
@@ -304,7 +330,7 @@ npx peer-ai doctor
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
 | Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, a rule set aside twice, and an override for a rule with no value to change, or of the wrong type. |
 | Stack profiles | A listed profile Peer AI has no rules for yet |
-| The tools that enforce them | For each part, that the ESLint config nearest it spreads in `peer-ai-eslint-config`, that the Ruff settings nearest it extend `.peer-ai/enforce/ruff.toml`, and that its tsconfig files, including those a solution tsconfig references, set what the compiler rules need; and that the pipeline's workflow is there, as render wrote it, and up to date. A warning, and a failure at production. |
+| The tools that enforce them | For each part, that the ESLint config nearest it spreads in `peer-ai-eslint-config`, that the Ruff settings nearest it extend `.peer-ai/enforce/ruff.toml`, and that its tsconfig files, including those a solution tsconfig references, set what the compiler rules need; and that the pipeline's workflow is there, as render wrote it, and up to date. A warning, and a failure at production unless enforcement only reports or the rule is deferred. It lists the enforcement stage, each deferral and when it ends, and each check covered elsewhere, and suggests `report` to an existing codebase that hasn't chosen a stage (RFC 0011). |
 | The v0 playbook | A copy left in `peer-ai/`, with how to remove it |
 
 Every check reports, including the ones it had to skip (for example, the tracks can't be checked without a valid config), so a clean report means everything was looked at.

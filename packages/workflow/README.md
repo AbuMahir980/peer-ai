@@ -11,6 +11,7 @@ The vocabulary Peer AI is built on, and the schemas for the files a project keep
 | `src/ids.ts` | The fixed lists: 14 activities, 29 skills, supported tools, and the items on the project map |
 | `src/config.ts` | The schema for `peer-ai.config.json` and for shared base configs, plus `mergeConfigs` and `resolveConfig` |
 | `src/state.ts` | The schemas for `.peer-ai/map.json` and `.peer-ai/work/<id>.json` |
+| `src/adoption.ts` | `adoptionOf`, which works out from the config which rules only report today (RFC 0011) |
 | `src/report.ts` | The schema for review reports, the four severity levels, and `deriveResult`, which works out a review's result from its report |
 | `src/index.ts` | `validateConfig`, `validateConfigLayer`, `validateMap`, `validateWorkItem` and `validateReport`, which return every problem with its location |
 | `schemas/` | The same schemas as JSON Schema, generated, for editors and non-TypeScript tools |
@@ -46,6 +47,9 @@ Only `version`, `project.name` and `tracks` are required. This is a complete con
 | `standards` | Core principles on or off, stack profiles, the project's own standards documents, and which side wins a conflict |
 | `standards.overrides` | A stack profile rule's default changed for this project, such as a larger size limit, with the reason |
 | `standards.exceptions` | Rules the project sets aside, each with a reason, who decided, and an optional end date. `peer-ai doctor` lists them all, and warns when one has ended. |
+| `standards.enforcement` | `report` or `enforce`: whether the tools that enforce the stack profiles fail a build, or only report while an existing codebase catches up. Without it, they enforce (RFC 0011). |
+| `standards.deferred` | Rules whose enforcement only reports until a date (`until`) or until a work item is done (`untilItem`), each with a reason and who decided. Reviews still apply them. |
+| `standards.coveredBy` | Rules the project's own CI already checks with a different tool, each with the file that does it and why, so Peer AI adds no second check |
 | `compliance` | Where the product operates, its industries, and the rule packs that apply |
 | `rules` | Project rules every activity respects, wherever they are written |
 | `models` | `none`, `tiers`, or `pinned` with the project's own model names. Model names live only here, never in Peer AI itself. |

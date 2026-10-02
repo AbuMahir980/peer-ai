@@ -9,7 +9,7 @@ import peerAi from "peer-ai-eslint-config";
 export default [...peerAi(), /* your own settings */];
 ```
 
-For each part of the project, `peerAi()` turns on the automatic rules its profiles enforce with ESLint: at the project's stage, with its traits and architecture, and with any value it changed in `standards.overrides`. Rules set aside in `standards.exceptions` are left out. Your own settings come after, so they win where both set the same rule.
+For each part of the project, `peerAi()` turns on the automatic rules its profiles enforce with ESLint: at the project's stage, with its traits and architecture, and with any value it changed in `standards.overrides`. Rules set aside in `standards.exceptions` are left out. While `standards.enforcement` is `report`, or a rule is in `standards.deferred`, its rules are warnings instead of errors ([RFC 0011](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/0011-adopting-peer-ai-on-an-existing-codebase.md)). Your own settings come after, so they win where both set the same rule.
 
 - **Peer AI's rules run under Peer AI's names,** such as `peer-ai/max-depth` or `peer-ai-jsx-a11y/alt-text`. So they sit beside the plugins and settings your project has, whatever they are: your own `jsx-a11y` or `no-restricted-syntax` neither clashes with them nor replaces them. To leave a line alone, name Peer AI's rule and say why: `// eslint-disable-next-line peer-ai/max-depth -- the booking rules nest one level deeper`.
 - **Install it beside ESLint and the plugins your profiles use.** `eslint` and `typescript-eslint` are peer dependencies, and the other plugins are optional ones.

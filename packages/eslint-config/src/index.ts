@@ -7,12 +7,12 @@
 // sometimes a different copy or a different package; and a project's own settings for a rule would
 // replace Peer AI's. Under its own names, Peer AI's rules sit beside the project's, whatever it has.
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { profileRulesFor, type AppliedRule } from "peer-ai-standards";
-import { CONFIG_FILE, readConfig, type PeerAiConfig } from "peer-ai-workflow";
+import { CONFIG_FILE, adoptionOf, readConfig, reportsOnly, type PeerAiConfig } from "peer-ai-workflow";
 import type { ESLint, Linter, Rule } from "eslint";
 import { builtinRules } from "eslint/use-at-your-own-risk";
 import tseslint from "typescript-eslint";
@@ -106,11 +106,15 @@ export interface RuleGroup {
 }
 
 /**
- * ESLint's settings for these rules, each an error, grouped by the files they apply to: rules that
- * need types run on TypeScript files only, and a rule can name its own files. Groups keep the
- * profiles' order, so where a later profile sets the same rule for some files, it wins there.
+ * ESLint's settings for these rules, each an error, or a warning for a rule whose enforcement only
+ * reports for now (RFC 0011), grouped by the files they apply to: rules that need types run on
+ * TypeScript files only, and a rule can name its own files. Groups keep the profiles' order, so
+ * where a later profile sets the same rule for some files, it wins there.
  */
-export function eslintRules(rules: readonly AppliedRule[]): RuleGroup[] {
+export function eslintRules(
+  rules: readonly AppliedRule[],
+  reports: (rule: string) => boolean = () => false,
+): RuleGroup[] {
   const groups = new Map<string, RuleGroup>();
   for (const rule of rules) {
     if (rule.check !== "auto" || rule.enforcer?.tool !== "eslint") continue;
@@ -123,7 +127,9 @@ export function eslintRules(rules: readonly AppliedRule[]): RuleGroup[] {
     if (existing !== undefined && !LISTS.has(upstream)) {
       throw new Error(`${rule.id} sets ${upstream} for files another of its rules already covers.`);
     }
-    group.rules[name] = Array.isArray(existing) ? [...existing, ...options] : ["error", ...options];
+    group.rules[name] = Array.isArray(existing)
+      ? [...existing, ...options]
+      : [reports(rule.id) ? "warn" : "error", ...options];
     groups.set(key, group);
   }
   return [...groups.values()];
@@ -180,12 +186,28 @@ function rulesForPart(config: PeerAiConfig, track: Track): AppliedRule[] {
  * block's files are relative to the project's root, wherever the ESLint config lives, and leave out
  * the parts nested inside it, which get their own settings.
  */
-export function configFor(config: PeerAiConfig, root: string): Linter.Config[] {
+/** Whether a work item in the project is open: its file says so, or undefined when there's none. */
+function openItem(root: string): (id: string) => boolean | undefined {
+  return (id) => {
+    const file = join(root, ".peer-ai/work", `${id}.json`);
+    if (!existsSync(file)) return undefined;
+    try {
+      const { stage } = JSON.parse(readFileSync(file, "utf8")) as { stage?: unknown };
+      return stage !== "done" && stage !== "cancelled";
+    } catch {
+      return undefined;
+    }
+  };
+}
+
+export function configFor(config: PeerAiConfig, root: string, today: Date = new Date()): Linter.Config[] {
+  const adoption = adoptionOf(config, today, openItem(root));
+  const reports = (rule: string) => reportsOnly(adoption, rule);
   const blocks: Linter.Config[] = [];
   for (const track of config.tracks) {
     if (track.status === "external") continue;
     const nested = nestedIn(config, track);
-    for (const group of eslintRules(rulesForPart(config, track))) {
+    for (const group of eslintRules(rulesForPart(config, track), reports)) {
       // A group for its own files is named after them, such as peer-ai/web/**/*.tsx.
       const ownFiles = group.files !== SCRIPT_FILES && group.files !== TYPESCRIPT_FILES;
       const name = [`peer-ai/${track.id}`, group.typed ? "/typed" : "", ownFiles ? `/${group.files.join(",")}` : ""];

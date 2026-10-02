@@ -620,7 +620,10 @@ export function planMigration(
     ...(fromSettings.config.design === undefined ? {} : { design: fromSettings.config.design }),
     ...(fromSettings.config.tracker === undefined ? {} : { tracker: fromSettings.config.tracker }),
     ...(fromSettings.config.commands === undefined ? {} : { commands: fromSettings.config.commands }),
-    ...(standards.documents.length === 0 ? {} : { standards: { documents: standards.documents, onExisting: "map" } }),
+    standards: {
+      ...(config.standards as Record<string, unknown>),
+      ...(standards.documents.length === 0 ? {} : { documents: standards.documents, onExisting: "map" }),
+    },
     ...(phases?.models === undefined ? {} : { models: phases.models }),
     ...(phases === undefined || Object.keys(phases.capabilities).length === 0
       ? {}
