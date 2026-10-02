@@ -56,6 +56,20 @@ describe("assess", () => {
     });
   });
 
+  it("doesn't count a retired document as evidence", () => {
+    const retired = project({
+      "README.md": "# Shop",
+      "docs/archive/03-system-spec.md": "",
+      "docs/_retired/architecture.md": "",
+    });
+    expect(statusOf(retired)).toMatchObject({ specs: "missing", architecture: "missing" });
+    const current = project({ "README.md": "# Shop", "docs/archive/03-system-spec.md": "", "docs/04-spec.md": "" });
+    expect(assess(current, undefined, "mvp").items.specs).toMatchObject({
+      status: "present",
+      evidence: ["docs/04-spec.md"],
+    });
+  });
+
   it("finds every item in a well-documented project", () => {
     const status = statusOf(complete(), "production");
     expect(Object.entries(status).filter(([, value]) => value !== "present")).toEqual([]);

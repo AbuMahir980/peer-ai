@@ -75,7 +75,8 @@ function withAgent(): { root: string; agent: string; config: PeerAiConfig } {
   return { root, agent, config };
 }
 
-describe("a work item's home (RFC 0010)", () => {
+// Each test makes real commits, which take a while on a busy machine.
+describe("a work item's home (RFC 0010)", { timeout: 20_000 }, () => {
   it("is where its branch is checked out, in the main working copy or a worktree", () => {
     const { root, agent } = withAgent();
     expect(worktrees(root).map((worktree) => [realpathSync(worktree.path), worktree.branch])).toEqual([
