@@ -711,3 +711,22 @@ describe("setup checks that run themselves (RFC 0007)", () => {
     expect(setupChecks(root, NODE, NOW)).toEqual([]);
   });
 });
+
+describe("what blocks a merge (RFC 0015)", () => {
+  const blocking = (extra: Record<string, unknown>) =>
+    checksFor(project({ "peer-ai.config.json": config(extra) }), "blocking")[0];
+
+  it("suggests high findings block too, for a product in production", () => {
+    expect(blocking({ project: { name: "Shop", stage: "production" } })).toEqual({
+      id: "blocking",
+      status: "warn",
+      message: "The project is in production, but only critical findings block a merge, so high ones can ship.",
+      fix: 'Set "gates": { "blockOn": "high" } in peer-ai.config.json.',
+    });
+    expect(blocking({ project: { name: "Shop", stage: "production" }, gates: { blockOn: "high" } })).toMatchObject({
+      status: "ok",
+      message: "Open findings at high or above block a merge",
+    });
+    expect(blocking({})).toMatchObject({ status: "ok", message: "Open findings at critical or above block a merge" });
+  });
+});

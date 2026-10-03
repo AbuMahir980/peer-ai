@@ -48,6 +48,7 @@ describe("suggested profiles and traits (RFC 0011)", () => {
       true,
       "solo",
       "mvp",
+      "critical",
       ["profile:python-fastapi"],
       "Payments go through the shop's own checkout service.",
     ]);

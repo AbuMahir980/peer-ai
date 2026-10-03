@@ -41,6 +41,19 @@ const isDirectory = (path: string) => statSync(path, { throwIfNoEntry: false })?
 const isUrl = (value: string) => /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
 const normalise = (path: string) => path.replace(/^\.\//, "").replace(/\/+$/, "");
 
+/** What blocks a merge suits the stage: in production, high findings block too (RFC 0015). */
+function checkBlocking(config: PeerAiConfig): Check {
+  const blockOn = config.gates?.blockOn ?? "critical";
+  if ((config.project.stage ?? "mvp") === "production" && blockOn === "critical") {
+    return warn(
+      "blocking",
+      "The project is in production, but only critical findings block a merge, so high ones can ship.",
+      'Set "gates": { "blockOn": "high" } in peer-ai.config.json.',
+    );
+  }
+  return ok("blocking", `Open findings at ${blockOn} or above block a merge`);
+}
+
 function checkNode(version: string): Check {
   const major = Number(version.split(".")[0]);
   if (major >= MIN_NODE_MAJOR) return ok("node", `Node.js ${version}`);
@@ -391,6 +404,7 @@ export function diagnose(
       : [checkRendered(root, config, options.skills ?? true)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
     ...(config === undefined ? needsConfig("gate", "The CI gate") : checkGate(root, config)),
+    ...(config === undefined ? [] : [checkBlocking(config)]),
     ...(config === undefined ? [] : checkRecord(root)),
     ...(config === undefined ? [] : checkMerged(root, config)),
     ...(config === undefined
