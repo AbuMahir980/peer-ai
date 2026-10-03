@@ -339,7 +339,11 @@ describe("render", () => {
     expect(code).toBe(0);
     const { config: loaded } = loadConfig(root);
     if (loaded === undefined) throw new Error("the test config is not valid");
-    expect(planRender(root, loaded).files.map((file) => file.path)).toEqual(["AGENTS.md", ".gitignore"]);
+    expect(planRender(root, loaded).files.map((file) => file.path)).toEqual([
+      "AGENTS.md",
+      ".gitattributes",
+      ".gitignore",
+    ]);
     expect(text).toContain(
       "No AI tools are listed in peer-ai.config.json, so AGENTS.md is the only instructions file written.",
     );

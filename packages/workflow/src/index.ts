@@ -4,9 +4,11 @@ import type { z } from "zod";
 import { ConfigLayerSchema, ConfigSchema, resolveConfig, type PeerAiConfig } from "./config.ts";
 import { ReviewReportSchema, type ReviewReport } from "./report.ts";
 import {
+  HistoryLineSchema,
   MapSchema,
   ProjectReviewsSchema,
   WorkItemSchema,
+  type HistoryLine,
   type ProjectMap,
   type ProjectReviews,
   type WorkItem,
@@ -28,11 +30,13 @@ export {
   type Severity,
 } from "./report.ts";
 export {
+  HistoryLineSchema,
   MapItemIdSchema,
   MapSchema,
   ProjectReviewsSchema,
   WorkItemIdSchema,
   WorkItemSchema,
+  type HistoryLine,
   type ProjectMap,
   type ProjectReviews,
   type WorkItem,
@@ -84,4 +88,5 @@ export const validateMap = (input: unknown): Validation<ProjectMap> => validate(
 export const validateWorkItem = (input: unknown): Validation<WorkItem> => validate(WorkItemSchema, input);
 export const validateProjectReviews = (input: unknown): Validation<ProjectReviews> =>
   validate(ProjectReviewsSchema, input);
+export const validateHistoryLine = (input: unknown): Validation<HistoryLine> => validate(HistoryLineSchema, input);
 export const validateReport = (input: unknown): Validation<ReviewReport> => validate(ReviewReportSchema, input);

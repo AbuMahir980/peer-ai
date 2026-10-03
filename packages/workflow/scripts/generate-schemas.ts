@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { ConfigLayerSchema, ConfigSchema } from "../src/config.ts";
 import { ReviewReportSchema } from "../src/report.ts";
-import { MapSchema, ProjectReviewsSchema, WorkItemSchema } from "../src/state.ts";
+import { HistoryLineSchema, MapSchema, ProjectReviewsSchema, WorkItemSchema } from "../src/state.ts";
 
 export const SCHEMA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "schemas");
 
@@ -18,6 +18,7 @@ export const SCHEMAS = {
   "map.schema.json": MapSchema,
   "work-item.schema.json": WorkItemSchema,
   "project-reviews.schema.json": ProjectReviewsSchema,
+  "history-line.schema.json": HistoryLineSchema,
   "review-report.schema.json": ReviewReportSchema,
 } as const;
 

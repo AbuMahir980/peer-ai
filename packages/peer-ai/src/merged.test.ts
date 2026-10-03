@@ -7,6 +7,7 @@ import { loadConfig } from "./assess.ts";
 import { evaluate } from "./check.ts";
 import { runCloseMerged } from "./close-merged.ts";
 import type { Runner } from "./feedback.ts";
+import { readHistory } from "./history.ts";
 import { checkMerged } from "./merged.ts";
 import { capture, cleanUp, project, scripted } from "./test-helpers.ts";
 import { advanceWorkItem, createWorkItem } from "./work.ts";
@@ -147,10 +148,11 @@ describe("closing work whose branch is already merged (RFC 0013)", () => {
     expect(out.text()).toContain("Closed 2 items, each recording how.");
     expect(out.text()).not.toContain("SHOP-3");
     expect(checkMerged(root, config)).toEqual([]);
-    expect(evaluate(root, config).checks).toContainEqual({
-      id: "gates",
-      status: "ok",
-      message: "2 work items closed because their branches were already merged, without the ship gate: SHOP-1, SHOP-2",
-    });
+    expect(evaluate(root, config).checks.filter((check) => check.status === "fail")).toEqual([]);
+    // Each is a line of the history, saying how it closed (RFC 0017).
+    expect(readHistory(root).map((line) => [line.id, line.by])).toEqual([
+      ["SHOP-1", "merge"],
+      ["SHOP-2", "merge"],
+    ]);
   });
 });

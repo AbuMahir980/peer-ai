@@ -23,6 +23,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
 import type { Output, Stage } from "./init.ts";
 import type { Runner } from "./feedback.ts";
+import { closedItems } from "./history.ts";
 import { ghIn } from "./merged.ts";
 import { projectFindings, readProjectReviews } from "./project-reviews.ts";
 import { mapChanges, readMap, readWorkItems } from "./state.ts";
@@ -221,12 +222,13 @@ function checkGates(
   stage: Stage,
   assessment: Assessment,
   context: GateContext,
+  known: WorkItem[] = items,
 ): Check[] {
   // An item closed because its branch was already merged claims no verify or reviews: it's listed,
   // so the record says what it holds (RFC 0013).
   const byMerge = items.filter((item) => item.stage === "done" && item.closed?.by === "merge");
   const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage) && !byMerge.includes(item));
-  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, items, context));
+  const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, known, context));
   const failures = results.filter((check) => check.status === "fail");
   const warnings = results.filter((check) => check.status === "warn");
   const merged =
@@ -386,19 +388,28 @@ export function evaluate(root: string, config: PeerAiConfig, options: EvaluateOp
   const assessment = assess(root, config, stage);
   const trackFailures = checkTracks(root, config).filter((check) => check.status === "fail");
   const items = readWorkItems(root).flatMap(({ item }) => (item.ok ? [item.value] : []));
+  // Closed items have left the tree (RFC 0017), but what depends on them, or fixes a finding, still counts.
+  const known = [...items, ...closedItems(root)];
   const checks = [
     ok("config", `${CONFIG_FILE} is valid`),
     ...(trackFailures.length > 0 ? trackFailures : [ok("tracks", "Every track's folder exists")]),
     checkMap(root, assessment),
     ...checkWorkItems(root, config),
-    ...checkDependencies(items),
-    ...checkProjectReviews(root, items, stage),
-    ...checkGates(items, config, stage, assessment, {
-      branch: options.pullRequest ?? currentBranch(root),
-      changedSince: changesFor(root),
-      ownFiles: ownFiles(root, config.repo?.defaultBranch),
-      ciResult: (commit, check) => ciResult(commit, check, options.run ?? ghIn(root)),
-    }),
+    ...checkDependencies(known),
+    ...checkProjectReviews(root, known, stage),
+    ...checkGates(
+      items,
+      config,
+      stage,
+      assessment,
+      {
+        branch: options.pullRequest ?? currentBranch(root),
+        changedSince: changesFor(root),
+        ownFiles: ownFiles(root, config.repo?.defaultBranch),
+        ciResult: (commit, check) => ciResult(commit, check, options.run ?? ghIn(root)),
+      },
+      known,
+    ),
     ...(options.pullRequest === undefined ? [] : [checkPullRequest(items, options.pullRequest, stage)]),
     ...checkVerifyCommand(config, stage),
     checkGapsTracked(assessment, stage, items),

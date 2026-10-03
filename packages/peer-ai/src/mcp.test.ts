@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { skillRuleIds } from "peer-ai-skills";
@@ -9,6 +9,7 @@ import { MCP_TOOL_IDS } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { evaluate } from "./check.ts";
 import { loadConfig } from "./assess.ts";
+import { readHistory } from "./history.ts";
 import { createServer, findRoot } from "./mcp.ts";
 import { cleanUp, project } from "./test-helpers.ts";
 
@@ -184,9 +185,18 @@ describe("the MCP server", () => {
 
     const { config } = loadConfig(root);
     if (config === undefined) throw new Error("the test config is not valid");
-    expect(evaluate(root, config).checks.filter((check) => check.id === "gates")).toEqual([
-      { id: "gates", status: "ok", message: "1 work item at ship or done, each verified and reviewed" },
+    expect(evaluate(root, config).checks.filter((check) => check.status === "fail")).toEqual([]);
+    // Done, it leaves the tree for the history, and is still read by its id (RFC 0017).
+    expect(existsSync(join(root, ".peer-ai/work/ITEM-1.json"))).toBe(false);
+    expect(readHistory(root)).toEqual([
+      expect.objectContaining({
+        id: "ITEM-1",
+        stage: "done",
+        by: "ship",
+        verify: expect.objectContaining({ result: "pass" }) as unknown,
+      }),
     ]);
+    expect((await call(client, "work_item", { id: "ITEM-1" })).value()).toMatchObject({ id: "ITEM-1", stage: "done" });
   });
 
   it("checks a whole-project review's report without a work item, and refuses one that skips a rule", async () => {

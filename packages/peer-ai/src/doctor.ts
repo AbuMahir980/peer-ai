@@ -13,6 +13,7 @@ import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from ".
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
 import { checkRecord } from "./evidence.ts";
 import { checkMerged } from "./merged.ts";
+import { checkTidy } from "./tidy.ts";
 import { GATE_FILE, checkGate } from "./gate.ts";
 import { WORKFLOW_FILE } from "./pipeline.ts";
 import { RUFF_FILE } from "./ruff.ts";
@@ -423,6 +424,7 @@ export function diagnose(
     ...(config === undefined ? [] : [...checkProfiles(config), ...checkEnforcers(root, config)]),
     checkMap(root, assessment),
     ...checkWorkItems(root, config),
+    ...checkTidy(root),
     checkGit(root),
     ...checkLegacy(root),
   ];

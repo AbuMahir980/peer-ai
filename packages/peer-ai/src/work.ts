@@ -4,7 +4,7 @@
 // agent records is what CI will accept.
 
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { availableSkills, skillRuleIds } from "peer-ai-skills";
 import {
@@ -31,6 +31,7 @@ import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.t
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
+import { asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { whatChangedSince, type WhatChanged } from "./updates.ts";
 import {
@@ -78,7 +79,11 @@ export function loadWorkItem(root: string, id: string): Result<WorkItem> {
   const located = locate(root, id);
   if (located !== undefined) return { ok: true, value: located.item };
   const file = readWorkItems(root).find(({ path }) => path === `${WORK_DIR}/${id}.json`);
-  if (file === undefined) return failed(`There is no work item "${id}".`);
+  if (file === undefined) {
+    // A closed item is read from the history (RFC 0017).
+    const closed = readHistory(root).find((line) => line.id === id);
+    return closed === undefined ? failed(`There is no work item "${id}".`) : { ok: true, value: asWorkItem(closed) };
+  }
   return file.item.ok ? file.item : failed(`${file.path} ${file.item.error}`);
 }
 
@@ -429,7 +434,12 @@ export function recordReview(
     entry = { ...checked.value, at };
   }
   if (commit !== undefined) entry = { ...entry, commit };
-  // One review per skill: recording a skill again replaces the earlier entry, which git keeps.
+  // One review per skill: recording a skill again replaces the earlier entry, and its report, which
+  // git keeps (RFC 0017).
+  const replaced = (item.reviews ?? []).find((recorded) => recorded.skill === review.skill)?.report;
+  if (replaced !== undefined && replaced !== entry.report && replaced.startsWith(`${REPORTS_DIR}/${item.id}/`)) {
+    rmSync(join(home, replaced), { force: true });
+  }
   const reviews = [...(item.reviews ?? []).filter((recorded) => recorded.skill !== review.skill), entry];
   return saveWorkItem(home, config, { ...item, reviews, updatedAt: at });
 }
@@ -580,7 +590,7 @@ export function advanceWorkItem(
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
-    const others = allWorkItems(root).map((other) => other.item);
+    const others = [...allWorkItems(root).map((other) => other.item), ...closedItems(root)];
     const failures = gateWorkItem(moved, config, stage, assess(home, config, stage), others, {
       moving: target,
       branch: currentBranch(home),
@@ -602,12 +612,19 @@ export function advanceWorkItem(
   // Build starts the change: the commit it starts from is the item's base, so its required reviews
   // come from its own commits, not a parent branch's (RFC 0010).
   const base = target === "build" && item.base === undefined ? headCommit(home) : undefined;
-  return saveWorkItem(home, config, {
-    ...item,
-    stage: target,
-    ...(base === undefined ? {} : { base }),
-    updatedAt: now.toISOString(),
-  });
+  const moved = { ...item, stage: target, ...(base === undefined ? {} : { base }), updatedAt: now.toISOString() };
+  // Closed work leaves the tree: one line in the history, and git keeps the rest (RFC 0017).
+  if (target === "done" || target === "cancelled")
+    return closeItem(home, moved, target === "done" ? "ship" : "cancel", now);
+  return saveWorkItem(home, config, moved);
+}
+
+/** Moves a closed item into the history after checking it, and returns it as it closed. */
+function closeItem(home: string, item: WorkItem, by: "ship" | "merge" | "cancel", now: Date): Result<WorkItem> {
+  const valid = validateWorkItem({ $schema: WORK_ITEM_SCHEMA_URL, ...item });
+  if (!valid.ok) return failed(`The work item would not be valid: ${valid.errors.join("; ")}`);
+  closeIntoHistory(home, valid.value, by, now);
+  return valid;
 }
 
 /** Closes an item whose branch is already merged, saying how, without the ship gate (RFC 0013). */
@@ -624,7 +641,7 @@ export function closeByMerge(
     ...(merge.pullRequest === undefined ? {} : { pullRequest: merge.pullRequest }),
     at: now.toISOString(),
   };
-  return saveWorkItem(home, config, { ...item, stage: "done", closed, updatedAt: now.toISOString() });
+  return closeItem(home, { ...item, stage: "done", closed, updatedAt: now.toISOString() }, "merge", now);
 }
 
 /** Every open item whose branch is merged, with how, and its home: what close-merged closes. */
@@ -810,7 +827,8 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
   const problems = setupProblems(root);
   // An agent in a worktree of its own names its branch; otherwise it's the one checked out here.
   const branch = onBranch ?? currentBranch(root);
-  const items = allWorkItems(root).map((located) => located.item);
+  // Closed items count for what depends on them and for the findings they fixed (RFC 0017).
+  const items = [...allWorkItems(root).map((located) => located.item), ...closedItems(root)];
   const open = items
     .filter((item) => !CLOSED.includes(item.stage))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));

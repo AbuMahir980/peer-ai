@@ -118,6 +118,7 @@ export const CLI_COMMAND_IDS = [
   "feedback",
   "ship",
   "work",
+  "tidy",
   "close-merged",
   "mcp",
 ] as const;

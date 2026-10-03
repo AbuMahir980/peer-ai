@@ -241,5 +241,43 @@ export const ProjectReviewsSchema = z
   });
 
 export type ProjectReviews = z.output<typeof ProjectReviewsSchema>;
+
+/**
+ * A line of .peer-ai/history/<year>-<month>.jsonl: a closed work item in one line, once its file and
+ * reports have left the tree (RFC 0017). Git keeps the full record, from lastFile.
+ */
+export const HistoryLineSchema = z
+  .strictObject({
+    id: WorkItemIdSchema,
+    title: z.string().min(1),
+    kind: z.enum(["feature", "bug", "refactor", "migration", "gap", "discovery", "chore"]),
+    track: z.string().min(1).optional(),
+    stage: z.enum(["done", "cancelled"]),
+    at: Timestamp.describe("When it closed."),
+    by: z.enum(["ship", "merge", "cancel"]).describe("How: shipped through the gate, merged around it, or cancelled."),
+    merge: z
+      .strictObject({ commit: CommitId.optional(), pullRequest: z.number().int().positive().optional() })
+      .optional(),
+    verify: z.strictObject({ result: z.enum(["pass", "fail"]), commit: CommitId.optional() }).optional(),
+    reviews: z
+      .array(
+        z.strictObject({
+          skill: z.enum(SKILL_IDS),
+          result: z.enum(["pass", "fail", "incomplete"]),
+          open: OpenCountsSchema.optional(),
+          report: Path.optional(),
+        }),
+      )
+      .optional(),
+    dependsOn: z.array(WorkItemIdSchema).optional(),
+    fixes: z.array(FindingRef).optional(),
+    lastFile: CommitId.optional().describe("The last commit that held the item's full file."),
+  })
+  .meta({
+    title: "Peer AI closed work item",
+    description: "A line of .peer-ai/history/<year>-<month>.jsonl: a closed work item, in one line.",
+  });
+
+export type HistoryLine = z.output<typeof HistoryLineSchema>;
 export type ProjectMap = z.output<typeof MapSchema>;
 export type WorkItem = z.output<typeof WorkItemSchema>;

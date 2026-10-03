@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "feature",
+        "bug",
+        "refactor",
+        "migration",
+        "gap",
+        "discovery",
+        "chore"
+      ]
+    },
+    "track": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "done",
+        "cancelled"
+      ]
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+      "description": "When it closed."
+    },
+    "by": {
+      "type": "string",
+      "enum": [
+        "ship",
+        "merge",
+        "cancel"
+      ],
+      "description": "How: shipped through the gate, merged around it, or cancelled."
+    },
+    "merge": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,64}$",
+          "description": "A git commit's id."
+        },
+        "pullRequest": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "additionalProperties": false
+    },
+    "verify": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,64}$",
+          "description": "A git commit's id."
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "requirements-analysis",
+              "product-spec",
+              "architecture",
+              "system-design",
+              "api-design",
+              "data-modelling",
+              "threat-model",
+              "design-system",
+              "issue-planning",
+              "implement-ticket",
+              "code-review",
+              "security-review",
+              "contract-check",
+              "accessibility-review",
+              "design-review",
+              "performance-review",
+              "reliability-review",
+              "data-migration-review",
+              "dependency-review",
+              "compliance-review",
+              "test-strategy",
+              "qa-acceptance",
+              "ai-feature-review",
+              "release-readiness",
+              "infrastructure-review",
+              "observability-review",
+              "incident-response",
+              "documentation",
+              "tech-debt-triage"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "incomplete"
+            ]
+          },
+          "open": {
+            "type": "object",
+            "properties": {
+              "critical": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "high": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "medium": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "low": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          },
+          "report": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "skill",
+          "result"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "dependsOn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+      }
+    },
+    "fixes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]+(-[a-z]+)*#[A-Za-z0-9._-]+$"
+      }
+    },
+    "lastFile": {
+      "description": "The last commit that held the item's full file.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "kind",
+    "stage",
+    "at",
+    "by"
+  ],
+  "additionalProperties": false,
+  "title": "Peer AI closed work item",
+  "description": "A line of .peer-ai/history/<year>-<month>.jsonl: a closed work item, in one line."
+}
