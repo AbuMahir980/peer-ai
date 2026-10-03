@@ -225,7 +225,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Update a work item",
       description:
-        "Record where work stands, so the next session resumes exactly there: the next action, the activity and step it stopped at, its branch or its title. It also sets the item's goal, acceptance criteria, sources and dependencies, replacing any given before.",
+        "Record where work stands, so the next session resumes exactly there: the next action, the activity and step it stopped at, its branch or its title. It also sets the item's goal, acceptance criteria, sources and dependencies, replacing any given before, and can move it to another track.",
       inputSchema: {
         id: itemId,
         next: z.string().min(1).max(200).optional().describe("One line: the next action."),
@@ -250,6 +250,7 @@ export function createServer(options: ServerOptions): McpServer {
         sources: WorkItemSchema.shape.sources,
         dependsOn: WorkItemSchema.shape.dependsOn,
         fixes: WorkItemSchema.shape.fixes,
+        track: z.string().min(1).optional().describe("Move the item to another track, any but a retired one."),
       },
       annotations: { ...WRITES, idempotentHint: true },
     },

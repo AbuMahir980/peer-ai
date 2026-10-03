@@ -86,8 +86,8 @@ export function checkConfig(root: string): { check: Check; config?: PeerAiConfig
 export function checkTracks(root: string, config: PeerAiConfig): Check[] {
   const checks: Check[] = [];
   for (const track of config.tracks) {
-    // A dormant track hasn't been started, so its folder may not exist yet.
-    if (track.path === undefined || track.status === "dormant" || track.status === "external") continue;
+    // A dormant track hasn't been started, so its folder may not exist yet; a retired one is gone.
+    if (track.path === undefined || ["dormant", "external", "retired"].includes(track.status)) continue;
     if (!isDirectory(join(root, track.path))) {
       checks.push(
         fail(
@@ -325,23 +325,30 @@ function checkMap(root: string, assessment: Assessment | undefined): Check {
 export function checkWorkItems(root: string, config: PeerAiConfig | undefined): Check[] {
   const files = readWorkItems(root);
   if (files.length === 0) return [ok("work-items", "No work items yet")];
-  const tracks = config?.tracks.map((track) => track.id);
   const checks: Check[] = [];
   for (const { path, item } of files) {
     if (!item.ok) {
       checks.push(
         fail("work-items", `${path} ${item.error}`, "Correct it. An editor that reads its $schema shows each error."),
       );
-    } else if (item.value.track !== undefined && tracks !== undefined && !tracks.includes(item.value.track)) {
+      continue;
+    }
+    // An item on a track that's gone or retired stays valid and readable (RFC 0017): an open one is
+    // said, so it's moved or cancelled; a finished one is history.
+    const { id, track, stage } = item.value;
+    if (track === undefined || config === undefined || stage === "done" || stage === "cancelled") continue;
+    const found = config.tracks.find((each) => each.id === track);
+    if (found === undefined || found.status === "retired") {
       checks.push(
-        fail(
+        warn(
           "work-items",
-          `${path} is for the track "${item.value.track}", which isn't in the config.`,
-          `Change its track, or add the track to ${CONFIG_FILE}.`,
+          `${id} is open on the track "${track}", which ${found === undefined ? "isn't in the config" : "is retired"}.`,
+          `Move it to another track, with update_work_item or npx peer-ai work move ${id} <track>, or cancel it.`,
         ),
       );
     }
   }
+  if (checks.some((check) => check.status === "fail")) return checks;
   if (checks.length > 0) return checks;
   return [
     ok("work-items", files.length === 1 ? "1 work item, valid" : `${plural(files.length, "work item")}, all valid`),

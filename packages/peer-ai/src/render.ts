@@ -131,7 +131,9 @@ export function instructions(config: PeerAiConfig): string {
       const where =
         track.status === "external"
           ? `in ${track.repo ?? "another repository"}`
-          : (track.path ?? "the repository root");
+          : track.status === "retired"
+            ? "no longer part of the product"
+            : (track.path ?? "the repository root");
       lines.push(`- \`${track.id}\` (${track.kind}, ${track.status}): ${where}`);
     }
   } else if (ownTracks[0] !== undefined) {

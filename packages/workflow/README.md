@@ -72,6 +72,7 @@ A track is one part of the system: a web app, a mobile app, a service, a shared 
 | `dormant` | Not started; its activities do not run |
 | `frozen` | Exists and is documented, not redesigned |
 | `retiring` | Being replaced by the tracks in `replacedBy`; its behaviour is the reference until then |
+| `retired` | No longer part of the product. It needs no folder, its work items stay valid and readable, and no new item goes on it (RFC 0017) |
 | `external` | Lives in another repository (`repo`); read here, never changed |
 
 APIs connect tracks. Each has a kind (`http`, `graphql`, `rpc`, `websocket`, `events`, `in-process`, `package`, `cli`), the track that provides it (omitted for a third-party service), and a contract source (`openapi`, `asyncapi`, `graphql-schema`, `protobuf`, `types`, `docs` or `handwritten`). Tracks list the APIs they `consume` and the tracks whose code they `use`.

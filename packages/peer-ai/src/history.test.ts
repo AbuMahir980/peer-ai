@@ -9,6 +9,7 @@ import { closeIntoHistory, readHistory } from "./history.ts";
 import { runRender } from "./render.ts";
 import { capture, cleanUp, project } from "./test-helpers.ts";
 import { checkTidy, runTidy } from "./tidy.ts";
+import { runWork } from "./work-command.ts";
 import { advanceWorkItem, createWorkItem, loadWorkItem, recordReview, saveWorkItem } from "./work.ts";
 
 afterEach(cleanUp);
@@ -153,6 +154,21 @@ describe("closed work leaves the tree (RFC 0017)", () => {
     expect(value(loadWorkItem(root, "SHOP-1")).reviews).toEqual([
       expect.objectContaining({ skill: "code-review", result: "pass", unproven: true }),
     ]);
+  });
+
+  it("is shown by peer-ai work show, and in full from git", () => {
+    const { root, config } = shop({ git: true });
+    shipped(root, config, "SHOP-1");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "ship SHOP-1");
+    value(advanceWorkItem(root, config, "SHOP-1", "done", NOW));
+    const line = capture();
+    expect(runWork({ cwd: root, action: "show", args: ["SHOP-1"] }, line)).toBe(0);
+    expect(JSON.parse(line.text())).toMatchObject({ id: "SHOP-1", stage: "done", by: "ship" });
+    const full = capture();
+    expect(runWork({ cwd: root, action: "show", args: ["SHOP-1"], full: true }, full)).toBe(0);
+    expect(JSON.parse(full.text())).toMatchObject({ id: "SHOP-1", stage: "ship", title: "Work SHOP-1" });
+    expect(runWork({ cwd: root, action: "show", args: ["SHOP-404"] }, capture())).toBe(1);
   });
 
   it("writes a valid line even with nothing to remove", () => {
