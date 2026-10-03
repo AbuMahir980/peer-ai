@@ -185,7 +185,13 @@ describe("the files a change touched", () => {
     ].filter((review) => availableSkills().includes(review.skill as SkillId));
     expect(moved.value.requiredReviews).toEqual(needed);
     expect(nextWork(root, config).reviews).toEqual(
-      needed.map((review) => ({ ...review, use: `peer-ai-${review.skill}`, done: false })),
+      needed.map((review) => ({
+        ...review,
+        use: `peer-ai-${review.skill}`,
+        done: false,
+        // The rules each answers for: those its changed files can break (RFC 0016).
+        rules: expect.any(Array) as unknown,
+      })),
     );
   });
 });
