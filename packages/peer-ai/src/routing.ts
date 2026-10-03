@@ -3,6 +3,7 @@
 // Only skills that exist are named or required; the rest follow as they're written.
 
 import { execFileSync } from "node:child_process";
+import type { ChangeSizes } from "./commits.ts";
 import { availableSkills, renderedName } from "peer-ai-skills";
 import {
   MAP_ITEM_SKILLS,
@@ -27,6 +28,24 @@ import type { Stage } from "./init.ts";
 export interface RequiredReview {
   skill: SkillId;
   reason: string;
+  /** A weak trigger asks only for a light review of the changed lines (RFC 0016). */
+  depth?: "light" | undefined;
+}
+
+/** The reviews a weak trigger can ask for lightly: never one about routes, data, contracts or the pipeline. */
+const LIGHT_SKILLS: readonly SkillId[] = ["code-review", "security-review", "accessibility-review", "design-review"];
+/** Files whose change is never weak, however small: routes, access, sessions and secrets. */
+const SENSITIVE =
+  /(^|[/._-])(routes?|router|controllers?|auth\w*|permissions?|polic(y|ies)|guards?|middleware|sessions?|tokens?|crypto|secrets?)([/._-]|$)/i;
+/** At most this many changed lines, in files the change didn't add, is a weak trigger. */
+export const WEAK_LINES = 20;
+
+/** Whether the files that asked for a review changed little enough for a light one (RFC 0016). */
+function weak(triggers: string[], sizes: ChangeSizes | undefined): boolean {
+  if (sizes === undefined || triggers.length === 0) return false;
+  if (triggers.some((file) => sizes.added.has(file) || SENSITIVE.test(file))) return false;
+  const lines = triggers.reduce((sum, file) => sum + (sizes.lines.get(file) ?? Number.POSITIVE_INFINITY), 0);
+  return lines <= WEAK_LINES;
 }
 
 /** The installed name of each gap's skill, for the gaps whose skill exists. */
@@ -72,6 +91,7 @@ export function reviewsFor(
   read: (file: string) => string,
   available: readonly SkillId[] = availableSkills(),
   item: { acceptance?: string[] | undefined } = {},
+  sizes?: ChangeSizes,
 ): RequiredReview[] {
   const tracks = config.tracks.filter((track) => track.status !== "external" && track.status !== "dormant");
   const code = files.filter((file) => CODE.test(file));
@@ -145,7 +165,22 @@ export function reviewsFor(
       found.push({ skill, reason: "the project's config requires it" });
   }
   const skipped = new Set((choices?.skip ?? []).map((choice) => choice.skill));
-  return found.filter((review) => available.includes(review.skill) && !skipped.has(review.skill));
+  // The files that asked for each review that can be light, to judge whether the trigger was weak.
+  const triggers: Partial<Record<SkillId, string[]>> = {
+    "code-review": code,
+    "security-review": source,
+    "accessibility-review": screens,
+    "design-review": screens,
+  };
+  return found
+    .filter((review) => available.includes(review.skill) && !skipped.has(review.skill))
+    .map((review) =>
+      LIGHT_SKILLS.includes(review.skill) &&
+      review.reason !== "the project's config requires it" &&
+      weak(triggers[review.skill] ?? [], sizes)
+        ? { ...review, depth: "light" as const }
+        : review,
+    );
 }
 
 const git = (root: string, args: string[]) =>
@@ -190,16 +225,24 @@ export function changedFiles(root: string): string[] {
 }
 
 /** The required reviews still to do on a work item, by their installed names, for next_work. */
-export function reviewsToDo(
-  item: WorkItem,
-): { skill: SkillId; use: string; reason: string; done: boolean; result?: string }[] {
+export function reviewsToDo(item: WorkItem): {
+  skill: SkillId;
+  use: string;
+  reason: string;
+  depth?: "light" | undefined;
+  done: boolean;
+  result?: string;
+  waived?: true;
+}[] {
   const recorded = new Map((item.reviews ?? []).map((review) => [review.skill, review]));
+  const waived = new Set((item.waived ?? []).map((waiver) => waiver.skill));
   return (item.requiredReviews ?? []).map((review) => {
     const found = recorded.get(review.skill);
     return {
       ...review,
       use: renderedName(review.skill),
-      done: found !== undefined,
+      done: found !== undefined || waived.has(review.skill),
+      ...(waived.has(review.skill) ? { waived: true as const } : {}),
       // A done review says what it left open, so a pass is never read as all clear (RFC 0015).
       ...(found === undefined ? {} : { result: describeResult(found.result, found.open) }),
     };

@@ -5,6 +5,7 @@
 - Where the report goes
 - What each part holds
 - Coverage: a line for every rule
+- A light review
 - Findings
 - The result
 - Recording it
@@ -49,6 +50,16 @@ A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP 
 | `not-checked` | `reason`, such as "Logging is configured in another repository" |
 
 Silence is never an answer: a rule left out of coverage makes the report invalid.
+
+## A light review
+
+When `next_work` gives a required review `depth: light`, its trigger was weak: a few changed lines, no new file, nothing about routes, access or sessions (RFC 0016). Then:
+
+- inventory only the changed hunks, not the screens or routes around them;
+- answer for the rules `next_work` gives the review, as they apply to those hunks;
+- write the report as usual, with `"depth": "light"`.
+
+A light review never stands in for a full one: when the review isn't marked light, do the whole review. If the person decides the item doesn't need a review at all, they can waive it, with why: `update_work_item` with `waive`, or `npx peer-ai waive`. Never waive one yourself.
 
 ## Findings
 

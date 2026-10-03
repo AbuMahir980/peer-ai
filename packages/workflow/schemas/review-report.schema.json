@@ -287,6 +287,14 @@
       ],
       "description": "Must agree with the findings and coverage."
     },
+    "depth": {
+      "description": "light: the changed lines only, for a weak trigger (RFC 0016). Full when left out.",
+      "type": "string",
+      "enum": [
+        "light",
+        "full"
+      ]
+    },
     "summary": {
       "type": "string",
       "minLength": 1,

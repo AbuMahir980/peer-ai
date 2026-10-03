@@ -251,6 +251,16 @@ export function createServer(options: ServerOptions): McpServer {
         dependsOn: WorkItemSchema.shape.dependsOn,
         fixes: WorkItemSchema.shape.fixes,
         track: z.string().min(1).optional().describe("Move the item to another track, any but a retired one."),
+        waive: z
+          .strictObject({
+            skill: z.enum(SKILL_IDS),
+            reason: z.string().min(1),
+            by: z.string().min(1).describe("The person who decided."),
+          })
+          .optional()
+          .describe(
+            "A person's decision that this item doesn't need a review it was asked for, with why. Only when they decide it; at production, only a light review can be waived.",
+          ),
       },
       annotations: { ...WRITES, idempotentHint: true },
     },

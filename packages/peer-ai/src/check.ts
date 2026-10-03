@@ -145,10 +145,19 @@ export function gateWorkItem(
   // The reviews the change needs (RFC 0004): a failure in production, and at the MVP stage for the
   // change being made now (RFC 0010); a warning for an MVP item finished before. A prototype is
   // only told, by next_work.
-  const recorded = new Set((item.reviews ?? []).map((review) => review.skill));
+  // A light review covers a light requirement; a full one covers either. A waiver covers one too,
+  // except a full requirement at production (RFC 0016).
+  const recorded = new Map(latestReviews(item).map((review) => [review.skill, review]));
+  const waived = new Set((item.waived ?? []).map((waiver) => waiver.skill));
   for (const required of item.requiredReviews ?? []) {
-    if (recorded.has(required.skill) || stage === "prototype") continue;
-    const message = `${claim}, but it has no ${required.skill}, which it needs because ${required.reason}.`;
+    if (stage === "prototype") continue;
+    const review = recorded.get(required.skill);
+    if (review !== undefined && (required.depth === "light" || review.depth !== "light")) continue;
+    if (waived.has(required.skill) && (stage !== "production" || required.depth === "light")) continue;
+    const message =
+      review === undefined
+        ? `${claim}, but it has no ${required.skill}, which it needs because ${required.reason}.`
+        : `${claim}, but its ${required.skill} was a light review, and it needs a full one because ${required.reason}.`;
     const fix = `Use the ${renderedName(required.skill)} skill and record its review, ${backToBuild}`;
     checks.push(stage === "production" || current ? fail("gates", message, fix) : warn("gates", message, fix));
   }
@@ -229,6 +238,12 @@ function checkGates(
   const byMerge = items.filter((item) => item.stage === "done" && item.closed?.by === "merge");
   const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage) && !byMerge.includes(item));
   const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, known, context));
+  // Every waiver is listed, with why and who decided, so no review is skipped silently (RFC 0016).
+  const waivers = claiming.flatMap((item) =>
+    (item.waived ?? []).map((waiver) =>
+      ok("gates", `${item.id} waived its ${waiver.skill}: ${waiver.reason} (decided by ${waiver.by})`),
+    ),
+  );
   const failures = results.filter((check) => check.status === "fail");
   const warnings = results.filter((check) => check.status === "warn");
   const merged =
@@ -240,12 +255,13 @@ function checkGates(
             `${plural(byMerge.length, "work item")} closed because ${byMerge.length === 1 ? "its branch was" : "their branches were"} already merged, without the ship gate: ${byMerge.map((item) => item.id).join(", ")}`,
           ),
         ];
-  if (failures.length > 0) return [...failures, ...warnings, ...merged];
+  if (failures.length > 0) return [...failures, ...warnings, ...merged, ...waivers];
   if (claiming.length === 0) return [ok("gates", "No work items at ship or done yet"), ...merged];
   return [
     ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`),
     ...warnings,
     ...merged,
+    ...waivers,
   ];
 }
 
