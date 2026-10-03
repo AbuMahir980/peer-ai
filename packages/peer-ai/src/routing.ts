@@ -42,13 +42,13 @@ export function gapSkills(
   return named;
 }
 
-const CODE =
+export const CODE =
   /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rb|php|cs|java|kt|kts|swift|dart|rs|ex|exs|vue|svelte|astro|scala|sql|c|cc|cpp|h|m|mm)$/;
-const SCREEN = /\.(tsx|jsx|vue|svelte|astro|html|css|scss|dart|swift)$|(^|\/)res\/layout\//;
-const MIGRATION = /(^|\/)(migrations?|migrate|alembic|drizzle)\/|schema\.prisma$|(^|\/)db\/schema\.(rb|sql)$/i;
-const LOCKFILE =
+export const SCREEN = /\.(tsx|jsx|vue|svelte|astro|html|css|scss|dart|swift)$|(^|\/)res\/layout\//;
+export const MIGRATION = /(^|\/)(migrations?|migrate|alembic|drizzle)\/|schema\.prisma$|(^|\/)db\/schema\.(rb|sql)$/i;
+export const LOCKFILE =
   /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|poetry\.lock|uv\.lock|Pipfile\.lock|Cargo\.lock|go\.sum|Gemfile\.lock|composer\.lock|Podfile\.lock|pubspec\.lock|packages\.lock\.json|gradle\.lockfile)$/;
-const DEPLOYMENT =
+export const DEPLOYMENT =
   /(^|\/)(Dockerfile|[^/]*\.Dockerfile|docker-compose[^/]*\.ya?ml|compose\.ya?ml|vercel\.json|netlify\.toml|fly\.toml|render\.yaml|app\.yaml|wrangler\.(toml|jsonc?)|serverless\.ya?ml|Procfile)$|(^|\/)\.github\/workflows\/|\.gitlab-ci\.yml$/;
 const DATA_INVENTORY = /data[-_ ]?inventory/i;
 const API_KINDS = ["http", "graphql", "rpc", "websocket", "events"];
