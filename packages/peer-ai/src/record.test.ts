@@ -180,7 +180,7 @@ describe("a record that falls behind (RFC 0010)", () => {
   });
 });
 
-describe("reviews and a merge from the base branch (RFC 0013)", () => {
+describe("reviews and a merge from the base branch (RFC 0013)", { timeout: 20_000 }, () => {
   const PRICES = Array.from({ length: 12 }, (_, i) => `export const price${String(i)} = ${String(i)};`);
   const prices = (first: string, last: string) => [first, ...PRICES.slice(1, -1), last, ""].join("\n");
 

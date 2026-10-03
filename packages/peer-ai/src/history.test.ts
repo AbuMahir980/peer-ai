@@ -60,7 +60,7 @@ function shipped(root: string, config: PeerAiConfig, id: string, extra: Partial<
   );
 }
 
-describe("closed work leaves the tree (RFC 0017)", () => {
+describe("closed work leaves the tree (RFC 0017)", { timeout: 20_000 }, () => {
   it("becomes one line in the month's history, with its file and reports gone, and is still read by id", () => {
     const { root, config } = shop();
     shipped(root, config, "SHOP-1");

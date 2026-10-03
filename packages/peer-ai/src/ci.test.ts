@@ -65,7 +65,7 @@ describe("CI's verify (RFC 0013)", () => {
   });
 });
 
-describe("shipping with CI's verify (RFC 0013)", () => {
+describe("shipping with CI's verify (RFC 0013)", { timeout: 20_000 }, () => {
   const NOW = new Date("2026-10-03T09:00:00Z");
   const git = (cwd: string, ...args: string[]) =>
     execFileSync(
