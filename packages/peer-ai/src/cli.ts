@@ -176,7 +176,10 @@ function check(args: string[], io: Io): number {
   // On a pull request in GitHub Actions, the branch it's for (RFC 0010).
   const fromActions = process.env.GITHUB_HEAD_REF;
   const branch = values.branch ?? (fromActions === undefined || fromActions === "" ? undefined : fromActions);
-  return runCheck({ cwd: io.cwd, json: values.json === true, branch }, io.out);
+  return runCheck(
+    { cwd: io.cwd, json: values.json === true, branch, summary: process.env.GITHUB_STEP_SUMMARY },
+    io.out,
+  );
 }
 
 function checkReportCommand(args: string[], io: Io): number {

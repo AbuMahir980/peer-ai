@@ -22,7 +22,7 @@ import {
 } from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
-import { changesFor, commitExists, currentBranch, filesSince, headCommit } from "./commits.ts";
+import { changesFor, commitExists, currentBranch, filesSince, headCommit, ownFiles } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
@@ -428,6 +428,7 @@ export function advanceWorkItem(
       moving: target,
       branch: currentBranch(home),
       changedSince: changesFor(home),
+      ownFiles: ownFiles(home, config.repo?.defaultBranch),
     }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
       // Work whose branch is already merged closes saying so, rather than being verified again (RFC 0013).

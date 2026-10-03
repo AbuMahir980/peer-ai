@@ -1,10 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PeerAiConfig, WorkItem } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
-import { evaluate } from "./check.ts";
+import { evaluate, runCheck } from "./check.ts";
 import { main } from "./cli.ts";
 import { diagnose } from "./doctor.ts";
 import { gateWorkflow } from "./gate.ts";
@@ -177,5 +177,66 @@ describe("a record that falls behind (RFC 0010)", () => {
         message: `SHOP-1 is at verify, but its verify looked at ${first.slice(0, 7)}, and apps/web/Cart.tsx changed since.`,
       }),
     ]);
+  });
+});
+
+describe("reviews and a merge from the base branch (RFC 0013)", () => {
+  const PRICES = Array.from({ length: 12 }, (_, i) => `export const price${String(i)} = ${String(i)};`);
+  const prices = (first: string, last: string) => [first, ...PRICES.slice(1, -1), last, ""].join("\n");
+
+  /** SHOP-1 changes prices.ts, is reviewed, then merges main: verified on the merge, reviewed before it. */
+  function mergedFromMain(mainChanges: Record<string, string>): { root: string; config: PeerAiConfig } {
+    const { root, config } = shop();
+    writeFileSync(join(root, "apps/web/prices.ts"), prices(PRICES[0] ?? "", PRICES[11] ?? ""));
+    commitAll(root);
+    git(root, "switch", "-qc", "feature/SHOP-1-cart");
+    value(createWorkItem(root, config, { title: "Cart", kind: "feature", track: "web" }, NOW));
+    value(advanceWorkItem(root, config, "SHOP-1", "build", NOW));
+    writeFileSync(join(root, "apps/web/prices.ts"), prices("export const price0 = 100;", PRICES[11] ?? ""));
+    const reviewed = commitAll(root);
+    git(root, "switch", "-q", "main");
+    for (const [file, content] of Object.entries(mainChanges)) writeFileSync(join(root, file), content);
+    commitAll(root);
+    git(root, "switch", "-q", "feature/SHOP-1-cart");
+    git(root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "merge", "-q", "--no-edit", "main");
+    const item = value(loadWorkItem(root, "SHOP-1"));
+    value(
+      saveWorkItem(root, config, {
+        ...item,
+        stage: "verify",
+        requiredReviews: [{ skill: "code-review", reason: "it changes code" }],
+        reviews: [{ skill: "code-review", result: "pass", at: NOW.toISOString(), commit: reviewed }],
+      }),
+    );
+    value(recordVerify(root, config, "SHOP-1", "pass", NOW, git(root, "rev-parse", "HEAD")));
+    return { root, config };
+  }
+
+  it("keep a review when the merge brings in only other files", () => {
+    const { root, config } = mergedFromMain({ "apps/web/Total.tsx": "export const Total = () => null;\n" });
+    expect(value(advanceWorkItem(root, config, "SHOP-1", "ship", NOW)).stage).toBe("ship");
+  });
+
+  it("don't keep one when the merge changes a file the item changes too", () => {
+    const { root, config } = mergedFromMain({
+      "apps/web/prices.ts": prices(PRICES[0] ?? "", "export const price11 = 1100;"),
+    });
+    const moved = advanceWorkItem(root, config, "SHOP-1", "ship", NOW);
+    expect(moved.ok ? "" : moved.error).toContain("its code-review looked at");
+  });
+
+  it("are what the gate says in the job's summary on the pull request", async () => {
+    const { root, config } = mergedFromMain({
+      "apps/web/prices.ts": prices(PRICES[0] ?? "", "export const price11 = 1100;"),
+    });
+    const item = value(loadWorkItem(root, "SHOP-1"));
+    value(saveWorkItem(root, config, { ...item, stage: "ship" }));
+    const summary = join(root, "summary.md");
+    writeFileSync(summary, "");
+    expect(runCheck({ cwd: root, json: false, branch: "feature/SHOP-1-cart", summary }, capture())).toBe(1);
+    const text = readFileSync(summary, "utf8");
+    expect(text).toMatch(/^### peer-ai check failed: \d+ problems? to fix before this merges/);
+    expect(text).toContain("- **Fails:** SHOP-1 is at ship, but its code-review looked at");
+    expect(await main(["check", "--branch", "feature/SHOP-1-cart"], { cwd: root, out: capture() })).toBe(1);
   });
 });

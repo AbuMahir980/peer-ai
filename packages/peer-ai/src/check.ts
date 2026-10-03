@@ -4,11 +4,12 @@
 // reported, so they become work items instead of blockers. The project's stage sets how strict
 // it is.
 
+import { appendFileSync } from "node:fs";
 import { renderedName } from "peer-ai-skills";
 import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
-import { changesFor, currentBranch } from "./commits.ts";
+import { changesFor, currentBranch, ownFiles } from "./commits.ts";
 import { latestReviews, staleEvidence, type GateContext } from "./evidence.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
@@ -307,6 +308,7 @@ export function evaluate(root: string, config: PeerAiConfig, options: EvaluateOp
     ...checkGates(items, config, stage, assessment, {
       branch: options.pullRequest ?? currentBranch(root),
       changedSince: changesFor(root),
+      ownFiles: ownFiles(root, config.repo?.defaultBranch),
     }),
     ...(options.pullRequest === undefined ? [] : [checkPullRequest(items, options.pullRequest, stage)]),
     ...checkVerifyCommand(config, stage),
@@ -344,6 +346,34 @@ export interface CheckOptions {
   json: boolean;
   /** The branch a pull request is for: --branch, or GITHUB_HEAD_REF on GitHub Actions. */
   branch?: string | undefined;
+  /** The job's summary on GitHub Actions, GITHUB_STEP_SUMMARY, where the gate says what it's waiting for. */
+  summary?: string | undefined;
+}
+
+/**
+ * What the gate found, for the job's summary on GitHub, which shows on the pull request's checks:
+ * what failed or warns, each with its fix, so nobody has to read the log (RFC 0013).
+ */
+export function verdictSummary(verdict: Verdict): string {
+  const problems = [...verdict.checks, ...verdict.setup].filter(
+    (check) => check.status === "fail" || check.status === "warn",
+  );
+  const failures = count(problems, "fail");
+  const heading =
+    failures > 0
+      ? `### peer-ai check failed: ${plural(failures, "problem")} to fix before this merges`
+      : "### peer-ai check passed";
+  return [
+    heading,
+    "",
+    ...(problems.length === 0
+      ? ["Every work item's record holds up."]
+      : problems.map(
+          (check) =>
+            `- ${check.status === "fail" ? "**Fails:**" : "Warns:"} ${check.message}${check.fix === undefined ? "" : ` ${check.fix}`}`,
+        )),
+    "",
+  ].join("\n");
 }
 
 /** Exit code 0 when it passes, even with warnings; 1 when it fails; 2 without a valid config. */
@@ -360,5 +390,6 @@ export function runCheck(options: CheckOptions, out: Output): number {
   const verdict = evaluate(options.cwd, config, { pullRequest: options.branch });
   if (options.json) out.log(JSON.stringify(verdict, null, 2));
   else for (const line of formatVerdict(verdict)) out.log(line);
+  if (options.summary !== undefined && options.summary !== "") appendFileSync(options.summary, verdictSummary(verdict));
   return verdict.ok ? 0 : 1;
 }
