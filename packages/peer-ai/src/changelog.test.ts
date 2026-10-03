@@ -48,6 +48,15 @@ describe("what changed between two versions (RFC 0014)", () => {
     ]);
   });
 
+  it("doesn't end a sentence at a full stop or a colon inside code", () => {
+    const text =
+      '## 1.0.0-next.10\n\n- 9eea4ce: With `"docs": { "readme": true }`, render keeps a section. More.\n- a473f61: While enforcement only reports (`standards.enforcement: "report"`), jobs finish green: here.\n';
+    expect(changesBetween(text, "1.0.0-next.9", "1.0.0-next.10")).toEqual([
+      '1.0.0-next.10: With `"docs": { "readme": true }`, render keeps a section.',
+      '1.0.0-next.10: While enforcement only reports (`standards.enforcement: "report"`), jobs finish green.',
+    ]);
+  });
+
   it("reads the package's own changelog, which ships with it", () => {
     expect(parseChangelog(ownChangelog()).length).toBeGreaterThan(0);
   });

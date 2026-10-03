@@ -27,11 +27,21 @@ export function parseChangelog(text: string): { version: string; changes: string
   return versions;
 }
 
-/** The first sentence of an entry, without the bold markup, which reads as noise in a line. */
+/**
+ * The first sentence of an entry, without the bold markup, which reads as noise in a line. A full
+ * stop or a colon inside code, such as `"docs": { … }`, doesn't end it.
+ */
 function firstSentence(text: string): string {
   const plain = text.replaceAll("**", "");
-  const end = plain.search(/[.:](\s|$)/);
-  return end === -1 ? plain : `${plain.slice(0, end)}.`;
+  let code = false;
+  for (let i = 0; i < plain.length; i++) {
+    const char = plain[i];
+    if (char === "`") code = !code;
+    else if (!code && (char === "." || char === ":") && (i + 1 === plain.length || /\s/.test(plain[i + 1] ?? ""))) {
+      return `${plain.slice(0, i)}.`;
+    }
+  }
+  return plain;
 }
 
 /** The changes after `from` up to and including `to`, oldest first, each as "<version>: <change>". */
