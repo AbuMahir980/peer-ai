@@ -121,6 +121,15 @@
         "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
       }
     },
+    "fixes": {
+      "description": "Findings of whole-project reviews this item fixes, as skill#finding, such as security-review#F-3 (RFC 0015).",
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]+(-[a-z]+)*#[A-Za-z0-9._-]+$"
+      }
+    },
     "activities": {
       "type": "array",
       "items": {

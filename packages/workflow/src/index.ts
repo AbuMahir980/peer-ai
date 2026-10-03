@@ -3,7 +3,14 @@ import { dirname, join } from "node:path";
 import type { z } from "zod";
 import { ConfigLayerSchema, ConfigSchema, resolveConfig, type PeerAiConfig } from "./config.ts";
 import { ReviewReportSchema, type ReviewReport } from "./report.ts";
-import { MapSchema, WorkItemSchema, type ProjectMap, type WorkItem } from "./state.ts";
+import {
+  MapSchema,
+  ProjectReviewsSchema,
+  WorkItemSchema,
+  type ProjectMap,
+  type ProjectReviews,
+  type WorkItem,
+} from "./state.ts";
 
 export * from "./ids.ts";
 export { adoptionOf, reportsOnly, type Adoption, type Covered, type Deferral } from "./adoption.ts";
@@ -23,9 +30,11 @@ export {
 export {
   MapItemIdSchema,
   MapSchema,
+  ProjectReviewsSchema,
   WorkItemIdSchema,
   WorkItemSchema,
   type ProjectMap,
+  type ProjectReviews,
   type WorkItem,
 } from "./state.ts";
 
@@ -73,4 +82,6 @@ export const validateConfigLayer = (input: unknown): Validation<z.output<typeof 
   validate(ConfigLayerSchema, input);
 export const validateMap = (input: unknown): Validation<ProjectMap> => validate(MapSchema, input);
 export const validateWorkItem = (input: unknown): Validation<WorkItem> => validate(WorkItemSchema, input);
+export const validateProjectReviews = (input: unknown): Validation<ProjectReviews> =>
+  validate(ProjectReviewsSchema, input);
 export const validateReport = (input: unknown): Validation<ReviewReport> => validate(ReviewReportSchema, input);

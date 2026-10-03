@@ -10,7 +10,7 @@ The vocabulary Peer AI is built on, and the schemas for the files a project keep
 |------|-------|
 | `src/ids.ts` | The fixed lists: 14 activities, 29 skills, supported tools, and the items on the project map |
 | `src/config.ts` | The schema for `peer-ai.config.json` and for shared base configs, plus `mergeConfigs` and `resolveConfig` |
-| `src/state.ts` | The schemas for `.peer-ai/map.json` and `.peer-ai/work/<id>.json` |
+| `src/state.ts` | The schemas for `.peer-ai/map.json`, `.peer-ai/work/<id>.json` and `.peer-ai/project-reviews.json` |
 | `src/adoption.ts` | `adoptionOf`, which works out from the config which rules only report today (RFC 0011) |
 | `src/report.ts` | The schema for review reports, the four severity levels, and `deriveResult`, which works out a review's result from its report |
 | `src/index.ts` | `validateConfig`, `validateConfigLayer`, `validateMap`, `validateWorkItem` and `validateReport`, which return every problem with its location |
@@ -98,7 +98,8 @@ The examples show one project per shape:
 State is split across files so that parallel sessions never edit the same one:
 
 - **`.peer-ai/map.json`** records what `peer-ai assess` found: each item on the map as present, partial, missing or not applicable, with the evidence behind it. An item found by reading the code rather than a document is marked `inferred` until someone confirms it.
-- **`.peer-ai/work/<id>.json`** holds one file per work item: its kind, stage, the activities it has called, where work stopped, its last verify and reviews, and a one-line `next`. It can also carry its plan (RFC 0005): a `goal`, `acceptance` criteria, the `sources` it implements, and the items it `dependsOn`, which must ship before it can.
+- **`.peer-ai/work/<id>.json`** holds one file per work item: its kind, stage, the activities it has called, where work stopped, its last verify and reviews, and a one-line `next`. It can also carry its plan (RFC 0005): a `goal`, `acceptance` criteria, the `sources` it implements, and the items it `dependsOn`, which must ship before it can. It can list the whole-project review findings it `fixes`, as `skill#finding` (RFC 0015).
+- **`.peer-ai/project-reviews.json`** holds the latest review of the whole project from each skill, with its result, its open counts and its open findings at the blocking level or high, so they stay in sight until work items fix them (RFC 0015).
 
 - **`.peer-ai/reports/<work item>/<skill>-<time>.json`** holds a review's report: what it looked at, what it read first, every rule it checked and how each went, and every problem it found, with file, line and evidence. See [RFC 0002](https://github.com/AbuMahir980/peer-ai/blob/main/rfcs/0002-review-reports-and-evals.md).
 
