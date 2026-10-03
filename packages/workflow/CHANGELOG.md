@@ -1,5 +1,15 @@
 # peer-ai-workflow
 
+## 1.0.0-next.13
+
+### Minor Changes
+
+- bd9fad3: The map judges a document's evidence, not just its existence (RFC 0018). `assess` flags a document, or a folder of them, that's stale (unchanged for 90 days while its part had 50 commits, or a quarter of its files changed), a byte-for-byte duplicate of another, or about something gone (it names a deleted path or a retired part). Flagged documents are listed under `flagged` in the map with why, and an item whose evidence is all flagged is partial, so `next_work` offers its document skill. List a document meant to stay as it was in `docs.settled`.
+- 13850d2: Reviews are sized to the change (RFC 0016):
+  
+  - **A weak trigger asks for a light review.** That means 20 changed lines or fewer, in files the change didn't add, and nothing about routes, access or sessions. A light review covers the changed lines only and is written with `"depth": "light"`. It applies to code, security, accessibility and design reviews. A light review covers a light requirement; a full requirement still needs a full review.
+  - **A person can waive a review for one item,** with why and who decided: `update_work_item` with `waive`, or `npx peer-ai waive <id> <skill> --reason "…" --by "…"`. `peer-ai check` lists every waiver. At production, only a light review can be waived.
+
 ## 1.0.0-next.12
 
 ### Minor Changes
