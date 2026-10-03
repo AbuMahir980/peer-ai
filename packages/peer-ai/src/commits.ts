@@ -59,14 +59,15 @@ export function commitsSince(root: string, base: string): number {
 
 /**
  * Where the branch leaves the main line: its merge base with the remote's default branch, the
- * config's, main or master, locally or as the remote has it, as in CI.
+ * config's, main or master, locally or as the remote has it, as in CI. For the branch checked out,
+ * unless another commit is given.
  */
-export function forkPoint(root: string, defaultBranch?: string): string | undefined {
+export function forkPoint(root: string, defaultBranch?: string, head = "HEAD"): string | undefined {
   const remote = git(root, ["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"])?.trim();
   const named = [defaultBranch, "main", "master"].filter((name): name is string => name !== undefined);
   for (const candidate of [remote, ...named.flatMap((name) => [name, `origin/${name}`])]) {
     if (candidate === undefined || candidate === "") continue;
-    const base = git(root, ["merge-base", "HEAD", candidate])?.trim();
+    const base = git(root, ["merge-base", head, candidate])?.trim();
     if (base !== undefined && base !== "") return base;
   }
   return undefined;

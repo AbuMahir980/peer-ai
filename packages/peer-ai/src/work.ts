@@ -31,6 +31,7 @@ import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.t
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
+import { migrationCollisions, type MigrationCollision } from "./migrations.ts";
 import { asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { standardsFor } from "./standards.ts";
@@ -668,6 +669,14 @@ export function advanceWorkItem(
   return saveWorkItem(home, config, moved);
 }
 
+/** Where an item's new migrations will collide with another open item's, for advance_work_item (RFC 0018). */
+export function collisionsFor(root: string, config: PeerAiConfig, item: WorkItem): MigrationCollision[] {
+  const open = allWorkItems(root)
+    .map((located) => located.item)
+    .filter((other) => !CLOSED.includes(other.stage));
+  return migrationCollisions(locate(root, item.id)?.home ?? root, item, open, config.repo?.defaultBranch);
+}
+
 /** Moves a closed item into the history after checking it, and returns it as it closed. */
 function closeItem(home: string, item: WorkItem, by: "ship" | "merge" | "cancel", now: Date): Result<WorkItem> {
   const valid = validateWorkItem({ $schema: WORK_ITEM_SCHEMA_URL, ...item });
@@ -848,6 +857,11 @@ export interface NextWork {
    */
   reviews?: (ReturnType<typeof reviewsToDo>[number] & { rules: string[] })[];
   /**
+   * Other open items whose branches also add a migration in a folder the current item's branch
+   * adds one to, so one of them will need re-parenting (RFC 0018).
+   */
+  migrationCollisions?: MigrationCollision[];
+  /**
    * When nothing is open: what the project's stage still needs, to start as gap work items, and
    * the skill to use for each gap that has one.
    */
@@ -891,6 +905,7 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
     current === undefined
       ? []
       : reviewsToDo(current).map((review) => ({ ...review, rules: reviewRules(home, config, current, review.skill) }));
+  const collisions = current === undefined ? [] : migrationCollisions(home, current, open, config.repo?.defaultBranch);
   const shipped = new Set(items.flatMap((item) => (item.stage === "ship" || item.stage === "done" ? [item.id] : [])));
   const summary = (item: WorkItem): WorkSummary => {
     const waitingFor = (item.dependsOn ?? []).filter((id) => !shipped.has(id));
@@ -913,6 +928,7 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
     ...(branch === undefined ? {} : { branch }),
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),
+    ...(collisions.length > 0 ? { migrationCollisions: collisions } : {}),
     open: open.slice(0, LISTED).map(summary),
     ...(open.length > LISTED ? { more: open.length - LISTED } : {}),
   };

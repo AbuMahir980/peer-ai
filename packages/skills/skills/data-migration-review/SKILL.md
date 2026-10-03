@@ -28,7 +28,7 @@ Copy this checklist and tick it off as you go:
 
 ## 1. Scope
 
-- **A work item:** call the peer-ai MCP tool `next_work`. Review every migration, schema, model and storage change its branch made (`git diff --name-only <base>...HEAD`), and all the code that still reads or writes the data it changes.
+- **A work item:** call the peer-ai MCP tool `next_work`. Review every migration, schema, model and storage change its branch made (`git diff --name-only <base>...HEAD`), and all the code that still reads or writes the data it changes. If its reply has `migrationCollisions`, other open items' branches also add a migration in the same folder: say in the report's summary which, and that whichever merges second needs its migration re-parented, then reviewed again. When one is `certain`, merging both makes two heads, so make it a finding.
 - **The whole project:** every migration from the first, and every store, on the map from the peer-ai MCP tool `project_map`. Its `data-model` item names them.
 
 Read the data model document first where there is one, and list it in the report's `inputs`.
