@@ -33,6 +33,7 @@ import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
+import { standardsFor } from "./standards.ts";
 import { whatChangedSince, type WhatChanged } from "./updates.ts";
 import {
   PROJECT_REVIEWS_FILE,
@@ -314,6 +315,7 @@ export function checkReport(
   config: PeerAiConfig,
   review: ReviewInput & { report: string },
   workItem?: string,
+  rules?: readonly string[],
 ): Result<CheckedReport> {
   const read = readReport(root, review.report);
   if (!read.ok) return read;
@@ -324,11 +326,11 @@ export function checkReport(
   if (workItem !== undefined && report.workItem !== undefined && report.workItem !== workItem) {
     return failed(`The report is for work item ${report.workItem}, not ${workItem}.`);
   }
-  // Silence is never an answer (RFC 0004): every rule the skill answers for gets a line, even
-  // one that doesn't apply here.
+  // Silence is never an answer (RFC 0004): every rule the review answers for gets a line, even one
+  // that doesn't apply here. For a change, that's the rules that can apply to its files (RFC 0016).
   if (availableSkills().includes(review.skill)) {
     const covered = new Set(report.coverage.map((line) => line.rule));
-    const missing = skillRuleIds(review.skill).filter((rule) => !covered.has(rule));
+    const missing = (rules ?? skillRuleIds(review.skill)).filter((rule) => !covered.has(rule));
     if (missing.length > 0) {
       const shown =
         missing.length > 12
@@ -452,7 +454,13 @@ export function recordReview(
         `${review.report} isn't under ${REPORTS_DIR}/. Save the report there, in the work item's folder, and record it from there.`,
       );
     }
-    const checked = checkReport(home, config, { ...review, report: review.report }, id);
+    const checked = checkReport(
+      home,
+      config,
+      { ...review, report: review.report },
+      id,
+      reviewRules(home, config, item, review.skill),
+    );
     if (!checked.ok) return checked;
     entry = { ...checked.value, at };
   }
@@ -503,6 +511,22 @@ export function recordProjectReview(
   mkdirSync(join(root, ".peer-ai"), { recursive: true });
   writeFileSync(join(root, PROJECT_REVIEWS_FILE), `${JSON.stringify(file, null, 2)}\n`);
   return { ok: true, value: entry };
+}
+
+/**
+ * The rules a review of a work item answers for (RFC 0016): the skill's rules that can apply to the
+ * files the item changed, as standards_for_file works them out for each. All of the skill's rules
+ * when the change's files aren't known.
+ */
+export function reviewRules(home: string, config: PeerAiConfig, item: WorkItem, skill: SkillId): string[] {
+  const all = skillRuleIds(skill);
+  const files =
+    item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
+  if (files.length === 0) return all;
+  const applying = new Set(
+    files.flatMap((file) => standardsFor(config, home, file)?.peerAiRules.map((rule) => rule.id) ?? []),
+  );
+  return all.filter((rule) => applying.has(rule));
 }
 
 export function recordVerify(
@@ -818,8 +842,11 @@ export interface NextWork {
   open: WorkSummary[];
   /** How many more open items there are than open lists. */
   more?: number;
-  /** The current item's required reviews, by the names their skills are installed under. */
-  reviews?: ReturnType<typeof reviewsToDo>;
+  /**
+   * The current item's required reviews, by the names their skills are installed under, each with
+   * the rules it answers for: those that can apply to the files the item changed (RFC 0016).
+   */
+  reviews?: (ReturnType<typeof reviewsToDo>[number] & { rules: string[] })[];
   /**
    * When nothing is open: what the project's stage still needs, to start as gap work items, and
    * the skill to use for each gap that has one.
@@ -858,7 +885,12 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
     .filter((item) => !CLOSED.includes(item.stage))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const current = branch === undefined ? undefined : open.find((item) => item.branch === branch);
-  const reviews = current === undefined ? [] : reviewsToDo(current);
+  // Each review comes with the rules it answers for, so the agent knows its scope before it starts (RFC 0016).
+  const home = current === undefined ? root : (locate(root, current.id)?.home ?? root);
+  const reviews =
+    current === undefined
+      ? []
+      : reviewsToDo(current).map((review) => ({ ...review, rules: reviewRules(home, config, current, review.skill) }));
   const shipped = new Set(items.flatMap((item) => (item.stage === "ship" || item.stage === "done" ? [item.id] : [])));
   const summary = (item: WorkItem): WorkSummary => {
     const waitingFor = (item.dependsOn ?? []).filter((id) => !shipped.has(id));

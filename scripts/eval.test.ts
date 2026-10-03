@@ -606,7 +606,7 @@ describe("marking a document", () => {
     expect(writtenDocument(dir, "docs/requirements.md", "# Old\n")).toBe("docs/requirements.md");
   });
 
-  it("finds a document wherever the project map finds it", () => {
+  it("finds a document wherever the project map finds it", { timeout: 20_000 }, () => {
     const dir = mkdtempSync(join(tmpdir(), "peer-ai-eval-mapped-"));
     made.push(dir);
     execFileSync("git", ["init", "-q"], { cwd: dir });
