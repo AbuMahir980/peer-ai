@@ -10,6 +10,8 @@ import { availableSkills, skillRuleIds } from "peer-ai-skills";
 import {
   SKILL_IDS,
   deriveResult,
+  openCounts,
+  type OpenCounts,
   validateReport,
   validateWorkItem,
   type ActivityId,
@@ -160,6 +162,10 @@ export interface WorkItemChanges {
   acceptance?: string[] | undefined;
   sources?: string[] | undefined;
   dependsOn?: string[] | undefined;
+  /** Why the acceptance criteria change, needed after a tester's check found one not met (RFC 0015). */
+  reason?: string | undefined;
+  /** Who decided it: whoever agreed the criteria. */
+  by?: string | undefined;
 }
 
 /** The fields that have a value, so an undefined argument never erases a stored one. */
@@ -178,8 +184,27 @@ export function updateWorkItem(
   const located = locateItem(root, id);
   if (!located.ok) return located;
   const { home, item } = located.value;
-  return saveWorkItem(home, config, { ...item, ...defined(changes), updatedAt: now.toISOString() });
+  const { reason, by, ...fields } = changes;
+  // Criteria a tester found not met change only by the decision of whoever agreed them, with why,
+  // so an item can't ship by quietly rewriting what it promised (RFC 0015).
+  const changing =
+    fields.acceptance !== undefined && JSON.stringify(fields.acceptance) !== JSON.stringify(item.acceptance ?? []);
+  const failedAcceptance = latestReview(item, "qa-acceptance")?.result === "fail";
+  if (changing && failedAcceptance && (reason === undefined || by === undefined)) {
+    return failed(
+      `${item.id}'s qa-acceptance found a criterion not met, so its criteria change only with why and who decided: give reason and by, from whoever agreed them. Then check it again with qa-acceptance.`,
+    );
+  }
+  const recorded =
+    changing && failedAcceptance && reason !== undefined && by !== undefined
+      ? { criteriaChanged: [...(item.criteriaChanged ?? []), { at: now.toISOString(), reason, by }] }
+      : {};
+  return saveWorkItem(home, config, { ...item, ...defined(fields), ...recorded, updatedAt: now.toISOString() });
 }
+
+/** The latest review an item recorded from a skill. */
+const latestReview = (item: WorkItem, skill: SkillId) =>
+  (item.reviews ?? []).filter((review) => review.skill === skill).at(-1);
 
 export interface ReviewInput {
   skill: SkillId;
@@ -215,6 +240,8 @@ function readReport(root: string, path: string): Result<ReviewReport> {
 export interface CheckedReport {
   skill: SkillId;
   result: ReviewResult;
+  /** What the report leaves open, by severity; left out when nothing is (RFC 0015). */
+  open?: OpenCounts;
   report: string;
   summary: string;
 }
@@ -264,9 +291,16 @@ export function checkReport(
   if (review.result !== undefined && review.result !== worked) {
     return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
   }
+  const open = openCounts(report);
   return {
     ok: true,
-    value: { skill: review.skill, result: worked, report: review.report, summary: review.summary ?? report.summary },
+    value: {
+      skill: review.skill,
+      result: worked,
+      ...(Object.keys(open).length === 0 ? {} : { open }),
+      report: review.report,
+      summary: review.summary ?? report.summary,
+    },
   };
 }
 

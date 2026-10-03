@@ -6,7 +6,14 @@
 
 import { appendFileSync } from "node:fs";
 import { renderedName } from "peer-ai-skills";
-import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
+import {
+  MAP_ITEM_IDS,
+  SEVERITIES,
+  describeResult,
+  type KnownMapItemId,
+  type PeerAiConfig,
+  type WorkItem,
+} from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
 import { ciProblem, ciResult } from "./ci.ts";
@@ -142,6 +149,24 @@ export function gateWorkItem(
     const message = `${claim}, but it has no ${required.skill}, which it needs because ${required.reason}.`;
     const fix = `Use the ${renderedName(required.skill)} skill and record its review, ${backToBuild}`;
     checks.push(stage === "production" || current ? fail("gates", message, fix) : warn("gates", message, fix));
+  }
+
+  // Open high findings below the blocking level don't fail a review, so they're said here, before a
+  // release, rather than hidden behind a pass (RFC 0015).
+  const blocking = SEVERITIES.indexOf(config.gates?.blockOn ?? "critical");
+  for (const review of latestReviews(item)) {
+    const serious = SEVERITIES.filter(
+      (severity, index) =>
+        index > blocking && index <= SEVERITIES.indexOf("high") && (review.open?.[severity] ?? 0) > 0,
+    );
+    if (serious.length === 0) continue;
+    checks.push(
+      warn(
+        "gates",
+        `${claim}, and its ${review.skill} is ${describeResult(review.result, review.open)}.`,
+        "Fix them, or accept each in the report with its reason. To have them block, set gates.blockOn to high.",
+      ),
+    );
   }
 
   // At ship, the evidence must be from the latest commit; done is past the branch, so it isn't asked.

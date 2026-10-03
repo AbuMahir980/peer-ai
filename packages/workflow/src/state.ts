@@ -123,6 +123,17 @@ export const WorkItemSchema = z
         z.strictObject({
           skill: z.enum(SKILL_IDS),
           result: z.enum(["pass", "fail", "incomplete"]),
+          open: z
+            .strictObject({
+              critical: z.number().int().positive().optional(),
+              high: z.number().int().positive().optional(),
+              medium: z.number().int().positive().optional(),
+              low: z.number().int().positive().optional(),
+            })
+            .optional()
+            .describe(
+              "The problems the report leaves open, by severity, so a pass is never read as all clear (RFC 0015).",
+            ),
           report: Path.optional().describe("The review report the result was worked out from."),
           summary: z.string().min(1).max(500).optional(),
           unproven: z
@@ -139,6 +150,12 @@ export const WorkItemSchema = z
       .optional()
       .describe(
         "The reviews this work needs, worked out from what the change touched when it reached verify (RFC 0004).",
+      ),
+    criteriaChanged: z
+      .array(z.strictObject({ at: Timestamp, reason: z.string().min(1), by: z.string().min(1) }))
+      .optional()
+      .describe(
+        "Each time the acceptance criteria changed after a tester's check found one not met: why, and who decided (RFC 0015).",
       ),
     closed: z
       .strictObject({

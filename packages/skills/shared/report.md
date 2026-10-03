@@ -33,7 +33,7 @@ Write `<time>` as `20261005T1000Z`: no colons, so the name works on every system
 | `coverage` | How each rule went (below) |
 | `findings` | Each problem found (below) |
 | `result` | `pass`, `fail` or `incomplete` (below) |
-| `summary` | Up to 500 characters, for people |
+| `summary` | Up to 500 characters, for people. Start with the result and what's left open, the most serious first, such as "Pass, with 7 high findings open: …", so a pass is never read as all clear |
 
 ## Coverage: a line for every rule
 
@@ -69,9 +69,11 @@ Each finding is one problem, at the place it happens. Two problems are two findi
 
 Peer AI works out the result from the report, and the report must say the same:
 
-1. `fail` if a finding is open at or above the project's blocking level (critical, unless the project sets it lower)
+1. `fail` if a finding is open at or above the project's blocking level (critical, unless the project sets it lower), or, for `qa-acceptance`, if any acceptance criterion doesn't hold, whatever its finding's severity
 2. `incomplete` if not, but a rule is `not-checked`
 3. `pass` otherwise
+
+Peer AI records the result with how many findings are left open at each severity, and shows it that way everywhere: "pass, 7 high open". Tell the person the same.
 
 ## Recording it
 

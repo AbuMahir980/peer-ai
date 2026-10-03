@@ -7,7 +7,14 @@ import { dirname, join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { ACTIVITY_IDS, MapItemIdSchema, SKILL_IDS, WorkItemSchema, type PeerAiConfig } from "peer-ai-workflow";
+import {
+  ACTIVITY_IDS,
+  MapItemIdSchema,
+  SKILL_IDS,
+  WorkItemSchema,
+  describeResult,
+  type PeerAiConfig,
+} from "peer-ai-workflow";
 import { z } from "zod";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
@@ -229,6 +236,16 @@ export function createServer(options: ServerOptions): McpServer {
         title: z.string().min(1).optional(),
         goal: WorkItemSchema.shape.goal,
         acceptance: WorkItemSchema.shape.acceptance,
+        reason: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Why the acceptance criteria change. Needed after qa-acceptance found one not met."),
+        by: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Who decided the change: whoever agreed the criteria. Needed with reason."),
         sources: WorkItemSchema.shape.sources,
         dependsOn: WorkItemSchema.shape.dependsOn,
       },
@@ -287,7 +304,14 @@ export function createServer(options: ServerOptions): McpServer {
       annotations: WRITES,
     },
     withProject((root, config, { id, ...review }: { id?: string | undefined } & ReviewInput) => {
-      if (id !== undefined) return fromResult(recordReview(root, config, id, review, now()));
+      if (id !== undefined) {
+        const recorded = recordReview(root, config, id, review, now());
+        if (!recorded.ok) return refuse(recorded.error);
+        // The result with what it leaves open, so a pass is never read as all clear (RFC 0015).
+        const entry = recorded.value.reviews?.find((each) => each.skill === review.skill);
+        const said = entry === undefined ? undefined : `${entry.skill}: ${describeResult(entry.result, entry.open)}`;
+        return reply({ ...recorded.value, ...(said === undefined ? {} : { recorded: said }) });
+      }
       if (review.report === undefined) {
         return refuse("A review of the whole project needs its report: give the report's path.");
       }
@@ -298,6 +322,7 @@ export function createServer(options: ServerOptions): McpServer {
               ok: true,
               value: {
                 ...checked.value,
+                result: describeResult(checked.value.result, checked.value.open),
                 recorded: false,
                 note: "The report is valid. A review of the whole project has no work item, so it isn't recorded; tell the person its result.",
               },

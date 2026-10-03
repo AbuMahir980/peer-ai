@@ -54,7 +54,7 @@ Call the peer-ai MCP tool `standards_for_file` for the files the item changed. E
 Hold every line to this bar:
 
 - **Every criterion gets its own coverage line,** under REQ-05, with the `criterion` as its item. A pass names the code and the test: "slots.ts:12 refuses a full slot; slots.test.ts:40 books a full slot and expects the refusal".
-- **A criterion the code doesn't meet is a finding under REQ-05,** saying which "then" fails and for which values, with the file and line. The item can't ship until it's fixed, or the criterion is changed or dropped by whoever agreed it.
+- **A criterion the code doesn't meet is a finding under REQ-05,** saying which "then" fails and for which values, with the file and line. Any criterion that doesn't hold fails the review, whatever its finding's severity. The item can't ship until it's fixed, or the criterion is changed or dropped by whoever agreed it, through `update_work_item` with the new `acceptance`, the `reason` and who decided it (`by`), and then checked again.
 - **A criterion no test proves, or a test that would pass even if the code were wrong, is a finding under the testing rule it breaks,** such as TEST-02 or TEST-09.
 - **Follow the criterion's own values through the code,** and then its edges. Never accept a criterion because a test with its name passes.
 - **Where a criterion protects something another rule covers,** such as whose data a person may change, cite that rule too.

@@ -163,6 +163,8 @@ export type ReviewReport = z.output<typeof ReviewReportSchema>;
 /**
  * The result a report supports: fail when an open problem is at or above the blocking level,
  * incomplete when a rule wasn't checked, pass otherwise. Fixed and accepted problems don't block.
+ * A tester's check of acceptance criteria fails on any criterion that doesn't hold, whatever its
+ * finding's severity: that is the one question it answers (RFC 0015).
  */
 export function deriveResult(report: ReviewReport, blockOn: Severity = "critical"): ReviewResult {
   const blocking = SEVERITIES.indexOf(blockOn);
@@ -171,6 +173,36 @@ export function deriveResult(report: ReviewReport, blockOn: Severity = "critical
   ) {
     return "fail";
   }
+  if (report.skill === "qa-acceptance" && unmetCriteria(report).length > 0) return "fail";
   if (report.coverage.some((entry) => entry.status === "not-checked")) return "incomplete";
   return "pass";
+}
+
+/** The acceptance criteria a qa-acceptance report found not met: its failed lines on a criterion. */
+export function unmetCriteria(report: ReviewReport): string[] {
+  return report.coverage
+    .filter((entry) => entry.status === "fail" && entry.item?.startsWith("criterion:") === true)
+    .map((entry) => entry.item ?? "");
+}
+
+/** How many problems a report leaves open at each severity, leaving out those with none (RFC 0015). */
+export type OpenCounts = Partial<Record<Severity, number | undefined>>;
+
+export function openCounts(report: ReviewReport): OpenCounts {
+  const counts: OpenCounts = {};
+  for (const finding of report.findings) {
+    if (finding.status === "open") counts[finding.severity] = (counts[finding.severity] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** A result with what it leaves open, the most serious first: "pass, 7 high and 3 medium open". */
+export function describeResult(result: ReviewResult, open: OpenCounts | undefined): string {
+  const parts = SEVERITIES.flatMap((severity) => {
+    const count = open?.[severity] ?? 0;
+    return count === 0 ? [] : [`${String(count)} ${severity}`];
+  });
+  if (parts.length === 0) return result;
+  const listed = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1) ?? ""}`;
+  return `${result}, ${listed ?? ""} open`;
 }

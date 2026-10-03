@@ -4,7 +4,14 @@
 
 import { execFileSync } from "node:child_process";
 import { availableSkills, renderedName } from "peer-ai-skills";
-import { MAP_ITEM_SKILLS, type KnownMapItemId, type PeerAiConfig, type SkillId, type WorkItem } from "peer-ai-workflow";
+import {
+  MAP_ITEM_SKILLS,
+  describeResult,
+  type KnownMapItemId,
+  type PeerAiConfig,
+  type SkillId,
+  type WorkItem,
+} from "peer-ai-workflow";
 import {
   INFRASTRUCTURE_AS_CODE,
   MANIFEST,
@@ -183,11 +190,18 @@ export function changedFiles(root: string): string[] {
 }
 
 /** The required reviews still to do on a work item, by their installed names, for next_work. */
-export function reviewsToDo(item: WorkItem): { skill: SkillId; use: string; reason: string; done: boolean }[] {
-  const done = new Set((item.reviews ?? []).map((review) => review.skill));
-  return (item.requiredReviews ?? []).map((review) => ({
-    ...review,
-    use: renderedName(review.skill),
-    done: done.has(review.skill),
-  }));
+export function reviewsToDo(
+  item: WorkItem,
+): { skill: SkillId; use: string; reason: string; done: boolean; result?: string }[] {
+  const recorded = new Map((item.reviews ?? []).map((review) => [review.skill, review]));
+  return (item.requiredReviews ?? []).map((review) => {
+    const found = recorded.get(review.skill);
+    return {
+      ...review,
+      use: renderedName(review.skill),
+      done: found !== undefined,
+      // A done review says what it left open, so a pass is never read as all clear (RFC 0015).
+      ...(found === undefined ? {} : { result: describeResult(found.result, found.open) }),
+    };
+  });
 }
