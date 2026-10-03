@@ -56,7 +56,7 @@ Only `version`, `project.name` and `tracks` are required. This is a complete con
 | `gates` | The finding severity that blocks a merge |
 | `capabilities` | Per skill: add-ons from other tools that feed it (`plugin:skill` or `/command`), extra checklists, notes |
 | `activities` | Per activity: files to read first, and project-specific instructions |
-| `docs` | Where docs live, whether to keep their structure, and where out-of-scope ideas go |
+| `docs` | Where docs live, whether to keep their structure, and where out-of-scope ideas go. `readme`, false unless set, has `render` keep a section for people in `README.md`, "How we work: Peer AI" (RFC 0014). |
 | `updates` | How the project hears about new Peer AI releases: `notify`, true unless set to false, has `doctor` and `next_work` say when a newer one is out; `pullRequest`, false unless set, has `render` write a daily workflow that opens a pull request to update (RFC 0014) |
 | `declined` | Stack profiles and traits `peer-ai assess` suggests that the project decided not to take up, each with why, so they aren't suggested again (RFC 0011) |
 
