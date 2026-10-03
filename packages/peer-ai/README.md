@@ -30,7 +30,7 @@ In the project's folder, on a branch:
 npx --prefer-online peer-ai@latest render
 ```
 
-It moves every file it wrote to the new version, and says which version it moved from, with a link to what changed. Review the change, commit it and merge it. In a project with `peer-ai` in its `package.json`, update it there and install it, then run `npx peer-ai render`.
+`peer-ai doctor`, and through it your AI tool at the start of each session, says when a newer release is out (RFC 0014). It moves every file it wrote to the new version, and says which version it moved from, with a link to what changed. Review the change, commit it and merge it. In a project with `peer-ai` in its `package.json`, update it there and install it, then run `npx peer-ai render`.
 
 ### Updating while agents work
 
@@ -356,6 +356,7 @@ npx peer-ai doctor
 | It checks | A problem looks like |
 |-----------|----------------------|
 | Node.js | A version older than the one Peer AI needs |
+| Updates | A newer release of Peer AI than the project uses, with where to read what changed and how to update. npm is asked at most once a day per machine, with the answer kept in your cache folder, never in the project; offline and in CI it says nothing. `"updates": { "notify": false }` turns it off (RFC 0014). A warning, which reaches the AI tool through `next_work`. |
 | Peer AI's version | The Peer AI running isn't the version the project uses: the exact version in `package.json`, the one installed, or the one `render` pinned. An AI tool whose server is older is told to reconnect, through `next_work`; a project behind the version run is told how to move to it. A warning. |
 | `peer-ai.config.json` | Missing, or not valid, with each error |
 | Tracks | A track whose folder has moved or gone, or a part of the repository no track covers. A track with no `path` is the repository root, so a monorepo needs a track for each part, or one whose folder holds several. A dormant track may not have a folder yet. |

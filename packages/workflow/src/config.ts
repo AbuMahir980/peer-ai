@@ -420,6 +420,15 @@ const configShape = {
   capabilities: z.partialRecord(z.enum(SKILL_IDS), Capability).optional(),
   activities: z.partialRecord(z.enum(ACTIVITY_IDS), Activity).optional(),
   docs: Docs.optional(),
+  updates: z
+    .strictObject({
+      notify: z
+        .boolean()
+        .optional()
+        .describe("Say in doctor and next_work when a newer Peer AI is out. Defaults to true."),
+    })
+    .optional()
+    .describe("How the project hears about new Peer AI releases (RFC 0014)."),
   declined: z
     .array(
       z.union([
