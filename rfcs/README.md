@@ -38,6 +38,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0010](0010-a-record-that-follows-the-branch.md) | A record that follows the branch and its commits | Accepted |
 | [0011](0011-adopting-peer-ai-on-an-existing-codebase.md) | Adopting Peer AI on an existing codebase | Accepted |
 | [0012](0012-replies-that-fit.md) | Replies that fit | Accepted |
+| [0013](0013-a-gate-that-is-cheap-to-pass.md) | A gate that's cheap to pass | Draft |
 
 ## What carries weight
 
