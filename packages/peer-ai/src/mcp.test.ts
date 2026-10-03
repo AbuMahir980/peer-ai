@@ -207,10 +207,16 @@ describe("the MCP server", () => {
     mkdirSync(join(root, ".peer-ai/reports/project"), { recursive: true });
 
     writeFileSync(join(root, path), json(report(lines)));
+    // A whole-project review is recorded too, with its open findings (RFC 0015).
     expect((await call(client, "record_review", { skill: "security-review", report: path })).value()).toMatchObject({
       skill: "security-review",
       result: "pass",
-      recorded: false,
+      recorded: "security-review: pass",
+      findings: [],
+    });
+    expect(JSON.parse(readFileSync(join(root, ".peer-ai/project-reviews.json"), "utf8"))).toMatchObject({
+      version: 1,
+      reviews: [{ skill: "security-review", result: "pass", report: path, findings: [] }],
     });
 
     writeFileSync(join(root, path), json(report(lines.slice(1))));

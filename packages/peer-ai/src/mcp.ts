@@ -25,7 +25,7 @@ import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
 import {
   advanceWorkItem,
-  checkReport,
+  recordProjectReview,
   createWorkItem,
   loadWorkItem,
   nextWork,
@@ -211,6 +211,7 @@ export function createServer(options: ServerOptions): McpServer {
         acceptance: WorkItemSchema.shape.acceptance,
         sources: WorkItemSchema.shape.sources,
         dependsOn: WorkItemSchema.shape.dependsOn,
+        fixes: WorkItemSchema.shape.fixes,
       },
       annotations: WRITES,
     },
@@ -248,6 +249,7 @@ export function createServer(options: ServerOptions): McpServer {
           .describe("Who decided the change: whoever agreed the criteria. Needed with reason."),
         sources: WorkItemSchema.shape.sources,
         dependsOn: WorkItemSchema.shape.dependsOn,
+        fixes: WorkItemSchema.shape.fixes,
       },
       annotations: { ...WRITES, idempotentHint: true },
     },
@@ -290,7 +292,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Record a review",
       description:
-        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format; a report anywhere else is refused) and pass its path: Peer AI checks the report, including that every rule the skill answers for has a coverage line, and works out pass, fail or incomplete from it. If it refuses, fix what it names and call it again. A review recorded without a report is marked unproven. Record failed and incomplete reviews too. The review is recorded with the commit it looked at, and recording the same skill again replaces the earlier one. For a review of the whole project, which has no work item, leave out the id: Peer AI checks the report the same way and gives its result, without recording it anywhere.",
+        "Record a review of a work item. Write the review's report first (.peer-ai/reports/<work item>/<skill>-<time>.json, in the review-report format; a report anywhere else is refused) and pass its path: Peer AI checks the report, including that every rule the skill answers for has a coverage line, and works out pass, fail or incomplete from it. If it refuses, fix what it names and call it again. A review recorded without a report is marked unproven. Record failed and incomplete reviews too. The review is recorded with the commit it looked at, and recording the same skill again replaces the earlier one. For a review of the whole project, which has no work item, leave out the id: Peer AI checks the report the same way, and records it in .peer-ai/project-reviews.json with its open findings, so next_work and the gate keep them in sight until work items list them in fixes.",
       inputSchema: {
         id: itemId.optional().describe("The work item reviewed. Leave it out for a review of the whole project."),
         skill: z.enum(SKILL_IDS),
@@ -315,20 +317,18 @@ export function createServer(options: ServerOptions): McpServer {
       if (review.report === undefined) {
         return refuse("A review of the whole project needs its report: give the report's path.");
       }
-      const checked = checkReport(root, config, { ...review, report: review.report });
-      return fromResult(
-        checked.ok
-          ? {
-              ok: true,
-              value: {
-                ...checked.value,
-                result: describeResult(checked.value.result, checked.value.open),
-                recorded: false,
-                note: "The report is valid. A review of the whole project has no work item, so it isn't recorded; tell the person its result.",
-              },
-            }
-          : checked,
-      );
+      // A whole-project review is recorded too, with its open findings, for work items to fix (RFC 0015).
+      const recorded = recordProjectReview(root, config, { ...review, report: review.report }, now());
+      if (!recorded.ok) return refuse(recorded.error);
+      return reply({
+        ...recorded.value,
+        recorded: `${recorded.value.skill}: ${describeResult(recorded.value.result, recorded.value.open)}`,
+        ...(recorded.value.findings.length === 0
+          ? {}
+          : {
+              next: "Tell the person its result. Then, with them, group its open findings into work items with create_work_item, each listing the findings it fixes in fixes, as skill#finding.",
+            }),
+      });
     }),
   );
 

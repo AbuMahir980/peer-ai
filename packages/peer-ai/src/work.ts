@@ -9,7 +9,9 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { availableSkills, skillRuleIds } from "peer-ai-skills";
 import {
   SKILL_IDS,
+  SEVERITIES,
   deriveResult,
+  validateProjectReviews,
   openCounts,
   type OpenCounts,
   validateReport,
@@ -31,6 +33,14 @@ import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { whatChangedSince, type WhatChanged } from "./updates.ts";
+import {
+  PROJECT_REVIEWS_FILE,
+  PROJECT_REVIEWS_SCHEMA_URL,
+  projectFindings,
+  readProjectReviews,
+  type ProjectFindings,
+  type ProjectReview,
+} from "./project-reviews.ts";
 import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
@@ -129,6 +139,8 @@ export interface NewWorkItem {
   acceptance?: string[] | undefined;
   sources?: string[] | undefined;
   dependsOn?: string[] | undefined;
+  /** Findings of whole-project reviews it fixes, as skill#finding (RFC 0015). */
+  fixes?: string[] | undefined;
 }
 
 export function createWorkItem(root: string, config: PeerAiConfig, input: NewWorkItem, now: Date): Result<WorkItem> {
@@ -151,7 +163,13 @@ export function createWorkItem(root: string, config: PeerAiConfig, input: NewWor
     ...(track === undefined ? {} : { track }),
     ...(branch === undefined ? {} : { branch }),
     ...(input.gap === undefined ? {} : { gap: input.gap }),
-    ...defined({ goal: input.goal, acceptance: input.acceptance, sources: input.sources, dependsOn: input.dependsOn }),
+    ...defined({
+      goal: input.goal,
+      acceptance: input.acceptance,
+      sources: input.sources,
+      dependsOn: input.dependsOn,
+      fixes: input.fixes,
+    }),
     next: input.next ?? "Read what this item needs, then plan it.",
     updatedAt: now.toISOString(),
   } as WorkItem;
@@ -169,6 +187,7 @@ export interface WorkItemChanges {
   acceptance?: string[] | undefined;
   sources?: string[] | undefined;
   dependsOn?: string[] | undefined;
+  fixes?: string[] | undefined;
   /** Moves the item to another track (RFC 0017). */
   track?: string | undefined;
   /** Why the acceptance criteria change, needed after a tester's check found one not met (RFC 0015). */
@@ -413,6 +432,44 @@ export function recordReview(
   // One review per skill: recording a skill again replaces the earlier entry, which git keeps.
   const reviews = [...(item.reviews ?? []).filter((recorded) => recorded.skill !== review.skill), entry];
   return saveWorkItem(home, config, { ...item, reviews, updatedAt: at });
+}
+
+/**
+ * Records a review of the whole project, which has no work item (RFC 0015): checked as any report
+ * is, then kept in .peer-ai/project-reviews.json as the latest from its skill, with its open
+ * findings at the blocking level or high, for work items to fix.
+ */
+export function recordProjectReview(
+  root: string,
+  config: PeerAiConfig,
+  review: ReviewInput & { report: string },
+  now: Date,
+): Result<ProjectReview> {
+  const checked = checkReport(root, config, review);
+  if (!checked.ok) return checked;
+  const read = readReport(root, review.report);
+  if (!read.ok) return read;
+  const keep = Math.max(SEVERITIES.indexOf(config.gates?.blockOn ?? "critical"), SEVERITIES.indexOf("high"));
+  const findings = read.value.findings
+    .filter((finding) => finding.status === "open" && SEVERITIES.indexOf(finding.severity) <= keep)
+    .map(({ id, severity, title }) => ({ id, severity, title }));
+  const commit = headCommit(root);
+  const entry: ProjectReview = {
+    skill: checked.value.skill,
+    result: checked.value.result,
+    ...(checked.value.open === undefined ? {} : { open: checked.value.open }),
+    report: review.report,
+    at: now.toISOString(),
+    ...(commit === undefined ? {} : { commit }),
+    findings,
+  };
+  const reviews = [...readProjectReviews(root).filter((each) => each.skill !== entry.skill), entry];
+  const file = { $schema: PROJECT_REVIEWS_SCHEMA_URL, version: 1 as const, reviews };
+  const valid = validateProjectReviews(file);
+  if (!valid.ok) return failed(`The record would not be valid: ${valid.errors.join("; ")}`);
+  mkdirSync(join(root, ".peer-ai"), { recursive: true });
+  writeFileSync(join(root, PROJECT_REVIEWS_FILE), `${JSON.stringify(file, null, 2)}\n`);
+  return { ok: true, value: entry };
 }
 
 export function recordVerify(
@@ -705,6 +762,11 @@ export const LISTED = 50;
 export interface NextWork {
   /** Every setup problem doctor finds (RFC 0007). Absent when there is none. */
   setup?: { problems: SetupProblem[] };
+  /**
+   * What whole-project reviews leave open: critical findings, and critical and high ones no work
+   * item lists in its fixes, so none is dropped (RFC 0015).
+   */
+  projectFindings?: ProjectFindings;
   /** What changed in Peer AI since this person last worked here, for the AI tool to tell them, once (RFC 0014). */
   whatChanged?: WhatChanged;
   branch?: string;
@@ -768,9 +830,11 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
     };
   };
   const changed = whatChangedSince(root);
+  const findings = projectFindings(readProjectReviews(root), items);
   const result: NextWork = {
     ...(problems.length === 0 ? {} : { setup: { problems } }),
     ...(changed === undefined ? {} : { whatChanged: changed }),
+    ...(findings.critical.length === 0 && findings.uncovered.length === 0 ? {} : { projectFindings: findings }),
     ...(branch === undefined ? {} : { branch }),
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),
