@@ -21,6 +21,7 @@ import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
 import { planRender } from "./render.ts";
 import { checkStacks, checkSuggestions } from "./suggestions.ts";
+import { checkUpdates } from "./updates.ts";
 import { checkVersion } from "./versions.ts";
 import { WORK_DIR, mapChanges, readMap, readWorkItems } from "./state.ts";
 
@@ -380,6 +381,7 @@ export function diagnose(
   const checks = [
     checkNode(nodeVersion),
     checkVersion(root),
+    ...(config === undefined ? [] : checkUpdates(root, config, today)),
     configCheck,
     ...(config === undefined ? needsConfig("tracks", "Tracks") : checkTracks(root, config)),
     ...(config === undefined ? needsConfig("references", "Files the config names") : checkReferences(root, config)),
