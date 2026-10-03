@@ -26,7 +26,7 @@ import {
 } from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
-import { changesFor, commitExists, currentBranch, filesSince, headCommit, ownFiles } from "./commits.ts";
+import { changeSizes, changesFor, commitExists, currentBranch, filesSince, headCommit, ownFiles } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
@@ -196,6 +196,8 @@ export interface WorkItemChanges {
   fixes?: string[] | undefined;
   /** Moves the item to another track (RFC 0017). */
   track?: string | undefined;
+  /** A person's decision that the item doesn't need a review it was asked for, with why (RFC 0016). */
+  waive?: { skill: SkillId; reason: string; by: string } | undefined;
   /** Why the acceptance criteria change, needed after a tester's check found one not met (RFC 0015). */
   reason?: string | undefined;
   /** Who decided it: whoever agreed the criteria. */
@@ -218,7 +220,19 @@ export function updateWorkItem(
   const located = locateItem(root, id);
   if (!located.ok) return located;
   const { home, item } = located.value;
-  const { reason, by, ...fields } = changes;
+  const { reason, by, waive, ...fields } = changes;
+  // A waiver is a person's decision, recorded with why and by whom. At production, only a light
+  // review can be waived: a full one there needs doing (RFC 0016).
+  let waived = item.waived;
+  if (waive !== undefined) {
+    const required = (item.requiredReviews ?? []).find((review) => review.skill === waive.skill);
+    if (projectStage(config) === "production" && required?.depth !== "light") {
+      return failed(
+        `At the production stage, only a light review can be waived, and ${item.id}'s ${waive.skill} is ${required === undefined ? "not one it was asked for" : "a full one"}. Run it, or, if the project never needs it, add it to activities.verify.reviews.skip.`,
+      );
+    }
+    waived = [...(item.waived ?? []).filter((each) => each.skill !== waive.skill), { ...waive, at: now.toISOString() }];
+  }
   // A track is checked when it's set; an item whose track was retired or removed still saves (RFC 0017).
   const problem = fields.track === item.track ? undefined : trackProblem(config, fields.track);
   if (problem !== undefined) return failed(problem);
@@ -236,7 +250,13 @@ export function updateWorkItem(
     changing && failedAcceptance && reason !== undefined && by !== undefined
       ? { criteriaChanged: [...(item.criteriaChanged ?? []), { at: now.toISOString(), reason, by }] }
       : {};
-  return saveWorkItem(home, config, { ...item, ...defined(fields), ...recorded, updatedAt: now.toISOString() });
+  return saveWorkItem(home, config, {
+    ...item,
+    ...defined(fields),
+    ...recorded,
+    ...(waived === undefined ? {} : { waived }),
+    updatedAt: now.toISOString(),
+  });
 }
 
 /** The latest review an item recorded from a skill. */
@@ -277,6 +297,8 @@ function readReport(root: string, path: string): Result<ReviewReport> {
 export interface CheckedReport {
   skill: SkillId;
   result: ReviewResult;
+  /** A light review, of the changed lines only (RFC 0016). */
+  depth?: "light";
   /** What the report leaves open, by severity; left out when nothing is (RFC 0015). */
   open?: OpenCounts;
   report: string;
@@ -335,6 +357,7 @@ export function checkReport(
     value: {
       skill: review.skill,
       result: worked,
+      ...(report.depth === "light" ? { depth: "light" as const } : {}),
       ...(Object.keys(open).length === 0 ? {} : { open }),
       report: review.report,
       summary: review.summary ?? report.summary,
@@ -601,7 +624,9 @@ export function advanceWorkItem(
     // for its parents' reviews and a merge can't erase them (RFC 0010).
     const touched =
       item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
-    const requiredReviews = reviewsFor(touched, config, projectStage(config), read, undefined, item);
+    // How much each file changed decides whether a weak trigger asks only for a light review (RFC 0016).
+    const sizes = item.base !== undefined && commitExists(home, item.base) ? changeSizes(home, item.base) : undefined;
+    const requiredReviews = reviewsFor(touched, config, projectStage(config), read, undefined, item, sizes);
     return saveWorkItem(home, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
   let fromCi: string | undefined;

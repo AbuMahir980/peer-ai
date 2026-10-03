@@ -2,6 +2,7 @@
 // --full a closed one's full record from git; `move` puts an item on another track, which is what to
 // do with an item left on a track that's retired or removed.
 
+import { SKILL_IDS, type SkillId } from "peer-ai-workflow";
 import { loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Output } from "./init.ts";
@@ -73,5 +74,49 @@ function show(options: WorkOptions, usage: string, out: Output): number {
     return 1;
   }
   out.log(JSON.stringify(item.value, null, 2));
+  return 0;
+}
+
+export interface WaiveOptions {
+  cwd: string;
+  id?: string | undefined;
+  skill?: string | undefined;
+  reason?: string | undefined;
+  by?: string | undefined;
+  now?: Date;
+}
+
+/** `peer-ai waive`: a person's decision that an item doesn't need a review (RFC 0016). */
+export function runWaive(options: WaiveOptions, out: Output): number {
+  const { id, skill, reason, by } = options;
+  if (id === undefined || skill === undefined || reason === undefined || by === undefined) {
+    out.error('Use peer-ai waive <id> <skill> --reason "<why>" --by "<who decided>".');
+    return 2;
+  }
+  if (!(SKILL_IDS as readonly string[]).includes(skill)) {
+    out.error(`There is no skill "${skill}".`);
+    return 2;
+  }
+  const { config, errors } = loadConfig(options.cwd);
+  if (config === undefined) {
+    out.error(
+      errors === undefined ? `There is no ${CONFIG_FILE}. Run peer-ai init first.` : `${CONFIG_FILE} is not valid.`,
+    );
+    return 2;
+  }
+  const waived = updateWorkItem(
+    options.cwd,
+    config,
+    id,
+    { waive: { skill: skill as SkillId, reason, by } },
+    options.now ?? new Date(),
+  );
+  if (!waived.ok) {
+    out.error(waived.error);
+    return 1;
+  }
+  out.log(
+    `${id} doesn't need its ${skill}: ${reason} (decided by ${by}). peer-ai check lists it. Commit the change to its record.`,
+  );
   return 0;
 }

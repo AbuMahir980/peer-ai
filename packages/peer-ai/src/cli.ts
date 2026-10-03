@@ -21,7 +21,7 @@ import { createTerminalPrompter, type Prompter } from "./prompter.ts";
 import { formatReport } from "./report.ts";
 import { runRender } from "./render.ts";
 import { runShip } from "./ship.ts";
-import { runWork } from "./work-command.ts";
+import { runWaive, runWork } from "./work-command.ts";
 import { runTidy } from "./tidy.ts";
 import { runCheckReport } from "./work.ts";
 
@@ -49,6 +49,8 @@ Usage:
                               Remove the sent reports whose issues are closed
   peer-ai ship [id]           Move a work item to ship, taking CI's verify when the config
                               names its check, or say exactly what's missing
+  peer-ai waive <id> <skill> --reason <why> --by <who>
+                              Record that a work item doesn't need a review it was asked for
   peer-ai work show <id> [--full]
                               Show a work item, open or closed; with --full, a closed
                               item's full record from git
@@ -261,6 +263,17 @@ function ship(args: string[], io: Io): number {
   return runShip({ cwd: io.cwd, id: positionals[0] }, io.out);
 }
 
+function waive(args: string[], io: Io): number {
+  const { positionals, values } = parseArgs({
+    args,
+    strict: true,
+    allowPositionals: true,
+    options: { reason: { type: "string" }, by: { type: "string" } },
+  });
+  const [id, skill] = positionals;
+  return runWaive({ cwd: io.cwd, id, skill, reason: values.reason, by: values.by }, io.out);
+}
+
 function work(args: string[], io: Io): number {
   const { positionals, values } = parseArgs({
     args,
@@ -299,6 +312,7 @@ const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promis
   "check-document": checkDocumentCommand,
   feedback,
   ship,
+  waive,
   work,
   tidy: tidyCommand,
   "close-merged": closeMerged,
