@@ -1,5 +1,11 @@
 # peer-ai-standards
 
+## 1.0.0-next.7
+
+### Patch Changes
+
+- peer-ai-workflow@1.0.0-next.7
+
 ## 1.0.0-next.6
 
 ### Patch Changes
