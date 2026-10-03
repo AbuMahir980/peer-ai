@@ -45,6 +45,9 @@ function filesOf(root: string, pipeline: string): string[] {
 /** The workflow render writes for the gate: Node 24 and the exact version, so any project can run it. */
 export function gateWorkflow(config: PeerAiConfig): string {
   const branch = config.repo?.defaultBranch;
+  // A verify taken from CI is confirmed with GitHub through gh, which needs the run's token and
+  // permission to read checks (RFC 0013).
+  const confirmsCi = config.commands?.verifyCheck !== undefined;
   const body = [
     "name: Peer AI",
     "on:",
@@ -53,6 +56,7 @@ export function gateWorkflow(config: PeerAiConfig): string {
     ...(branch === undefined ? [] : ["  push:", `    branches: [${branch}]`]),
     "permissions:",
     "  contents: read",
+    ...(confirmsCi ? ["  checks: read"] : []),
     "jobs:",
     "  peer-ai-check:",
     "    name: peer-ai check",
@@ -69,6 +73,7 @@ export function gateWorkflow(config: PeerAiConfig): string {
     "        with:",
     "          node-version: 24",
     `      - run: ${gateCommand()}`,
+    ...(confirmsCi ? ["        env:", "          GH_TOKEN: ${{ github.token }}"] : []),
     "",
   ].join("\n");
   return withHash(

@@ -27,6 +27,7 @@ import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.t
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
+import { ciProblem, ciResult } from "./ci.ts";
 import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
@@ -384,9 +385,53 @@ export function recordVerify(
 }
 
 /**
+ * Takes CI's verify as the item's (RFC 0013): the result of commands.verifyCheck on the item's
+ * latest commit, read from GitHub, recorded with a link to the run. CI can only have run what's
+ * committed and pushed, so uncommitted changes are refused, as for a verify here.
+ */
+export function verifyFromCi(
+  root: string,
+  config: PeerAiConfig,
+  id: string,
+  now: Date,
+  run?: Runner,
+): Result<WorkItem> {
+  const located = locateItem(root, id);
+  if (!located.ok) return located;
+  const { home, item } = located.value;
+  const check = config.commands?.verifyCheck;
+  if (check === undefined) {
+    return failed(
+      "There is no CI check to take the verify from. Set commands.verifyCheck in peer-ai.config.json to the check that runs the verify command on every pull request, or verify here.",
+    );
+  }
+  const commit = headCommit(home);
+  if (commit === undefined) return failed(`${item.id} has no commit for CI to have verified.`);
+  const uncommitted = uncommittedFiles(home);
+  if (uncommitted.length > 0) {
+    return failed(
+      `CI verifies commits, and ${uncommitted.slice(0, 3).join(", ")} isn't committed. Commit and push it, then ask again.`,
+    );
+  }
+  const result = ciResult(commit, check, run ?? ghIn(home));
+  if (result.status !== "pass" && result.status !== "fail") return failed(ciProblem(result, check, commit) ?? "");
+  const at = now.toISOString();
+  const lastVerify = { result: result.status, at, commit, ci: { check, url: result.url } };
+  return saveWorkItem(home, config, { ...item, lastVerify, updatedAt: at });
+}
+
+/**
  * Moves a work item to `to`, or to the stage after its current one. It can move back to any
  * earlier stage. A move to ship or done is refused, with what to fix, when the gates fail.
  */
+/** Whether an item's verify is on its latest commit, or one with no change since outside .peer-ai/. */
+function verifiedAtHead(home: string, item: WorkItem): boolean {
+  const commit = item.lastVerify?.commit;
+  if (commit === undefined) return false;
+  const changed = changesFor(home)?.(commit);
+  return changed?.length === 0;
+}
+
 export function advanceWorkItem(
   root: string,
   config: PeerAiConfig,
@@ -397,7 +442,8 @@ export function advanceWorkItem(
 ): Result<WorkItem> {
   const located = locateItem(root, id);
   if (!located.ok) return located;
-  const { home, item } = located.value;
+  const { home } = located.value;
+  let { item } = located.value;
   if (CLOSED.includes(item.stage) && (to === undefined || to === item.stage)) {
     return failed(`${item.id} is already ${item.stage}.`);
   }
@@ -420,6 +466,13 @@ export function advanceWorkItem(
     const requiredReviews = reviewsFor(touched, config, projectStage(config), read, undefined, item);
     return saveWorkItem(home, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
+  let fromCi: string | undefined;
+  if (target === "ship" && config.commands?.verifyCheck !== undefined && !verifiedAtHead(home, item)) {
+    // With a CI check that runs the verify, its result on the latest commit is the verify (RFC 0013).
+    const verified = verifyFromCi(root, config, id, now, run);
+    if (verified.ok) item = verified.value;
+    else fromCi = verified.error;
+  }
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
@@ -429,12 +482,16 @@ export function advanceWorkItem(
       branch: currentBranch(home),
       changedSince: changesFor(home),
       ownFiles: ownFiles(home, config.repo?.defaultBranch),
+      ciResult: (commit, check) => ciResult(commit, check, run ?? ghIn(home)),
     }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
       // Work whose branch is already merged closes saying so, rather than being verified again (RFC 0013).
       const merge = target === "done" ? mergeOf(home, item, config.repo?.defaultBranch, run ?? ghIn(home)) : undefined;
       if (merge !== undefined) return closeByMerge(home, config, item, merge, now);
-      const reasons = failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd());
+      const reasons = [
+        ...failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd()),
+        ...(fromCi === undefined ? [] : [`- ${fromCi}`]),
+      ];
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
     }
   }

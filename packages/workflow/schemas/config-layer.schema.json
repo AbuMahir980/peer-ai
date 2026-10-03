@@ -458,6 +458,11 @@
             }
           ]
         },
+        "verifyCheck": {
+          "description": "The CI check that runs the verify command on every pull request, as GitHub names it, such as \"ci / check\". Its result on a work item's commit counts as the verify, so nobody runs it again locally (RFC 0013).",
+          "type": "string",
+          "minLength": 1
+        },
         "test": {
           "type": "string",
           "minLength": 1

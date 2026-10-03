@@ -116,6 +116,7 @@ export const CLI_COMMAND_IDS = [
   "check-report",
   "check-document",
   "feedback",
+  "ship",
   "close-merged",
   "mcp",
 ] as const;

@@ -54,6 +54,7 @@ CI runs the new version as soon as the change merges, but an AI tool's MCP serve
 | [`peer-ai check-report`](#peer-ai-check-report) | Checks a review's report, as the `record_review` tool does |
 | [`peer-ai check-document`](#peer-ai-check-document) | Checks a document against its skill's template |
 | [`peer-ai feedback`](#peer-ai-feedback) | Lists, sends or drops the feedback drafts your AI tool wrote about Peer AI |
+| [`peer-ai ship`](#peer-ai-ship) | Moves a work item to ship, taking CI's verify when the config names its check, or says exactly what's missing |
 | [`peer-ai close-merged`](#peer-ai-close-merged) | Closes the open work items whose branches are already merged, saying how |
 | [`peer-ai mcp`](#peer-ai-mcp) | Starts the MCP server that AI tools connect to |
 
@@ -238,6 +239,22 @@ Render sets up `peer-ai check` in the project's CI, so no one has to remember to
 - **When a workflow of the project's own already runs `peer-ai check`,** it adds nothing.
 
 Make `peer-ai check` a required check in the repository's settings, so nothing merges without it. To run the gate some other way, set `"delivery": { "gate": false }`.
+
+#### Letting CI's verify count
+
+A project whose CI already runs its verify command on every pull request can say which check does it, so nobody runs a slow verify again on a laptop (RFC 0013):
+
+```json
+"commands": { "verify": "make check", "verifyCheck": "ci / check" }
+```
+
+`verifyCheck` is the check's name as GitHub shows it on a pull request. With it set:
+
+- **`run_verify` with `from: "ci"`** reads that check's result on the item's latest commit, pushed, and records it with a link to the run.
+- **Moving an item to ship,** with `advance_work_item` or `peer-ai ship`, takes CI's result itself when the item's verify is missing or older than its latest commit, and says what's still missing: a review to run, or the check still running.
+- **`peer-ai check` confirms it with GitHub,** so a record claiming a CI run that didn't pass fails the gate. Render gives the gate's workflow `checks: read` and the run's token for that.
+
+It needs GitHub, and `gh` signed in where the AI tool works.
 
 ### Instructions
 
@@ -477,6 +494,19 @@ Your AI tool asks you about each draft at a natural stopping point, and runs `se
 
 Exit codes: `0` done, `1` a draft that doesn't exist, `2` a usage error.
 
+## `peer-ai ship`
+
+Moves a work item to ship from a terminal, as `advance_work_item` does for an AI tool: the item on the branch checked out, or the one named (RFC 0013).
+
+```bash
+npx peer-ai ship
+npx peer-ai ship SHOP-41
+```
+
+With `commands.verifyCheck` set, it takes CI's verify of the latest commit first (see [Letting CI's verify count](#letting-cis-verify-count)). When anything is still missing, it lists each with how to get it, and changes nothing. Then commit the item's record and push it: `peer-ai check` on the pull request passes for it.
+
+Exit codes: `0` at ship, `1` when something's missing, `2` without an item to ship.
+
 ## `peer-ai close-merged`
 
 Closes every open work item whose branch is already merged into the default branch, such as work merged before the ship gate existed, or while `peer-ai check` wasn't a required check (RFC 0013). It doesn't need each branch checked out and verified again: the code is already merged.
@@ -520,7 +550,7 @@ The AI tool starts it, from the project's folder or one inside it. For example, 
 | `standards_for_file` | Peer AI's rules for a file, each by its id, title and severity, chosen by what the file is (a CI pipeline, build file, infrastructure, dependency manifest, migration, test, document, tool settings or source code), its language, and the part it belongs to; with the stack profiles, and the project's own standards documents and rules for that part. `ruleIds` returns the full text of the rules asked for (RFC 0012). |
 | `create_work_item` | Starts a feature, bug, refactor, migration, discovery, chore or gap at `prepare`. Its id comes from `tracker.ticketPrefix` (or `ITEM`) unless a tracker key is given, and its branch from `repo.branchNaming`. It can carry its plan (RFC 0005): a goal, acceptance criteria, the sources it implements, and the items it depends on. |
 | `update_work_item` | Records the next action and the activity and step where work stopped, so the next session resumes there. It also sets the item's goal, acceptance criteria, sources and dependencies. |
-| `run_verify` | Runs `commands.verify` where the item's branch is checked out, and records the result with the commit it ran on and the end of its output. It refuses while that working copy has changes not yet committed, since a verify proves a commit. Only this tool records a verify, so a pass is proven rather than claimed. |
+| `run_verify` | Runs `commands.verify` where the item's branch is checked out, and records the result with the commit it ran on and the end of its output. It refuses while that working copy has changes not yet committed, since a verify proves a commit. Only this tool records a verify, so a pass is proven rather than claimed. With `from: "ci"`, it runs nothing: it takes the result of `commands.verifyCheck`, the CI check that runs the verify, on the item's latest commit, pushed, from GitHub through `gh`, and records it with a link to the run (RFC 0013). |
 | `record_review` | Records a review from its report: Peer AI checks the report and works out pass, fail or incomplete from it, and refuses a result the report doesn't support, or a report that leaves out any of the skill's rules. A review recorded without a report is marked unproven. It takes reports only from `.peer-ai/reports/`, records the commit the review looked at, and replaces an earlier review from the same skill. For a review of the whole project, leave out the work item: Peer AI checks the report the same way and gives its result, without recording it. |
 | `check_document` | Checks a document a Peer AI skill wrote against the skill's template, and lists what to change: missing or empty parts, template text left in, and rule ids that don't exist. The skill fixes them and checks again, until the document is ready. An agent in a git worktree of its own gives its branch, so its own copy is checked. |
 | `advance_work_item` | Moves a work item to its next stage, back to an earlier one, or to cancelled. A move to `ship` or `done` passes the same gates as `peer-ai check`, and a refusal lists what to fix. An item whose branch is already merged moves to `done` saying so instead, as [`peer-ai close-merged`](#peer-ai-close-merged) does (RFC 0013). Moving to verify works out the reviews the change needs from the files it touched, and keeps them on the item. |

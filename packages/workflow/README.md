@@ -42,7 +42,7 @@ Only `version`, `project.name` and `tracks` are required. This is a complete con
 | `tracks` | Each part of the system. See below. |
 | `apis` | Each interface between parts, or to a third-party service: its kind, which track provides it, and where its contract comes from |
 | `environments` | Such as staging and production |
-| `repo`, `tracker`, `commands` | Git host, remote, branch naming, commit style, merge policy; the issue tracker; the verify command |
+| `repo`, `tracker`, `commands` | Git host, remote, branch naming, commit style, merge policy; the issue tracker; the verify command, and `verifyCheck`, the CI check that runs it, whose result counts as the verify (RFC 0013) |
 | `delivery` | Whether CI already exists. If it does, Peer AI extends it and never adds a second pipeline. `gate`, true unless set to false, has `render` set up `peer-ai check` in CI (RFC 0009). |
 | `standards` | Core principles on or off, stack profiles, the project's own standards documents, and which side wins a conflict |
 | `standards.overrides` | A stack profile rule's default changed for this project, such as a larger size limit, with the reason |

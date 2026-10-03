@@ -188,6 +188,13 @@ const Commands = z.strictObject({
     .describe(
       "Run before any work item is called done. null or omitted means none yet; creating one is the first build item.",
     ),
+  verifyCheck: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      'The CI check that runs the verify command on every pull request, as GitHub names it, such as "ci / check". Its result on a work item\'s commit counts as the verify, so nobody runs it again locally (RFC 0013).',
+    ),
   test: z.string().min(1).optional(),
   lint: z.string().min(1).optional(),
   build: z.string().min(1).optional(),

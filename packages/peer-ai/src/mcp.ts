@@ -26,6 +26,7 @@ import {
   runCommand,
   runVerify,
   updateWorkItem,
+  verifyFromCi,
   type CommandRunner,
   type Result,
   type ReviewInput,
@@ -34,7 +35,7 @@ import {
 const INSTRUCTIONS = `Peer AI keeps this project's map, its work items and the gates work must pass.
 Start a session with next_work: it returns the work item for the current git branch and where it stopped, and every other open item in one line. Read another item in full with work_item before working on it.
 Before editing a file, call standards_for_file and follow what it returns; ask it for the full text of the rules your change touches with ruleIds.
-Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself; it verifies the item's latest commit, so commit first.
+Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself; it verifies the item's latest commit, so commit first. When the project sets commands.verifyCheck, push and use run_verify with from: ci, so CI's run counts instead of running it again here.
 Working in a git worktree of your own, give your branch to next_work: the tools find each work item on its own branch, wherever it's checked out.
 Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
 Check each document a Peer AI skill writes with check_document, and fix what it names.
@@ -242,11 +243,23 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Run verify",
       description:
-        "Run the project's verify command (commands.verify in peer-ai.config.json) and record the result on the work item, with the commit it ran on and the end of its output. A work item can't move to ship or done without a passing verify on its latest commit, and only this tool records one.",
-      inputSchema: { id: itemId },
+        "Run the project's verify command (commands.verify in peer-ai.config.json) and record the result on the work item, with the commit it ran on and the end of its output. A work item can't move to ship or done without a passing verify on its latest commit, and only this tool records one. With from: ci, it doesn't run anything: it takes the result of the CI check that runs the verify (commands.verifyCheck) on the item's latest commit, pushed, from GitHub, and records it with a link to the run. Prefer that when the project sets commands.verifyCheck: it spares running a slow verify again here.",
+      inputSchema: {
+        id: itemId,
+        from: z
+          .enum(["here", "ci"])
+          .optional()
+          .describe("here runs the verify command now (the default); ci takes CI's result for the latest commit."),
+      },
       annotations: { ...WRITES, openWorldHint: true },
     },
-    withProject(async (root, config, { id }: { id: string }) => {
+    withProject(async (root, config, { id, from }: { id: string; from?: "here" | "ci" | undefined }) => {
+      if (from === "ci") {
+        const taken = verifyFromCi(root, config, id, now());
+        if (!taken.ok) return refuse(taken.error);
+        const verify = taken.value.lastVerify;
+        return reply({ id, from: "ci", result: verify?.result, ci: verify?.ci });
+      }
       const outcome = await runVerify(root, config, id, now, run);
       if (!outcome.ok) return refuse(outcome.error);
       const { command, result, output } = outcome.value;
