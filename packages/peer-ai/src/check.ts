@@ -9,11 +9,14 @@ import { renderedName } from "peer-ai-skills";
 import { MAP_ITEM_IDS, type KnownMapItemId, type PeerAiConfig, type WorkItem } from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
+import { ciProblem, ciResult } from "./ci.ts";
 import { changesFor, currentBranch, ownFiles } from "./commits.ts";
 import { latestReviews, staleEvidence, type GateContext } from "./evidence.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
 import type { Output, Stage } from "./init.ts";
+import type { Runner } from "./feedback.ts";
+import { ghIn } from "./merged.ts";
 import { mapChanges, readMap, readWorkItems } from "./state.ts";
 
 export interface Verdict {
@@ -102,6 +105,32 @@ export function gateWorkItem(
         `Run ${verifyCommand} and record the result on the work item, ${backToBuild}`,
       ),
     );
+  }
+
+  // A verify taken from CI is confirmed with GitHub for the change being made now (RFC 0013): a
+  // record claiming a run that didn't pass fails, so it's better evidence than a verify here.
+  const ci = item.lastVerify?.ci;
+  const verifiedCommit = item.lastVerify?.commit;
+  if (current && ci !== undefined && verifiedCommit !== undefined && context.ciResult !== undefined) {
+    const found = context.ciResult(verifiedCommit, ci.check);
+    const claimed = `${claim}, and its verify says CI's ${ci.check} passed on ${verifiedCommit.slice(0, 7)}`;
+    if (found.status === "fail" || found.status === "missing") {
+      checks.push(
+        fail(
+          "gates",
+          `${claimed}, but GitHub says ${found.status === "fail" ? "it failed" : "no such check ran there"}.`,
+          `Take the verify from CI again, or verify here, ${backToBuild}`,
+        ),
+      );
+    } else if (found.status !== "pass") {
+      checks.push(
+        warn(
+          "gates",
+          `${claimed}, which couldn't be confirmed: ${ciProblem(found, ci.check, verifiedCommit) ?? ""}`,
+          "Confirm it once GitHub can be asked, through gh.",
+        ),
+      );
+    }
   }
 
   // The reviews the change needs (RFC 0004): a failure in production, and at the MVP stage for the
@@ -290,6 +319,8 @@ function checkPullRequest(items: WorkItem[], branch: string, stage: Stage): Chec
 export interface EvaluateOptions {
   /** The branch a pull request is for, when the check runs on one. */
   pullRequest?: string | undefined;
+  /** gh, to confirm a verify taken from CI with GitHub (RFC 0013). */
+  run?: Runner | undefined;
 }
 
 export type { GateContext };
@@ -309,6 +340,7 @@ export function evaluate(root: string, config: PeerAiConfig, options: EvaluateOp
       branch: options.pullRequest ?? currentBranch(root),
       changedSince: changesFor(root),
       ownFiles: ownFiles(root, config.repo?.defaultBranch),
+      ciResult: (commit, check) => ciResult(commit, check, options.run ?? ghIn(root)),
     }),
     ...(options.pullRequest === undefined ? [] : [checkPullRequest(items, options.pullRequest, stage)]),
     ...checkVerifyCommand(config, stage),

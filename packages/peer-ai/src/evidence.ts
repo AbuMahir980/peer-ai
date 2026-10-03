@@ -7,6 +7,7 @@ import type { WorkItem } from "peer-ai-workflow";
 import { fail, plural, warn, type Check } from "./checks.ts";
 import { changesFor, commitsSince, currentBranch, forkPoint, ownFiles, shortCommit } from "./commits.ts";
 import { allWorkItems } from "./homes.ts";
+import type { CiResult } from "./ci.ts";
 
 type Review = NonNullable<WorkItem["reviews"]>[number];
 
@@ -34,6 +35,8 @@ export interface GateContext {
    * other files keeps it (RFC 0013). Undefined when unknown: then any change counts.
    */
   ownFiles?: string[] | undefined;
+  /** A CI check's result on a commit, from GitHub, to confirm a verify taken from CI (RFC 0013). */
+  ciResult?: ((commit: string, check: string) => CiResult) | undefined;
 }
 
 const listed = (files: string[]): string =>
