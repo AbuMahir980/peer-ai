@@ -41,6 +41,7 @@ Record each review with record_review, passing the path of its report, including
 Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
 Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.
+When next_work gives whatChanged, tell the person in a few plain words what changed in Peer AI since they last worked here, then carry on.
 When next_work reports setup problems, fix what you can, such as running npx peer-ai render, before other work, and tell the person in plain words about anything only they can decide.
 When Peer AI gets something wrong, call draft_feedback. At a natural stopping point, show the person each draft in a few words and ask whether to send it.`;
 

@@ -3,10 +3,11 @@
 // project. Offline, or in CI, the check says nothing that could fail anything.
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
+import { changesBetween, ownChangelog } from "./changelog.ts";
 import { ok, skip, warn, type Check } from "./checks.ts";
 import { FEEDBACK_REPO } from "./feedback.ts";
 import { VERSION } from "./package-info.ts";
@@ -93,4 +94,54 @@ export function checkUpdates(root: string, config: PeerAiConfig, now: Date, opti
       `See what changed at https://github.com/${FEEDBACK_REPO}/releases, then update on a branch: npx --prefer-online peer-ai@latest render. To stay on ${uses}, set "updates": { "notify": false } in peer-ai.config.json.`,
     ),
   ];
+}
+
+/** What changed in Peer AI since a person last worked on a project (RFC 0014). */
+export interface WhatChanged {
+  from: string;
+  to: string;
+  /** One line per change, from the changelog that ships with the package. */
+  notes: string[];
+}
+
+export interface WhatChangedOptions {
+  cache?: string;
+  /** The version running; this package's when left out. */
+  version?: string;
+  changelog?: string;
+}
+
+/**
+ * What changed since this person's last session on this project, said once: each session records
+ * the version it ran, keyed by the project's folder, in the user's cache, never in the project.
+ * Nothing the first time, after a downgrade, or when PEER_AI_UPDATE_CHECK is off.
+ */
+export function whatChangedSince(root: string, options: WhatChangedOptions = {}): WhatChanged | undefined {
+  if (process.env.PEER_AI_UPDATE_CHECK === "off") return undefined;
+  const version = options.version ?? VERSION;
+  const dir = options.cache ?? cacheDir();
+  const file = join(dir, "sessions.json");
+  let key = resolve(root);
+  try {
+    key = realpathSync(root);
+  } catch {
+    // A folder that can't be resolved is keyed as given.
+  }
+  let seen: Record<string, string> = {};
+  try {
+    seen = JSON.parse(readFileSync(file, "utf8")) as Record<string, string>;
+  } catch {
+    // No session recorded yet.
+  }
+  const last = seen[key];
+  if (last !== version) {
+    try {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(file, `${JSON.stringify({ ...seen, [key]: version }, null, 2)}\n`);
+    } catch {
+      // Unwritten, it's said again next session, which does no harm.
+    }
+  }
+  if (last === undefined || compareVersions(version, last) <= 0) return undefined;
+  return { from: last, to: version, notes: changesBetween(options.changelog ?? ownChangelog(), last, version) };
 }

@@ -1,8 +1,11 @@
+import { realpathSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanUp, project } from "./test-helpers.ts";
-import { checkUpdates, latestRelease } from "./updates.ts";
+import { VERSION } from "./package-info.ts";
+import { checkUpdates, latestRelease, whatChangedSince } from "./updates.ts";
+import { nextWork } from "./work.ts";
 
 afterEach(cleanUp);
 beforeEach(() => {
@@ -78,5 +81,48 @@ describe("a newer release (RFC 0014)", () => {
     vi.stubEnv("PEER_AI_UPDATE_CHECK", "off");
     expect(checkUpdates(root, config, NOW, { ask, cache, ci: false })).toEqual([]);
     expect(ask).not.toHaveBeenCalled();
+  });
+});
+
+describe("what changed since you last worked here (RFC 0014)", () => {
+  const CHANGELOG =
+    "## 1.0.0-next.9\n\n- 88de847: CI's verify can count. More.\n\n## 1.0.0-next.8\n\n- bb558a4: next_work lists open items in one line.\n";
+
+  it("is said once, after the version moves on, and never the first time or after a downgrade", () => {
+    const root = project({});
+    const cache = join(project({}), "cache");
+    const at = (version: string) => whatChangedSince(root, { cache, version, changelog: CHANGELOG });
+    expect(at("1.0.0-next.7")).toBeUndefined();
+    expect(at("1.0.0-next.7")).toBeUndefined();
+    expect(at("1.0.0-next.9")).toEqual({
+      from: "1.0.0-next.7",
+      to: "1.0.0-next.9",
+      notes: ["1.0.0-next.8: next_work lists open items in one line.", "1.0.0-next.9: CI's verify can count."],
+    });
+    expect(at("1.0.0-next.9")).toBeUndefined();
+    expect(at("1.0.0-next.8")).toBeUndefined();
+  });
+
+  it("reaches the AI tool through next_work", () => {
+    const root = project({
+      "peer-ai.config.json": JSON.stringify({
+        version: 1,
+        project: { name: "Shop" },
+        tracks: [{ id: "web", kind: "web", status: "active" }],
+      }),
+    });
+    const cacheHome = project({});
+    vi.stubEnv("XDG_CACHE_HOME", cacheHome);
+    // doctor runs inside next_work: as in CI, it doesn't ask npm.
+    vi.stubEnv("CI", "true");
+    mkdirSync(join(cacheHome, "peer-ai"), { recursive: true });
+    writeFileSync(
+      join(cacheHome, "peer-ai", "sessions.json"),
+      JSON.stringify({ [realpathSync(root)]: "1.0.0-next.0" }),
+    );
+    const changed = nextWork(root, config).whatChanged;
+    expect(changed).toMatchObject({ from: "1.0.0-next.0", to: VERSION });
+    expect(changed?.notes.length).toBeGreaterThan(0);
+    expect(nextWork(root, config).whatChanged).toBeUndefined();
   });
 });
