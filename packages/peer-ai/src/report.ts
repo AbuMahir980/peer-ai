@@ -60,6 +60,17 @@ export function formatReport(assessment: Assessment, stage: Stage): string[] {
     lines.push(`Inferred from the code, not a document; check these: ${inferred.join(", ")}.`);
   }
 
+  const flagged = new Map(
+    MAP_ITEM_IDS.flatMap((id) => assessment.items[id].flagged ?? []).map((flag) => [flag.file, flag]),
+  );
+  if (flagged.size > 0) {
+    lines.push("");
+    lines.push(
+      `Documents that may no longer hold. Bring each up to date, or list it in docs.settled in ${CONFIG_FILE} if it's meant to stay as it was:`,
+    );
+    for (const { reason } of flagged.values()) lines.push(`  ${reason}`);
+  }
+
   if (assessment.suggestedTraits.length > 0) {
     lines.push("");
     lines.push(

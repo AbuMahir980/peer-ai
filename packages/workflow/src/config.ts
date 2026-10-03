@@ -392,6 +392,12 @@ const Docs = z.strictObject({
     ),
   preserveStructure: z.boolean().optional().describe("Add to the existing docs; never reorganise them."),
   backlog: Path.optional().describe("Where ideas outside the agreed scope go, instead of becoming work items."),
+  settled: z
+    .array(Path)
+    .optional()
+    .describe(
+      "Documents, or folders of them, meant to stay as they were, such as a record of a decision: the map never calls them stale or about something gone (RFC 0018).",
+    ),
 });
 
 const configShape = {

@@ -23,6 +23,12 @@ const MapItem = z
       .optional()
       .describe("Found by reading the code, not a document, and not yet confirmed by a person."),
     note: z.string().min(1).max(200).optional(),
+    flagged: z
+      .array(z.strictObject({ file: Path, reason: z.string().min(1) }))
+      .optional()
+      .describe(
+        "Evidence that may no longer hold, with why: stale, a duplicate of another file, or about something gone (RFC 0018).",
+      ),
     checkedAt: Timestamp,
   })
   .superRefine((item, ctx) => {
