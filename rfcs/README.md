@@ -39,7 +39,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0011](0011-adopting-peer-ai-on-an-existing-codebase.md) | Adopting Peer AI on an existing codebase | Accepted |
 | [0012](0012-replies-that-fit.md) | Replies that fit | Accepted |
 | [0013](0013-a-gate-that-is-cheap-to-pass.md) | A gate that's cheap to pass | Accepted |
-| [0014](0014-staying-current.md) | Staying current | Draft |
+| [0014](0014-staying-current.md) | Staying current | Accepted |
 
 ## What carries weight
 
