@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ACTIVITY_IDS, CUSTOM_MAP_ITEM_PATTERN, MAP_ITEM_IDS, SKILL_IDS } from "./ids.ts";
+import { SEVERITIES } from "./report.ts";
 
 // Project state lives in .peer-ai/: one map.json, plus one file per work item under
 // .peer-ai/work/. Parallel sessions touch different files, so they no longer collide on a
@@ -67,6 +68,11 @@ export const WorkItemIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "use letters, digits, dots, hyphens and underscores");
 
+/** A finding of a whole-project review: the skill and the finding's id, such as security-review#F-3. */
+const FindingRef = z
+  .string()
+  .regex(/^[a-z]+(-[a-z]+)*#[A-Za-z0-9._-]+$/, "use skill#finding, such as security-review#F-3");
+
 export const WorkItemSchema = z
   .strictObject({
     $schema: z.string().optional(),
@@ -102,6 +108,13 @@ export const WorkItemSchema = z
       .optional()
       .describe("The spec, design, requirement or issue it implements: paths in the repository, or URLs."),
     dependsOn: z.array(WorkItemIdSchema).max(20).optional().describe("Items that must reach ship before this one can."),
+    fixes: z
+      .array(FindingRef)
+      .max(100)
+      .optional()
+      .describe(
+        "Findings of whole-project reviews this item fixes, as skill#finding, such as security-review#F-3 (RFC 0015).",
+      ),
     activities: z.array(ActivityProgress).optional(),
     position: z
       .strictObject({ activity: z.enum(ACTIVITY_IDS), step: z.number().int().positive() })
@@ -195,5 +208,38 @@ export const WorkItemSchema = z
     description: ".peer-ai/work/<id>.json: one piece of work, where it stands, and what comes next.",
   });
 
+const OpenCountsSchema = z.strictObject({
+  critical: z.number().int().positive().optional(),
+  high: z.number().int().positive().optional(),
+  medium: z.number().int().positive().optional(),
+  low: z.number().int().positive().optional(),
+});
+
+/** .peer-ai/project-reviews.json: the latest whole-project review from each skill (RFC 0015). */
+export const ProjectReviewsSchema = z
+  .strictObject({
+    $schema: z.string().optional(),
+    version: z.literal(1),
+    reviews: z.array(
+      z.strictObject({
+        skill: z.enum(SKILL_IDS),
+        result: z.enum(["pass", "fail", "incomplete"]),
+        open: OpenCountsSchema.optional(),
+        report: Path,
+        at: Timestamp,
+        commit: CommitId.optional(),
+        findings: z
+          .array(z.strictObject({ id: z.string().min(1), severity: z.enum(SEVERITIES), title: z.string().min(1) }))
+          .describe("Its open findings at the blocking level or high, for work items to fix."),
+      }),
+    ),
+  })
+  .meta({
+    title: "Peer AI whole-project reviews",
+    description:
+      ".peer-ai/project-reviews.json: the latest review of the whole project from each skill, with its open findings.",
+  });
+
+export type ProjectReviews = z.output<typeof ProjectReviewsSchema>;
 export type ProjectMap = z.output<typeof MapSchema>;
 export type WorkItem = z.output<typeof WorkItemSchema>;

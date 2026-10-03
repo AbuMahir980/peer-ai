@@ -24,6 +24,7 @@ import { checkTracks, checkWorkItems, diagnose } from "./doctor.ts";
 import type { Output, Stage } from "./init.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn } from "./merged.ts";
+import { projectFindings, readProjectReviews } from "./project-reviews.ts";
 import { mapChanges, readMap, readWorkItems } from "./state.ts";
 
 export interface Verdict {
@@ -246,6 +247,36 @@ function checkGates(
   ];
 }
 
+/**
+ * What whole-project reviews leave open (RFC 0015): an open critical finding fails at production,
+ * where it stops a release, and warns before; one no work item fixes is listed, so none is dropped.
+ */
+function checkProjectReviews(root: string, items: WorkItem[], stage: Stage): Check[] {
+  const reviews = readProjectReviews(root);
+  if (reviews.length === 0) return [];
+  const { critical, uncovered } = projectFindings(reviews, items);
+  const listed = (lines: string[]) =>
+    lines.length <= 3 ? lines.join("; ") : `${lines.slice(0, 3).join("; ")}; and ${String(lines.length - 3)} more`;
+  const checks: Check[] = [];
+  if (critical.length > 0) {
+    const message = `Whole-project reviews leave ${plural(critical.length, "critical finding")} open: ${listed(critical)}.`;
+    const fix = "Fix each in a work item that lists it in fixes, then run the review again.";
+    checks.push(stage === "production" ? fail("project-reviews", message, fix) : warn("project-reviews", message, fix));
+  }
+  if (uncovered.length > 0) {
+    checks.push(
+      warn(
+        "project-reviews",
+        `${plural(uncovered.length, "open finding")} from whole-project reviews ${uncovered.length === 1 ? "is" : "are"} in no work item's fixes: ${listed(uncovered)}.`,
+        "Create work items for them, each listing the findings it fixes, as skill#finding.",
+      ),
+    );
+  }
+  return checks.length === 0
+    ? [ok("project-reviews", `${plural(reviews.length, "whole-project review")} recorded, with nothing critical open`)]
+    : checks;
+}
+
 /** Every dependency names a work item that exists, and no items wait on each other in a loop (RFC 0005). */
 function checkDependencies(items: WorkItem[]): Check[] {
   const ids = new Set(items.map((item) => item.id));
@@ -361,6 +392,7 @@ export function evaluate(root: string, config: PeerAiConfig, options: EvaluateOp
     checkMap(root, assessment),
     ...checkWorkItems(root, config),
     ...checkDependencies(items),
+    ...checkProjectReviews(root, items, stage),
     ...checkGates(items, config, stage, assessment, {
       branch: options.pullRequest ?? currentBranch(root),
       changedSince: changesFor(root),
