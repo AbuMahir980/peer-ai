@@ -93,6 +93,7 @@ export const SKILL_KINDS: Record<SkillId, SkillKind> = {
 export const MCP_TOOL_IDS = [
   "project_map",
   "next_work",
+  "work_item",
   "standards_for_file",
   "create_work_item",
   "update_work_item",

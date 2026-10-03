@@ -56,11 +56,15 @@ describe("the rules for a file", () => {
       ],
     };
     const web = standardsFor(listed, "/repo", "apps/web/src/cart.tsx")?.peerAiRules ?? [];
-    expect(web.find((rule) => rule.id === "TS-06")).toMatchObject({
+    expect(web.find((rule) => rule.id === "TS-06")).toEqual({
+      id: "TS-06",
       title: "Nesting stays 4 levels deep or less",
-      carries: "CODE-09",
+      severity: expect.any(String) as unknown,
       value: 4,
     });
+    expect(standardsFor(listed, "/repo", "apps/web/src/cart.tsx", ["TS-06"])?.peerAiRules).toEqual([
+      expect.objectContaining({ id: "TS-06", carries: "CODE-09", value: 4, ask: expect.any(String) as unknown }),
+    ]);
     expect(ids(listed, "services/api/app/main.py").some((id) => id.startsWith("TS-"))).toBe(false);
     expect(ids(config())).not.toContain("TS-02");
   });
@@ -72,5 +76,65 @@ describe("the rules for a file", () => {
     };
     expect(ids(pipeline, ".github/workflows/ci.yml")).toEqual(expect.arrayContaining(["GHA-01", "GHA-03", "GHA-05"]));
     expect(ids(pipeline, "src/cart.tsx").some((id) => id.startsWith("GHA-"))).toBe(false);
+  });
+});
+
+describe("rules that fit what the file is (RFC 0012)", () => {
+  const trips: PeerAiConfig = {
+    ...config({}, { profiles: ["python-fastapi", "react-native", "typescript", "github-actions"] }),
+    tracks: [
+      { id: "api", kind: "backend", path: "services/api", status: "active", stack: ["python", "fastapi"] },
+      { id: "mobile", kind: "mobile", path: "apps/mobile", status: "active" },
+    ],
+    docs: { dir: "handbook" },
+  };
+  const kindOf = (file: string) => standardsFor(trips, "/repo", file)?.kind;
+  const prefixes = (file: string) => new Set(ids(trips, file).map((id) => id.split("-")[0]));
+
+  it("work out the file's kind from its path", () => {
+    expect(kindOf(".github/workflows/ci.yml")).toBe("ci-pipeline");
+    expect(kindOf("Makefile")).toBe("build");
+    expect(kindOf("services/api/Dockerfile")).toBe("build");
+    expect(kindOf("infra/main.tf")).toBe("infrastructure");
+    expect(kindOf("services/api/requirements.txt")).toBe("dependencies");
+    expect(kindOf("services/api/alembic/versions/0007_tenant.py")).toBe("data-schema");
+    expect(kindOf("services/api/tests/test_trips.py")).toBe("test");
+    expect(kindOf("docs/register.md")).toBe("document");
+    expect(kindOf("handbook/onboarding.html")).toBe("document");
+    expect(kindOf(".gitleaks.toml")).toBe("tool-settings");
+    expect(kindOf("apps/mobile/src/screens/Trip.tsx")).toBe("source");
+  });
+
+  it("give a file of a known kind its kind's rules, wherever it is", () => {
+    expect(prefixes(".github/workflows/ci.yml")).toEqual(new Set(["SEC", "DEL", "GHA"]));
+    expect(prefixes("docs/register.md")).toEqual(new Set());
+    // A Dockerfile in a part still gets the delivery rules its part's kind doesn't have.
+    expect(prefixes("services/api/Dockerfile").has("DEL")).toBe(true);
+    expect(prefixes("services/api/Dockerfile").has("API")).toBe(false);
+  });
+
+  it("keep each profile to the files of its language, even in a part that names no stack (#113)", () => {
+    const screen = prefixes("apps/mobile/src/screens/Trip.tsx");
+    expect(screen.has("RN")).toBe(true);
+    expect(screen.has("PY")).toBe(false);
+    expect(screen.has("FASTAPI")).toBe(false);
+    expect(screen.has("GHA")).toBe(false);
+    expect(prefixes("services/api/app/main.py").has("TS")).toBe(false);
+    expect(prefixes("services/api/app/main.py").has("PY")).toBe(true);
+  });
+
+  it("come in brief, with the full text of the ids asked for, and say which don't apply", () => {
+    const brief = standardsFor(trips, "/repo", ".github/workflows/ci.yml");
+    expect(Object.keys(brief?.peerAiRules[0] ?? {}).sort()).toEqual(["id", "severity", "title"]);
+    expect(JSON.stringify(brief).length).toBeLessThan(5_000);
+    const full = standardsFor(trips, "/repo", ".github/workflows/ci.yml", ["GHA-03", "RN-01"]);
+    expect(full?.peerAiRules).toEqual([
+      expect.objectContaining({
+        id: "GHA-03",
+        rule: expect.any(String) as unknown,
+        why: expect.any(String) as unknown,
+      }),
+    ]);
+    expect(full?.notApplicable).toEqual(["RN-01"]);
   });
 });

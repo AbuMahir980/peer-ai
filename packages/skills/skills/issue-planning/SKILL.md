@@ -65,7 +65,7 @@ Call the peer-ai MCP tool `create_work_item` for each new item, in dependency or
 
 ## 5. Check
 
-You MUST finish with this step. Call the peer-ai MCP tool `next_work`: each new item must be listed, and `waiting` must show the order you meant. Then run `npx peer-ai check`: it fails on a dependency that doesn't exist, or items that wait on each other in a loop. Fix what it names and check again, until it passes.
+You MUST finish with this step. Call the peer-ai MCP tool `next_work`: each new item must be listed, and each one's `waitingFor` must show the order you meant. Then run `npx peer-ai check`: it fails on a dependency that doesn't exist, or items that wait on each other in a loop. Fix what it names and check again, until it passes.
 
 ## 6. Hand over
 
