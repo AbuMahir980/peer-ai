@@ -176,13 +176,10 @@ describe("check on work items", () => {
     expect(find(root, "plans")[0]?.message).toBe("2 work items with dependencies, each on a real item");
   });
 
-  it("fails an invalid work item, and one on a track the config doesn't have", () => {
+  it("fails an invalid work item, and only warns about one on a track the config doesn't have (RFC 0017)", () => {
     const root = shop();
     addWorkItems(root, item("SHOP-1", { track: "mobile" }), { id: "SHOP-2", title: "No stage" });
-    expect(failures(root)).toEqual([
-      '.peer-ai/work/SHOP-1.json is for the track "mobile", which isn\'t in the config.',
-      expect.stringMatching(/^\.peer-ai\/work\/SHOP-2\.json is not valid: /) as string,
-    ]);
+    expect(failures(root)).toEqual([expect.stringMatching(/^\.peer-ai\/work\/SHOP-2\.json is not valid: /) as string]);
   });
 });
 
