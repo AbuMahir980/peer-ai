@@ -25,6 +25,8 @@ import { gateWorkItem } from "./check.ts";
 import { changesFor, commitExists, currentBranch, filesSince, headCommit, ownFiles } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
+import type { Runner } from "./feedback.ts";
+import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
@@ -391,6 +393,7 @@ export function advanceWorkItem(
   id: string,
   to: ItemStage | undefined,
   now: Date,
+  run?: Runner,
 ): Result<WorkItem> {
   const located = locateItem(root, id);
   if (!located.ok) return located;
@@ -428,6 +431,9 @@ export function advanceWorkItem(
       ownFiles: ownFiles(home, config.repo?.defaultBranch),
     }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
+      // Work whose branch is already merged closes saying so, rather than being verified again (RFC 0013).
+      const merge = target === "done" ? mergeOf(home, item, config.repo?.defaultBranch, run ?? ghIn(home)) : undefined;
+      if (merge !== undefined) return closeByMerge(home, config, item, merge, now);
       const reasons = failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd());
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
     }
@@ -440,6 +446,32 @@ export function advanceWorkItem(
     stage: target,
     ...(base === undefined ? {} : { base }),
     updatedAt: now.toISOString(),
+  });
+}
+
+/** Closes an item whose branch is already merged, saying how, without the ship gate (RFC 0013). */
+export function closeByMerge(
+  home: string,
+  config: PeerAiConfig,
+  item: WorkItem,
+  merge: Merge,
+  now: Date,
+): Result<WorkItem> {
+  const closed = {
+    by: "merge" as const,
+    ...(merge.commit === undefined ? {} : { commit: merge.commit }),
+    ...(merge.pullRequest === undefined ? {} : { pullRequest: merge.pullRequest }),
+    at: now.toISOString(),
+  };
+  return saveWorkItem(home, config, { ...item, stage: "done", closed, updatedAt: now.toISOString() });
+}
+
+/** Every open item whose branch is merged, with how, and its home: what close-merged closes. */
+export function mergedItems(root: string, config: PeerAiConfig, run?: Runner): (Located & { merge: Merge })[] {
+  return allWorkItems(root).flatMap((located) => {
+    if (CLOSED.includes(located.item.stage)) return [];
+    const merge = mergeOf(located.home, located.item, config.repo?.defaultBranch, run);
+    return merge === undefined ? [] : [{ ...located, merge }];
   });
 }
 
