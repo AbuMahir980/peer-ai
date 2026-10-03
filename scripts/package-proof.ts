@@ -1,7 +1,8 @@
 // Proves the packages work as people will get them from npm: builds each one, packs it as
-// `pnpm publish` would, installs the packed files into an empty project with npm, and runs the
-// installed peer-ai there: its version, init, assess and render, and the MCP server AI tools
-// connect to, and loads the ESLint settings as a project's eslint.config.js would. It runs in CI on Linux, macOS and Windows, and locally:
+// `pnpm publish` would, installs the packed files into an empty project with npm, checks they hold
+// nothing only the tests use, and runs the installed peer-ai there: its version, init, assess and
+// render, and the MCP server AI tools connect to, and loads the ESLint settings as a project's
+// eslint.config.js would. It runs in CI on Linux, macOS and Windows, and locally:
 //
 //     node scripts/package-proof.ts
 
@@ -81,6 +82,17 @@ run("git", ["init", "--quiet"], project);
 run("npm", ["install", "--no-audit", "--no-fund", "--save-dev", ...tarballs], project);
 const bin = join(project, "node_modules", ".bin", WINDOWS ? "peer-ai.cmd" : "peer-ai");
 check("peer-ai is installed as a command", existsSync(bin));
+
+// Nothing only the tests use ships: test files, or the helpers only they import.
+const testOnly = PACKAGES.flatMap((folder) => {
+  const { name } = JSON.parse(readFileSync(join(REPO, "packages", folder, "package.json"), "utf8")) as { name: string };
+  const installed = join(project, "node_modules", name);
+  return readdirSync(installed, { recursive: true, encoding: "utf8" })
+    .filter((file) => !file.split(/[\\/]/).includes("node_modules"))
+    .filter((file) => /(\.test|(^|[\\/])test-helpers)\.(d\.)?[jt]s$/.test(file))
+    .map((file) => join(installed, file));
+});
+check("no package ships test-only files", testOnly.length === 0, testOnly.join("\n"));
 
 // 3. Run it there.
 const version = JSON.parse(readFileSync(join(REPO, "packages", "peer-ai", "package.json"), "utf8")) as {
