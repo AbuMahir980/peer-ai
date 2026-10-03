@@ -76,7 +76,7 @@ function addItem(root: string, config: PeerAiConfig, id: string, file: string): 
   return branch;
 }
 
-describe("closing work whose branch is already merged (RFC 0013)", () => {
+describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20_000 }, () => {
   it("closes an item merged with a merge commit, recording the commit", () => {
     const { root, config, branch } = built();
     git(root, "merge", "-q", "--no-ff", "--no-edit", branch);

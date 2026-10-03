@@ -77,6 +77,28 @@
             "minLength": 1,
             "maxLength": 200
           },
+          "flagged": {
+            "description": "Evidence that may no longer hold, with why: stale, a duplicate of another file, or about something gone (RFC 0018).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "file",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
           "checkedAt": {
             "type": "string",
             "format": "date-time",

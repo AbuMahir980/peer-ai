@@ -17,6 +17,7 @@ import {
 } from "peer-ai-workflow";
 import { PROFILES, profilesForPart } from "peer-ai-standards";
 import { CONFIG_FILE, detect, detectDelivery, detectTracks } from "./detect.ts";
+import { judgeEvidence, type Flag } from "./document-evidence.ts";
 import { listRepoFiles } from "./files.ts";
 import type { Output, Stage } from "./init.ts";
 
@@ -31,6 +32,8 @@ export interface ItemResult {
   evidence?: string[];
   note?: string;
   inferred?: boolean;
+  /** Evidence that may no longer hold, with why (RFC 0018). */
+  flagged?: Flag[];
 }
 
 export interface Track {
@@ -601,10 +604,12 @@ export function assess(root: string, config: PeerAiConfig | undefined, stage: St
   const own = tracks.filter((track) => track.status !== "external" && track.status !== "dormant");
   const ctx: Context = { root, files, tracks: own, config, read };
   const signals = collectSignals(ctx);
-  const items = Object.fromEntries(MAP_ITEM_IDS.map((id) => [id, RULES[id](ctx, signals)])) as Record<
+  const found = Object.fromEntries(MAP_ITEM_IDS.map((id) => [id, RULES[id](ctx, signals)])) as Record<
     KnownMapItemId,
     ItemResult
   >;
+  // A document counts once it's judged: stale, duplicated or about something gone is partial (RFC 0018).
+  const items = judgeEvidence(found, { root, files, tracks, read, settled: config?.docs?.settled });
   return {
     name: config?.project.name ?? detected?.name ?? "",
     stage,
@@ -691,6 +696,7 @@ export function toMap(assessment: Assessment, now: Date): ProjectMap {
             ...(item.evidence === undefined ? {} : { evidence: item.evidence }),
             ...(item.inferred === true ? { inferred: true } : {}),
             ...(item.note === undefined ? {} : { note: item.note }),
+            ...(item.flagged === undefined ? {} : { flagged: item.flagged }),
             checkedAt: at,
           },
         ];

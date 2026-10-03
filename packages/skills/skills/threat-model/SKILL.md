@@ -31,7 +31,7 @@ Copy this checklist and tick it off as you go:
 
 ## 1. Scope
 
-- **The whole product:** call the peer-ai MCP tool `project_map`. If its `threat-model` item lists a file, that's the document to update; otherwise write to `docs/threat-model.md`. Read the requirements, the architecture and `peer-ai.config.json` first: they say what's worth protecting, where the product runs and which traits it has.
+- **The whole product:** call the peer-ai MCP tool `project_map`. If its `threat-model` item lists a file, that's the document to update; otherwise write to `docs/threat-model.md`. If the item lists it under `flagged`, it may no longer hold, and says why, such as being stale or naming a folder that's gone. Read the requirements, the architecture and `peer-ai.config.json` first: they say what's worth protecting, where the product runs and which traits it has.
 - **A change (SEC-25):** call the peer-ai MCP tool `next_work`, and find the ways in the branch adds (`git diff --name-only <base>...HEAD`). Add each to the existing threat model with its threats and defences. Keep everything else that's still true.
 - **A product with no code yet:** work from the requirements and the architecture, and mark every defence `planned`.
 

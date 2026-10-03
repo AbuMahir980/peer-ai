@@ -182,6 +182,24 @@ Then it ranks the gaps by the project's stage (the `stage` in `peer-ai.config.js
 
 It also reports what the next stage will need, so nothing arrives as a surprise.
 
+### Documents that may no longer hold
+
+A document counts as evidence once it's judged, not just because it exists (RFC 0018). Using git and the files, with no AI involved, `assess` flags a document, or a folder of them, that is:
+
+- **stale:** unchanged for 90 days, while its part has had 50 commits since, or a quarter of its part's files have changed. Its part is the track that holds it, or the whole project.
+- **a duplicate:** byte-for-byte the same as another document in the evidence. Only the first counts.
+- **about something gone:** it names, in a code span or a link, a path the project has deleted, or a part that's retired.
+
+Each flagged document stays in the evidence, listed under `flagged` in the map with why. An item whose evidence is all flagged is partial, not present, so `next_work` offers its document skill to bring it up to date.
+
+A document meant to stay as it was, such as a record of a decision, can be listed in `docs.settled`, as a file or a folder. It's never called stale or about something gone:
+
+```json
+{ "docs": { "settled": ["docs/decisions/"] } }
+```
+
+Being stale and naming a deleted path both need the project's history, so in a shallow clone only duplicates are flagged. The CI gate that `render` sets up fetches the whole history. Since staleness depends on time, the map can fall out of date with no commit at all; `peer-ai check` then warns, and never fails.
+
 ### Compliance signals
 
 `assess` reads the schema and migrations for personal data (emails, phone numbers, dates of birth, addresses, national ID numbers and more) and card-related names, and the dependency manifests for payment providers. It reports them as things to check, not as findings, and suggests the rule packs to consider, such as PCI DSS or the data protection law where you operate.

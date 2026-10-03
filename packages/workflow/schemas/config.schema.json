@@ -1077,6 +1077,15 @@
           "description": "Where ideas outside the agreed scope go, instead of becoming work items.",
           "type": "string",
           "minLength": 1
+        },
+        "settled": {
+          "description": "Documents, or folders of them, meant to stay as they were, such as a record of a decision: the map never calls them stale or about something gone (RFC 0018).",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A path relative to the project root, or a URL."
+          }
         }
       },
       "additionalProperties": false

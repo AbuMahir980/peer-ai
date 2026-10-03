@@ -32,7 +32,7 @@ Copy this checklist and tick it off as you go:
 Read everything there is before writing anything:
 
 - **The person's words:** a brief, an email, notes or messages they've shared. Only when there's nothing at all to go on, no words and no code, ask for what they have first. Otherwise write from what there is, and ask for more when you hand over.
-- **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
+- **What the project has:** call the peer-ai MCP tool `project_map`. If its `requirements` item lists a file, that's the document to update. Any the `requirements` item lists under `flagged` may no longer hold, with why, such as being stale or naming a folder that's gone: start with those. Otherwise write to `docs/requirements.md`. Read the README, and `peer-ai.config.json` for the stage, traits and where the product operates.
 - **The code,** when the product exists: its screens, routes and jobs show what it does today, and what it does that nobody wrote down.
 - **A single feature:** the work item from the peer-ai MCP tool `next_work`, and the requirements it changes.
 

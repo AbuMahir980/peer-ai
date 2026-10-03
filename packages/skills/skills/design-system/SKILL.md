@@ -31,7 +31,7 @@ Copy this checklist and tick it off as you go:
 ## 1. Sources
 
 - **Where design comes from:** `design` in `peer-ai.config.json` says whether designs exist, where they are, where the tokens live, and whether the designs are authoritative. When they are, the design system records them exactly and invents nothing.
-- **What exists:** call the peer-ai MCP tool `project_map`. Its `design` item lists design folders, token files and any design system document to update.
+- **What exists:** call the peer-ai MCP tool `project_map`. Its `design` item lists design folders, token files and any design system document to update. Any the `design` item lists under `flagged` may no longer hold, with why, such as being stale or naming a folder that's gone: start with those.
 - **The screens:** the code shows what's really used, which may differ from the designs.
 - **Where to save:** `docs/design-system.md`, unless the project keeps it elsewhere.
 
