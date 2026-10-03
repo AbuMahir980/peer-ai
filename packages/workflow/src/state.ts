@@ -140,6 +140,17 @@ export const WorkItemSchema = z
       .describe(
         "The reviews this work needs, worked out from what the change touched when it reached verify (RFC 0004).",
       ),
+    closed: z
+      .strictObject({
+        by: z.literal("merge"),
+        commit: CommitId.optional().describe("The commit that brought the branch into the default branch."),
+        pullRequest: z.number().int().positive().optional(),
+        at: Timestamp,
+      })
+      .optional()
+      .describe(
+        "How an item reached done without passing the ship gate: its branch was already merged, before the gate or while it wasn't required (RFC 0013).",
+      ),
     reopened: z
       .array(z.strictObject({ activity: z.enum(ACTIVITY_IDS), reason: z.string().min(1), at: Timestamp }))
       .optional()

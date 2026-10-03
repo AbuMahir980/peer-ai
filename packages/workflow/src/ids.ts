@@ -116,6 +116,7 @@ export const CLI_COMMAND_IDS = [
   "check-report",
   "check-document",
   "feedback",
+  "close-merged",
   "mcp",
 ] as const;
 export type CliCommandId = (typeof CLI_COMMAND_IDS)[number];
