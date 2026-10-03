@@ -1,5 +1,20 @@
 # peer-ai-workflow
 
+## 1.0.0-next.11
+
+### Minor Changes
+
+- cfe9406: Whole-project reviews are recorded (RFC 0015). `record_review` without a work item now keeps the review in `.peer-ai/project-reviews.json`: the latest from each skill, with its open findings at the blocking level or high.
+  
+  - **A work item can list the findings it fixes** in `fixes`, as `skill#finding`, such as `security-review#F-3`.
+  - **`next_work` gives `projectFindings`:** the open critical findings, and the critical and high ones no work item covers, so none is dropped.
+  - **`peer-ai check` warns about open critical findings,** and fails on them at the production stage. It also warns about findings no work item covers.
+  - **Each review skill's last step,** after a whole-project review, groups the open findings into work items with the person.
+- c8ddf71: Review results mean what they say (RFC 0015):
+  
+  - **A recorded review keeps how many findings it leaves open at each severity,** and is shown that way: in `record_review`'s reply, in `next_work`'s reviews, and in `peer-ai check`. For example, "pass, 7 high open". A pass is never read as all clear. `peer-ai check` also warns about items at ship or done with high findings open below the blocking level.
+  - **A `qa-acceptance` review fails on any acceptance criterion that doesn't hold,** whatever its finding's severity. After that, `update_work_item` changes the criteria only with a `reason` and who decided (`by`), which the item records.
+
 ## 1.0.0-next.10
 
 ### Minor Changes
