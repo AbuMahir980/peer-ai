@@ -12,7 +12,7 @@ import { runCheck } from "./check.ts";
 import { runCloseMerged } from "./close-merged.ts";
 import { runCheckDocument } from "./document.ts";
 import { runDoctor } from "./doctor.ts";
-import { runFeedback } from "./feedback.ts";
+import { runFeedback, runPrune } from "./feedback.ts";
 import { serveStdio } from "./mcp.ts";
 import { runInit, type InitOptions, type Output, type Stage, type Team } from "./init.ts";
 import { runMigrate } from "./migrate.ts";
@@ -43,6 +43,8 @@ Usage:
                               Send a draft as an issue on Peer AI's repository
   peer-ai feedback drop <draft>
                               Delete a draft
+  peer-ai feedback prune [--yes]
+                              Remove the sent reports whose issues are closed
   peer-ai ship [id]           Move a work item to ship, taking CI's verify when the config
                               names its check, or say exactly what's missing
   peer-ai close-merged [--yes]
@@ -233,9 +235,15 @@ function render(args: string[], io: Io): number {
   );
 }
 
-function feedback(args: string[], io: Io): number {
-  const { positionals } = parseArgs({ args, strict: true, allowPositionals: true, options: {} });
+function feedback(args: string[], io: Io): number | Promise<number> {
+  const { positionals, values } = parseArgs({
+    args,
+    strict: true,
+    allowPositionals: true,
+    options: { yes: { type: "boolean", short: "y" } },
+  });
   const [action, draft] = positionals;
+  if (action === "prune") return runPrune({ cwd: io.cwd, yes: values.yes === true }, io.prompter, io.out);
   return runFeedback({ cwd: io.cwd, action, draft }, io.out);
 }
 
