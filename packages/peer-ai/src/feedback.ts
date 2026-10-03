@@ -10,6 +10,7 @@ import { basename, join } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
+import { Cancelled, type Prompter } from "./prompter.ts";
 import type { Result } from "./work.ts";
 
 export const FEEDBACK_DIR = ".peer-ai/feedback";
@@ -105,14 +106,96 @@ export function formatReport(input: FeedbackInput, config: PeerAiConfig | undefi
   ].join("\n");
 }
 
-/** Writes a draft to .peer-ai/feedback/, or refuses it with what to take out. */
+/** A report already sent, kept in .peer-ai/feedback/sent/ with the issue it became. */
+export interface SentReport {
+  file: string;
+  title: string;
+  issue?: string;
+}
+
+/** The reports sent from this project, oldest first. */
+export function listSent(root: string): SentReport[] {
+  const dir = join(root, SENT_DIR);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((file) => file.endsWith(".md"))
+    .sort()
+    .map((file) => {
+      const text = readFileSync(join(dir, file), "utf8");
+      const issue = /^Sent as (https:\/\/\S+)$/m.exec(text)?.[1];
+      return { file, title: /^# (.+)$/m.exec(text)?.[1] ?? file, ...(issue === undefined ? {} : { issue }) };
+    });
+}
+
+export interface IssueState {
+  state: "open" | "closed";
+  closedAt?: string;
+}
+
+/**
+ * The state of each issue this person opened on Peer AI's repository, by its link, in one call to
+ * gh (RFC 0014); undefined without a signed-in gh.
+ */
+export function issueStates(run: Runner = runQuietly): Map<string, IssueState> | undefined {
+  const printed = run("gh", [
+    "issue",
+    "list",
+    "--repo",
+    FEEDBACK_REPO,
+    "--author",
+    "@me",
+    "--state",
+    "all",
+    "--limit",
+    "500",
+    "--json",
+    "url,state,closedAt",
+  ]);
+  if (printed === undefined) return undefined;
+  try {
+    const issues = JSON.parse(printed) as { url: string; state: string; closedAt?: string | null }[];
+    return new Map(
+      issues.map((issue) => [
+        issue.url,
+        {
+          state: issue.state === "CLOSED" ? "closed" : "open",
+          ...(issue.closedAt === undefined || issue.closedAt === null ? {} : { closedAt: issue.closedAt }),
+        },
+      ]),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+const words = (title: string): Set<string> =>
+  new Set((title.toLowerCase().match(/[a-z0-9_]+/g) ?? []).filter((word) => word.length > 3));
+
+/** A sent report whose title shares most of its words with a new one: likely the same report. */
+export function similarSent(root: string, title: string): SentReport | undefined {
+  const mine = words(title);
+  let best: { report: SentReport; score: number } | undefined;
+  for (const report of listSent(root)) {
+    const theirs = words(report.title);
+    const shared = [...mine].filter((word) => theirs.has(word)).length;
+    const score = shared / Math.max(1, new Set([...mine, ...theirs]).size);
+    if (score >= 0.5 && (best === undefined || score > best.score)) best = { report, score };
+  }
+  return best?.report;
+}
+
+/**
+ * Writes a draft to .peer-ai/feedback/, or refuses it with what to take out. A draft like a report
+ * already sent is still written, with a note naming that report and its state (RFC 0014).
+ */
 export function draftFeedback(
   root: string,
   config: PeerAiConfig | undefined,
   input: FeedbackInput,
   context: FeedbackContext,
   now: Date,
-): Result<{ draft: string }> {
+  run: Runner = runQuietly,
+): Result<{ draft: string; note?: string }> {
   const problems = draftProblems(input);
   if (problems.length > 0) {
     return {
@@ -126,7 +209,15 @@ export function draftFeedback(
   let name = `${stem}.md`;
   for (let n = 2; existsSync(join(dir, name)); n++) name = `${stem}-${String(n)}.md`;
   writeFileSync(join(dir, name), formatReport(input, config, context));
-  return { ok: true, value: { draft: join(FEEDBACK_DIR, name) } };
+  const similar = similarSent(root, input.title);
+  if (similar === undefined) return { ok: true, value: { draft: join(FEEDBACK_DIR, name) } };
+  const state = similar.issue === undefined ? undefined : issueStates(run)?.get(similar.issue);
+  const which = similar.issue ?? similar.file;
+  const note =
+    state?.state === "closed"
+      ? `This looks like a report already sent, ${which}, which is closed: it may be fixed in the version this project now uses. Check before the person sends it.`
+      : `This looks like a report already sent, ${which}${state === undefined ? "" : ", which is still open"}. Check it's not the same before the person sends it; if it is, drop this draft.`;
+  return { ok: true, value: { draft: join(FEEDBACK_DIR, name), note } };
 }
 
 export interface Draft {
@@ -226,18 +317,30 @@ export function runFeedback(options: FeedbackOptions, out: Output): number {
   const { cwd, action, draft } = options;
   if (action === undefined) {
     const drafts = listDrafts(cwd);
-    if (drafts.length === 0) {
-      out.log("No feedback drafts are waiting.");
-      return 0;
+    if (drafts.length === 0) out.log("No feedback drafts are waiting.");
+    else {
+      out.log(`Feedback drafts waiting for your decision, in ${FEEDBACK_DIR}/:`);
+      for (const { file, title } of drafts) out.log(`  ${file}: ${title}`);
+      out.log("");
+      out.log("Read one, then run peer-ai feedback send <draft> or peer-ai feedback drop <draft>.");
     }
-    out.log(`Feedback drafts waiting for your decision, in ${FEEDBACK_DIR}/:`);
-    for (const { file, title } of drafts) out.log(`  ${file}: ${title}`);
-    out.log("");
-    out.log("Read one, then run peer-ai feedback send <draft> or peer-ai feedback drop <draft>.");
+    const sent = listSent(cwd);
+    if (sent.length > 0) {
+      const states = issueStates(options.run);
+      out.log("");
+      out.log(`Sent, in ${SENT_DIR}/:`);
+      for (const report of sent) out.log(`  ${report.file}: ${report.title}${describeState(report, states)}`);
+      if (states === undefined) out.log("Sign in to the GitHub CLI, gh, to see which are fixed.");
+      else if (sent.some((report) => closed(report, states))) {
+        out.log("Run peer-ai feedback prune to clear the ones that are closed.");
+      }
+    }
     return 0;
   }
   if ((action !== "send" && action !== "drop") || draft === undefined) {
-    out.error("Use peer-ai feedback, peer-ai feedback send <draft> or peer-ai feedback drop <draft>.");
+    out.error(
+      "Use peer-ai feedback, peer-ai feedback send <draft>, peer-ai feedback drop <draft> or peer-ai feedback prune.",
+    );
     return 2;
   }
   if (action === "drop") {
@@ -260,5 +363,71 @@ export function runFeedback(options: FeedbackOptions, out: Output): number {
     out.log(sent.value.link);
     out.log(`Once it's submitted, run peer-ai feedback drop ${basename(draft)}.`);
   }
+  return 0;
+}
+
+const closed = (report: SentReport, states: Map<string, IssueState> | undefined): boolean =>
+  report.issue !== undefined && states?.get(report.issue)?.state === "closed";
+
+function describeState(report: SentReport, states: Map<string, IssueState> | undefined): string {
+  if (report.issue === undefined) return "";
+  const state = states?.get(report.issue);
+  if (state === undefined) return ` (${report.issue})`;
+  return state.state === "open"
+    ? ` (${report.issue}, open)`
+    : ` (${report.issue}, closed${state.closedAt === undefined ? "" : ` on ${state.closedAt.slice(0, 10)}`})`;
+}
+
+export interface PruneOptions {
+  cwd: string;
+  yes: boolean;
+  run?: Runner;
+}
+
+/**
+ * `peer-ai feedback prune`: removes the sent reports whose issues are closed, after listing them
+ * and asking (RFC 0014). The issues stay on GitHub; open ones stay here. Exit code 0 done or
+ * nothing to do, 1 declined or gh not signed in, 2 without a terminal and --yes.
+ */
+export async function runPrune(options: PruneOptions, prompter: Prompter | undefined, out: Output): Promise<number> {
+  const states = issueStates(options.run);
+  if (states === undefined) {
+    out.error("Pruning needs to know which issues are closed: sign in to the GitHub CLI with gh auth login.");
+    return 1;
+  }
+  const done = listSent(options.cwd).filter((report) => closed(report, states));
+  if (done.length === 0) {
+    out.log("No sent report's issue is closed yet.");
+    return 0;
+  }
+  out.log("These sent reports' issues are closed:");
+  for (const report of done) out.log(`  ${report.file}: ${report.title}${describeState(report, states)}`);
+  if (!options.yes) {
+    if (prompter === undefined) {
+      out.error(
+        "prune asks before it removes anything, so it needs a terminal. To remove them without asking, pass --yes.",
+      );
+      return 2;
+    }
+    try {
+      if (
+        !(await prompter.confirm(
+          `Remove ${done.length === 1 ? "it" : `all ${String(done.length)}`}? The issues stay on GitHub.`,
+          true,
+        ))
+      ) {
+        out.log("Nothing was removed.");
+        return 1;
+      }
+    } catch (error) {
+      if (error instanceof Cancelled) {
+        out.log("Cancelled. Nothing was removed.");
+        return 1;
+      }
+      throw error;
+    }
+  }
+  for (const report of done) rmSync(join(options.cwd, SENT_DIR, report.file));
+  out.log(`Removed ${String(done.length)} sent ${done.length === 1 ? "report" : "reports"} whose issues are closed.`);
   return 0;
 }

@@ -483,15 +483,17 @@ When Peer AI gets something wrong in your project, such as a review that misses 
 npx peer-ai feedback
 npx peer-ai feedback send 2026-10-02-check-blocked-a-merge.md
 npx peer-ai feedback drop 2026-10-02-check-blocked-a-merge.md
+npx peer-ai feedback prune
 ```
 
 | Command | What it does |
 |---------|--------------|
-| `peer-ai feedback` | Lists the drafts waiting, with each title |
+| `peer-ai feedback` | Lists the drafts waiting, with each title, then the reports already sent, each with its issue's state: open, or closed and when. The states come from GitHub through `gh`, in one call. |
 | `peer-ai feedback send <draft>` | Opens the draft as an issue on Peer AI's repository, labelled `feedback`, under your own GitHub account through the GitHub CLI, `gh`. The draft moves to `.peer-ai/feedback/sent/` with the issue's link. Without a signed-in `gh`, it prints a link to a new issue with the report filled in, for you to submit. |
 | `peer-ai feedback drop <draft>` | Deletes the draft |
+| `peer-ai feedback prune [--yes]` | Removes the sent reports whose issues are closed, after listing them and asking; `--yes` doesn't ask. Open ones stay, and the issues stay on GitHub (RFC 0014). |
 
-Your AI tool asks you about each draft at a natural stopping point, and runs `send` or `drop` only after you answer. Nothing is ever sent without a person's yes, and a report never holds your code: Peer AI refuses a draft with a block of code, anything that looks like a key or a token, or an email address.
+Your AI tool asks you about each draft at a natural stopping point, and runs `send` or `drop` only after you answer. When a new draft looks like a report this project already sent, by the words their titles share, `draft_feedback` still writes it, and its reply names the sent issue and its state, so the person can drop a duplicate, or check whether a closed one is fixed in the version the project uses. Nothing is ever sent without a person's yes, and a report never holds your code: Peer AI refuses a draft with a block of code, anything that looks like a key or a token, or an email address.
 
 Exit codes: `0` done, `1` a draft that doesn't exist, `2` a usage error.
 

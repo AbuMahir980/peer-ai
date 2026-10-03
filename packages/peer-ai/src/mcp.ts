@@ -368,7 +368,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Draft feedback",
       description:
-        "Draft a report for Peer AI's maintainers when Peer AI itself gets something wrong: a review misses a problem or reports one that isn't there, a check blocks work by mistake, a skill's step can't be followed, or a command fails or misleads. Not for problems in the project. The draft stays in .peer-ai/feedback/ until the person decides; never send it yourself. Describe everything in plain words: never include the project's code, file contents, names of people, companies or products, secrets, or URLs and hosts. Peer AI refuses a draft holding code, a key or token, or an email address.",
+        "Draft a report for Peer AI's maintainers when Peer AI itself gets something wrong: a review misses a problem or reports one that isn't there, a check blocks work by mistake, a skill's step can't be followed, or a command fails or misleads. Not for problems in the project. The draft stays in .peer-ai/feedback/ until the person decides; never send it yourself. Describe everything in plain words: never include the project's code, file contents, names of people, companies or products, secrets, or URLs and hosts. Peer AI refuses a draft holding code, a key or token, or an email address. When the reply has a note, the draft looks like a report this project already sent: tell the person, and drop the draft if it's the same.",
       inputSchema: {
         title: z
           .string()
