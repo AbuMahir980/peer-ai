@@ -32,6 +32,14 @@ npx --prefer-online peer-ai@latest render
 
 `peer-ai doctor`, and through it your AI tool at the start of each session, says when a newer release is out (RFC 0014). It moves every file it wrote to the new version, and says which version it moved from, with a link to what changed. Review the change, commit it and merge it. In a project with `peer-ai` in its `package.json`, update it there and install it, then run `npx peer-ai render`.
 
+### An update pull request
+
+With `"updates": { "pullRequest": true }`, on GitHub Actions, render writes `.github/workflows/peer-ai-update.yml` (RFC 0014). Once a day, and on demand, it compares the version the project pins with npm's latest. When a newer one is out, it runs `npx peer-ai@<latest> render` on a branch, `peer-ai/update-<version>`, and opens a pull request, "Update Peer AI to <version>", with a link to what changed. It does nothing while one for that version is open.
+
+- **It asks for `contents: write` and `pull-requests: write`,** in its one job, and keeps no credentials on disk.
+- **CI doesn't start on a pull request opened with the workflow's own token,** which is GitHub's rule. Add a `PEER_AI_UPDATE_TOKEN` secret, a GitHub App's token or a fine-grained token that can write contents and pull requests, and CI runs by itself. Without one, the pull request says to close and reopen it, which starts CI.
+- **A project with `peer-ai` in its `package.json`** gets no workflow: Dependabot or Renovate update it there, with its lockfile. Run `npx peer-ai render` after merging one.
+
 ### Updating while agents work
 
 CI runs the new version as soon as the change merges, but an AI tool's MCP server keeps the version it started with, and an agent's branch keeps the files of the version it was cut from. So:

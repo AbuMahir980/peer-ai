@@ -432,6 +432,12 @@ const configShape = {
         .boolean()
         .optional()
         .describe("Say in doctor and next_work when a newer Peer AI is out. Defaults to true."),
+      pullRequest: z
+        .boolean()
+        .optional()
+        .describe(
+          "Have render write a daily GitHub Actions workflow that opens a pull request to update Peer AI when a newer release is out. Defaults to false.",
+        ),
     })
     .optional()
     .describe("How the project hears about new Peer AI releases (RFC 0014)."),
