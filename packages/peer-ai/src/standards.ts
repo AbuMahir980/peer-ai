@@ -1,10 +1,12 @@
-// Which standards govern a file: Peer AI's rules for the kind of part it belongs to, at the
-// project's stage and with its traits, and the project's own documents and rules. An agent asks
-// for these before editing a file, instead of loading every rule on every turn.
+// Which standards govern a file: Peer AI's rules for what the file is, the language it's in and the
+// kind of part it belongs to, at the project's stage and with its traits, and the project's own
+// documents and rules. An agent asks for these before editing a file, instead of loading every rule
+// on every turn, and gets each rule in brief, with the full text of the ones it asks for (RFC 0012).
 
 import { isAbsolute, relative } from "node:path";
 import { PROFILES, profileRulesFor, rulesFor, type Rule, type Value } from "peer-ai-standards";
-import { DOMAIN_IDS, type DomainId, type PeerAiConfig } from "peer-ai-workflow";
+import type { DomainId, PeerAiConfig } from "peer-ai-workflow";
+import { SCHEMA_FILE, TEST_FILE } from "./assess.ts";
 
 type ConfigTrack = PeerAiConfig["tracks"][number];
 
@@ -12,16 +14,35 @@ type ConfigTrack = PeerAiConfig["tracks"][number];
  * A rule as an agent needs it while editing: what to do, and the question it will be reviewed by.
  * A stack profile's rule also names the core rule it carries out, and its value for this project.
  */
-export type RuleForFile = Pick<Rule, "id" | "title" | "rule" | "ask" | "check" | "severity"> & {
+export type RuleForFile = Pick<Rule, "id" | "title" | "rule" | "why" | "ask" | "check" | "severity"> & {
   carries?: string;
   value?: Value;
 };
 
+/** A rule in brief: what an agent follows while editing. A stack profile's rule keeps its value. */
+export type RuleInBrief = Pick<Rule, "id" | "title" | "severity"> & { value?: Value };
+
+/** What a file is, from its path: it decides which domains' rules apply to it (RFC 0012). */
+export type FileKind =
+  | "ci-pipeline"
+  | "build"
+  | "infrastructure"
+  | "dependencies"
+  | "data-schema"
+  | "test"
+  | "document"
+  | "tool-settings"
+  | "source";
+
 export interface StandardsForFile {
   file: string;
+  /** What the file is, which decides the domains of the rules it gets. */
+  kind: FileKind;
   stage: "prototype" | "mvp" | "production";
-  /** Peer AI's rules that apply to this file. */
-  peerAiRules: RuleForFile[];
+  /** Peer AI's rules that apply to this file: in brief, or in full for the ids asked for. */
+  peerAiRules: RuleInBrief[] | RuleForFile[];
+  /** Ids asked for in full that don't apply to this file. */
+  notApplicable?: string[];
   /** Rules the project has set aside, with its reasons. */
   setAside: { rule: string; reason: string }[];
   track?: { id: string; kind: ConfigTrack["kind"]; path?: string };
@@ -89,19 +110,91 @@ const BY_KIND: Partial<Record<ConfigTrack["kind"], DomainId[]>> = {
   cli: ["api-design", "reliability"],
 };
 
-/** The domains for a file: every domain when it belongs to no track or to a kind not listed. */
+/** A source file's domains: those every file has, and those its kind of part adds. */
 function domainsFor(track: ConfigTrack | undefined): DomainId[] {
   const extra = track === undefined ? undefined : BY_KIND[track.kind];
-  return extra === undefined ? [...DOMAIN_IDS] : [...new Set([...EVERY_FILE, ...extra])];
+  return [...new Set([...EVERY_FILE, ...(extra ?? [])])];
 }
+
+// What a file is, by its path, in the order they're tried: a Markdown file in .github/ is a document,
+// and a test in a migrations folder is a test. Anything else is source code.
+const KINDS: [Exclude<FileKind, "source">, RegExp, DomainId[]][] = [
+  ["document", /\.(md|mdx|rst|adoc)$/i, []],
+  [
+    "ci-pipeline",
+    /^\.github\/(workflows|actions)\/|(^|\/)action\.ya?ml$|(^|\/)\.gitlab-ci\.ya?ml$|(^|\/)Jenkinsfile$|^\.circleci\/|(^|\/)azure-pipelines\.ya?ml$|(^|\/)bitbucket-pipelines\.ya?ml$|^\.buildkite\//,
+    ["delivery", "security"],
+  ],
+  ["test", TEST_FILE, ["testing", "code-quality"]],
+  ["data-schema", SCHEMA_FILE, ["data", "security", "privacy-compliance", "money", "safety-critical"]],
+  [
+    "infrastructure",
+    /\.(tf|tfvars|hcl)$|(^|\/)(Chart|kustomization|Pulumi[^/]*)\.ya?ml$|(^|\/)(cdk\.json|serverless\.ya?ml)$|(^|\/)(k8s|kubernetes|helm|charts|manifests|deploy|infra)\/.*\.ya?ml$/,
+    ["delivery", "operations", "reliability", "security"],
+  ],
+  [
+    "build",
+    /(^|\/)(Dockerfile(\.[^/]*)?|[^/]+\.dockerfile|Containerfile|Makefile|GNUmakefile|[jJ]ustfile|Procfile)$|(^|\/)(docker-)?compose[^/]*\.ya?ml$/,
+    ["delivery", "security", "reliability"],
+  ],
+  [
+    "dependencies",
+    /(^|\/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|yarn\.lock|bun\.lockb?|requirements[^/]*\.(txt|in)|pyproject\.toml|poetry\.lock|uv\.lock|Pipfile(\.lock)?|setup\.(py|cfg)|go\.(mod|sum)|Cargo\.(toml|lock)|Gemfile(\.lock)?|pubspec\.(yaml|lock)|composer\.(json|lock)|(build|settings)\.gradle(\.kts)?|gradle\.lockfile|pom\.xml|[^/]+\.csproj|packages\.lock\.json|mix\.(exs|lock)|Podfile(\.lock)?)$/,
+    ["security", "code-quality"],
+  ],
+  [
+    "tool-settings",
+    /(^|\/)(\.gitleaks\.toml|\.gitleaksignore|\.semgrepignore|\.semgrep\.ya?ml|\.editorconfig|\.prettierrc[^/]*|prettier\.config\.[cm]?[jt]s|\.eslintrc[^/]*|eslint\.config\.[cm]?[jt]s|\.stylelintrc[^/]*|\.?ruff\.toml|mypy\.ini|\.flake8|tsconfig[^/]*\.json|jsconfig\.json|biome\.jsonc?|\.pre-commit-config\.ya?ml|renovate\.json5?|\.markdownlint[^/]*|zap-rules\.tsv|\.nvmrc|\.node-version|\.python-version)$|^\.github\/dependabot\.ya?ml$/,
+    ["security", "code-quality"],
+  ],
+];
+
+/** What a file is, from its path. A file under the config's docs folder is a document, whatever it is. */
+export function fileKind(config: PeerAiConfig, path: string): FileKind {
+  const docs = config.docs?.dir === undefined ? undefined : normalise(config.docs.dir);
+  if (docs !== undefined && docs !== "" && path.startsWith(`${docs}/`)) return "document";
+  return KINDS.find(([, pattern]) => pattern.test(path))?.[0] ?? "source";
+}
+
+const KIND_DOMAINS = new Map<FileKind, DomainId[]>(KINDS.map(([kind, , domains]) => [kind, domains]));
 
 const WHOLE_PROJECT = new Set(PROFILES.filter((profile) => profile.stacks.length === 0).map((profile) => profile.id));
 
-/** Returns undefined for a file outside the project. */
-export function standardsFor(config: PeerAiConfig, root: string, file: string): StandardsForFile | undefined {
+// A stack profile's rules apply to the files of its language, and their settings files, from the
+// profile its family starts from: TypeScript's family to JavaScript and TypeScript, Python's to
+// Python. A profile of another family applies to every file, as before (RFC 0012).
+const LANGUAGES: Record<string, RegExp> = {
+  typescript: /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$|(^|\/)(tsconfig[^/]*|jsconfig|package)\.json$/,
+  python: /\.pyi?$|(^|\/)(pyproject\.toml|\.?ruff\.toml|setup\.cfg|requirements[^/]*\.txt)$/,
+};
+
+function familyOf(id: string, seen = new Set<string>()): string[] {
+  const profile = PROFILES.find((candidate) => candidate.id === id);
+  if (profile === undefined || seen.has(id)) return [];
+  seen.add(id);
+  return profile.extends.length === 0 ? [id] : profile.extends.flatMap((base) => familyOf(base, seen));
+}
+
+/** Whether a profile's rules can apply to a file, by its language. */
+function inLanguage(profile: string, path: string): boolean {
+  const patterns = familyOf(profile).flatMap((root) => LANGUAGES[root] ?? []);
+  return patterns.length === 0 || patterns.some((pattern) => pattern.test(path));
+}
+
+/**
+ * Returns undefined for a file outside the project. Each rule comes in brief, unless `ruleIds` asks
+ * for some in full: then only those, with any that don't apply to the file named.
+ */
+export function standardsFor(
+  config: PeerAiConfig,
+  root: string,
+  file: string,
+  ruleIds?: readonly string[],
+): StandardsForFile | undefined {
   const path = normalise(isAbsolute(file) ? relative(root, file) : file);
   if (path === ".." || path.startsWith("../") || isAbsolute(path)) return undefined;
   const track = trackFor(config, path);
+  const kind = fileKind(config, path);
   const standards = config.standards;
   const documents = (standards?.documents ?? [])
     .filter((doc) => doc.scope === undefined || (track !== undefined && doc.scope.includes(track.id)))
@@ -110,11 +203,12 @@ export function standardsFor(config: PeerAiConfig, root: string, file: string): 
   const exceptions = standards?.exceptions ?? [];
   const setAside = new Set(exceptions.map((exception) => exception.rule));
   const traits = config.project.traits ?? [];
-  const domains = domainsFor(track);
-  const core = rulesFor({ stage, traits, domains }).map(({ id, title, rule, ask, check, severity }) => ({
+  const domains = KIND_DOMAINS.get(kind) ?? domainsFor(track);
+  const core = rulesFor({ stage, traits, domains }).map(({ id, title, rule, why, ask, check, severity }) => ({
     id,
     title,
     rule,
+    why,
     ask,
     check,
     severity,
@@ -128,28 +222,42 @@ export function standardsFor(config: PeerAiConfig, root: string, file: string): 
     ...(track?.architecture === undefined ? {} : { architecture: track.architecture }),
   })
     // A profile with no stacks, such as the pipeline's, is about the project as a whole: its rules
-    // go with the pipeline's files in .github/, whichever part holds them, and with files outside
-    // every part, not with each part's code.
+    // go with the pipeline's files, whichever part holds them, not with each part's code. Every
+    // other profile's rules go with the files of its language, in the file's domains.
     .filter((rule) =>
       WHOLE_PROJECT.has(rule.profile)
-        ? track === undefined || path.startsWith(".github/")
-        : domains.includes(rule.domain),
+        ? kind === "ci-pipeline"
+        : inLanguage(rule.profile, path) && domains.includes(rule.domain),
     )
-    .map(({ id, title, rule, ask, check, severity, carries, value }) => ({
+    .map(({ id, title, rule, why, ask, check, severity, carries, value }) => ({
       id,
       title,
       rule,
+      why,
       ask,
       check,
       severity,
       carries,
       ...(value === undefined ? {} : { value }),
     }));
-  const peerAiRules: RuleForFile[] = [...core, ...profiled].filter((rule) => !setAside.has(rule.id));
+  const applying: RuleForFile[] = [...core, ...profiled].filter((rule) => !setAside.has(rule.id));
+  const asked = ruleIds === undefined ? undefined : new Set(ruleIds);
+  const notApplicable = ruleIds?.filter((id) => !applying.some((rule) => rule.id === id)) ?? [];
+  const peerAiRules =
+    asked === undefined
+      ? applying.map(({ id, title, severity, value }): RuleInBrief => ({
+          id,
+          title,
+          severity,
+          ...(value === undefined ? {} : { value }),
+        }))
+      : applying.filter((rule) => asked.has(rule.id));
   return {
     file: path,
+    kind,
     stage,
     peerAiRules,
+    ...(notApplicable.length === 0 ? {} : { notApplicable }),
     setAside: exceptions.map((exception) => ({ rule: exception.rule, reason: exception.reason })),
     ...(track === undefined
       ? {}

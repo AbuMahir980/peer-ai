@@ -19,7 +19,7 @@ import { CONFIG_FILE, detectDelivery, detectName, detectTools, detectTracks } fr
 import type { Output } from "./init.ts";
 import { MIN_NODE_MAJOR } from "./package-info.ts";
 import { planRender } from "./render.ts";
-import { checkSuggestions } from "./suggestions.ts";
+import { checkStacks, checkSuggestions } from "./suggestions.ts";
 import { checkVersion } from "./versions.ts";
 import { WORK_DIR, mapChanges, readMap, readWorkItems } from "./state.ts";
 
@@ -394,7 +394,7 @@ export function diagnose(
       : checkStandards(config, today.toISOString().slice(0, 10))),
     ...(config === undefined || assessment === undefined
       ? needsConfig("suggestions", "Suggested profiles and traits")
-      : [checkSuggestions(config, assessment)]),
+      : [checkSuggestions(config, assessment), ...checkStacks(config, assessment)]),
     ...(config === undefined ? [] : [...checkProfiles(config), ...checkEnforcers(root, config)]),
     checkMap(root, assessment),
     ...checkWorkItems(root, config),

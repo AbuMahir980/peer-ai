@@ -5,6 +5,7 @@
 import type { PeerAiConfig } from "peer-ai-workflow";
 import type { Assessment } from "./assess.ts";
 import { warn, ok, type Check } from "./checks.ts";
+import { CONFIG_FILE } from "./detect.ts";
 import type { Prompter } from "./prompter.ts";
 
 export interface Suggestion {
@@ -111,5 +112,20 @@ export function checkSuggestions(config: PeerAiConfig, assessment: Assessment): 
     "suggestions",
     `assess suggests ${list(open.map((suggestion) => `${named(suggestion)} (${suggestion.evidence})`))}.`,
     `Add ${open.length === 1 ? "it" : "them"} to ${list(where)}, or list ${open.length === 1 ? "it" : "them"} in declined, with why.`,
+  );
+}
+
+/**
+ * doctor: a part that names no stack while the project lists profiles gets every listed profile of
+ * each file's language, so each such part is named with the stack detection finds (RFC 0012).
+ */
+export function checkStacks(config: PeerAiConfig, assessment: Assessment): Check[] {
+  if ((config.standards?.profiles ?? []).length === 0) return [];
+  return assessment.suggestedStacks.map(({ track, stack }) =>
+    warn(
+      "stacks",
+      `${track} names no stack, so every profile listed applies to its files.`,
+      `Set its stack in ${CONFIG_FILE}, as detected: "stack": [${stack.map((tag) => JSON.stringify(tag)).join(", ")}].`,
+    ),
   );
 }

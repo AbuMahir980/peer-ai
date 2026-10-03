@@ -117,3 +117,29 @@ describe("suggested profiles and traits (RFC 0011)", () => {
     ]);
   });
 });
+
+describe("a part that names no stack (RFC 0012)", () => {
+  it("is named by doctor, with the stack detection finds, while profiles are listed", () => {
+    const files = (profiles: string[]) =>
+      project({
+        "peer-ai.config.json": JSON.stringify({
+          version: 1,
+          project: { name: "Trips" },
+          tracks: [{ id: "mobile", kind: "mobile", path: "apps/mobile", status: "active" }],
+          standards: { profiles },
+          declined: [{ profile: "react-native", reason: "Not yet." }],
+        }),
+        "apps/mobile/package.json": JSON.stringify({ dependencies: { "react-native": "0.82.0" } }),
+      });
+    const stacks = (root: string) => diagnose(root, "24.3.0").checks.filter((check) => check.id === "stacks");
+    expect(stacks(files(["typescript"]))).toEqual([
+      {
+        id: "stacks",
+        status: "warn",
+        message: "mobile names no stack, so every profile listed applies to its files.",
+        fix: 'Set its stack in peer-ai.config.json, as detected: "stack": ["javascript", "react-native"].',
+      },
+    ]);
+    expect(stacks(files([]))).toEqual([]);
+  });
+});

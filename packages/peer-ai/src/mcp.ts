@@ -33,7 +33,7 @@ import {
 
 const INSTRUCTIONS = `Peer AI keeps this project's map, its work items and the gates work must pass.
 Start a session with next_work: it returns the work item for the current git branch and where it stopped, and every other open item in one line. Read another item in full with work_item before working on it.
-Before editing a file, call standards_for_file and follow what it returns.
+Before editing a file, call standards_for_file and follow what it returns; ask it for the full text of the rules your change touches with ruleIds.
 Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself; it verifies the item's latest commit, so commit first.
 Working in a git worktree of your own, give your branch to next_work: the tools find each work item on its own branch, wherever it's checked out.
 Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
@@ -167,12 +167,19 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Standards for a file",
       description:
-        "The standards that govern a file: the track it belongs to, the stack profiles, and the project's own standards documents and rules for that track. Call it before editing a file, then read and follow the documents it lists.",
-      inputSchema: { file: z.string().min(1).describe("The file's path, relative to the project root.") },
+        "The standards that govern a file: Peer AI's rules for what the file is, its language and the track it belongs to, each by its id, title and severity; and the project's own standards documents and rules for that track. Call it before editing a file. Follow every rule listed, and read and follow the documents it lists. For the full text of the rules this change touches (the rule, why, the question a review asks and how it's checked), call it again with their ids in ruleIds.",
+      inputSchema: {
+        file: z.string().min(1).describe("The file's path, relative to the project root."),
+        ruleIds: z
+          .array(z.string().min(1))
+          .min(1)
+          .optional()
+          .describe("Rule ids, such as SEC-12, to return in full instead of every rule in brief."),
+      },
       annotations: READ_ONLY,
     },
-    withProject((root, config, { file }: { file: string }) => {
-      const standards = standardsFor(config, root, file);
+    withProject((root, config, { file, ruleIds }: { file: string; ruleIds?: string[] | undefined }) => {
+      const standards = standardsFor(config, root, file, ruleIds);
       return standards === undefined ? refuse(`${file} is outside the project.`) : reply(standards);
     }),
   );

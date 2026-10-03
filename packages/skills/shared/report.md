@@ -39,7 +39,7 @@ Write `<time>` as `20261005T1000Z`: no colons, so the name works on every system
 
 Every rule in `rules.md` gets at least one line: those are the rules this review answers for. A rule that applies to each item, such as a permission check on each route, gets a line per item, with `item` set to the inventory id.
 
-A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP tool `standards_for_file` didn't return it for any file in scope (its stage is later than the project's, the project lacks its trait, or it's for another kind of part), nothing in scope is of its kind, or the project has set it aside (give the recorded reason and who decided).
+A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP tool `standards_for_file` didn't return it for any file in scope (its stage is later than the project's, the project lacks its trait, or it's for another kind of part, another kind of file or another language), nothing in scope is of its kind, or the project has set it aside (give the recorded reason and who decided).
 
 | `status` | Needs |
 |----------|-------|
