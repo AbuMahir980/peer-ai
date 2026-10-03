@@ -1,5 +1,25 @@
 # peer-ai-workflow
 
+## 1.0.0-next.9
+
+### Minor Changes
+
+- 88de847: CI's run of the verify command can count as the verify (RFC 0013), so nobody runs a slow verify again on a laptop.
+  
+  Set `commands.verifyCheck` to the CI check that runs it on every pull request, as GitHub names it, such as `"ci / check"`. Then:
+  
+  - **`run_verify` with `from: "ci"`** takes that check's result on the item's latest pushed commit from GitHub through `gh`, and records it with a link to the run.
+  - **Moving an item to ship** takes it automatically, and says what's still missing. So does the new `npx peer-ai ship`.
+  - **`peer-ai check` confirms it with GitHub.** Run `npx peer-ai render` after setting `verifyCheck`, so the gate's workflow gets `checks: read` and the run's token.
+- f8fc198: Work whose branch is already merged can be closed without being verified again (RFC 0013). This covers work merged before the ship gate, or while `peer-ai check` wasn't a required check.
+  
+  - **`npx peer-ai close-merged`** lists every open item whose branch is merged, then asks and closes them. It finds merge commits and fast-forwards with git. It also finds squash and rebase merges whose files are all in the default branch, and asks GitHub through `gh` about the rest, including deleted branches. Each item records how it closed: `"closed": { "by": "merge", … }`.
+  - **`advance_work_item` to `done`** does the same for one item when its branch is merged.
+  - **`peer-ai check`** accepts these items and lists them.
+  - **`peer-ai doctor`** warns when open items look merged.
+  
+  After updating, run `npx peer-ai close-merged` to close the items already merged, then commit the change on a branch.
+
 ## 1.0.0-next.8
 
 ### Minor Changes
