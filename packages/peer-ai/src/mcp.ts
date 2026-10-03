@@ -26,6 +26,7 @@ import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
 import {
   advanceWorkItem,
+  collisionsFor,
   recordProjectReview,
   createWorkItem,
   loadWorkItem,
@@ -49,6 +50,7 @@ Record each review with record_review, passing the path of its report, including
 Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
 Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.
+When next_work or advance_work_item gives migrationCollisions, tell the person: whichever branch merges second needs its migration re-parented and reviewed again, and the order of merging is theirs to choose.
 When next_work gives whatChanged, tell the person in a few plain words what changed in Peer AI since they last worked here, then carry on.
 When next_work reports setup problems, fix what you can, such as running npx peer-ai render, before other work, and tell the person in plain words about anything only they can decide.
 When Peer AI gets something wrong, call draft_feedback. At a natural stopping point, show the person each draft in a few words and ask whether to send it.`;
@@ -144,7 +146,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Next work",
       description:
-        "The work to continue: the open work item for the current git branch in full, with where it stopped, its next action and the reviews it needs; and every open item in one line, with the items each is waiting for before it can ship (waitingFor). Call work_item for another item in full. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill). Working in a git worktree of your own, give your branch: the tools find each work item on its own branch, wherever it's checked out.",
+        "The work to continue: the open work item for the current git branch in full, with where it stopped, its next action and the reviews it needs; and every open item in one line, with the items each is waiting for before it can ship (waitingFor); and other open items whose branches add a migration in the same folder as the current one's (migrationCollisions). Call work_item for another item in full. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill). Working in a git worktree of your own, give your branch: the tools find each work item on its own branch, wherever it's checked out.",
       inputSchema: {
         branch: z
           .string()
@@ -398,9 +400,13 @@ export function createServer(options: ServerOptions): McpServer {
       },
       annotations: WRITES,
     },
-    withProject((root, config, { id, to }: { id: string; to?: Parameters<typeof advanceWorkItem>[3] }) =>
-      fromResult(advanceWorkItem(root, config, id, to, now())),
-    ),
+    withProject((root, config, { id, to }: { id: string; to?: Parameters<typeof advanceWorkItem>[3] }) => {
+      const moved = advanceWorkItem(root, config, id, to, now());
+      if (!moved.ok) return refuse(moved.error);
+      // Moving to verify or ship repeats a migration collision, as a warning, never a refusal (RFC 0018).
+      const collisions = ["verify", "ship"].includes(moved.value.stage) ? collisionsFor(root, config, moved.value) : [];
+      return reply(collisions.length === 0 ? moved.value : { ...moved.value, migrationCollisions: collisions });
+    }),
   );
 
   server.registerTool(
