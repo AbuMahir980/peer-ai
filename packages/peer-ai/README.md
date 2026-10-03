@@ -87,7 +87,7 @@ It reads the repository first and works out what it can:
 | The AI tools already set up | `CLAUDE.md`, `.cursor/`, `.codex/`, `.github/copilot-instructions.md`, `GEMINI.md` |
 | The git host | The `origin` remote |
 
-Then it asks four things: what you're building, whether the parts it found are right (or what kind of thing it is, if it found none), whether it's just you or a team, and what stage the project is at. It asks which AI tools you use only if it found none.
+Then it asks five things: what you're building, whether the parts it found are right (or what kind of thing it is, if it found none), whether it's just you or a team, what stage the project is at, and which open findings in a review block a merge: critical only, or critical and high, suggested for a product in production (RFC 0015). It asks which AI tools you use only if it found none.
 
 **It takes up what `assess` suggests.** Once it knows the parts, `init` works out what `assess` would suggest: the stack profiles that fit each part's stack, and the traits the code points to, such as `money` for a payment provider. It shows each one with why, all ticked, and adds them to `standards.profiles` and `project.traits` unless you untick them. For any you untick, it asks why, and records it in `declined`, so they aren't suggested again. `--yes` takes them all. `peer-ai doctor` warns about a suggestion the config has neither taken up nor declined (RFC 0011). Since an existing codebase starts at `report`, as below, taking up a profile doesn't turn its CI red.
 
@@ -390,6 +390,7 @@ npx peer-ai doctor
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid, isn't named after its id, or names a track the config doesn't have |
 | Git | A folder that isn't a git repository, or a `.gitignore` that hides Peer AI's files from the team and CI |
+| What blocks a merge | A project in production whose `gates.blockOn` still lets high findings ship (RFC 0015) |
 | Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, a rule set aside twice, and an override for a rule with no value to change, or of the wrong type. |
 | Suggested profiles and traits | A stack profile or trait `assess` suggests that the config has neither taken up nor listed in `declined`, with what suggested it (RFC 0011) |
 | Merged items | Open work items whose branches are already in the default branch, or gone, as git alone can tell, with `peer-ai close-merged` to close them (RFC 0013) |

@@ -38,7 +38,14 @@ export interface Answers {
   team: Team;
   stage: Stage;
   tools: ToolId[];
+  /** The lowest open finding severity that blocks a merge (RFC 0015). */
+  blockOn: BlockOn;
 }
+
+export type BlockOn = "critical" | "high";
+
+/** What blocks a merge, suggested by stage: a product in production blocks on high findings too. */
+export const suggestedBlockOn = (stage: Stage): BlockOn => (stage === "production" ? "high" : "critical");
 
 const UNDECIDED_TRACK: DetectedTrack = { id: "app", kind: "other", stack: [] };
 
@@ -114,6 +121,14 @@ export async function ask(detected: Detected, prompter: Prompter, title = "peer-
     "solo",
   );
   const stage = await prompter.select("What stage is it at?", STAGE_CHOICES, "mvp");
+  const blockOn = await prompter.select<BlockOn>(
+    "Which open findings in a review should block a merge?",
+    [
+      { value: "critical", label: "Critical only", hint: "high ones are said, and left for later" },
+      { value: "high", label: "Critical and high", hint: "suggested for a product in production" },
+    ],
+    suggestedBlockOn(stage),
+  );
 
   let tools = detected.tools;
   if (tools.length === 0) {
@@ -122,7 +137,7 @@ export async function ask(detected: Detected, prompter: Prompter, title = "peer-
       TOOL_IDS.map((id) => ({ value: id, label: TOOL_LABELS[id] })),
     );
   }
-  return { name, description, tracks, team, stage, tools };
+  return { name, description, tracks, team, stage, tools, blockOn };
 }
 
 export function defaults(detected: Detected, options: InitOptions): Answers {
@@ -133,6 +148,7 @@ export function defaults(detected: Detected, options: InitOptions): Answers {
     team: options.team ?? "solo",
     stage: options.stage ?? "mvp",
     tools: options.tools ?? detected.tools,
+    blockOn: suggestedBlockOn(options.stage ?? "mvp"),
   };
 }
 
@@ -164,6 +180,7 @@ export function buildConfig(detected: Detected, answers: Answers): Record<string
     // An existing codebase adopts enforcement in stages: it reports first, and blocks once the code
     // passes. A new one enforces from the first commit (RFC 0011).
     standards: { enforcement: detected.origin === "existing" ? "report" : "enforce" },
+    gates: { blockOn: answers.blockOn },
   };
 }
 

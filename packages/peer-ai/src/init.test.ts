@@ -103,9 +103,13 @@ describe("peer-ai init, asking questions", () => {
       "Kotlin, Android",
       "team",
       "prototype",
+      "critical",
     ]);
     expect(await runInit(options(root), prompter, capture())).toBe(0);
     const config = readConfig(root);
+    // What blocks a merge is asked, and suggested by stage (RFC 0015).
+    expect(prompter.asked).toContain("Which open findings in a review should block a merge?");
+    expect(config.gates).toEqual({ blockOn: "critical" });
     expect(config.project).toEqual({
       name: "Acme Driver",
       description: "Delivery app for drivers",
@@ -118,7 +122,7 @@ describe("peer-ai init, asking questions", () => {
 
   it("asks which AI tools are used only when none are detected", async () => {
     const root = project();
-    const prompter = scripted(["Side Project", "", "web", "", "solo", "mvp", ["codex", "cursor"]]);
+    const prompter = scripted(["Side Project", "", "web", "", "solo", "mvp", "critical", ["codex", "cursor"]]);
     await runInit(options(root), prompter, capture());
     expect(prompter.asked.at(-1)).toBe("Which AI tools do you use?");
     expect(readConfig(root).tools).toEqual(["codex", "cursor"]);
