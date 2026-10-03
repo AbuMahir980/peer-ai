@@ -57,15 +57,34 @@ export function commitsSince(root: string, base: string): number {
   return Number(git(root, ["rev-list", "--count", `${base}..HEAD`, "--", ".", OWN_FILES])?.trim() ?? "0") || 0;
 }
 
-/** Where the branch left the main line: its merge base with the remote's default branch, main or master. */
-export function forkPoint(root: string): string | undefined {
+/**
+ * Where the branch leaves the main line: its merge base with the remote's default branch, the
+ * config's, main or master, locally or as the remote has it, as in CI.
+ */
+export function forkPoint(root: string, defaultBranch?: string): string | undefined {
   const remote = git(root, ["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"])?.trim();
-  for (const candidate of [remote, "main", "master"]) {
+  const named = [defaultBranch, "main", "master"].filter((name): name is string => name !== undefined);
+  for (const candidate of [remote, ...named.flatMap((name) => [name, `origin/${name}`])]) {
     if (candidate === undefined || candidate === "") continue;
     const base = git(root, ["merge-base", "HEAD", candidate])?.trim();
     if (base !== undefined && base !== "") return base;
   }
   return undefined;
+}
+
+/**
+ * The files the branch itself changes, committed or not, outside .peer-ai/: against where it leaves
+ * the default branch now, so files a merge from the base branch brought in don't count (RFC 0013).
+ * Undefined when there's no default branch to compare with.
+ */
+export function ownFiles(root: string, defaultBranch?: string): string[] | undefined {
+  const base = forkPoint(root, defaultBranch);
+  if (base === undefined) return undefined;
+  const changed = new Set([
+    ...lines(git(root, ["diff", "--name-only", base, "--", ".", OWN_FILES])),
+    ...lines(git(root, ["ls-files", "--others", "--exclude-standard", "--", ".", OWN_FILES])),
+  ]);
+  return [...changed].sort();
 }
 
 /** The branch checked out, or undefined on a detached HEAD or outside a git repository. */

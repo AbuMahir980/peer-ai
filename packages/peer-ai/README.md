@@ -385,7 +385,7 @@ npx peer-ai check
 | A track's folder doesn't exist | The config no longer describes the repository |
 | `.peer-ai/map.json` or a work item isn't valid, or a work item names a track the config doesn't have | State that agents read has to be trustworthy |
 | A work item at `ship` or `done` has no recorded verify, or its last verify failed | `commands.verify` runs before any work is called done. Without a verify command, only a recorded failure counts. |
-| The work item of the branch checked out is at `ship`, and its verify or a required review looked at an older commit with changes since | A verify and a review each record the commit they looked at (RFC 0010). At ship they must be on the branch's latest commit, or on one with no change since outside `.peer-ai/`. A record from before records named their commit counts until the item next moves to ship. |
+| The work item of the branch checked out is at `ship`, and its verify or a required review looked at an older commit with changes since | A verify and a review each record the commit they looked at (RFC 0010). At ship the verify must be on the branch's latest commit, or on one with no change since outside `.peer-ai/`. A review must be on a commit with no change since to the files the branch itself changes, so a merge from the base branch that brings in only other files keeps it (RFC 0013). A record from before records named their commit counts until the item next moves to ship. |
 | A work item at `ship` or `done` has a review whose latest result failed, or is incomplete | A review that didn't check every rule hasn't passed. A later passing review from the same skill replaces an earlier failure. At the `prototype` stage, an incomplete review is allowed; a failed one never is. |
 | A production project's work item at `ship` or `done` has a review with no report | Without a report, the result is only the agent's word. For an MVP this is a warning; for a prototype it's allowed. |
 | A work item at `ship` or `done` is missing a review it needs | When an item reaches verify, Peer AI works out the reviews it needs from the files it touched, such as a security review for code at MVP or production. Missing one fails in production, and at the MVP stage for the work item of the branch checked out or one moving to ship (RFC 0010); for an MVP item finished before, it's a warning. `activities.verify.reviews` in the config can require more, or skip one with a reason. |
@@ -409,6 +409,8 @@ A review's result is worked out from its report when it is recorded, so an open 
 ### In CI
 
 `render` sets it up: see [the CI gate](#the-ci-gate). By hand, it's a step after the project's own checks that runs, with Node 24, `npx -y peer-ai@<version> check`.
+
+On GitHub Actions, it also writes what it found to the job's summary, which shows on the pull request's checks: each problem with its fix, so nobody has to read the log (RFC 0013).
 
 ### Options
 
