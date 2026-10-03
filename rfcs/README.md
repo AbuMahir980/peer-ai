@@ -40,6 +40,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0012](0012-replies-that-fit.md) | Replies that fit | Accepted |
 | [0013](0013-a-gate-that-is-cheap-to-pass.md) | A gate that's cheap to pass | Accepted |
 | [0014](0014-staying-current.md) | Staying current | Accepted |
+| [0018](0018-seeing-across-the-project.md) | Seeing across the project | Draft |
 
 ## What carries weight
 
