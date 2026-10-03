@@ -5,7 +5,7 @@
 import { renderedName } from "peer-ai-skills";
 import type { WorkItem } from "peer-ai-workflow";
 import { fail, plural, warn, type Check } from "./checks.ts";
-import { changesFor, commitsSince, currentBranch, forkPoint, shortCommit } from "./commits.ts";
+import { changesFor, commitsSince, currentBranch, forkPoint, ownFiles, shortCommit } from "./commits.ts";
 import { allWorkItems } from "./homes.ts";
 
 type Review = NonNullable<WorkItem["reviews"]>[number];
@@ -28,6 +28,12 @@ export interface GateContext {
   moving?: WorkItem["stage"] | undefined;
   /** The files changed since a commit, outside .peer-ai/; undefined when the commit isn't in this history. */
   changedSince?: ((commit: string) => string[] | undefined) | undefined;
+  /**
+   * The files the branch itself changes, against where it leaves the default branch: a review is
+   * stale only when one of them changed since it, so a merge from the base branch that brings in
+   * other files keeps it (RFC 0013). Undefined when unknown: then any change counts.
+   */
+  ownFiles?: string[] | undefined;
 }
 
 const listed = (files: string[]): string =>
@@ -42,20 +48,24 @@ export function staleEvidence(item: WorkItem, claim: string, context: GateContex
   const changed = context.changedSince;
   if (changed === undefined) return [];
   const required = new Set((item.requiredReviews ?? []).map((review) => review.skill));
+  // The verify follows every change, since merged code can break the build; a review, only the
+  // item's own files.
+  const own = context.ownFiles === undefined ? undefined : new Set(context.ownFiles);
   const evidence = [
     ...(item.lastVerify === undefined
       ? []
-      : [{ what: "verify", commit: item.lastVerify.commit, again: "Verify again" }]),
+      : [{ what: "verify", commit: item.lastVerify.commit, again: "Verify again", ownOnly: false }]),
     ...latestReviews(item)
       .filter((review) => required.has(review.skill))
       .map((review) => ({
         what: review.skill,
         commit: review.commit,
         again: `Review it again with ${renderedName(review.skill)}`,
+        ownOnly: true,
       })),
   ];
   const checks: Check[] = [];
-  for (const { what, commit, again } of evidence) {
+  for (const { what, commit, again, ownOnly } of evidence) {
     if (commit === undefined) {
       if (moving) {
         checks.push(
@@ -68,7 +78,8 @@ export function staleEvidence(item: WorkItem, claim: string, context: GateContex
       }
       continue;
     }
-    const files = changed(commit);
+    const since = changed(commit);
+    const files = since === undefined || !ownOnly || own === undefined ? since : since.filter((file) => own.has(file));
     if (files === undefined) {
       const message = `${claim}, but its ${what} looked at ${shortCommit(commit)}, which isn't in this repository's history.`;
       checks.push(
@@ -116,7 +127,8 @@ export function checkRecord(root: string): Check[] {
   if (item.stage !== "verify" && item.stage !== "ship") return [];
   const changedSince = changesFor(home);
   if (changedSince === undefined) return [];
-  return staleEvidence(item, `${item.id} is at ${item.stage}`, { changedSince }, false).map((check) =>
+  const context = { changedSince, ownFiles: ownFiles(home) };
+  return staleEvidence(item, `${item.id} is at ${item.stage}`, context, false).map((check) =>
     warn("record", check.message, check.fix ?? ""),
   );
 }

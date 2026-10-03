@@ -22,7 +22,7 @@ import {
 } from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
-import { changesFor, commitExists, currentBranch, filesSince, headCommit } from "./commits.ts";
+import { changesFor, commitExists, currentBranch, filesSince, headCommit, ownFiles } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { diagnose } from "./doctor.ts";
@@ -425,6 +425,7 @@ export function advanceWorkItem(
       moving: target,
       branch: currentBranch(home),
       changedSince: changesFor(home),
+      ownFiles: ownFiles(home, config.repo?.defaultBranch),
     }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
       const reasons = failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd());
