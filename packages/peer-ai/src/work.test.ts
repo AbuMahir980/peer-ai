@@ -6,6 +6,7 @@ import { availableSkills, renderedName, skillRuleIds } from "peer-ai-skills";
 import { afterEach, describe, expect, it } from "vitest";
 import { assess, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
+import { reviewsToDo } from "./routing.ts";
 import { cleanUp, project } from "./test-helpers.ts";
 import {
   advanceWorkItem,
@@ -251,6 +252,8 @@ describe("recording reviews", () => {
       {
         skill: "security-review",
         result: "pass",
+        // A pass keeps what it leaves open, so it's never read as all clear (RFC 0015).
+        open: { high: 1 },
         report: REPORT,
         summary: "One high problem, below the blocking level.",
         at: later(1).toISOString(),
@@ -258,6 +261,54 @@ describe("recording reviews", () => {
     ]);
     const [strict, strictConfig] = withReport(report({ result: "fail" }), { ...SHOP, gates: { blockOn: "high" } });
     expect(value(record(strict, strictConfig, { report: REPORT })).reviews?.[0]?.result).toBe("fail");
+  });
+
+  it("are said with what they leave open, at the gate and in next_work (RFC 0015)", () => {
+    const [root, config] = withReport(report());
+    const item = value(record(root, config, { report: REPORT }));
+    const shipping = {
+      ...item,
+      stage: "ship" as const,
+      lastVerify: { result: "pass" as const, at: later(1).toISOString() },
+      requiredReviews: [{ skill: "security-review" as const, reason: "it changes a route" }],
+    };
+    expect(reviewsToDo(shipping)).toEqual([
+      expect.objectContaining({ skill: "security-review", done: true, result: "pass, 1 high open" }),
+    ]);
+    const checks = gateWorkItem(shipping, config, "mvp", assess(root, config, "mvp"));
+    expect(checks).toContainEqual({
+      id: "gates",
+      status: "warn",
+      message: "SHOP-1 is at ship, and its security-review is pass, 1 high open.",
+      fix: "Fix them, or accept each in the report with its reason. To have them block, set gates.blockOn to high.",
+    });
+    expect(checks.filter((check) => check.status === "fail")).toEqual([]);
+  });
+
+  it("change criteria a tester found not met only with why and who decided (RFC 0015)", () => {
+    const [root, config] = withReport(report());
+    value(updateWorkItem(root, config, "SHOP-1", { acceptance: ["Orders show their owner's name."] }, later(1)));
+    value(recordReview(root, config, "SHOP-1", { skill: "qa-acceptance", result: "fail" }, later(2)));
+    const rewritten = ["Orders show their owner's initials."];
+    expect(error(updateWorkItem(root, config, "SHOP-1", { acceptance: rewritten }, later(3)))).toBe(
+      "SHOP-1's qa-acceptance found a criterion not met, so its criteria change only with why and who decided: give reason and by, from whoever agreed them. Then check it again with qa-acceptance.",
+    );
+    const changed = value(
+      updateWorkItem(
+        root,
+        config,
+        "SHOP-1",
+        { acceptance: rewritten, reason: "Full names were never meant to show.", by: "Ada Obi" },
+        later(3),
+      ),
+    );
+    expect(changed.acceptance).toEqual(rewritten);
+    expect(changed.criteriaChanged).toEqual([
+      { at: later(3).toISOString(), reason: "Full names were never meant to show.", by: "Ada Obi" },
+    ]);
+    expect(value(updateWorkItem(root, config, "SHOP-1", { next: "Check it again" }, later(4))).next).toBe(
+      "Check it again",
+    );
   });
 
   it("refuses a report that leaves out any of the skill's rules", () => {

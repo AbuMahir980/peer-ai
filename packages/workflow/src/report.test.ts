@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveResult, validateReport, type ReviewReport } from "./index.ts";
+import { deriveResult, describeResult, openCounts, validateReport, type ReviewReport } from "./index.ts";
 
 const F1 = {
   id: "F1",
@@ -136,5 +136,64 @@ describe("working out a review's result", () => {
     expect(deriveResult(valid({ ...report, result: "pass" }), "low")).toBe("pass");
     report.findings[0] = { ...F1, status: "fixed" };
     expect(deriveResult(valid({ ...report, result: "pass" }), "low")).toBe("pass");
+  });
+});
+
+describe("a result that means what it says (RFC 0015)", () => {
+  /** A tester's check of two criteria: one holds, one doesn't, with a low finding. */
+  const acceptance = () => ({
+    version: 1,
+    skill: "qa-acceptance",
+    workItem: "SHOP-12",
+    at: "2026-10-05T10:00:00Z",
+    scope: { tracks: ["api"] },
+    inputs: ["docs/specs/orders.md"],
+    inventory: [
+      { id: "criterion:SHOP-12-1", kind: "criterion" },
+      { id: "criterion:SHOP-12-2", kind: "criterion" },
+    ],
+    coverage: [
+      { rule: "REQ-05", item: "criterion:SHOP-12-1", status: "pass", evidence: "orders.ts:12 refuses a full slot" },
+      { rule: "REQ-05", item: "criterion:SHOP-12-2", status: "fail", finding: "F1" },
+    ],
+    findings: [{ ...F1, rule: "REQ-05", severity: "low", title: "A cancelled order still shows as paid" }],
+    result: "fail",
+    summary: "1 of 2 criteria doesn't hold.",
+  });
+
+  it("fails a tester's check on any criterion that doesn't hold, whatever its severity", () => {
+    expect(deriveResult(valid(acceptance()))).toBe("fail");
+    const met = valid({
+      ...acceptance(),
+      coverage: [
+        { rule: "REQ-05", item: "criterion:SHOP-12-1", status: "pass", evidence: "orders.ts:12" },
+        { rule: "REQ-05", item: "criterion:SHOP-12-2", status: "pass", evidence: "orders.ts:30" },
+      ],
+      findings: [],
+      result: "pass",
+    });
+    expect(deriveResult(met)).toBe("pass");
+  });
+
+  it("is said with what it leaves open, the most serious first", () => {
+    const report = valid({
+      ...example(),
+      findings: [
+        F1,
+        { ...F1, id: "F2", severity: "medium" },
+        { ...F1, id: "F3", rule: "SEC-RATE-01", severity: "high" },
+        { ...F1, id: "F4", rule: "SEC-LOG-03", severity: "high", status: "fixed" },
+      ],
+      coverage: [
+        { rule: "SEC-AUTHZ-01", item: "route:GET /orders/{id}", status: "fail", finding: "F1" },
+        { rule: "SEC-AUTHZ-01", item: "route:POST /orders", status: "fail", finding: "F2" },
+        { rule: "SEC-RATE-01", status: "fail", finding: "F3" },
+        { rule: "SEC-LOG-03", status: "fail", finding: "F4" },
+      ],
+    });
+    expect(openCounts(report)).toEqual({ high: 2, medium: 1 });
+    expect(describeResult("pass", openCounts(report))).toBe("pass, 2 high and 1 medium open");
+    expect(describeResult("pass", {})).toBe("pass");
+    expect(describeResult("fail", { critical: 1, high: 3, low: 2 })).toBe("fail, 1 critical, 3 high and 2 low open");
   });
 });
