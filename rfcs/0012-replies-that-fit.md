@@ -75,8 +75,8 @@ The reply then stays the same size, about 250 characters an item, whatever an it
 
 | Profiles | Apply to |
 |----------|----------|
-| `typescript`, and every profile built on it: `node`, `react`, `react-native`, `next`, `express`, `nestjs`, `fastify` | JavaScript and TypeScript files: `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.jsx`, `.mjs`, `.cjs` |
-| `python`, and every profile built on it: `python-fastapi` | Python files: `.py`, `.pyi` |
+| `typescript`, and every profile built on it: `node`, `react`, `react-native`, `next`, `express`, `nestjs`, `fastify` | JavaScript and TypeScript files: `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.jsx`, `.mjs`, `.cjs`; and their settings: `tsconfig*.json`, `jsconfig.json`, `package.json` |
+| `python`, and every profile built on it: `python-fastapi` | Python files: `.py`, `.pyi`; and their settings: `pyproject.toml`, `ruff.toml`, `setup.cfg`, `requirements*.txt` |
 | `github-actions` | The CI pipeline's files |
 
 A profile added later says which family it belongs to the same way, through the profile it builds on. Within its language, a profile's rules still follow the file's domains.
