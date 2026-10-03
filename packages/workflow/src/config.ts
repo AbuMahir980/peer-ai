@@ -109,9 +109,9 @@ const Track = z.strictObject({
     })
     .optional(),
   status: z
-    .enum(["active", "dormant", "frozen", "retiring", "external"])
+    .enum(["active", "dormant", "frozen", "retiring", "retired", "external"])
     .describe(
-      "active: being built or changed. dormant: not started; its activities do not run. frozen: it exists and is documented, not redesigned. retiring: being replaced; its behaviour is the reference until then. external: it lives in another repository and is read here, never changed.",
+      "active: being built or changed. dormant: not started; its activities do not run. frozen: it exists and is documented, not redesigned. retiring: being replaced; its behaviour is the reference until then. retired: no longer part of the product; it needs no folder, and its work items stay readable (RFC 0017). external: it lives in another repository and is read here, never changed.",
     ),
   replacedBy: z.array(Slug).min(1).optional().describe("For a retiring track: the tracks replacing it."),
   note: Note.optional(),

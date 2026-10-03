@@ -286,7 +286,8 @@ describe("doctor on state", () => {
     writeWorkItem(root, "SHOP-6.json", "{");
     expect(checksFor(root, "work-items").map((check) => [check.status, check.message])).toEqual([
       ["fail", '.peer-ai/work/SHOP-2.json has the id "SHOP-3", but a work item\'s file is named after its id'],
-      ["fail", '.peer-ai/work/SHOP-4.json is for the track "mobile", which isn\'t in the config.'],
+      // An item on a track that's gone stays valid: a warning, so cancelling it never fails (RFC 0017).
+      ["warn", 'SHOP-4 is open on the track "mobile", which isn\'t in the config.'],
       ["fail", expect.stringMatching(/^\.peer-ai\/work\/SHOP-5\.json is not valid: .*gap/) as string],
       ["fail", expect.stringMatching(/^\.peer-ai\/work\/SHOP-6\.json is not valid JSON: /) as string],
     ]);

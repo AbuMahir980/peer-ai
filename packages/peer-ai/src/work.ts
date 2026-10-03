@@ -62,8 +62,16 @@ const DEFAULT_PREFIX = "ITEM";
 const failed = (error: string): { ok: false; error: string } => ({ ok: false, error });
 const projectStage = (config: PeerAiConfig): Stage => config.project.stage ?? "mvp";
 
+/** The tracks a work item can be put on: any but a retired one (RFC 0017). */
 function tracksOf(config: PeerAiConfig): string[] {
-  return config.tracks.map((track) => track.id);
+  return config.tracks.filter((track) => track.status !== "retired").map((track) => track.id);
+}
+
+/** Refuses a track an item can't be put on, when the track is being set: at creation, or by a move. */
+function trackProblem(config: PeerAiConfig, track: string | undefined): string | undefined {
+  if (track === undefined || tracksOf(config).includes(track)) return undefined;
+  const retired = config.tracks.some((each) => each.id === track && each.status === "retired");
+  return `${retired ? `The track "${track}" is retired` : `There is no track "${track}"`}. The tracks are: ${tracksOf(config).join(", ")}.`;
 }
 
 export function loadWorkItem(root: string, id: string): Result<WorkItem> {
@@ -86,9 +94,6 @@ function locateItem(root: string, id: string): Result<Located> {
 export function saveWorkItem(root: string, config: PeerAiConfig, item: WorkItem): Result<WorkItem> {
   const result = validateWorkItem({ $schema: WORK_ITEM_SCHEMA_URL, ...item });
   if (!result.ok) return failed(`The work item would not be valid: ${result.errors.join("; ")}`);
-  if (item.track !== undefined && !tracksOf(config).includes(item.track)) {
-    return failed(`There is no track "${item.track}". The tracks are: ${tracksOf(config).join(", ")}.`);
-  }
   mkdirSync(join(root, WORK_DIR), { recursive: true });
   writeFileSync(join(root, WORK_DIR, `${item.id}.json`), `${JSON.stringify(result.value, null, 2)}\n`);
   return result;
@@ -143,9 +148,11 @@ export function createWorkItem(root: string, config: PeerAiConfig, input: NewWor
   if (existsSync(join(root, WORK_DIR, `${id}.json`)) || locate(root, id) !== undefined) {
     return failed(`A work item "${id}" already exists.`);
   }
-  const ownTracks = config.tracks.filter((track) => track.status !== "external");
+  const ownTracks = config.tracks.filter((track) => track.status !== "external" && track.status !== "retired");
   // With a single track there is nothing to choose, so the item is on it.
   const track = input.track ?? (ownTracks.length === 1 ? ownTracks[0]?.id : undefined);
+  const problem = trackProblem(config, track);
+  if (problem !== undefined) return failed(problem);
   const branch = input.branch ?? branchFor(config.repo?.branchNaming, id, input.title);
   const item = {
     version: 1,
@@ -181,6 +188,8 @@ export interface WorkItemChanges {
   sources?: string[] | undefined;
   dependsOn?: string[] | undefined;
   fixes?: string[] | undefined;
+  /** Moves the item to another track (RFC 0017). */
+  track?: string | undefined;
   /** Why the acceptance criteria change, needed after a tester's check found one not met (RFC 0015). */
   reason?: string | undefined;
   /** Who decided it: whoever agreed the criteria. */
@@ -204,6 +213,9 @@ export function updateWorkItem(
   if (!located.ok) return located;
   const { home, item } = located.value;
   const { reason, by, ...fields } = changes;
+  // A track is checked when it's set; an item whose track was retired or removed still saves (RFC 0017).
+  const problem = fields.track === item.track ? undefined : trackProblem(config, fields.track);
+  if (problem !== undefined) return failed(problem);
   // Criteria a tester found not met change only by the decision of whoever agreed them, with why,
   // so an item can't ship by quietly rewriting what it promised (RFC 0015).
   const changing =
