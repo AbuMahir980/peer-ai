@@ -18,7 +18,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import { FEEDBACK_DIR, FEEDBACK_REPO } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
-import { planGate } from "./gate.ts";
+import { onGitHubActions, planGate } from "./gate.ts";
 import {
   CHECKOUT,
   SETUP_NODE,
@@ -31,6 +31,7 @@ import {
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 import { enforcementFor } from "./stages.ts";
 import { renderedVersion } from "./versions.ts";
+import { UPDATE_FILE, pinnedInPackageJson, updateWorkflow } from "./update-workflow.ts";
 
 export const START = "<!-- peer-ai:start -->";
 export const END = "<!-- peer-ai:end -->";
@@ -608,6 +609,31 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   const gate = planGate(root, config);
   if (gate.planned !== undefined) files.push(gate.planned);
   if (gate.manual !== undefined) manual.push(gate.manual);
+
+  // The update pull request (RFC 0014), on GitHub Actions, for a project that runs Peer AI through npx.
+  if (config.updates?.pullRequest === true) {
+    if (pinnedInPackageJson(readText(root, "package.json"))) {
+      manual.push(
+        "peer-ai is in package.json, so updating it is left to Dependabot or Renovate, which update its lockfile too: run npx peer-ai render after merging one.",
+      );
+    } else if (!onGitHubActions(root)) {
+      manual.push("The update pull request needs GitHub Actions, so render wrote none.");
+    } else {
+      const wanted = updateWorkflow(VERSION);
+      const existing = readText(root, UPDATE_FILE);
+      if (existing === undefined) files.push({ path: UPDATE_FILE, action: "create", content: wanted });
+      else if (unchangedSinceRender(existing)) {
+        const same = sameFile(existing, wanted);
+        files.push({ path: UPDATE_FILE, action: same ? "unchanged" : "update", ...(same ? {} : { content: wanted }) });
+      } else {
+        files.push({
+          path: UPDATE_FILE,
+          action: "kept",
+          note: "It was changed by hand, so keeping it up to date is yours now. Delete it to have render write Peer AI's again.",
+        });
+      }
+    }
+  }
 
   if (uses("claude-code")) files.push(claudeSessionHook(root, command));
   if (uses("cursor")) files.push(cursorEnvironment(root, command));
