@@ -1,5 +1,29 @@
 # peer-ai
 
+## 1.0.0-next.13
+
+### Minor Changes
+
+- bd9fad3: The map judges a document's evidence, not just its existence (RFC 0018). `assess` flags a document, or a folder of them, that's stale (unchanged for 90 days while its part had 50 commits, or a quarter of its files changed), a byte-for-byte duplicate of another, or about something gone (it names a deleted path or a retired part). Flagged documents are listed under `flagged` in the map with why, and an item whose evidence is all flagged is partial, so `next_work` offers its document skill. List a document meant to stay as it was in `docs.settled`.
+- 13850d2: Reviews are sized to the change (RFC 0016):
+  
+  - **A weak trigger asks for a light review.** That means 20 changed lines or fewer, in files the change didn't add, and nothing about routes, access or sessions. A light review covers the changed lines only and is written with `"depth": "light"`. It applies to code, security, accessibility and design reviews. A light review covers a light requirement; a full requirement still needs a full review.
+  - **A person can waive a review for one item,** with why and who decided: `update_work_item` with `waive`, or `npx peer-ai waive <id> <skill> --reason "…" --by "…"`. `peer-ai check` lists every waiver. At production, only a light review can be waived.
+- 48ebffd: Peer AI notices when open work items will collide on migrations (RFC 0018). When the current item's branch adds a migration, `next_work` names each other open item whose branch adds one in the same folder, as `migrationCollisions`: whichever merges second needs its migration re-parented, then reviewed again. For Alembic migrations on the same parent revision, two heads are certain, and it says so. `advance_work_item` repeats it at verify and ship as a warning, and `data-migration-review` says it in its report. It reads branches from git, locally or as last fetched, with no network.
+- b683f25: `project_map` gives each review's rough size over the whole project, `reviewSizes` (RFC 0016). For each review, it gives the files, lines and rules in its scope, and a size of small, medium or large, with the token range that means. Before a whole-project review starts, the review skill tells the person, and asks whether to run it whole, for one part, or not now.
+- bc24e2b: A review of a change answers only for the rules that can apply to the files it touched (RFC 0016). They're worked out the way `standards_for_file` works them out for each file, so a change to a screen doesn't need a coverage line for every database or pipeline rule in the skill. `next_work` gives each required review its `rules`, and `record_review` checks the report against them. A whole-project review still answers for every rule.
+
+### Patch Changes
+
+- Updated dependencies [bd9fad3]
+- Updated dependencies [13850d2]
+- Updated dependencies [48ebffd]
+- Updated dependencies [b683f25]
+- Updated dependencies [bc24e2b]
+  - peer-ai-workflow@1.0.0-next.13
+  - peer-ai-skills@1.0.0-next.13
+  - peer-ai-standards@1.0.0-next.13
+
 ## 1.0.0-next.12
 
 ### Minor Changes

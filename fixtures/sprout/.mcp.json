@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "peer-ai@1.0.0-next.12",
+        "peer-ai@1.0.0-next.13",
         "mcp"
       ]
     }
