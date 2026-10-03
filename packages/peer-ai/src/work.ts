@@ -28,6 +28,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { ciProblem, ciResult } from "./ci.ts";
+import { whatChangedSince, type WhatChanged } from "./updates.ts";
 import { diagnose } from "./doctor.ts";
 import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
@@ -658,6 +659,8 @@ export const LISTED = 50;
 export interface NextWork {
   /** Every setup problem doctor finds (RFC 0007). Absent when there is none. */
   setup?: { problems: SetupProblem[] };
+  /** What changed in Peer AI since this person last worked here, for the AI tool to tell them, once (RFC 0014). */
+  whatChanged?: WhatChanged;
   branch?: string;
   /** The open work item for the current branch, in full. */
   current?: WorkItem;
@@ -718,8 +721,10 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
       ...(waitingFor.length === 0 ? {} : { waitingFor }),
     };
   };
+  const changed = whatChangedSince(root);
   const result: NextWork = {
     ...(problems.length === 0 ? {} : { setup: { problems } }),
+    ...(changed === undefined ? {} : { whatChanged: changed }),
     ...(branch === undefined ? {} : { branch }),
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),
