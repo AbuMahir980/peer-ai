@@ -9,6 +9,7 @@ import { parseArgs } from "node:util";
 import { CLI_COMMAND_IDS, TOOL_IDS, type CliCommandId, type ToolId } from "peer-ai-workflow";
 import { runAssess } from "./assess.ts";
 import { runCheck } from "./check.ts";
+import { runCloseMerged } from "./close-merged.ts";
 import { runCheckDocument } from "./document.ts";
 import { runDoctor } from "./doctor.ts";
 import { runFeedback } from "./feedback.ts";
@@ -41,6 +42,9 @@ Usage:
                               Send a draft as an issue on Peer AI's repository
   peer-ai feedback drop <draft>
                               Delete a draft
+  peer-ai close-merged [--yes]
+                              Close the open work items whose branches are already merged,
+                              recording how, after listing them
   peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
 
 Options for init:
@@ -229,6 +233,11 @@ function feedback(args: string[], io: Io): number {
   return runFeedback({ cwd: io.cwd, action, draft }, io.out);
 }
 
+function closeMerged(args: string[], io: Io): Promise<number> {
+  const { values } = parseArgs({ args, strict: true, options: { yes: { type: "boolean", short: "y" } } });
+  return runCloseMerged({ cwd: io.cwd, yes: values.yes === true }, io.prompter, io.out);
+}
+
 async function mcp(args: string[], io: Io): Promise<number> {
   parseArgs({ args, strict: true, options: {} });
   await serveStdio(io.cwd);
@@ -245,6 +254,7 @@ const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promis
   "check-report": checkReportCommand,
   "check-document": checkDocumentCommand,
   feedback,
+  "close-merged": closeMerged,
   mcp,
 };
 

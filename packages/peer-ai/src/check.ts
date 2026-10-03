@@ -166,15 +166,28 @@ function checkGates(
   assessment: Assessment,
   context: GateContext,
 ): Check[] {
-  const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage));
+  // An item closed because its branch was already merged claims no verify or reviews: it's listed,
+  // so the record says what it holds (RFC 0013).
+  const byMerge = items.filter((item) => item.stage === "done" && item.closed?.by === "merge");
+  const claiming = items.filter((item) => CLAIMS_VERIFIED.includes(item.stage) && !byMerge.includes(item));
   const results = claiming.flatMap((item) => gateWorkItem(item, config, stage, assessment, items, context));
   const failures = results.filter((check) => check.status === "fail");
   const warnings = results.filter((check) => check.status === "warn");
-  if (failures.length > 0) return [...failures, ...warnings];
-  if (claiming.length === 0) return [ok("gates", "No work items at ship or done yet")];
+  const merged =
+    byMerge.length === 0
+      ? []
+      : [
+          ok(
+            "gates",
+            `${plural(byMerge.length, "work item")} closed because ${byMerge.length === 1 ? "its branch was" : "their branches were"} already merged, without the ship gate: ${byMerge.map((item) => item.id).join(", ")}`,
+          ),
+        ];
+  if (failures.length > 0) return [...failures, ...warnings, ...merged];
+  if (claiming.length === 0) return [ok("gates", "No work items at ship or done yet"), ...merged];
   return [
     ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`),
     ...warnings,
+    ...merged,
   ];
 }
 
