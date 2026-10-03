@@ -1,5 +1,16 @@
 # peer-ai
 
+## 1.0.0-next.7
+
+### Patch Changes
+
+- c48acba: The package no longer includes `dist/test-helpers.js` and `dist/test-helpers.d.ts`, which only Peer AI's own tests use. The commands and the MCP server are unchanged, so there's nothing to do when you update.
+- 9d737f1: While enforcement only reports (`standards.enforcement: "report"`, or a deferred rule), the security workflow's jobs now finish green on a pull request instead of showing a red cross. `continue-on-error` moves from the job to its check step, and a last step raises a warning and writes to the job's summary when the check found something, so findings are visible without looking like a failure. Run `npx peer-ai render` to update `.github/workflows/peer-ai-security.yml`; a workflow that enforces is unchanged.
+- 7bd9cd7: `assess` no longer suggests the `safety-critical` trait from the word "diagnosis" alone, which also names a fault in a vehicle, a device or a system. Names that only a product about health or physical safety has, such as `allergens`, `medication` or `dosage`, still suggest it. If `doctor` warned about the trait because of that word, the warning goes away after updating, with no need to decline it.
+- peer-ai-skills@1.0.0-next.7
+  - peer-ai-standards@1.0.0-next.7
+  - peer-ai-workflow@1.0.0-next.7
+
 ## 1.0.0-next.6
 
 ### Minor Changes

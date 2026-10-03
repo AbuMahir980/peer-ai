@@ -1,5 +1,9 @@
 # peer-ai-workflow
 
+## 1.0.0-next.7
+
+No changes in this release.
+
 ## 1.0.0-next.6
 
 No changes in this release.
