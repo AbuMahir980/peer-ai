@@ -1,5 +1,14 @@
 # peer-ai-standards
 
+## 1.0.0-next.10
+
+### Patch Changes
+
+- Updated dependencies [9eea4ce]
+- Updated dependencies [81a614c]
+- Updated dependencies [a473f61]
+  - peer-ai-workflow@1.0.0-next.10
+
 ## 1.0.0-next.9
 
 ### Patch Changes

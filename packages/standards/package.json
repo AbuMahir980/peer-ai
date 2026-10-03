@@ -1,6 +1,6 @@
 {
   "name": "peer-ai-standards",
-  "version": "1.0.0-next.9",
+  "version": "1.0.0-next.10",
   "description": "Peer AI's engineering standards: 197 rules for every project, and stack profiles with the tools that enforce them",
   "license": "MIT",
   "type": "module",
