@@ -40,7 +40,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0012](0012-replies-that-fit.md) | Replies that fit | Accepted |
 | [0013](0013-a-gate-that-is-cheap-to-pass.md) | A gate that's cheap to pass | Accepted |
 | [0014](0014-staying-current.md) | Staying current | Accepted |
-| [0015](0015-review-results-that-mean-what-they-say.md) | Review results that mean what they say | Draft |
+| [0015](0015-review-results-that-mean-what-they-say.md) | Review results that mean what they say | Accepted |
 
 ## What carries weight
 
