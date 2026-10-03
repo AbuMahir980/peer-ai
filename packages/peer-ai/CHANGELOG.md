@@ -1,5 +1,32 @@
 # peer-ai
 
+## 1.0.0-next.12
+
+### Minor Changes
+
+- 9d53962: Peer AI's own files stay tidy (RFC 0017):
+  
+  - **A work item that's done or cancelled leaves the tree** in that same change. Its file and its reports are removed, and it becomes one line in `.peer-ai/history/<year>-<month>.jsonl`, which git's union merge joins when several branches close items at once. `peer-ai render` now always writes a `.gitattributes` block for that. `work_item`, `peer-ai work show`, dependencies and `fixes` still read a closed item, and `peer-ai work show <id> --full` reads its full file back from git.
+  - **Recording a review again removes the report it replaces.**
+  - **`npx peer-ai tidy`** moves the closed items already in a project into the history, and removes reports of items that are gone, after asking. `peer-ai doctor` warns while there's anything to tidy.
+  
+  After updating, run `npx peer-ai render`, then `npx peer-ai tidy`, and commit both on a branch.
+- b38f1d8: A part of the project can be retired (RFC 0017):
+  
+  - **A track's status can be `retired`.** It needs no folder, and the instructions say it's no longer part of the product. Its work items stay valid and readable, and no new item goes on it.
+  - **A work item's track can change,** with `track` on `update_work_item`, or `npx peer-ai work move <id> <track>`.
+  - **A track is checked only when it's set.** An item whose track was retired or removed can still be advanced, updated or cancelled, and `doctor` and `check` warn about it instead of failing.
+  
+  If you kept a removed app's track as `external` to keep its items working, set it to `retired` instead.
+
+### Patch Changes
+
+- Updated dependencies [9d53962]
+- Updated dependencies [b38f1d8]
+  - peer-ai-workflow@1.0.0-next.12
+  - peer-ai-skills@1.0.0-next.12
+  - peer-ai-standards@1.0.0-next.12
+
 ## 1.0.0-next.11
 
 ### Minor Changes
