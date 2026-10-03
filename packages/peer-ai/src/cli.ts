@@ -21,6 +21,7 @@ import { createTerminalPrompter, type Prompter } from "./prompter.ts";
 import { formatReport } from "./report.ts";
 import { runRender } from "./render.ts";
 import { runShip } from "./ship.ts";
+import { runTidy } from "./tidy.ts";
 import { runCheckReport } from "./work.ts";
 
 const STAGES: readonly Stage[] = ["prototype", "mvp", "production"];
@@ -47,6 +48,8 @@ Usage:
                               Remove the sent reports whose issues are closed
   peer-ai ship [id]           Move a work item to ship, taking CI's verify when the config
                               names its check, or say exactly what's missing
+  peer-ai tidy [--yes]        Move closed work items into the history, and remove reports
+                              of items that are gone
   peer-ai close-merged [--yes]
                               Close the open work items whose branches are already merged,
                               recording how, after listing them
@@ -252,6 +255,11 @@ function ship(args: string[], io: Io): number {
   return runShip({ cwd: io.cwd, id: positionals[0] }, io.out);
 }
 
+function tidyCommand(args: string[], io: Io): Promise<number> {
+  const { values } = parseArgs({ args, strict: true, options: { yes: { type: "boolean", short: "y" } } });
+  return runTidy({ cwd: io.cwd, yes: values.yes === true }, io.prompter, io.out);
+}
+
 function closeMerged(args: string[], io: Io): Promise<number> {
   const { values } = parseArgs({ args, strict: true, options: { yes: { type: "boolean", short: "y" } } });
   return runCloseMerged({ cwd: io.cwd, yes: values.yes === true }, io.prompter, io.out);
@@ -274,6 +282,7 @@ const COMMANDS: Record<CliCommandId, (args: string[], io: Io) => number | Promis
   "check-document": checkDocumentCommand,
   feedback,
   ship,
+  tidy: tidyCommand,
   "close-merged": closeMerged,
   mcp,
 };

@@ -63,6 +63,7 @@ CI runs the new version as soon as the change merges, but an AI tool's MCP serve
 | [`peer-ai check-document`](#peer-ai-check-document) | Checks a document against its skill's template |
 | [`peer-ai feedback`](#peer-ai-feedback) | Lists, sends or drops the feedback drafts your AI tool wrote about Peer AI |
 | [`peer-ai ship`](#peer-ai-ship) | Moves a work item to ship, taking CI's verify when the config names its check, or says exactly what's missing |
+| [`peer-ai tidy`](#peer-ai-tidy) | Moves closed work items into the history, and removes reports of items that are gone |
 | [`peer-ai close-merged`](#peer-ai-close-merged) | Closes the open work items whose branches are already merged, saying how |
 | [`peer-ai mcp`](#peer-ai-mcp) | Starts the MCP server that AI tools connect to |
 
@@ -393,6 +394,7 @@ npx peer-ai doctor
 | What blocks a merge | A project in production whose `gates.blockOn` still lets high findings ship (RFC 0015) |
 | Rules set aside or changed | Every entry in `standards.exceptions` and `standards.overrides` is listed, so nothing is switched off silently. It warns about an exception whose `until` date has passed, a rule id that isn't one of Peer AI's rules, a rule set aside twice, and an override for a rule with no value to change, or of the wrong type. |
 | Suggested profiles and traits | A stack profile or trait `assess` suggests that the config has neither taken up nor listed in `declined`, with what suggested it (RFC 0011) |
+| Tidy state | Closed work items still in `.peer-ai/work/`, or report folders of items that are gone, with `peer-ai tidy` to move them into the history (RFC 0017) |
 | Merged items | Open work items whose branches are already in the default branch, or gone, as git alone can tell, with `peer-ai close-merged` to close them (RFC 0013) |
 | A part with no stack | While profiles are listed, a part that names no stack gets every listed profile of each file's language. It's named with the stack detection finds for it (RFC 0012). |
 | Stack profiles | A listed profile Peer AI has no rules for yet |
@@ -533,6 +535,22 @@ npx peer-ai ship SHOP-41
 With `commands.verifyCheck` set, it takes CI's verify of the latest commit first (see [Letting CI's verify count](#letting-cis-verify-count)). When anything is still missing, it lists each with how to get it, and changes nothing. Then commit the item's record and push it: `peer-ai check` on the pull request passes for it.
 
 Exit codes: `0` at ship, `1` when something's missing, `2` without an item to ship.
+
+## `peer-ai tidy`
+
+Since RFC 0017, a work item that's done or cancelled leaves the tree in that same change: its file and its reports are removed, and it becomes one line in `.peer-ai/history/<year>-<month>.jsonl`, with how it closed, its verify and reviews, and the last commit that held its full file. Git keeps the rest. `work_item` still reads a closed item by its id, and items that depend on it, or findings it fixed, still count it.
+
+`peer-ai tidy` does the same for a project that closed items before that:
+
+```bash
+npx peer-ai tidy
+```
+
+It lists the closed items still in `.peer-ai/work/`, and the report folders of items that are gone, then asks before moving and removing them; `--yes` doesn't ask. Whole-project reports in `.peer-ai/reports/project/` are kept. Commit the change on a branch. `peer-ai doctor` warns while there's anything to tidy.
+
+Recording a review again also removes the report it replaces, so an item keeps one report per review.
+
+Exit codes: `0` done or nothing to do, `1` when you said no, `2` without a terminal and without `--yes`.
 
 ## `peer-ai close-merged`
 
