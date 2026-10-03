@@ -43,6 +43,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0015](0015-review-results-that-mean-what-they-say.md) | Review results that mean what they say | Accepted |
 | [0016](0016-proportionate-reviews.md) | Proportionate reviews | Accepted |
 | [0017](0017-tidy-state.md) | Tidy state | Accepted |
+| [0018](0018-seeing-across-the-project.md) | Seeing across the project | Accepted |
 
 ## What carries weight
 
