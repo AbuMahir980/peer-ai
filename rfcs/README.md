@@ -37,6 +37,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0009](0009-the-ci-gate-set-up-by-render.md) | The CI gate, set up by render | Accepted |
 | [0010](0010-a-record-that-follows-the-branch.md) | A record that follows the branch and its commits | Accepted |
 | [0011](0011-adopting-peer-ai-on-an-existing-codebase.md) | Adopting Peer AI on an existing codebase | Accepted |
+| [0012](0012-replies-that-fit.md) | Replies that fit | Draft |
 
 ## What carries weight
 
