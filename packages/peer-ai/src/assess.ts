@@ -168,8 +168,11 @@ export const TRAIT_LIBRARIES: [trait: Trait, pattern: RegExp][] = [
 ];
 const SERVICE_WORKER = /(^|\/)(service-worker|sw)\.[cm]?[jt]s$/;
 const TENANT_FIELD = /(?<![a-z0-9])(tenant_?id|organi[sz]ation_?id|org_?id|workspace_?id)(?![a-z0-9])/gi;
+// Names that only a product about people's health or physical safety has. A word such as "diagnosis"
+// isn't one: it is also a fault found in a vehicle, a device or a system, so on its own it suggested
+// the trait to products with no safety function at all (#151).
 const SAFETY_FIELD =
-  /(?<![a-z0-9])(allerg(?:en|ens|y|ies)|medications?|dosage|contraindications?|blood_type|diagnos[ie]s)(?![a-z0-9])/gi;
+  /(?<![a-z0-9])(allerg(?:en|ens|y|ies)|medications?|dosage|contraindications?|blood_type)(?![a-z0-9])/gi;
 
 // A copy of the v0 playbook, which 1.0 replaces, recognised by its setup files. Its templates
 // would otherwise read as the project's own requirements, specs and standards.

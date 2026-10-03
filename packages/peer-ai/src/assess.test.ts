@@ -226,6 +226,22 @@ describe("assess", () => {
     });
   });
 
+  it("doesn't suggest safety-critical from a word with other meanings, such as diagnosis (#151)", () => {
+    const trip = {
+      "services/api/alembic/versions/0007_tenant.py":
+        'op.add_column("trips", sa.Column("tenant_id", sa.String, comment="kept for the diagnosis of sync errors"))\n',
+    };
+    const traits = (files: Record<string, string>) =>
+      assess(project(files), undefined, "mvp").suggestedTraits.map((suggestion) => suggestion.trait);
+    expect(traits(trip)).not.toContain("safety-critical");
+    expect(
+      traits({
+        ...trip,
+        "services/api/models/patient.py": "medication = Column(String)\ndiagnosis = Column(String)\n",
+      }),
+    ).toContain("safety-critical");
+  });
+
   it("suggests stack profiles for each part's stack, from the config or from detection", () => {
     const parts = {
       "apps/web/package.json": json({ dependencies: { react: "19.0.0" }, devDependencies: { typescript: "6.0.3" } }),
