@@ -353,11 +353,79 @@
             "description": "The commit the review looked at (RFC 0010).",
             "type": "string",
             "pattern": "^[0-9a-f]{7,64}$"
+          },
+          "depth": {
+            "description": "A light review, of the changed lines only (RFC 0016).",
+            "type": "string",
+            "const": "light"
           }
         },
         "required": [
           "skill",
           "result",
+          "at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "waived": {
+      "description": "Required reviews a person decided this item doesn't need, each with why and who decided (RFC 0016).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "enum": [
+              "requirements-analysis",
+              "product-spec",
+              "architecture",
+              "system-design",
+              "api-design",
+              "data-modelling",
+              "threat-model",
+              "design-system",
+              "issue-planning",
+              "implement-ticket",
+              "code-review",
+              "security-review",
+              "contract-check",
+              "accessibility-review",
+              "design-review",
+              "performance-review",
+              "reliability-review",
+              "data-migration-review",
+              "dependency-review",
+              "compliance-review",
+              "test-strategy",
+              "qa-acceptance",
+              "ai-feature-review",
+              "release-readiness",
+              "infrastructure-review",
+              "observability-review",
+              "incident-response",
+              "documentation",
+              "tech-debt-triage"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "by": {
+            "type": "string",
+            "minLength": 1
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "skill",
+          "reason",
+          "by",
           "at"
         ],
         "additionalProperties": false
@@ -406,6 +474,11 @@
           "reason": {
             "type": "string",
             "minLength": 1
+          },
+          "depth": {
+            "description": "A weak trigger asks only for a light review of the changed lines (RFC 0016).",
+            "type": "string",
+            "const": "light"
           }
         },
         "required": [

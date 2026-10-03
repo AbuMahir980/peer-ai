@@ -103,3 +103,24 @@ export function changesFor(root: string): ((commit: string) => string[] | undefi
 
 /** A commit's id as people read it. */
 export const shortCommit = (commit: string): string => commit.slice(0, 7);
+
+/** How much a change touched each file since its base, and which files it added (RFC 0016). */
+export interface ChangeSizes {
+  /** Lines added and removed in each file; a binary file counts as large. */
+  lines: Map<string, number>;
+  added: Set<string>;
+}
+
+export function changeSizes(root: string, base: string): ChangeSizes {
+  const lines = new Map<string, number>();
+  for (const line of (git(root, ["diff", "--numstat", base, "--", ".", OWN_FILES]) ?? "").split("\n")) {
+    const [added, removed, file] = line.split("\t");
+    if (file === undefined || added === undefined || removed === undefined) continue;
+    lines.set(file, added === "-" ? Number.POSITIVE_INFINITY : Number(added) + Number(removed));
+  }
+  const fresh = [
+    ...(git(root, ["diff", "--name-only", "--diff-filter=A", base, "--", ".", OWN_FILES]) ?? "").split("\n"),
+    ...(git(root, ["ls-files", "--others", "--exclude-standard", "--", ".", OWN_FILES]) ?? "").split("\n"),
+  ].filter((file) => file !== "");
+  return { lines, added: new Set(fresh) };
+}

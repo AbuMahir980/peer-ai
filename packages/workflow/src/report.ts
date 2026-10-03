@@ -100,6 +100,10 @@ export const ReviewReportSchema = z
     coverage: z.array(Coverage).min(1).describe("How each rule went. A rule is never left out silently."),
     findings: z.array(Finding),
     result: z.enum(["pass", "fail", "incomplete"]).describe("Must agree with the findings and coverage."),
+    depth: z
+      .enum(["light", "full"])
+      .optional()
+      .describe("light: the changed lines only, for a weak trigger (RFC 0016). Full when left out."),
     summary: z.string().min(1).max(500).describe("A short summary for people."),
   })
   .superRefine((report, ctx) => {

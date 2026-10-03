@@ -155,11 +155,27 @@ export const WorkItemSchema = z
             .describe("Recorded without a report, so the result is the agent's word rather than proven."),
           at: Timestamp,
           commit: CommitId.optional().describe("The commit the review looked at (RFC 0010)."),
+          depth: z.literal("light").optional().describe("A light review, of the changed lines only (RFC 0016)."),
         }),
       )
       .optional(),
+    waived: z
+      .array(
+        z.strictObject({ skill: z.enum(SKILL_IDS), reason: z.string().min(1), by: z.string().min(1), at: Timestamp }),
+      )
+      .optional()
+      .describe("Required reviews a person decided this item doesn't need, each with why and who decided (RFC 0016)."),
     requiredReviews: z
-      .array(z.strictObject({ skill: z.enum(SKILL_IDS), reason: z.string().min(1) }))
+      .array(
+        z.strictObject({
+          skill: z.enum(SKILL_IDS),
+          reason: z.string().min(1),
+          depth: z
+            .literal("light")
+            .optional()
+            .describe("A weak trigger asks only for a light review of the changed lines (RFC 0016)."),
+        }),
+      )
       .optional()
       .describe(
         "The reviews this work needs, worked out from what the change touched when it reached verify (RFC 0004).",
