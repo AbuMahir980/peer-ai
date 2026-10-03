@@ -209,8 +209,28 @@ export function pipelineRules(config: PeerAiConfig) {
 
 const indent = (lines: readonly string[], by: number) => lines.map((line) => `${" ".repeat(by)}${line}`);
 
-/** A job that reports what it finds without failing the build, while its rules only report (RFC 0011). */
-const REPORTS = "    continue-on-error: true";
+/**
+ * While a job's rules only report (RFC 0011), each check step carries on past what it finds, so the
+ * job finishes green on a pull request rather than showing a red cross, and a last step says what
+ * was found, as a warning and in the job's summary. On the job itself, continue-on-error would keep
+ * the workflow green but still show the job as failed.
+ */
+const REPORTS = "        continue-on-error: true";
+
+/** While it only reports, a check step's id, for the report step, and that it carries on past what it finds. */
+const checkStep = (stepId: string, reports: boolean): string[] => (reports ? [`        id: ${stepId}`, REPORTS] : []);
+
+/** The last step of a job that only reports: a warning, and the job's summary, when a check found something. */
+function reportStep(name: string, rules: readonly string[], stepIds: readonly string[]): string[] {
+  const found = `${rules.join(", ")} found problems. Reporting only for now (standards.enforcement or standards.deferred), so this doesn't fail the build: the check's log lists them.`;
+  return [
+    "      - name: Report what the checks found",
+    `        if: ${stepIds.map((stepId) => `steps.${stepId}.outcome == 'failure'`).join(" || ")}`,
+    "        run: |",
+    `          echo "::warning title=${name}::${found}"`,
+    `          echo "### ${name}: ${found}" >> "$GITHUB_STEP_SUMMARY"`,
+  ];
+}
 
 /** One job: check out the repository, install the tool, run it. */
 function job(id: string, script: JobScript, rules: readonly string[], reports: boolean): string[] {
@@ -218,7 +238,6 @@ function job(id: string, script: JobScript, rules: readonly string[], reports: b
     `  ${id}:`,
     `    name: ${script.name}`,
     "    runs-on: ubuntu-latest",
-    ...(reports ? [REPORTS] : []),
     "    permissions:",
     "      contents: read",
     "    steps:",
@@ -231,11 +250,13 @@ function job(id: string, script: JobScript, rules: readonly string[], reports: b
     ...indent(['mkdir -p "$RUNNER_TEMP/peer-ai-tools"', 'echo "$RUNNER_TEMP/peer-ai-tools" >> "$GITHUB_PATH"'], 10),
     ...indent(script.install, 10),
     `      - name: Check ${rules.join(", ")}`,
+    ...checkStep("check", reports),
     ...(script.env === undefined
       ? []
       : ["        env:", ...Object.entries(script.env).map(([key, value]) => `          ${key}: ${value}`)]),
     "        run: |",
     ...indent(script.scan, 10),
+    ...(reports ? reportStep(script.name, rules, ["check"]) : []),
   ];
 }
 
@@ -267,12 +288,13 @@ function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): strin
       "  tls:",
       "    name: peer-ai / tls",
       "    runs-on: ubuntu-latest",
-      ...(reports(["GHA-06"]) ? [REPORTS] : []),
       SCHEDULED,
       "    permissions: {}",
       "    steps:",
       `      - name: Check GHA-06 with SSLyze ${IMAGES.sslyze.tag}, against Mozilla's intermediate profile`,
+      ...checkStep("check", reports(["GHA-06"])),
       `        run: docker run --rm ${imageRef(IMAGES.sslyze)} --mozilla_config=intermediate ${usable.map((address) => quote(address.host)).join(" ")}`,
+      ...(reports(["GHA-06"]) ? reportStep("peer-ai / tls", ["GHA-06"], ["check"]) : []),
     );
   }
   // Only an environment the config marks as not production is scanned: one it doesn't mark might be.
@@ -282,7 +304,6 @@ function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): strin
       "  running-app:",
       "    name: peer-ai / running-app",
       "    runs-on: ubuntu-latest",
-      ...(reports(["GHA-07"]) ? [REPORTS] : []),
       SCHEDULED,
       "    permissions:",
       "      contents: read",
@@ -296,6 +317,7 @@ function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): strin
       "          if [ -f .github/zap-rules.tsv ]; then cp .github/zap-rules.tsv zap/; fi",
       ...staging.flatMap((address) => [
         `      - name: Check GHA-07 with OWASP ZAP ${IMAGES.zap.tag} in ${address.id}, which isn't production`,
+        ...checkStep(`check-${address.id}`, reports(["GHA-07"])),
         "        run: |",
         "          if [ -f zap/zap-rules.tsv ]; then set -- -c zap-rules.tsv; fi",
         `          docker run --rm -v "$PWD/zap:/zap/wrk:rw" ${imageRef(IMAGES.zap)} zap-baseline.py -t ${quote(address.url)} -J ${quote(`zap-${address.id}.json`)} "$@"`,
@@ -305,6 +327,13 @@ function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): strin
       "        with:",
       "          name: zap-reports",
       "          path: zap/*.json",
+      ...(reports(["GHA-07"])
+        ? reportStep(
+            "peer-ai / running-app",
+            ["GHA-07"],
+            staging.map((address) => `check-${address.id}`),
+          )
+        : []),
     );
   }
   return lines;
@@ -355,7 +384,7 @@ export function workflowFile(config: PeerAiConfig, enforcement: Enforcement = EN
       "# Generated by peer-ai render from peer-ai.config.json: the checks of the github-actions stack profile.",
       "# Change the config, not this file. Render writes it again while it's as render left it, and leaves",
       body.includes(REPORTS)
-        ? "# it alone once someone changes it by hand. A job with continue-on-error only reports for now, in the\n# report stage or for a deferred rule (RFC 0011): make a job a required check once it enforces."
+        ? "# it alone once someone changes it by hand. A job whose check has continue-on-error only reports for now,\n# in the report stage or for a deferred rule (RFC 0011): it stays green, and warns about what it finds.\n# Make a job a required check once it enforces: their names never change."
         : "# it alone once someone changes it by hand. Make each job a required check: their names never change.",
     ],
     body,

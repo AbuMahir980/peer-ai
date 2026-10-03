@@ -51,7 +51,13 @@ describe("the security workflow, in stages (RFC 0011)", () => {
     const config = repairs({ enforcement: "report" });
     const file = workflowFile(config, enforcement(config)) ?? "";
     expect(new Set(Object.values(reporting(file)))).toEqual(new Set([true]));
-    expect(file).toContain("A job with continue-on-error only reports for now");
+    expect(file).toContain("A job whose check has continue-on-error only reports for now");
+    // On the step, not the job, so the job finishes green on a pull request (#153), and says what it found.
+    expect(file).not.toMatch(/^ {4}continue-on-error/m);
+    expect(file).toContain("        continue-on-error: true");
+    expect(file).toContain("        if: steps.check.outcome == 'failure'");
+    expect(file).toContain('echo "::warning title=peer-ai / code::GHA-05 found problems. Reporting only for now');
+    expect(file).toContain('>> "$GITHUB_STEP_SUMMARY"');
   });
 
   it("only reports the job of a deferred rule", () => {
