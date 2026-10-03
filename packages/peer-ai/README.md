@@ -256,6 +256,19 @@ A project whose CI already runs its verify command on every pull request can say
 
 It needs GitHub, and `gh` signed in where the AI tool works.
 
+### A section for people in the README
+
+With `"docs": { "readme": true }`, render keeps a section in the project's `README.md`, between `<!-- peer-ai:readme:start -->` and `<!-- peer-ai:readme:end -->`, for the people who work on it, including those who don't use an AI tool (RFC 0014).
+
+- **"How we work: Peer AI"** opens with three short lines: what Peer AI does here, that nobody needs to install it, and `npx peer-ai doctor`.
+- **The details are folded** into `<details>` sections, so readers scan the headings and open what they need:
+  - the project's stage, and what it asks for;
+  - what a pull request needs;
+  - the checks that enforce the standards, with any rules deferred;
+  - how updates work.
+- **It's written from the config,** so it stays true as the config changes, and nothing outside the markers is touched. Without a `README.md`, render starts one.
+- **To stop render from keeping it,** set `docs.readme` back to false. The section stays as last written, for the project to edit.
+
 ### Instructions
 
 The instructions are short: how to work through the MCP server, the project's parts, its commands, its compliance packs and its own rules, and the project's settings for models, skills and activities when it has any: the models to use, the add-ons, checklists and notes for each skill, and the files to read and notes for each activity. The server serves the detail when it's needed, rather than every rule on every turn.

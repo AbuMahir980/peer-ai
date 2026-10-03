@@ -384,6 +384,12 @@ const Gates = z.strictObject({
 
 const Docs = z.strictObject({
   dir: Path.optional(),
+  readme: z
+    .boolean()
+    .optional()
+    .describe(
+      'Have render keep a short section for people in README.md, "How we work: Peer AI", written from this config. Defaults to false (RFC 0014).',
+    ),
   preserveStructure: z.boolean().optional().describe("Add to the existing docs; never reorganise them."),
   backlog: Path.optional().describe("Where ideas outside the agreed scope go, instead of becoming work items."),
 });
