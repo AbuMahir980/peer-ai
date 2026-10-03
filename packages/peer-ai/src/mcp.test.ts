@@ -125,6 +125,7 @@ describe("the MCP server", () => {
     expect(tools.map((tool) => [tool.name, tool.annotations?.readOnlyHint])).toEqual([
       ["project_map", true],
       ["next_work", true],
+      ["work_item", true],
       ["standards_for_file", true],
       ["create_work_item", false],
       ["update_work_item", false],
@@ -146,6 +147,18 @@ describe("the MCP server", () => {
     expect(created.value()).toMatchObject({ id: "ITEM-1", stage: "prepare" });
 
     expect((await call(client, "advance_work_item", { id: "ITEM-1" })).value()).toMatchObject({ stage: "build" });
+    // next_work lists it in one line; work_item gives it in full (RFC 0012).
+    expect((await call(client, "next_work", {})).value()).toMatchObject({
+      open: [{ id: "ITEM-1", title: "Cart totals", stage: "build", track: "web" }],
+    });
+    expect((await call(client, "work_item", { id: "ITEM-1" })).value()).toMatchObject({
+      id: "ITEM-1",
+      kind: "feature",
+      stage: "build",
+    });
+    const missing = await call(client, "work_item", { id: "ITEM-9" });
+    expect(missing.isError).toBe(true);
+    expect(missing.text).toBe('There is no work item "ITEM-9".');
     await call(client, "update_work_item", {
       id: "ITEM-1",
       next: "Run verify",

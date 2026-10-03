@@ -549,18 +549,34 @@ export interface SetupProblem {
   fix?: string;
 }
 
+/** An open work item in one line (RFC 0012): work_item gives the whole item. */
+export interface WorkSummary {
+  id: string;
+  title: string;
+  stage: WorkItem["stage"];
+  branch?: string;
+  track?: string;
+  /** Its next action. */
+  next: string;
+  /** The items it depends on that haven't shipped, so it can't ship before them (RFC 0005). */
+  waitingFor?: string[];
+}
+
+/** The most open items next_work lists, so its reply fits what an AI tool can take in (RFC 0012). */
+export const LISTED = 50;
+
 export interface NextWork {
   /** Every setup problem doctor finds (RFC 0007). Absent when there is none. */
   setup?: { problems: SetupProblem[] };
   branch?: string;
-  /** The open work item for the current branch. */
+  /** The open work item for the current branch, in full. */
   current?: WorkItem;
-  /** Every open work item, most recently updated first. */
-  open: WorkItem[];
+  /** Open work items in one line each, most recently updated first, at most LISTED of them. */
+  open: WorkSummary[];
+  /** How many more open items there are than open lists. */
+  more?: number;
   /** The current item's required reviews, by the names their skills are installed under. */
   reviews?: ReturnType<typeof reviewsToDo>;
-  /** For each open item with unfinished dependencies, the items it's waiting for before it can ship (RFC 0005). */
-  waiting?: Record<string, string[]>;
   /**
    * When nothing is open: what the project's stage still needs, to start as gap work items, and
    * the skill to use for each gap that has one.
@@ -600,18 +616,25 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
   const current = branch === undefined ? undefined : open.find((item) => item.branch === branch);
   const reviews = current === undefined ? [] : reviewsToDo(current);
   const shipped = new Set(items.flatMap((item) => (item.stage === "ship" || item.stage === "done" ? [item.id] : [])));
-  const waiting = Object.fromEntries(
-    open
-      .map((item) => [item.id, (item.dependsOn ?? []).filter((id) => !shipped.has(id))] as const)
-      .filter(([, unfinished]) => unfinished.length > 0),
-  );
+  const summary = (item: WorkItem): WorkSummary => {
+    const waitingFor = (item.dependsOn ?? []).filter((id) => !shipped.has(id));
+    return {
+      id: item.id,
+      title: item.title,
+      stage: item.stage,
+      ...(item.branch === undefined ? {} : { branch: item.branch }),
+      ...(item.track === undefined ? {} : { track: item.track }),
+      next: item.next,
+      ...(waitingFor.length === 0 ? {} : { waitingFor }),
+    };
+  };
   const result: NextWork = {
     ...(problems.length === 0 ? {} : { setup: { problems } }),
     ...(branch === undefined ? {} : { branch }),
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),
-    ...(Object.keys(waiting).length > 0 ? { waiting } : {}),
-    open,
+    open: open.slice(0, LISTED).map(summary),
+    ...(open.length > LISTED ? { more: open.length - LISTED } : {}),
   };
   if (open.length > 0) return result;
   const stage = projectStage(config);

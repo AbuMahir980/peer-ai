@@ -20,6 +20,7 @@ import {
   advanceWorkItem,
   checkReport,
   createWorkItem,
+  loadWorkItem,
   nextWork,
   recordReview,
   runCommand,
@@ -31,7 +32,7 @@ import {
 } from "./work.ts";
 
 const INSTRUCTIONS = `Peer AI keeps this project's map, its work items and the gates work must pass.
-Start a session with next_work: it returns the work item for the current git branch and where it stopped.
+Start a session with next_work: it returns the work item for the current git branch and where it stopped, and every other open item in one line. Read another item in full with work_item before working on it.
 Before editing a file, call standards_for_file and follow what it returns.
 Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself; it verifies the item's latest commit, so commit first.
 Working in a git worktree of your own, give your branch to next_work: the tools find each work item on its own branch, wherever it's checked out.
@@ -131,7 +132,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Next work",
       description:
-        "The work to continue: the open work item for the current git branch, with where it stopped, its next action and the reviews it needs, and every other open item, with the items each is waiting for before it can ship. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill). Working in a git worktree of your own, give your branch: the tools find each work item on its own branch, wherever it's checked out.",
+        "The work to continue: the open work item for the current git branch in full, with where it stopped, its next action and the reviews it needs; and every open item in one line, with the items each is waiting for before it can ship (waitingFor). Call work_item for another item in full. When nothing is open, the gaps the project's stage needs, to start as work items, with the Peer AI skill to use for each (useSkill). Working in a git worktree of your own, give your branch: the tools find each work item on its own branch, wherever it's checked out.",
       inputSchema: {
         branch: z
           .string()
@@ -144,6 +145,21 @@ export function createServer(options: ServerOptions): McpServer {
       annotations: READ_ONLY,
     },
     withProject((root, config, { branch }: { branch?: string | undefined }) => reply(nextWork(root, config, branch))),
+  );
+
+  server.registerTool(
+    "work_item",
+    {
+      title: "Work item",
+      description:
+        "One work item in full: its goal, acceptance criteria, sources, where it stopped, its verify and reviews. next_work lists the open items in one line each; call this before working on an item that isn't the current branch's, or to read another item's acceptance criteria. It finds the item on its own branch, wherever that's checked out.",
+      inputSchema: { id: z.string().min(1).describe("The work item's id, such as SHOP-41.") },
+      annotations: READ_ONLY,
+    },
+    withProject((root, _config, { id }: { id: string }) => {
+      const item = loadWorkItem(root, id);
+      return item.ok ? reply(item.value) : refuse(item.error);
+    }),
   );
 
   server.registerTool(

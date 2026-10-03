@@ -31,7 +31,7 @@ Copy this checklist and tick it off as you go:
 
 - **Find it:** call the peer-ai MCP tool `next_work`. The item for the current branch is `current`; the person may name another. If the work has no item, create one with the peer-ai MCP tool `create_work_item`, with a goal and acceptance criteria written from the request, and say which criteria you wrote.
 - **Its plan:** the goal, the acceptance criteria and the sources. When the item has no criteria, write them from its sources before building, add them with the peer-ai MCP tool `update_work_item`, and tell the person.
-- **What it waits for:** `waiting` in `next_work` lists items it depends on that haven't shipped. It can be built now, but it can't ship before them. Say so at the start, and don't build the other items as well unless the person asks. When it can't even be built without their code, don't start it: set its next action with `update_work_item` to the items it waits for, so the next session knows why it stopped.
+- **What it waits for:** the item's `waitingFor` in `next_work` lists the items it depends on that haven't shipped. It can be built now, but it can't ship before them. Say so at the start, and don't build the other items as well unless the person asks. When it can't even be built without their code, don't start it: set its next action with `update_work_item` to the items it waits for, so the next session knows why it stopped.
 - **Move to build** with the peer-ai MCP tool `advance_work_item` before changing any code.
 
 Record where you are with `update_work_item` at each step, so another session can pick up exactly there.

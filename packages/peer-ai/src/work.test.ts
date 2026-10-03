@@ -172,7 +172,8 @@ describe("moving work items", () => {
       goal: "A reader extends their own loan by a week from the loan card.",
       sources: ["docs/specs/extend-a-loan.md"],
     });
-    expect(nextWork(root, config).waiting).toEqual({ "SHOP-2": ["SHOP-1"] });
+    const waitingFor = (id: string) => nextWork(root, config).open.find((item) => item.id === id)?.waitingFor;
+    expect(waitingFor("SHOP-2")).toEqual(["SHOP-1"]);
 
     // Building before a dependency ships is fine; shipping before it isn't.
     expect(value(advanceWorkItem(root, config, "SHOP-2", "build", later(2))).stage).toBe("build");
@@ -180,7 +181,7 @@ describe("moving work items", () => {
       "SHOP-2 can't move to ship yet:\n- SHOP-2 is at ship, but it depends on SHOP-1, which is only at prepare. Ship SHOP-1 first, or move the item back to build.",
     );
     value(advanceWorkItem(root, config, "SHOP-1", "ship", later(4)));
-    expect(nextWork(root, config).waiting).toBeUndefined();
+    expect(waitingFor("SHOP-2")).toBeUndefined();
     expect(value(advanceWorkItem(root, config, "SHOP-2", "ship", later(5))).stage).toBe("ship");
 
     const replanned = value(updateWorkItem(root, config, "SHOP-2", { acceptance: ["A new criterion."] }, later(6)));
