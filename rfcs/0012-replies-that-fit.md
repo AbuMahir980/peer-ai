@@ -11,7 +11,7 @@
 Two of the MCP server's tools return far more than an AI tool can use. `next_work` returns every open work item in full, and goes over the MCP output limit once a project has a few dozen items. `standards_for_file` returns about 110 rules for a file outside every part, most of which can't apply to it. This RFC keeps each reply to what the AI tool needs now, with the rest one call away:
 
 - `next_work` returns the current branch's item in full and every other open item as one line. A new read-only tool, `work_item`, returns any item in full.
-- `standards_for_file` chooses rules by what the file is, as well as by the part it belongs to, and returns each rule's id, title and severity. The full text of any rule is one call away.
+- `standards_for_file` chooses rules by what the file is and the language it's in, as well as by the part it belongs to, and returns each rule's id, title and severity. The full text of any rule is one call away.
 
 ## Motivation
 
@@ -19,6 +19,15 @@ Both are from the first project to use 1.0 every day: a Python API, React Native
 
 - **`next_work` goes over the MCP output limit** (#152). With 36 open items, it returned 113,490 characters. Of those, 98,600 were the open items, each in full (acceptance criteria, sources, position, reviews), and one item alone was 13,700. The AI tool got an error instead of a reply and parsed a saved copy with a script. The instructions `render` writes tell every agent to start each session with `next_work`, so every session hits it. Yet what an agent most needs is small: the item for its branch, and where it stopped.
 - **`standards_for_file` returns rules that can't apply** (#113). A file outside every part gets every domain, so a CI workflow, a root build file, a secret scanner's settings and a Markdown register each got about 110 rules: roughly 57 KB per call, with requirements, design-system, mobile and screen rules among them. Across nine calls in one session, a small fraction of what came back could apply. The AI tool calls it before every edit, so the cost repeats all day.
+- **Rules for another language** (#113, later on the same project). One TypeScript file in the React Native part got about 87,000 characters, over the MCP output limit, including the Python and FastAPI profiles' rules. A part that names no stack gets every profile the project lists, whatever the file's language.
+
+Measured on next.7, with a project listing the `python-fastapi`, `react-native`, `typescript` and `github-actions` profiles:
+
+| File | Rules | Characters |
+|------|-------|------------|
+| A screen, `apps/mobile/src/screens/Trip.tsx`, in a mobile part with no stack | 142, including 13 Python and 5 FastAPI rules | 49,108 |
+| The same screen, with the part's stack set | 124 | 43,398 |
+| `.github/workflows/ci.yml`, `Makefile` or `docs/register.md`, outside every part | 189 | about 65,400 |
 
 Both grow with the project: more work items, more profiles and more traits mean longer replies, and the replies are read on every turn.
 
@@ -58,10 +67,21 @@ The reply then stays the same size, about 250 characters an item, whatever an it
 | Tool settings | Settings files for linters, formatters and scanners, such as `.gitleaks.toml`, `.semgrepignore`, `ruff.toml`, `.eslintrc*` and `.editorconfig` | security, code-quality |
 | Source code | Anything else | The part's domains, as today |
 
-- **Inside a part,** a file of a recognised kind gets the domains both its kind and its part have, so a migration in an API gets data, security and privacy rules, not every server rule. Source code keeps the part's domains.
-- **Outside every part,** a file of a recognised kind gets its kind's domains. Source code outside every part gets the domains every file has (code quality, architecture, security, privacy, testing, and the trait domains, as today), not every domain.
-- **The stack profile rules** follow the same domains. Whole-project profiles, such as the pipeline's, keep applying to the pipeline's files.
+- **A file of a recognised kind gets its kind's domains,** wherever it is, so a migration in an API gets data, security and privacy rules, not every server rule, and a Dockerfile in a part still gets the delivery rules. A migration also gets the money and safety-critical domains, whose rules apply only with their traits.
+- **Source code keeps its part's domains.** Outside every part, it gets the domains every file has (code quality, architecture, security, privacy, testing, and the trait domains, as today), not every domain.
 - **The project's own documents** for the part are listed as today, whatever the kind.
+
+**The language it's in.** A stack profile's rules apply only to files in its language, worked out from the profile its family starts from:
+
+| Profiles | Apply to |
+|----------|----------|
+| `typescript`, and every profile built on it: `node`, `react`, `react-native`, `next`, `express`, `nestjs`, `fastify` | JavaScript and TypeScript files: `.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.jsx`, `.mjs`, `.cjs` |
+| `python`, and every profile built on it: `python-fastapi` | Python files: `.py`, `.pyi` |
+| `github-actions` | The CI pipeline's files |
+
+A profile added later says which family it belongs to the same way, through the profile it builds on. Within its language, a profile's rules still follow the file's domains.
+
+**A part that names no stack** gets every listed profile of the file's language, as today. `doctor` now warns about such a part when the project lists profiles, with the stack detection finds for it: "mobile names no stack, so every profile listed applies to its files. Set its stack, such as react-native, typescript, as detected." `next_work` passes the warning on, so the AI tool can fix the config.
 
 The reply says which kind it found, so a surprising result can be explained: `"kind": "ci-pipeline"`.
 
@@ -75,14 +95,15 @@ A new input, `ruleIds`, returns those rules in full: the rule, why it matters, t
 
 ### Sizes
 
-With 36 open items, `next_work` would return about 10,000 characters instead of 113,490. For a CI workflow outside every part, `standards_for_file` would return about 20 rules in under 2 KB instead of 110 rules in 57 KB.
+With 36 open items, `next_work` would list them in about 9,000 characters, plus the current item in full, instead of 113,490 characters. For a CI workflow outside every part, `standards_for_file` would return 38 rules in about 3,400 characters instead of 189 rules in 65,400. For the screen in the mobile part with no stack, it would return 124 rules, none of them Python's, in about 10,900 characters instead of 142 rules in 49,100.
 
 ## Compatibility
 
 Minor, but the replies of two MCP tools change shape:
 
 - `next_work`'s `open` holds summaries instead of whole items, and its `waiting` map moves into each summary as `waitingFor`.
-- `standards_for_file` returns fewer rules for most files outside a part or of a recognised kind, each without its full text unless asked for.
+- `standards_for_file` returns fewer rules for most files: those outside a part, those of a recognised kind, and those in a language a listed profile isn't for. Each comes without its full text unless asked for.
+- `doctor` warns about a part that names no stack while the project lists profiles.
 
 The AI tool reads both through their descriptions on every connection, so nothing in a project needs changing. The skills and the instructions `render` writes are updated in the same release. A project picks the change up when it updates and reconnects its AI tools.
 
