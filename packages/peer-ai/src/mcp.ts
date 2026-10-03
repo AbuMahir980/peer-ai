@@ -21,6 +21,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import { checkDocumentOn } from "./document.ts";
 import { draftFeedback } from "./feedback.ts";
 import { VERSION } from "./package-info.ts";
+import { reviewSizes } from "./review-cost.ts";
 import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
 import {
@@ -105,7 +106,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Project map",
       description:
-        "Where the project stands: each item on the map (requirements, architecture, API contract, tests, CI, infrastructure and more) as present, partial, missing or not applicable, with the files that prove it; what the project's stage still needs; and compliance signals such as personal data found in the schema.",
+        "Where the project stands: each item on the map (requirements, architecture, API contract, tests, CI, infrastructure and more) as present, partial, missing or not applicable, with the files that prove it; what the project's stage still needs; compliance signals such as personal data found in the schema; and each review's rough size over the whole project (reviewSizes), to tell the person before a whole-project review starts.",
       annotations: READ_ONLY,
     },
     withProject((root, config) => {
@@ -126,6 +127,8 @@ export function createServer(options: ServerOptions): McpServer {
         suggestedTraits: assessment.suggestedTraits,
         suggestedProfiles: assessment.suggestedProfiles,
         suggestedStacks: assessment.suggestedStacks,
+        // A rough cost for each whole-project review, so the person can choose before one starts (RFC 0016).
+        reviewSizes: reviewSizes(root),
         storedMap:
           stored === undefined
             ? "There is no .peer-ai/map.json yet. Run npx peer-ai assess to write it."

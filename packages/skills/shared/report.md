@@ -20,6 +20,8 @@ A JSON file, committed with the work:
 
 Write `<time>` as `20261005T1000Z`: no colons, so the name works on every system.
 
+Before a whole-project review starts, call the peer-ai MCP tool `project_map`. Its `reviewSizes` gives this review's rough size over the whole project, as small, medium or large, with the files, lines and rules behind it and the token range it means (RFC 0016). Tell the person, and ask whether to run it whole, for one part, or not now. The estimate is rough, so say so.
+
 ## What each part holds
 
 | Field | Holds |
