@@ -1,5 +1,31 @@
 # peer-ai
 
+## 1.0.0-next.10
+
+### Minor Changes
+
+- 9eea4ce: With `"docs": { "readme": true }`, `peer-ai render` keeps a section for people in the project's `README.md`, "How we work: Peer AI", between markers (RFC 0014). It opens with three short lines: what Peer AI does here, that nobody needs to install it, and `npx peer-ai doctor`. The rest is folded into `<details>` sections: the stage, what a pull request needs, the checks and any deferrals, and how updates work. It's written from the config, so it stays true as the config changes. It's off unless asked for.
+- df721db: Sent feedback stays tidy (RFC 0014):
+  
+  - **`peer-ai feedback`** now also lists the reports already sent, each with its issue's state, open or closed and when, from GitHub through `gh`.
+  - **`peer-ai feedback prune`** removes the sent reports whose issues are closed, after listing them and asking. `--yes` doesn't ask. Open ones stay.
+  - **`draft_feedback`** says when a new draft looks like a report this project already sent, naming the issue and its state, so a duplicate or an already-fixed report isn't sent again.
+- 81a614c: With `"updates": { "pullRequest": true }`, on GitHub Actions, `peer-ai render` writes `.github/workflows/peer-ai-update.yml` (RFC 0014). Once a day it opens a pull request, "Update Peer AI to <version>", when a newer release is out, with `render` already run on its branch. CI doesn't start on a pull request opened with the workflow's own token, so add a `PEER_AI_UPDATE_TOKEN` secret for CI to run by itself; without one, close and reopen the pull request. A project with `peer-ai` in its `package.json` is left to Dependabot or Renovate.
+- a473f61: `peer-ai doctor`, and through it `next_work` at the start of each session, now says when a newer Peer AI is out than the project uses, with where to read what changed and how to update (RFC 0014).
+  
+  It asks npm at most once a day per machine, keeping the answer in your cache folder, never in the project. Offline and in CI it says nothing, and it never fails a build. To stay on a version on purpose, set `"updates": { "notify": false }` in `peer-ai.config.json`.
+- 31474a9: At a person's first session after the project's Peer AI version changes, `next_work` gives `whatChanged`: a line per change since their last session, from the changelog that ships with the package (RFC 0014). The AI tool tells them in a few plain words, once, then carries on. Each machine remembers the version of its last session per project, in its cache folder, never in the project.
+
+### Patch Changes
+
+- 415c3b2: `whatChanged` in `next_work` no longer cuts a change short at a full stop or a colon inside code, such as `"docs": { "readme": true }`.
+- Updated dependencies [9eea4ce]
+- Updated dependencies [81a614c]
+- Updated dependencies [a473f61]
+  - peer-ai-workflow@1.0.0-next.10
+  - peer-ai-skills@1.0.0-next.10
+  - peer-ai-standards@1.0.0-next.10
+
 ## 1.0.0-next.9
 
 ### Minor Changes
