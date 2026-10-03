@@ -112,6 +112,10 @@ export const WorkItemSchema = z
         result: z.enum(["pass", "fail"]),
         at: Timestamp,
         commit: CommitId.optional().describe("The commit the verify ran on (RFC 0010)."),
+        ci: z
+          .strictObject({ check: z.string().min(1), url: z.url() })
+          .optional()
+          .describe("Where the verify ran when CI ran it: the check, and its run on GitHub (RFC 0013)."),
       })
       .optional(),
     reviews: z

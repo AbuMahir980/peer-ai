@@ -220,6 +220,25 @@
           "description": "The commit the verify ran on (RFC 0010).",
           "type": "string",
           "pattern": "^[0-9a-f]{7,64}$"
+        },
+        "ci": {
+          "description": "Where the verify ran when CI ran it: the check, and its run on GitHub (RFC 0013).",
+          "type": "object",
+          "properties": {
+            "check": {
+              "type": "string",
+              "minLength": 1
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "check",
+            "url"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
