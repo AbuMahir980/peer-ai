@@ -31,6 +31,7 @@ import {
 import { RUFF_FILE, ruffFile } from "./ruff.ts";
 import { enforcementFor } from "./stages.ts";
 import { renderedVersion } from "./versions.ts";
+import { README_END, README_START, readmeSection } from "./readme.ts";
 
 export const START = "<!-- peer-ai:start -->";
 export const END = "<!-- peer-ai:end -->";
@@ -632,6 +633,17 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   if (committed && folders.length > 0) files.push(markSkillsGenerated(root, folders));
   const ignoredSkills = committed || !skills.some((skill) => skill.action !== "remove") ? [] : folders;
   files.push(ignoreBlock(root, ignoredSkills));
+
+  // A short section for people in the README, written from the config while it asks for one (RFC 0014).
+  if (config.docs?.readme === true) {
+    const section = readmeSection(config, VERSION);
+    const existing = readText(root, "README.md");
+    files.push(
+      existing === undefined
+        ? { path: "README.md", action: "create", content: `# ${config.project.name}\n\n${section}\n` }
+        : withBlock("README.md", existing, "", { start: README_START, end: README_END, block: section }),
+    );
+  }
   return { files, skills, manual };
 }
 

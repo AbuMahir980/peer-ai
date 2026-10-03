@@ -1064,6 +1064,10 @@
           "minLength": 1,
           "description": "A path relative to the project root, or a URL."
         },
+        "readme": {
+          "description": "Have render keep a short section for people in README.md, \"How we work: Peer AI\", written from this config. Defaults to false (RFC 0014).",
+          "type": "boolean"
+        },
         "preserveStructure": {
           "description": "Add to the existing docs; never reorganise them.",
           "type": "boolean"
