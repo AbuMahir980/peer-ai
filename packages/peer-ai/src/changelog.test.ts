@@ -57,6 +57,14 @@ describe("what changed between two versions (RFC 0014)", () => {
     ]);
   });
 
+  it("doesn't end a sentence inside a quote either", () => {
+    const text =
+      '## 1.0.0-next.10\n\n- 9eea4ce: render keeps a section, "How we work: Peer AI", between markers. More.\n';
+    expect(changesBetween(text, "1.0.0-next.9", "1.0.0-next.10")).toEqual([
+      '1.0.0-next.10: render keeps a section, "How we work: Peer AI", between markers.',
+    ]);
+  });
+
   it("reads the package's own changelog, which ships with it", () => {
     expect(parseChangelog(ownChangelog()).length).toBeGreaterThan(0);
   });

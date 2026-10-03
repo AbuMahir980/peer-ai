@@ -29,15 +29,23 @@ export function parseChangelog(text: string): { version: string; changes: string
 
 /**
  * The first sentence of an entry, without the bold markup, which reads as noise in a line. A full
- * stop or a colon inside code, such as `"docs": { … }`, doesn't end it.
+ * stop or a colon inside code, such as `"docs": { … }`, or inside a quote, such as "How we work:
+ * Peer AI", doesn't end it.
  */
 function firstSentence(text: string): string {
   const plain = text.replaceAll("**", "");
   let code = false;
+  let quote = false;
   for (let i = 0; i < plain.length; i++) {
     const char = plain[i];
     if (char === "`") code = !code;
-    else if (!code && (char === "." || char === ":") && (i + 1 === plain.length || /\s/.test(plain[i + 1] ?? ""))) {
+    else if (char === '"' && !code) quote = !quote;
+    else if (
+      !code &&
+      !quote &&
+      (char === "." || char === ":") &&
+      (i + 1 === plain.length || /\s/.test(plain[i + 1] ?? ""))
+    ) {
       return `${plain.slice(0, i)}.`;
     }
   }
