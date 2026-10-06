@@ -44,7 +44,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0016](0016-proportionate-reviews.md) | Proportionate reviews | Accepted |
 | [0017](0017-tidy-state.md) | Tidy state | Accepted |
 | [0018](0018-seeing-across-the-project.md) | Seeing across the project | Accepted |
-| [0019](0019-checks-that-see-what-ships.md) | Checks that see what ships | Draft |
+| [0019](0019-checks-that-see-what-ships.md) | Checks that see what ships | Accepted |
 
 ## What carries weight
 
