@@ -1,5 +1,12 @@
 # peer-ai-skills
 
+## 1.0.0-next.14
+
+### Patch Changes
+
+- peer-ai-standards@1.0.0-next.14
+  - peer-ai-workflow@1.0.0-next.14
+
 ## 1.0.0-next.13
 
 ### Patch Changes
