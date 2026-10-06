@@ -209,7 +209,7 @@ importers:
   packages/eslint-config:
     dependencies:
       eslint:
-        specifier: ^10.0.0
+        specifier: ^9.30.0 || ^10.0.0
         version: 10.11.0
       peer-ai-standards:
         specifier: workspace:*

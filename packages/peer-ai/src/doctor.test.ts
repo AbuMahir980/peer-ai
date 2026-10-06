@@ -454,6 +454,45 @@ describe("doctor on stack profiles", () => {
     });
   });
 
+  it("says to import Peer AI's settings from an ES module config, renaming a CommonJS one", () => {
+    const files = { "apps/web/tsconfig.json": strict, "peer-ai.config.json": typed("mvp", ["typescript"]) };
+    const fixFor = (extra: Record<string, string>) => checksFor(project({ ...files, ...extra }), "enforcers")[0]?.fix;
+    const addIt = 'import peerAi from "peer-ai-eslint-config", and spread ...peerAi() into the settings it exports';
+    expect(fixFor({ "package.json": json({ type: "module" }), "eslint.config.js": "export default [];\n" })).toBe(
+      `In eslint.config.js, ${addIt}, before your own.`,
+    );
+    expect(fixFor({ "package.json": json({ name: "app" }), "eslint.config.js": "export default [];\n" })).toBe(
+      `Rename eslint.config.js to eslint.config.mjs, since its package.json has no "type": "module", and import in a .js file there makes Node warn on every lint run. Then, in eslint.config.mjs, ${addIt}, before your own.`,
+    );
+    expect(fixFor({ "eslint.config.cjs": "module.exports = [];\n" })).toContain(
+      "Rename eslint.config.cjs to eslint.config.mjs, and change module.exports to export default",
+    );
+    expect(fixFor({ "eslint.config.mjs": "export default [];\n" })).toBe(
+      `In eslint.config.mjs, ${addIt}, before your own.`,
+    );
+    expect(fixFor({ "package.json": json({ name: "app" }) })).toBe(`Add eslint.config.mjs: ${addIt}, before your own.`);
+  });
+
+  it("says when the installed ESLint is older than Peer AI's settings need", () => {
+    const root = project({
+      "apps/web/tsconfig.json": strict,
+      "peer-ai.config.json": typed("mvp", ["typescript"]),
+      "eslint.config.mjs": peerAiEslint,
+      "node_modules/eslint/package.json": json({ name: "eslint", version: "9.13.0" }),
+    });
+    expect(checksFor(root, "enforcers")[1]).toMatchObject({
+      status: "warn",
+      message: "ESLint 9.13.0 is installed for eslint.config.mjs, and Peer AI's settings need ESLint 9.30 or later.",
+    });
+    const current = project({
+      "apps/web/tsconfig.json": strict,
+      "peer-ai.config.json": typed("mvp", ["typescript"]),
+      "eslint.config.mjs": peerAiEslint,
+      "node_modules/eslint/package.json": json({ name: "eslint", version: "9.39.5" }),
+    });
+    expect(checksFor(current, "enforcers").map((check) => check.status)).toEqual(["ok", "ok"]);
+  });
+
   it("checks each TypeScript part's tsconfig says what the compiler rules need", () => {
     const loose = project({
       "peer-ai.config.json": typed("mvp", ["typescript"]),
