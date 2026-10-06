@@ -88,6 +88,25 @@ export function ownFiles(root: string, defaultBranch?: string): string[] | undef
   return [...changed].sort();
 }
 
+/** The commit a branch name points at: the local branch, or the remote's copy of it as last fetched. */
+export function tipOf(root: string, branch: string): string | undefined {
+  for (const ref of [`refs/heads/${branch}`, `refs/remotes/origin/${branch}`]) {
+    const commit = git(root, ["rev-parse", "--verify", "-q", `${ref}^{commit}`])?.trim();
+    if (commit !== undefined && commit !== "") return commit;
+  }
+  return undefined;
+}
+
+/** The newest commit two commits share. */
+export function mergeBase(root: string, one: string, other: string): string | undefined {
+  const base = git(root, ["merge-base", one, other])?.trim();
+  return base === undefined || base === "" ? undefined : base;
+}
+
+/** Whether one commit is in another's history, or is the same commit. */
+export const isAncestor = (root: string, ancestor: string, commit: string): boolean =>
+  git(root, ["merge-base", "--is-ancestor", ancestor, commit]) !== undefined;
+
 /** The branch checked out, or undefined on a detached HEAD or outside a git repository. */
 export function currentBranch(root: string): string | undefined {
   const branch = git(root, ["symbolic-ref", "--short", "-q", "HEAD"])?.trim();
