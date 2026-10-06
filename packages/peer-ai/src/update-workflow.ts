@@ -25,7 +25,7 @@ export function updateWorkflow(version: string): string {
     'auth="$(printf "x-access-token:%s" "$GH_TOKEN" | base64 -w0)"',
     'git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push -q origin "$branch"',
     `body="Peer AI $latest is out, and this project uses ${version}. This pull request ran npx peer-ai@$latest render. What changed: https://github.com/${FEEDBACK_REPO}/releases"`,
-    'body="$body"$\'\\n\\n\'"Review it and merge it, then reconnect each AI tool to Peer AI."',
+    'body="$body"$\'\\n\\n\'"Review it and merge it, then reconnect each AI tool to Peer AI, or restart it, right away: until then, a tool still running the older version may refuse the newer config."',
     'if [ "$OWN_TOKEN" = "true" ]; then body="$body"$\'\\n\\n\'"CI doesn\'t start on a pull request opened with the workflow\'s own token: close and reopen this one to run the checks, or add a PEER_AI_UPDATE_TOKEN secret so the next one runs them by itself."; fi',
     'gh pr create --head "$branch" --title "Update Peer AI to $latest" --body "$body"',
   ];

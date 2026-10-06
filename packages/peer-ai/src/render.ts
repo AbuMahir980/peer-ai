@@ -769,6 +769,8 @@ export function runRender(options: RenderOptions, out: Output): number {
     return 0;
   }
   const committed = config.skills?.commit === true;
+  // The version the project was set up with before this render, to say when this moves it (#201).
+  const before = renderedVersion(options.cwd);
   if (!options.check) {
     for (const planned of plan.files)
       if (planned.action !== "refused" && planned.action !== "kept") write(options.cwd, planned);
@@ -803,5 +805,10 @@ export function runRender(options: RenderOptions, out: Output): number {
       "Done. Commit these files, so every clone and every tool gets them. The skills stay out of git: run peer-ai render after cloning.",
     );
   } else out.log("Done. Commit these files, so every clone and every tool gets them.");
+  if (!options.check && failures === 0 && before !== undefined && before !== VERSION) {
+    out.log(
+      `This moves the project from Peer AI ${before} to ${VERSION}. Right after it merges, reconnect each AI tool to Peer AI, or restart it: until then, a tool still running ${before} may refuse the newer config.`,
+    );
+  }
   return failures === 0 ? 0 : 1;
 }

@@ -46,7 +46,7 @@ CI runs the new version as soon as the change merges, but an AI tool's MCP serve
 
 1. **Let running agents finish, or pause them** at a commit.
 2. **Update and merge,** as above.
-3. **Reconnect each AI tool to Peer AI, or restart it,** so its server and skills come from the new version. An agent working on a branch of its own merges the main branch first, so its files name the new version too.
+3. **Reconnect each AI tool to Peer AI, or restart it, right after the update merges,** so its server and skills come from the new version. A tool still running the older version may not read a config written for the newer one; its tools then say to reconnect, naming the version. An agent working on a branch of its own merges the main branch first, so its files name the new version too.
 4. **Resume.** `next_work` tells any agent whose server is still on the old version, and `peer-ai doctor` says the same from a terminal ([RFC 0011](../../rfcs/0011-adopting-peer-ai-on-an-existing-codebase.md)).
 
 ## Commands

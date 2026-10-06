@@ -11,6 +11,7 @@ import { evaluate } from "./check.ts";
 import { loadConfig } from "./assess.ts";
 import { readHistory } from "./history.ts";
 import { createServer, findRoot } from "./mcp.ts";
+import { VERSION } from "./package-info.ts";
 import { cleanUp, project } from "./test-helpers.ts";
 
 const NOW = new Date("2026-10-02T09:15:00Z");
@@ -327,6 +328,18 @@ describe("the MCP server", () => {
 
     const invalid = await connect(shop({ version: 1, project: { name: "Shop" }, tracks: [] }));
     expect((await call(invalid, "project_map")).text).toMatch(/^peer-ai\.config\.json is not valid:\n- tracks/);
+
+    // A project moved to a newer Peer AI than this server: reconnect, not a broken config (#201).
+    const newer = shop({ ...CONFIG, tracks: [{ id: "web", kind: "web", path: "apps/web", status: "sunset" }] });
+    writeFileSync(
+      join(newer, ".mcp.json"),
+      json({ mcpServers: { "peer-ai": { args: ["-y", "peer-ai@99.0.0", "mcp"] } } }),
+    );
+    const moved = (await call(await connect(newer), "next_work")).text;
+    expect(moved).toContain(
+      `This project now uses Peer AI 99.0.0 (.mcp.json), and this AI tool is still connected to Peer AI ${VERSION}, which can't read its newer peer-ai.config.json. Ask the person to reconnect the AI tool to Peer AI, or restart it, to run 99.0.0.`,
+    );
+    expect(moved).toContain(`What ${VERSION} doesn't recognise:\n- tracks`);
 
     const client = await connect(shop());
     const wrongKind = await call(client, "create_work_item", { title: "Epic", kind: "epic" });

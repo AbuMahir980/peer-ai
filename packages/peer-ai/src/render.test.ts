@@ -175,6 +175,19 @@ describe("render", () => {
     expect(render(root, true).code).toBe(0);
   });
 
+  it("says to reconnect right after merging when it moves the project to this version (#201)", () => {
+    const root = project({ "peer-ai.config.json": config() });
+    expect(render(root).text).not.toContain("This moves the project");
+    writeFileSync(
+      join(root, ".mcp.json"),
+      json({ mcpServers: { "peer-ai": { args: ["-y", "peer-ai@0.9.0", "mcp"] } } }),
+    );
+    expect(render(root).text).toContain(
+      `This moves the project from Peer AI 0.9.0 to ${VERSION}. Right after it merges, reconnect each AI tool to Peer AI, or restart it: until then, a tool still running 0.9.0 may refuse the newer config.`,
+    );
+    expect(render(root).text).not.toContain("This moves the project");
+  });
+
   it("starts the server from the project's pinned copy when it has one", () => {
     expect(serverCommand(project())).toEqual(SERVER);
     const pinned = project({ "package.json": json({ devDependencies: { "peer-ai": "1.0.0" } }) });
