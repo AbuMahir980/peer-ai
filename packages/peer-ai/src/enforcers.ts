@@ -71,6 +71,42 @@ function eslintConfigFor(root: string, path: string | undefined): string | undef
   return undefined;
 }
 
+/** Whether Node loads a .js file in a folder as an ES module: its nearest package.json says "type": "module". */
+function esModuleFolder(root: string, folder: string): boolean {
+  for (const each of upFrom(folder)) {
+    const manifest = join(root, each, "package.json");
+    if (!existsSync(manifest)) continue;
+    try {
+      return (JSON.parse(readFileSync(manifest, "utf8")) as { type?: unknown }).type === "module";
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/** The ESLint version installed for a folder, from the nearest node_modules, or undefined. */
+function eslintVersion(root: string, folder: string): string | undefined {
+  for (const each of upFrom(folder)) {
+    const manifest = join(root, each, "node_modules", "eslint", "package.json");
+    if (!existsSync(manifest)) continue;
+    try {
+      const { version } = JSON.parse(readFileSync(manifest, "utf8")) as { version?: unknown };
+      return typeof version === "string" ? version : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/** Peer AI's ESLint settings set config objects' basePath, which ESLint has read since 9.30. */
+const OLDEST_ESLINT = [9, 30] as const;
+const tooOld = (version: string): boolean => {
+  const [major = 0, minor = 0] = version.split(".").map(Number);
+  return major < OLDEST_ESLINT[0] || (major === OLDEST_ESLINT[0] && minor < OLDEST_ESLINT[1]);
+};
+
 /** The folders from a part's folder up to the root, nearest first. */
 function upFrom(path: string | undefined): string[] {
   const folders: string[] = [];
@@ -208,18 +244,36 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
     byConfig.set(file, new Set([...(byConfig.get(file) ?? []), ...linted]));
   }
   const addIt = `import peerAi from "${ESLINT_PACKAGE}", and spread ...peerAi() into the settings it exports, before your own.`;
+  // Peer AI's settings are an ES module. A .js config is one only in a package of "type": "module";
+  // elsewhere import works, but Node warns on every lint run, so the fix renames it to .mjs.
+  const addTo = (file: string): string => {
+    const renamed = file.replace(/\.c?js$/, ".mjs");
+    if (renamed === file || (file.endsWith(".js") && esModuleFolder(root, dirname(file))))
+      return `In ${file}, ${addIt}`;
+    const why = file.endsWith(".cjs")
+      ? "and change module.exports to export default, since Peer AI's settings are an ES module"
+      : `since its package.json has no "type": "module", and import in a .js file there makes Node warn on every lint run`;
+    return `Rename ${file} to ${renamed}, ${why}. Then, in ${renamed}, ${addIt}`;
+  };
   for (const [file, ids] of byConfig) {
     const listed = list([...ids]);
     if (file === undefined) {
-      checks.push(
-        missing(`There's no ESLint config, so nothing enforces ${listed}.`, `Add eslint.config.js: ${addIt}`),
-      );
+      const name = esModuleFolder(root, ".") ? "eslint.config.js" : "eslint.config.mjs";
+      checks.push(missing(`There's no ESLint config, so nothing enforces ${listed}.`, `Add ${name}: ${addIt}`));
     } else if (!readFileSync(join(root, file), "utf8").includes(ESLINT_PACKAGE)) {
-      checks.push(
-        missing(`${file} doesn't use Peer AI's settings, so nothing enforces ${listed}.`, `In ${file}, ${addIt}`),
-      );
+      checks.push(missing(`${file} doesn't use Peer AI's settings, so nothing enforces ${listed}.`, addTo(file)));
     } else {
       checks.push(ok("enforcers", `${file} uses Peer AI's settings for ${plural(ids.size, "rule")}`));
+    }
+    const version = eslintVersion(root, file === undefined ? "." : dirname(file));
+    if (version !== undefined && tooOld(version)) {
+      checks.push(
+        missing(
+          `ESLint ${version} is installed${file === undefined ? "" : ` for ${file}`}, and Peer AI's settings need ESLint 9.30 or later.`,
+          "Update ESLint to the latest 9 or 10, such as npm install --save-dev eslint@9. An Expo app can stay on ESLint 9, which Expo's own lint settings still target.",
+          [...ids],
+        ),
+      );
     }
   }
 
