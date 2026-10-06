@@ -34,6 +34,7 @@ A stand-in for an outside service is fine for testing your own code's handling, 
 - **TEST-09:** a new check is seen failing before it's trusted.
 - **TEST-10 (production):** a skilled attacker tests the product before launch and every year. Plan it even when nobody is named yet, such as "planned: before launch, then every year, by an outside security tester", and ask who books it under Open questions.
 - **TEST-11 (production):** a parser the project writes itself is fuzz-tested.
+- **TEST-12:** the tests run the code through the same compiler, transforms and flags as the build that ships, such as the React Compiler. Where a test runner can't, say which end-to-end check of the built app covers the difference.
 - **PRIV-02:** test data is invented; no real person's details.
 - **DEL-04:** the tests run on every change, as required checks that block a merge.
 

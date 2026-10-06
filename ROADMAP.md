@@ -4,7 +4,7 @@ Peer AI 1.0 turns the v0 playbook into an open-source npm package that works wit
 
 It comes from running v0 end to end on real projects of different shapes: a local-first web app, a phone app rebuilt from an existing production system, and a static marketing site. The problems those runs found are logged in the [v0 feedback log](https://github.com/AbuMahir980/peer-ai/blob/v0.1.0/docs/peer-ai-feedback.md).
 
-**Where it stands:** the engine, the 29 skills and the 197 rules are built and tested. A pre-release is next, and 1.0 ships once Peer AI has been proven on real projects. See [Milestones](#milestones).
+**Where it stands:** the engine, the 29 skills and the 198 rules are built and tested. A pre-release is next, and 1.0 ships once Peer AI has been proven on real projects. See [Milestones](#milestones).
 
 ---
 
@@ -19,7 +19,7 @@ It comes from running v0 end to end on real projects of different shapes: a loca
 | Updates | A manual three-way merge; a copy can fall months behind without anyone noticing | A version-bump pull request, and `peer-ai doctor` warns when the setup falls behind |
 | How the agent gets it | Several thousand tokens of rules on every turn | An MCP server hands over the next step and only the rules for the file in hand |
 | Skills | Four checklist prompts | 29 skills, each with a procedure, rule ids, evidence and a coverage report |
-| Standards | Prose rules with web-first defaults | 197 rules, stack profiles enforced by real tools, and a project's own rules |
+| Standards | Prose rules with web-first defaults | 198 rules, stack profiles enforced by real tools, and a project's own rules |
 | Scope | Frontend and backend | 18 domains, from requirements to operations and AI features, plus rules for products that handle money or safety-critical data |
 | Enforcement | Written rules | JSON schemas, recorded proof, and `peer-ai check` in CI |
 | Testing Peer AI itself | Defects surface when a new project hits them | Every skill tested on practice projects with planted problems, with the results published |
@@ -61,7 +61,7 @@ Skills from other tools can run alongside as add-ons, but the workflow never dep
 
 | Layer | Holds |
 |-------|-------|
-| Core rules | 197 language-agnostic rules, each with an id, a reason, the stage it applies from, how it's checked and how serious a break is |
+| Core rules | 198 language-agnostic rules, each with an id, a reason, the stage it applies from, how it's checked and how serious a break is |
 | Stack profiles | The rules in one stack's idioms, each automatic rule with the tool that enforces it |
 | The project's own rules | What only one project needs, and any rule it set aside or changed, with a reason |
 
@@ -79,7 +79,7 @@ The stack profiles so far are TypeScript, Node, React, React Native, Next.js, Ex
 |---|-----------|-------------|--------|
 | 1 | **Foundations**: monorepo, CI, config and state schemas, RFC process | Every real customisation seen so far can be written as config, with nothing lost | Done |
 | 2 | **Engine**: the CLI (`init`, `assess`, `render`, `doctor`, `check`) and the MCP server | A practice project takes a work item end to end on two different AI tools with one config | Done |
-| 3 | **Skills and standards**: 29 skills, 197 rules, 11 stack profiles, evals on practice projects | Every skill finds every planted critical and high problem in its eval, with no invented findings | Done, with one known limit: `code-review` on a whole project misses a few different problems each run ([evals](evals/README.md)). Reviews in small passes, planned by importance, are next. |
+| 3 | **Skills and standards**: 29 skills, 198 rules, 11 stack profiles, evals on practice projects | Every skill finds every planted critical and high problem in its eval, with no invented findings | Done, with one known limit: `code-review` on a whole project misses a few different problems each run ([evals](evals/README.md)). Reviews in small passes, planned by importance, are next. |
 | 4 | **Real projects**: a pre-release on npm, `peer-ai migrate` for projects running v0 | Each project runs on the package with no `peer-ai/` folder, and a version bump lands as a one-line pull request | In progress |
 | 5 | **Public 1.0**: docs, quickstart, examples, a demo, the npm release | Peer AI is proven on real projects, and every problem they report is fixed or planned | Next |
 

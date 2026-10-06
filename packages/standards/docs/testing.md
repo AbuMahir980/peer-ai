@@ -133,3 +133,15 @@ Code the project writes itself to read files or formats from outside, such as an
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | Medium | Always | – |
+
+## TEST-12 · Tests run the code the build ships
+
+Unit and component tests run the code through the same compiler, transforms and flags as the build that ships, such as the React Compiler or a Babel plugin. Where a test runner can't, an end-to-end check of the built app covers the difference, and the test strategy says so.
+
+**Why:** Tests that run different code from the shipped build pass while the product breaks. A compiler that changes how code runs, such as one that memoises, is exactly where they differ.
+
+**Ask:** Does the test setup apply every compiler and transform the build does?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | High | Always | – |

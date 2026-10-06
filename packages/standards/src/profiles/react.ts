@@ -192,5 +192,24 @@ export const react: ProfileInput = {
       severity: "medium",
       carries: "PERF-06",
     },
+    {
+      id: "REACT-11",
+      title: "A hook is called by its own name, never passed around as a value",
+      rule: "A hook is called directly, by a name that starts with use. It's never passed as an argument or a prop, stored in a variable or an object, or called through another name.",
+      why: "React, and the React Compiler, know a hook by its name. A hook called through another name may be memoised or skipped, which shifts the order of hooks and breaks the component on a later render.",
+      ask: "Is any hook in this change passed, stored or called by a name that doesn't start with use?",
+      stage: "prototype",
+      check: "auto",
+      severity: "high",
+      carries: "CODE-16",
+      enforcer: { tool: "eslint", rule: "react-hooks/hooks" },
+      examples: {
+        file: "example.tsx",
+        fails:
+          'import { useState } from "react";\nfunction useBay(): string {\n  const [bay] = useState("Bay 1");\n  return bay;\n}\nfunction useLatest(read: () => string): string {\n  return read();\n}\nexport function Booking() {\n  const bay = useLatest(useBay);\n  return <p>{bay}</p>;\n}\n',
+        passes:
+          'import { useState } from "react";\nfunction useBay(): string {\n  const [bay] = useState("Bay 1");\n  return bay;\n}\nexport function Booking() {\n  const bay = useBay();\n  return <p>{bay}</p>;\n}\n',
+      },
+    },
   ],
 };
