@@ -125,3 +125,15 @@ An effect that starts something, such as a timer, a subscription or a request, r
 | Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
 |--------------|------------|----------|---------|---------------|-------------|
 | MVP | AI review | Medium | [PERF-06](../performance.md) | Any | – |
+
+## REACT-11 · A hook is called by its own name, never passed around as a value
+
+A hook is called directly, by a name that starts with use. It's never passed as an argument or a prop, stored in a variable or an object, or called through another name.
+
+**Why:** React, and the React Compiler, know a hook by its name. A hook called through another name may be memoised or skipped, which shifts the order of hooks and breaks the component on a later render.
+
+**Ask:** Is any hook in this change passed, stored or called by a name that doesn't start with use?
+
+| Applies from | Checked by | Severity | Carries | Architectures | Enforced by |
+|--------------|------------|----------|---------|---------------|-------------|
+| Prototype | A tool | High | [CODE-16](../code-quality.md) | Any | `react-hooks/hooks`, in ESLint |

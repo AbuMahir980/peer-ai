@@ -23,7 +23,7 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Reliability](reliability.md) | 9 |
 | [Security](security.md) | 30 |
 | [Privacy and compliance](privacy-compliance.md) | 6 |
-| [Testing](testing.md) | 11 |
+| [Testing](testing.md) | 12 |
 | [Delivery](delivery.md) | 12 |
 | [Infrastructure and operations](operations.md) | 15 |
 | [AI features](ai-features.md) | 8 |
@@ -39,7 +39,7 @@ A stack profile says how to follow the core rules in one stack, and which tool e
 |---------|----|-----------|-------|
 | [TypeScript](profiles/typescript.md) | `typescript` | – | 10 |
 | [Node](profiles/node.md) | `node` | typescript | 5 |
-| [React](profiles/react.md) | `react` | typescript | 10 |
+| [React](profiles/react.md) | `react` | typescript | 11 |
 | [React Native](profiles/react-native.md) | `react-native` | react | 9 |
 | [Next.js](profiles/next.md) | `next` | react, node | 5 |
 | [Express](profiles/express.md) | `express` | node | 7 |

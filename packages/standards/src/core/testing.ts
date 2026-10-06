@@ -124,4 +124,15 @@ export const testing = [
     check: "ai-review",
     severity: "medium",
   },
+  {
+    id: "TEST-12",
+    domain: "testing",
+    title: "Tests run the code the build ships",
+    rule: "Unit and component tests run the code through the same compiler, transforms and flags as the build that ships, such as the React Compiler or a Babel plugin. Where a test runner can't, an end-to-end check of the built app covers the difference, and the test strategy says so.",
+    why: "Tests that run different code from the shipped build pass while the product breaks. A compiler that changes how code runs, such as one that memoises, is exactly where they differ.",
+    ask: "Does the test setup apply every compiler and transform the build does?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "high",
+  },
 ] satisfies RuleInput[];

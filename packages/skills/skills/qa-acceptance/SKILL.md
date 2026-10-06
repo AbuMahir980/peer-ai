@@ -5,7 +5,7 @@ license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
   peer-ai-kind: review
-  peer-ai-rules: REQ-02 REQ-04 REQ-05 TEST-01 TEST-02 TEST-03 TEST-04 TEST-08 TEST-09 CODE-15
+  peer-ai-rules: REQ-02 REQ-04 REQ-05 TEST-01 TEST-02 TEST-03 TEST-04 TEST-08 TEST-09 TEST-12 CODE-15
 ---
 
 # QA acceptance

@@ -38,3 +38,16 @@ CODE-01 to CODE-15. Size and nesting limits come from the stack profile, through
   - zero and negative numbers.
 
   Record a coverage line for each unit you tried, naming the edges it passed or failed, such as "function:slotsFor: a slot at midnight in the shop's time zone, and an empty day".
+
+## The framework's own rules
+
+- **CODE-16:** where a framework needs code written a certain way to work, that way is followed. A stack profile's rule says how for its framework, and names the tool that checks it, such as REACT-01 and REACT-11 for React's hooks. A tool's check doesn't end the review: read for what the tool can't see, and only count the tool as evidence when `standards_for_file` shows it runs for the file.
+
+  For React's hooks, the linter sees a hook passed as an argument. Read for the rest, each a fail of REACT-11:
+
+  - a hook renamed, such as `const bay = useBay` at the top of a module, then `bay()`;
+  - a hook passed in as a prop, such as `<Booking read={useBay} />`;
+  - a hook kept in an object or a context value, then called from it;
+  - a store's hook called through a wrapper whose name doesn't start with `use`.
+
+  With the React Compiler on, each breaks the component on a later render. Without it, each is still a fail at the same severity, since switching the compiler on is one setting away.

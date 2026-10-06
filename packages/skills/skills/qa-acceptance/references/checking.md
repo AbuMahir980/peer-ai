@@ -8,6 +8,7 @@ Examples are from a made-up bicycle repair booking service.
 - Its edges: CODE-15
 - Refusals and whose data: TEST-08
 - Tests that can't fail: TEST-04, TEST-09
+- Tests that run other code: TEST-12
 - Scope: REQ-04
 - Criteria and bug fixes: REQ-02, TEST-01
 
@@ -37,6 +38,10 @@ For each criterion, try its edges against the code: zero, empty, one, the larges
 - Its values would pass whatever the code does.
 - It replaces the very thing the criterion is about with a stand-in, so the criterion is never exercised.
 - It checks how the code works rather than what it does, so it would break on a harmless change and pass a wrong one.
+
+## Tests that run other code: TEST-12
+
+When the item adds or changes a compiler, a transform or a build flag, such as switching on the React Compiler, check the tests run through it too: compare the build's settings with the test runner's. A test that passes on code the app never ships proves nothing about the app. Where the runner can't apply it, an end-to-end check of the built app must cover the difference, or it's a finding. For an item that changes none of these, the line is `not-applicable`.
 
 ## Scope: REQ-04
 

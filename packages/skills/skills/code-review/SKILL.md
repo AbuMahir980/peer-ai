@@ -6,7 +6,7 @@ compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and N
 metadata:
   peer-ai-kind: review
   peer-ai-domains: code-quality architecture frontend backend system-design money safety-critical
-  peer-ai-rules: SEC-01 SEC-05 SEC-07 SEC-08 SEC-10 SEC-15 PRIV-01 API-02 AI-01 DATA-03 REL-01 REL-09 PERF-01 PERF-05 PERF-06 API-06 TEST-01 TEST-04 TEST-07
+  peer-ai-rules: SEC-01 SEC-05 SEC-07 SEC-08 SEC-10 SEC-15 PRIV-01 API-02 AI-01 DATA-03 REL-01 REL-09 PERF-01 PERF-05 PERF-06 API-06 TEST-01 TEST-04 TEST-07 TEST-12
 ---
 
 # Code review
@@ -66,8 +66,8 @@ Work through each group. Its reference says what to look for, what counts as evi
 | REL-01, REL-09, BE-02, PERF-01, PERF-05, PERF-06: outside calls, updates, load and leaks | [performance-and-reliability.md](references/performance-and-reliability.md) |
 | FE-01 to FE-09: screens and their data | [frontend.md](references/frontend.md) |
 | ARC-01 to ARC-08: where code lives | [architecture.md](references/architecture.md) |
-| CODE-01 to CODE-15: code people can change safely, and edge cases | [code-quality.md](references/code-quality.md) |
-| TEST-01, TEST-04, TEST-07: tests | [testing.md](references/testing.md) |
+| CODE-01 to CODE-16: code people can change safely, edge cases, and the framework's own rules | [code-quality.md](references/code-quality.md) |
+| TEST-01, TEST-04, TEST-07, TEST-12: tests | [testing.md](references/testing.md) |
 | MONEY-01 to MONEY-12, SAFE-01 to SAFE-06: money and safety-critical data | [money-and-safety.md](references/money-and-safety.md) |
 | SEC-01, SEC-05, SEC-07, SEC-08, SEC-10, SEC-15, PRIV-01, API-02, AI-01: serious problems, on every route, call and page | [serious-problems.md](references/serious-problems.md) |
 

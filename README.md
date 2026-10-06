@@ -105,7 +105,7 @@ On six other reviews the model did as well on its own: infrastructure, reliabili
 
 ## Rules and standards
 
-Peer AI's standards are **197 rules**, each with an id such as `SEC-07`, a plain statement, why it matters, the stage it applies from, how it's checked, and how serious a break is. Security rules cite the published standard they come from: OWASP ASVS 5.0 for web apps and APIs, OWASP MASVS for phone apps, WCAG 2.2 for accessibility, and the OWASP Top 10 for LLM applications for AI features.
+Peer AI's standards are **198 rules**, each with an id such as `SEC-07`, a plain statement, why it matters, the stage it applies from, how it's checked, and how serious a break is. Security rules cite the published standard they come from: OWASP ASVS 5.0 for web apps and APIs, OWASP MASVS for phone apps, WCAG 2.2 for accessibility, and the OWASP Top 10 for LLM applications for AI features.
 
 | Area | Rules | | Area | Rules |
 |------|------:|-|------|------:|
@@ -260,7 +260,7 @@ You rarely name a skill yourself. Peer AI picks the skill for each gap, and work
 |--------|---------------|
 | [`packages/peer-ai`](packages/peer-ai) | The `peer-ai` command and the MCP server: what people install |
 | [`packages/workflow`](packages/workflow) | Shared definitions: the config format, work items, review reports and their schemas |
-| [`packages/standards`](packages/standards) | The 197 rules and the stack profiles, as data, with a page for each area |
+| [`packages/standards`](packages/standards) | The 198 rules and the stack profiles, as data, with a page for each area |
 | [`packages/skills`](packages/skills) | The 29 skills, and the code that builds and validates them |
 | [`packages/eslint-config`](packages/eslint-config) | ESLint settings that enforce a project's stack profiles |
 | [`fixtures`](fixtures) | Practice projects with problems planted on purpose, used to test the skills |
