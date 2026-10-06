@@ -46,12 +46,19 @@ A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP 
 
 | `status` | Needs |
 |----------|-------|
-| `pass` | `evidence`: what was checked and where, such as "orders.ts:43 takes the owner from the session" |
+| `pass` | `evidence`: what was checked and where, such as "orders.ts:43 takes the owner from the session". For an automatic rule, `checkedBy` too (below) |
 | `fail` | `finding`: the id of the finding |
 | `not-applicable` | `reason`, such as "No upload in this change" |
 | `not-checked` | `reason`, such as "Logging is configured in another repository" |
 
 Silence is never an answer: a rule left out of coverage makes the report invalid.
+
+**An automatic rule says how it was checked** (RFC 0019). For a pass of a rule a tool checks, set `checkedBy`:
+
+- `tool` when its tool enforces the rule for the files in scope, and the tool's run is the evidence. `standards_for_file` says so: the rule has `enforced: true`.
+- `reading` when you checked it by reading the code, including wherever `standards_for_file` gives the rule `enforced: false`, with why in `notEnforced`.
+
+Left out, it counts as `reading`. Peer AI refuses `tool` where the tool doesn't enforce the rule, and the result says how many automatic rules were checked by reading only. Check those with extra care: nothing else will catch them.
 
 ## A light review
 

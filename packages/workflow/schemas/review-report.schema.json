@@ -178,6 +178,14 @@
             "description": "For not-applicable or not-checked: why.",
             "type": "string",
             "minLength": 1
+          },
+          "checkedBy": {
+            "description": "For a pass of an automatic rule: whether its tool checked it, or it was checked by reading the code. Reading when left out (RFC 0019).",
+            "type": "string",
+            "enum": [
+              "tool",
+              "reading"
+            ]
           }
         },
         "required": [

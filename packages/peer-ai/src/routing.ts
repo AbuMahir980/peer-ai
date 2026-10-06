@@ -244,7 +244,7 @@ export function reviewsToDo(item: WorkItem): {
       done: found !== undefined || waived.has(review.skill),
       ...(waived.has(review.skill) ? { waived: true as const } : {}),
       // A done review says what it left open, so a pass is never read as all clear (RFC 0015).
-      ...(found === undefined ? {} : { result: describeResult(found.result, found.open) }),
+      ...(found === undefined ? {} : { result: describeResult(found.result, found.open, found.readOnly) }),
     };
   });
 }

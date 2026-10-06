@@ -41,7 +41,7 @@ CODE-01 to CODE-15. Size and nesting limits come from the stack profile, through
 
 ## The framework's own rules
 
-- **CODE-16:** where a framework needs code written a certain way to work, that way is followed. A stack profile's rule says how for its framework, and names the tool that checks it, such as REACT-01 and REACT-11 for React's hooks. A tool's check doesn't end the review: read for what the tool can't see, and only count the tool as evidence when `standards_for_file` shows it runs for the file.
+- **CODE-16:** where a framework needs code written a certain way to work, that way is followed. A stack profile's rule says how for its framework, and names the tool that checks it, such as REACT-01 and REACT-11 for React's hooks. A tool's check doesn't end the review: read for what the tool can't see, and count the tool as evidence, with `checkedBy: tool`, only when `standards_for_file` gives the rule `enforced: true` for the file.
 
   For React's hooks, the linter sees a hook passed as an argument. Read for the rest, each a fail of REACT-11:
 

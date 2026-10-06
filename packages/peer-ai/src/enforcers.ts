@@ -221,8 +221,49 @@ function tsconfigsFor(root: string, path: string, option: string): string[] {
   return option in options || references.length === 0 ? [path] : references;
 }
 
+/** An automatic rule Peer AI's tools don't enforce for a part, or for the whole project, and why (RFC 0019). */
+export interface Unenforced {
+  /** The part, or none for a rule of the whole project, such as the pipeline's. */
+  track?: string;
+  rule: string;
+  why: string;
+}
+
 /** Each enforcing tool is set up to use Peer AI's settings. */
 export function checkEnforcers(root: string, config: PeerAiConfig, today: Date = new Date()): Check[] {
+  return enforcerFindings(root, config, today).checks;
+}
+
+/** The automatic rules Peer AI's tools don't enforce, by part, as doctor finds them (RFC 0019). */
+export function unenforcedRules(root: string, config: PeerAiConfig, today: Date = new Date()): Unenforced[] {
+  return enforcerFindings(root, config, today).unenforced;
+}
+
+/** Why Peer AI's tools don't enforce a rule for a part, or undefined when they do. */
+export function whyUnenforced(
+  gaps: readonly Unenforced[],
+  rule: string,
+  track: string | undefined,
+): string | undefined {
+  return gaps.find((gap) => gap.rule === rule && (gap.track === undefined || gap.track === track))?.why;
+}
+
+interface Pair {
+  track?: string;
+  rule: string;
+}
+const pairsOf = (track: string | undefined, rules: readonly AppliedRule[]): Pair[] =>
+  rules.map((rule) => ({ ...(track === undefined ? {} : { track }), rule: rule.id }));
+
+function enforcerFindings(
+  root: string,
+  config: PeerAiConfig,
+  today: Date,
+): { checks: Check[]; unenforced: Unenforced[] } {
+  const unenforced: Unenforced[] = [];
+  const gap = (pairs: readonly Pair[], why: string) => {
+    for (const pair of pairs) unenforced.push({ ...pair, why });
+  };
   const production = config.project.stage === "production";
   const enforcement = enforcementFor(root, config, today);
   // A gap fails only where enforcement blocks: at production, outside the report stage, and for a
@@ -237,11 +278,13 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
   // Each part is linted by its nearest ESLint config, so each config is checked for the rules of
   // the parts it covers.
   const byConfig = new Map<string | undefined, Set<string>>();
+  const lintedPairs = new Map<string | undefined, Pair[]>();
   for (const { track, rules } of parts) {
-    const linted = rules.filter((rule) => rule.enforcer?.tool === "eslint").map((rule) => rule.id);
+    const linted = rules.filter((rule) => rule.enforcer?.tool === "eslint");
     if (linted.length === 0) continue;
     const file = eslintConfigFor(root, track.path);
-    byConfig.set(file, new Set([...(byConfig.get(file) ?? []), ...linted]));
+    byConfig.set(file, new Set([...(byConfig.get(file) ?? []), ...linted.map((rule) => rule.id)]));
+    lintedPairs.set(file, [...(lintedPairs.get(file) ?? []), ...pairsOf(track.id, linted)]);
   }
   const addIt = `import peerAi from "${ESLINT_PACKAGE}", and spread ...peerAi() into the settings it exports, before your own.`;
   // Peer AI's settings are an ES module. A .js config is one only in a package of "type": "module";
@@ -257,16 +300,20 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
   };
   for (const [file, ids] of byConfig) {
     const listed = list([...ids]);
+    const pairs = lintedPairs.get(file) ?? [];
     if (file === undefined) {
       const name = esModuleFolder(root, ".") ? "eslint.config.js" : "eslint.config.mjs";
       checks.push(missing(`There's no ESLint config, so nothing enforces ${listed}.`, `Add ${name}: ${addIt}`));
+      gap(pairs, "There's no ESLint config.");
     } else if (!readFileSync(join(root, file), "utf8").includes(ESLINT_PACKAGE)) {
       checks.push(missing(`${file} doesn't use Peer AI's settings, so nothing enforces ${listed}.`, addTo(file)));
+      gap(pairs, `${file} doesn't use Peer AI's ESLint settings.`);
     } else {
       checks.push(ok("enforcers", `${file} uses Peer AI's settings for ${plural(ids.size, "rule")}`));
     }
     const version = eslintVersion(root, file === undefined ? "." : dirname(file));
     if (version !== undefined && tooOld(version)) {
+      gap(pairs, `ESLint ${version} is older than Peer AI's settings need.`);
       checks.push(
         missing(
           `ESLint ${version} is installed${file === undefined ? "" : ` for ${file}`}, and Peer AI's settings need ESLint 9.30 or later.`,
@@ -279,15 +326,16 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
 
   // Each Python part is linted by its nearest Ruff settings, which must reach the file render
   // writes through extend, without a select that replaces its rules or an ignore that drops them.
-  const byRuffConfig = new Map<string, { file?: string; folder: string; rules: AppliedRule[] }>();
+  const byRuffConfig = new Map<string, { file?: string; folder: string; rules: AppliedRule[]; pairs: Pair[] }>();
   for (const { track, rules } of parts) {
     const ruffRules = rules.filter((rule) => rule.enforcer?.tool === "ruff");
     if (ruffRules.length === 0) continue;
     const file = ruffConfigFor(root, track.path);
     const folder = track.path ?? ".";
     const key = file ?? `none:${folder}`;
-    const entry = byRuffConfig.get(key) ?? { ...(file === undefined ? {} : { file }), folder, rules: [] };
+    const entry = byRuffConfig.get(key) ?? { ...(file === undefined ? {} : { file }), folder, rules: [], pairs: [] };
     for (const rule of ruffRules) if (!entry.rules.some((known) => known.id === rule.id)) entry.rules.push(rule);
+    entry.pairs.push(...pairsOf(track.id, ruffRules));
     byRuffConfig.set(key, entry);
   }
   if (byRuffConfig.size > 0) {
@@ -296,14 +344,19 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
       checks.push(
         missing(`${RUFF_FILE} isn't there, so Ruff has no Peer AI settings to extend.`, "Run peer-ai render."),
       );
+      gap(
+        [...byRuffConfig.values()].flatMap((entry) => entry.pairs),
+        `${RUFF_FILE} isn't there.`,
+      );
     } else if (current !== ruffFile(config, enforcement)) {
       checks.push(missing(`${RUFF_FILE} is out of date with the config.`, "Run peer-ai render."));
     }
   }
   const extendLine = (from: string) => `extend = "${posix.relative(from, RUFF_FILE)}"`;
-  for (const { file, folder, rules } of byRuffConfig.values()) {
+  for (const { file, folder, rules, pairs } of byRuffConfig.values()) {
     const listed = list(rules.map((rule) => rule.id));
     if (file === undefined) {
+      gap(pairs, `There are no Ruff settings for ${folder}.`);
       checks.push(
         missing(
           `There are no Ruff settings for ${folder}, so nothing enforces ${listed}.`,
@@ -315,12 +368,14 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
     const chain = ruffChain(root, file);
     const unreadable = chain.files.find((_, i) => i < chain.settings.length && chain.settings[i] === undefined);
     if (unreadable !== undefined) {
+      gap(pairs, `${unreadable} can't be read as Ruff settings.`);
       checks.push(
         missing(`${unreadable} can't be read as Ruff settings, so Ruff won't run.`, `Fix the TOML in ${unreadable}.`),
       );
       continue;
     }
     if (!chain.files.includes(RUFF_FILE)) {
+      gap(pairs, `${file} doesn't extend Peer AI's Ruff settings.`);
       const last = chain.files.at(-1) ?? file;
       const table = last.endsWith("pyproject.toml") ? ", under [tool.ruff]," : "";
       const where =
@@ -338,6 +393,7 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
     const before = chain.settings.filter((read): read is RuffSettings => read !== undefined);
     const selecting = chain.files.filter((_, i) => before[i]?.select === true);
     if (selecting.length > 0) {
+      gap(pairs, `${list(selecting)} replaces Peer AI's Ruff rules with select.`);
       checks.push(
         missing(
           `${list(selecting)} ${selecting.length === 1 ? "sets" : "set"} select, which replaces Peer AI's Ruff rules instead of adding to them, so nothing enforces ${listed}.`,
@@ -352,6 +408,10 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
       return ignored.some((entry) => entry === "ALL" || code.startsWith(entry));
     });
     if (dropped.length > 0) {
+      gap(
+        pairs.filter((pair) => dropped.some((rule) => rule.id === pair.rule)),
+        `${file}'s Ruff settings ignore its code.`,
+      );
       checks.push(
         missing(
           `${file}'s Ruff settings ignore the codes of ${list(dropped.map((rule) => rule.id))}, which switches them off without a recorded reason.`,
@@ -381,6 +441,13 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
     const ids = list(pipeline.filter((rule) => rule.check === "auto").map((rule) => rule.id));
     if (existing === undefined) {
       checks.push(missing(`${WORKFLOW_FILE} isn't there, so the pipeline doesn't run ${ids}.`, "Run peer-ai render."));
+      gap(
+        pairsOf(
+          undefined,
+          pipeline.filter((rule) => rule.check === "auto"),
+        ),
+        `${WORKFLOW_FILE} isn't there.`,
+      );
     } else if (unchangedSinceRender(existing)) {
       if (sameFile(existing, expected)) checks.push(ok("enforcers", `${WORKFLOW_FILE} runs ${ids}`));
       else checks.push(missing(`${WORKFLOW_FILE} is out of date with the config.`, "Run peer-ai render."));
@@ -420,6 +487,7 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
       .map((folder) => (folder === undefined ? "tsconfig.json" : join(folder, "tsconfig.json")))
       .find((candidate) => existsSync(join(root, candidate)));
     if (path === undefined) {
+      gap(pairsOf(track.id, compiled), `${track.id} has no tsconfig.json.`);
       checks.push(
         missing(
           `${track.id} has no tsconfig.json, so the compiler doesn't enforce ${list(compiled.map((r) => r.id))}.`,
@@ -438,6 +506,7 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
           checks.push(ok("enforcers", `${file} sets ${option} to ${wanted} (${rule.id})`));
           continue;
         }
+        gap(pairsOf(track.id, [rule]), `${file} doesn't set "${option}" to ${wanted}.`);
         checks.push(
           missing(
             set === undefined
@@ -451,7 +520,22 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
     }
   }
   checks.push(...adoptionChecks(config, enforcement, parts, today));
-  return checks;
+  // A rule that only reports for now runs, but can't fail a build, so it isn't enforced (RFC 0011).
+  for (const [track, rules] of [
+    ...parts.map(({ track, rules }) => [track.id, rules] as const),
+    [undefined, pipeline] as const,
+  ]) {
+    for (const rule of rules) {
+      if (rule.check !== "auto" || rule.enforcer === undefined || !reportsOnly(enforcement.adoption, rule.id)) continue;
+      gap(
+        pairsOf(track, [rule]),
+        enforcement.adoption.report
+          ? "Enforcement only reports for now (standards.enforcement is report)."
+          : `${rule.id} is deferred, so it only reports for now.`,
+      );
+    }
+  }
+  return { checks, unenforced };
 }
 
 const DAY = 24 * 60 * 60 * 1000;

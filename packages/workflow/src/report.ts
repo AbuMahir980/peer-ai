@@ -42,6 +42,12 @@ const Coverage = z
     evidence: Text.optional().describe("For a pass: what was checked, and where."),
     finding: Text.optional().describe("For a fail: the id of the problem found."),
     reason: Text.optional().describe("For not-applicable or not-checked: why."),
+    checkedBy: z
+      .enum(["tool", "reading"])
+      .optional()
+      .describe(
+        "For a pass of an automatic rule: whether its tool checked it, or it was checked by reading the code. Reading when left out (RFC 0019).",
+      ),
   })
   .superRefine((entry, ctx) => {
     const need = (field: "evidence" | "finding" | "reason", why: string) => {
@@ -200,13 +206,19 @@ export function openCounts(report: ReviewReport): OpenCounts {
   return counts;
 }
 
-/** A result with what it leaves open, the most serious first: "pass, 7 high and 3 medium open". */
-export function describeResult(result: ReviewResult, open: OpenCounts | undefined): string {
+/**
+ * A result with what it leaves open, the most serious first, and the automatic rules it only read
+ * (RFC 0019): "pass, 7 high and 3 medium open, 2 automatic rules checked by reading only".
+ */
+export function describeResult(result: ReviewResult, open: OpenCounts | undefined, readOnly = 0): string {
   const parts = SEVERITIES.flatMap((severity) => {
     const count = open?.[severity] ?? 0;
     return count === 0 ? [] : [`${String(count)} ${severity}`];
   });
-  if (parts.length === 0) return result;
-  const listed = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1) ?? ""}`;
-  return `${result}, ${listed ?? ""} open`;
+  const listed = parts.length <= 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1) ?? ""}`;
+  const read =
+    readOnly === 0
+      ? []
+      : [`${String(readOnly)} automatic ${readOnly === 1 ? "rule" : "rules"} checked by reading only`];
+  return [result, ...(listed === undefined ? [] : [`${listed} open`]), ...read].join(", ");
 }
