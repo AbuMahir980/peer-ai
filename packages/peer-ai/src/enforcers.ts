@@ -450,27 +450,49 @@ export function checkEnforcers(root: string, config: PeerAiConfig, today: Date =
       }
     }
   }
-  checks.push(...adoptionChecks(config, enforcement, parts.length > 0, today));
+  checks.push(...adoptionChecks(config, enforcement, parts, today));
   return checks;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
+ * What the report stage means for each tool, since following doctor's fixes clears its warnings
+ * while nothing can fail (#204), and the staged route for making some checks block meanwhile.
+ */
+function reportingOnly(parts: ReturnType<typeof automaticRules>): string {
+  const count = (tool: string) =>
+    new Set(parts.flatMap(({ rules }) => rules.filter((rule) => rule.enforcer?.tool === tool).map((rule) => rule.id)))
+      .size;
+  const [eslint, ruff, workflow] = [count("eslint"), count("ruff"), count("github-actions")];
+  const what = [
+    ...(eslint === 0 ? [] : [`its ${plural(eslint, "ESLint rule")} ${eslint === 1 ? "is a warning" : "are warnings"}`]),
+    ...(ruff === 0
+      ? []
+      : [
+          `its ${plural(ruff, "Ruff rule")} ${ruff === 1 ? "is" : "are"} left out of ${RUFF_FILE}, since Ruff has no warnings`,
+        ]),
+    ...(workflow === 0 ? [] : [`the security workflow's ${plural(workflow, "check")} report without failing`]),
+  ];
+  const how = what.length === 0 ? "" : `: ${what.join("; ")}`;
+  return `Enforcement reports only (standards.enforcement is report), so nothing Peer AI's tools find fails a build${how}. To make some block while the rest keep reporting, set "enforcement": "enforce", and list the rules that aren't ready in standards.deferred, each with a reason, who decided, and the work item that ends it (untilItem).`;
+}
+
+/**
  * Where the project stands in adopting enforcement (RFC 0011): its stage, each rule deferred and
  * when that ends, each deferral that has ended, and the rules its own tools cover.
  */
-function adoptionChecks(config: PeerAiConfig, enforcement: Enforcement, enforcing: boolean, today: Date): Check[] {
+function adoptionChecks(
+  config: PeerAiConfig,
+  enforcement: Enforcement,
+  parts: ReturnType<typeof automaticRules>,
+  today: Date,
+): Check[] {
   const { adoption, runByProject } = enforcement;
   const checks: Check[] = [];
   if (adoption.report) {
-    checks.push(
-      skip(
-        "enforcers",
-        "Enforcement reports only (standards.enforcement is report): the tools run, and nothing they find fails a build.",
-      ),
-    );
-  } else if (enforcing && config.standards?.enforcement === undefined && config.project.origin === "existing") {
+    checks.push(skip("enforcers", reportingOnly(parts)));
+  } else if (parts.length > 0 && config.standards?.enforcement === undefined && config.project.origin === "existing") {
     checks.push(
       warn(
         "enforcers",

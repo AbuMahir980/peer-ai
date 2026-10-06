@@ -183,7 +183,7 @@ describe("where a project stands (RFC 0011)", () => {
       id: "enforcers",
       status: "skip",
       message:
-        "Enforcement reports only (standards.enforcement is report): the tools run, and nothing they find fails a build.",
+        'Enforcement reports only (standards.enforcement is report), so nothing Peer AI\'s tools find fails a build: its 12 Ruff rules are left out of .peer-ai/enforce/ruff.toml, since Ruff has no warnings; the security workflow\'s 5 checks report without failing. To make some block while the rest keep reporting, set "enforcement": "enforce", and list the rules that aren\'t ready in standards.deferred, each with a reason, who decided, and the work item that ends it (untilItem).',
     });
     expect(reported).toContainEqual(
       expect.objectContaining({
