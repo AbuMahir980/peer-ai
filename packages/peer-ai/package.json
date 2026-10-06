@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
-    "@modelcontextprotocol/sdk": "1.30.1",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "peer-ai-skills": "workspace:*",
     "peer-ai-standards": "workspace:*",
     "peer-ai-workflow": "workspace:*",
@@ -22,7 +22,7 @@
     "node": ">=24"
   },
   "devDependencies": {
-    "@astral-sh/ruff-wasm-nodejs": "0.16.9"
+    "@astral-sh/ruff-wasm-nodejs": "0.16.10"
   },
   "files": [
     "dist",
