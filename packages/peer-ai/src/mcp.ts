@@ -21,6 +21,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import { checkDocumentOn } from "./document.ts";
 import { draftFeedback } from "./feedback.ts";
 import { VERSION } from "./package-info.ts";
+import { compareVersions, pinnedVersion } from "./versions.ts";
 import { reviewSizes } from "./review-cost.ts";
 import { standardsFor } from "./standards.ts";
 import { mapChanges, readMap } from "./state.ts";
@@ -96,11 +97,19 @@ export function createServer(options: ServerOptions): McpServer {
       const root = findRoot(options.cwd);
       const { config, errors } = loadConfig(root);
       if (config !== undefined) return handle(root, config, args);
-      return refuse(
-        errors === undefined
-          ? `There is no ${CONFIG_FILE} in ${root} or above it. Run npx peer-ai init in the project first.`
-          : `${CONFIG_FILE} is not valid:\n${errors.map((error) => `- ${error}`).join("\n")}`,
-      );
+      if (errors === undefined) {
+        return refuse(`There is no ${CONFIG_FILE} in ${root} or above it. Run npx peer-ai init in the project first.`);
+      }
+      const listed = errors.map((error) => `- ${error}`).join("\n");
+      // After an update merges, a session still on the older server meets a config written for the
+      // newer one: that's a reconnect, not a broken config (#201).
+      const pinned = pinnedVersion(root);
+      if (pinned !== undefined && compareVersions(pinned.version, VERSION) > 0) {
+        return refuse(
+          `This project now uses Peer AI ${pinned.version} (${pinned.from}), and this AI tool is still connected to Peer AI ${VERSION}, which can't read its newer ${CONFIG_FILE}. Ask the person to reconnect the AI tool to Peer AI, or restart it, to run ${pinned.version}. Until then, Peer AI's commands work from a terminal with npx peer-ai@${pinned.version}.\n\nWhat ${VERSION} doesn't recognise:\n${listed}`,
+        );
+      }
+      return refuse(`${CONFIG_FILE} is not valid:\n${listed}`);
     };
 
   server.registerTool(
