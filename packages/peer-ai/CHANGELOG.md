@@ -1,5 +1,17 @@
 # peer-ai
 
+## 1.0.0-next.14
+
+### Patch Changes
+
+- 7777291: Moving a work item to build no longer leaves out commits already made on its branch (#205). Its base is now where its branch leaves the default branch, so a dependency or settings change committed while the item was at prepare still decides the reviews it needs. A branch stacked on another open item's branch starts where it leaves that branch, as before, even after the parent gains commits of its own.
+- 6dae453: `peer-ai-eslint-config` works with ESLint 9.30 or later as well as ESLint 10, so an Expo app can stay on the ESLint 9 that Expo's own lint settings target (#206). `peer-ai doctor` says when the installed ESLint is older than 9.30. Its fix for an ESLint config that doesn't use Peer AI's settings now says to rename a `.js` config in a package without `"type": "module"`, or a `.cjs` one, to `eslint.config.mjs`, so following it doesn't make Node warn on every lint run (#203).
+- 974cd0c: When an AI tool is still connected to an older Peer AI after an update merges, its tools no longer just call the config invalid (#201). They say the project now uses the newer version, naming it and where it's pinned, and ask for the AI tool to be reconnected, with what the older version doesn't recognise below. `peer-ai render` says to reconnect right after the update merges when it moves a project to a new version, and so does the update pull request.
+- 83e1ad5: In the report stage, `peer-ai doctor` says what reporting means for each tool: how many ESLint rules are warnings, how many Ruff rules are left out of Peer AI's Ruff file (Ruff has no warnings), and how many security checks report without failing (#204). It also names the staged route for making some checks block while others keep reporting: `enforce`, with the rules that aren't ready in `standards.deferred`, each until the work item that fixes them.
+- peer-ai-skills@1.0.0-next.14
+  - peer-ai-standards@1.0.0-next.14
+  - peer-ai-workflow@1.0.0-next.14
+
 ## 1.0.0-next.13
 
 ### Minor Changes
