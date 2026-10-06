@@ -46,7 +46,8 @@ import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { migrationCollisions, type MigrationCollision } from "./migrations.ts";
 import { asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
-import { standardsFor } from "./standards.ts";
+import { standardsFor, trackFor } from "./standards.ts";
+import { readOnlyCount, toolClaimProblem } from "./checked-by.ts";
 import { whatChangedSince, type WhatChanged } from "./updates.ts";
 import {
   PROJECT_REVIEWS_FILE,
@@ -314,6 +315,8 @@ export interface CheckedReport {
   depth?: "light";
   /** What the report leaves open, by severity; left out when nothing is (RFC 0015). */
   open?: OpenCounts;
+  /** How many automatic rules it passed by reading, not by their tools; left out when none (RFC 0019). */
+  readOnly?: number;
   report: string;
   summary: string;
 }
@@ -329,6 +332,7 @@ export function checkReport(
   review: ReviewInput & { report: string },
   workItem?: string,
   rules?: readonly string[],
+  parts?: readonly (string | undefined)[],
 ): Result<CheckedReport> {
   const read = readReport(root, review.report);
   if (!read.ok) return read;
@@ -354,6 +358,9 @@ export function checkReport(
       );
     }
   }
+  // A tool counts as evidence only where it enforces the rule (RFC 0019).
+  const claim = toolClaimProblem(root, config, report, parts);
+  if (claim !== undefined) return failed(claim);
   const blockOn = config.gates?.blockOn ?? "critical";
   const worked = deriveResult(report, blockOn);
   if (report.result !== worked) {
@@ -365,6 +372,7 @@ export function checkReport(
     return failed(`You gave ${review.result}, but the report makes it ${worked}.`);
   }
   const open = openCounts(report);
+  const readOnly = readOnlyCount(report);
   return {
     ok: true,
     value: {
@@ -372,6 +380,7 @@ export function checkReport(
       result: worked,
       ...(report.depth === "light" ? { depth: "light" as const } : {}),
       ...(Object.keys(open).length === 0 ? {} : { open }),
+      ...(readOnly === 0 ? {} : { readOnly }),
       report: review.report,
       summary: review.summary ?? report.summary,
     },
@@ -473,6 +482,7 @@ export function recordReview(
       { ...review, report: review.report },
       id,
       reviewRules(home, config, item, review.skill),
+      changeParts(home, config, item),
     );
     if (!checked.ok) return checked;
     entry = { ...checked.value, at };
@@ -512,6 +522,7 @@ export function recordProjectReview(
     skill: checked.value.skill,
     result: checked.value.result,
     ...(checked.value.open === undefined ? {} : { open: checked.value.open }),
+    ...(checked.value.readOnly === undefined ? {} : { readOnly: checked.value.readOnly }),
     report: review.report,
     at: now.toISOString(),
     ...(commit === undefined ? {} : { commit }),
@@ -533,13 +544,23 @@ export function recordProjectReview(
  */
 export function reviewRules(home: string, config: PeerAiConfig, item: WorkItem, skill: SkillId): string[] {
   const all = skillRuleIds(skill);
-  const files =
-    item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
+  const files = changeFiles(home, item);
   if (files.length === 0) return all;
   const applying = new Set(
     files.flatMap((file) => standardsFor(config, home, file)?.peerAiRules.map((rule) => rule.id) ?? []),
   );
   return all.filter((rule) => applying.has(rule));
+}
+
+/** The files a work item's change touched: since its base, or the working copy's changes without one. */
+function changeFiles(home: string, item: WorkItem): string[] {
+  return item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
+}
+
+/** The parts a work item's change touched, for the review of it; none known means the whole project. */
+function changeParts(home: string, config: PeerAiConfig, item: WorkItem): (string | undefined)[] | undefined {
+  const files = changeFiles(home, item);
+  return files.length === 0 ? undefined : [...new Set(files.map((file) => trackFor(config, file)?.id))];
 }
 
 export function recordVerify(

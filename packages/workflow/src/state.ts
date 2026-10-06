@@ -162,6 +162,12 @@ export const WorkItemSchema = z
           at: Timestamp,
           commit: CommitId.optional().describe("The commit the review looked at (RFC 0010)."),
           depth: z.literal("light").optional().describe("A light review, of the changed lines only (RFC 0016)."),
+          readOnly: z
+            .number()
+            .int()
+            .positive()
+            .optional()
+            .describe("How many automatic rules it passed by reading the code, not by their tools (RFC 0019)."),
         }),
       )
       .optional(),
@@ -247,6 +253,12 @@ export const ProjectReviewsSchema = z
         skill: z.enum(SKILL_IDS),
         result: z.enum(["pass", "fail", "incomplete"]),
         open: OpenCountsSchema.optional(),
+        readOnly: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("How many automatic rules it passed by reading the code, not by their tools (RFC 0019)."),
         report: Path,
         at: Timestamp,
         commit: CommitId.optional(),

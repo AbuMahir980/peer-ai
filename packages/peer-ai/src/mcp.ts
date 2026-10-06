@@ -19,6 +19,7 @@ import { z } from "zod";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import { checkDocumentOn } from "./document.ts";
+import { unenforcedRules } from "./enforcers.ts";
 import { draftFeedback } from "./feedback.ts";
 import { VERSION } from "./package-info.ts";
 import { compareVersions, pinnedVersion } from "./versions.ts";
@@ -190,7 +191,7 @@ export function createServer(options: ServerOptions): McpServer {
     {
       title: "Standards for a file",
       description:
-        "The standards that govern a file: Peer AI's rules for what the file is, its language and the track it belongs to, each by its id, title and severity; and the project's own standards documents and rules for that track. Call it before editing a file. Follow every rule listed, and read and follow the documents it lists. For the full text of the rules this change touches (the rule, why, the question a review asks and how it's checked), call it again with their ids in ruleIds.",
+        "The standards that govern a file: Peer AI's rules for what the file is, its language and the track it belongs to, each by its id, title and severity; and the project's own standards documents and rules for that track. Call it before editing a file. Follow every rule listed, and read and follow the documents it lists. For the full text of the rules this change touches (the rule, why, the question a review asks and how it's checked), call it again with their ids in ruleIds. A rule a tool checks says whether that tool enforces it for this file (enforced), and why not (notEnforced): a review can count the tool as evidence only when it does.",
       inputSchema: {
         file: z.string().min(1).describe("The file's path, relative to the project root."),
         ruleIds: z
@@ -202,7 +203,7 @@ export function createServer(options: ServerOptions): McpServer {
       annotations: READ_ONLY,
     },
     withProject((root, config, { file, ruleIds }: { file: string; ruleIds?: string[] | undefined }) => {
-      const standards = standardsFor(config, root, file, ruleIds);
+      const standards = standardsFor(config, root, file, ruleIds, unenforcedRules(root, config, now()));
       return standards === undefined ? refuse(`${file} is outside the project.`) : reply(standards);
     }),
   );
@@ -336,7 +337,10 @@ export function createServer(options: ServerOptions): McpServer {
         if (!recorded.ok) return refuse(recorded.error);
         // The result with what it leaves open, so a pass is never read as all clear (RFC 0015).
         const entry = recorded.value.reviews?.find((each) => each.skill === review.skill);
-        const said = entry === undefined ? undefined : `${entry.skill}: ${describeResult(entry.result, entry.open)}`;
+        const said =
+          entry === undefined
+            ? undefined
+            : `${entry.skill}: ${describeResult(entry.result, entry.open, entry.readOnly)}`;
         return reply({ ...recorded.value, ...(said === undefined ? {} : { recorded: said }) });
       }
       if (review.report === undefined) {
@@ -347,7 +351,7 @@ export function createServer(options: ServerOptions): McpServer {
       if (!recorded.ok) return refuse(recorded.error);
       return reply({
         ...recorded.value,
-        recorded: `${recorded.value.skill}: ${describeResult(recorded.value.result, recorded.value.open)}`,
+        recorded: `${recorded.value.skill}: ${describeResult(recorded.value.result, recorded.value.open, recorded.value.readOnly)}`,
         ...(recorded.value.findings.length === 0
           ? {}
           : {

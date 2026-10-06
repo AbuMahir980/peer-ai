@@ -174,7 +174,7 @@ export function gateWorkItem(
     checks.push(
       warn(
         "gates",
-        `${claim}, and its ${review.skill} is ${describeResult(review.result, review.open)}.`,
+        `${claim}, and its ${review.skill} is ${describeResult(review.result, review.open, review.readOnly)}.`,
         "Fix them, or accept each in the report with its reason. To have them block, set gates.blockOn to high.",
       ),
     );
@@ -244,6 +244,14 @@ function checkGates(
       ok("gates", `${item.id} waived its ${waiver.skill}: ${waiver.reason} (decided by ${waiver.by})`),
     ),
   );
+  // So is each review that passed automatic rules by reading only, so it isn't taken for a tool's (RFC 0019).
+  const read = claiming.flatMap((item) =>
+    latestReviews(item)
+      .filter((review) => (review.readOnly ?? 0) > 0)
+      .map((review) =>
+        ok("gates", `${item.id}'s ${review.skill} is ${describeResult(review.result, review.open, review.readOnly)}`),
+      ),
+  );
   const failures = results.filter((check) => check.status === "fail");
   const warnings = results.filter((check) => check.status === "warn");
   const merged =
@@ -255,13 +263,14 @@ function checkGates(
             `${plural(byMerge.length, "work item")} closed because ${byMerge.length === 1 ? "its branch was" : "their branches were"} already merged, without the ship gate: ${byMerge.map((item) => item.id).join(", ")}`,
           ),
         ];
-  if (failures.length > 0) return [...failures, ...warnings, ...merged, ...waivers];
+  if (failures.length > 0) return [...failures, ...warnings, ...merged, ...waivers, ...read];
   if (claiming.length === 0) return [ok("gates", "No work items at ship or done yet"), ...merged];
   return [
     ok("gates", `${plural(claiming.length, "work item")} at ship or done, each verified and reviewed`),
     ...warnings,
     ...merged,
     ...waivers,
+    ...read,
   ];
 }
 

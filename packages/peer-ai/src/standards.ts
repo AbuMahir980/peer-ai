@@ -7,6 +7,7 @@ import { isAbsolute, relative } from "node:path";
 import { PROFILES, profileRulesFor, rulesFor, type Rule, type Value } from "peer-ai-standards";
 import type { DomainId, PeerAiConfig } from "peer-ai-workflow";
 import { SCHEMA_FILE, TEST_FILE } from "./assess.ts";
+import { whyUnenforced, type Unenforced } from "./enforcers.ts";
 
 type ConfigTrack = PeerAiConfig["tracks"][number];
 
@@ -17,10 +18,19 @@ type ConfigTrack = PeerAiConfig["tracks"][number];
 export type RuleForFile = Pick<Rule, "id" | "title" | "rule" | "why" | "ask" | "check" | "severity"> & {
   carries?: string;
   value?: Value;
-};
+} & Enforcement;
 
 /** A rule in brief: what an agent follows while editing. A stack profile's rule keeps its value. */
-export type RuleInBrief = Pick<Rule, "id" | "title" | "severity"> & { value?: Value };
+export type RuleInBrief = Pick<Rule, "id" | "title" | "severity"> & { value?: Value } & Enforcement;
+
+/**
+ * For a rule a tool checks: whether that tool enforces it for this file, as doctor finds it, and
+ * why not when it doesn't. A review counts the tool as evidence only when it does (RFC 0019).
+ */
+interface Enforcement {
+  enforced?: boolean;
+  notEnforced?: string;
+}
 
 /** What a file is, from its path: it decides which domains' rules apply to it (RFC 0012). */
 export type FileKind =
@@ -190,6 +200,7 @@ export function standardsFor(
   root: string,
   file: string,
   ruleIds?: readonly string[],
+  unenforced?: readonly Unenforced[],
 ): StandardsForFile | undefined {
   const path = normalise(isAbsolute(file) ? relative(root, file) : file);
   if (path === ".." || path.startsWith("../") || isAbsolute(path)) return undefined;
@@ -229,27 +240,36 @@ export function standardsFor(
         ? kind === "ci-pipeline"
         : inLanguage(rule.profile, path) && domains.includes(rule.domain),
     )
-    .map(({ id, title, rule, why, ask, check, severity, carries, value }) => ({
-      id,
-      title,
-      rule,
-      why,
-      ask,
-      check,
-      severity,
-      carries,
-      ...(value === undefined ? {} : { value }),
-    }));
+    .map(({ id, title, rule, why, ask, check, severity, carries, value, enforcer }) => {
+      const notEnforced =
+        unenforced === undefined || enforcer === undefined ? undefined : whyUnenforced(unenforced, id, track?.id);
+      return {
+        id,
+        title,
+        rule,
+        why,
+        ask,
+        check,
+        severity,
+        carries,
+        ...(value === undefined ? {} : { value }),
+        ...(unenforced === undefined || enforcer === undefined || check !== "auto"
+          ? {}
+          : { enforced: notEnforced === undefined, ...(notEnforced === undefined ? {} : { notEnforced }) }),
+      };
+    });
   const applying: RuleForFile[] = [...core, ...profiled].filter((rule) => !setAside.has(rule.id));
   const asked = ruleIds === undefined ? undefined : new Set(ruleIds);
   const notApplicable = ruleIds?.filter((id) => !applying.some((rule) => rule.id === id)) ?? [];
   const peerAiRules =
     asked === undefined
-      ? applying.map(({ id, title, severity, value }): RuleInBrief => ({
+      ? applying.map(({ id, title, severity, value, enforced, notEnforced }): RuleInBrief => ({
           id,
           title,
           severity,
           ...(value === undefined ? {} : { value }),
+          ...(enforced === undefined ? {} : { enforced }),
+          ...(notEnforced === undefined ? {} : { notEnforced }),
         }))
       : applying.filter((rule) => asked.has(rule.id));
   return {
