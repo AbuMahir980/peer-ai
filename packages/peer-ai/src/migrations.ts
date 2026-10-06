@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WorkItem } from "peer-ai-workflow";
-import { currentBranch, forkPoint } from "./commits.ts";
+import { currentBranch, forkPoint, tipOf } from "./commits.ts";
 
 const OWN_FILES = ":(exclude).peer-ai";
 /** The folders migrations live in: Django, Flask-Migrate and SQL migrations, Rails, Prisma and Drizzle. */
@@ -87,15 +87,6 @@ export function addedHere(root: string, defaultBranch?: string): AddedMigration[
       return "";
     }
   });
-}
-
-/** The commit a branch name points at: the local branch, or the remote's copy of it. */
-function tipOf(root: string, branch: string): string | undefined {
-  for (const ref of [`refs/heads/${branch}`, `refs/remotes/origin/${branch}`]) {
-    const commit = git(root, ["rev-parse", "--verify", "-q", `${ref}^{commit}`])?.trim();
-    if (commit !== undefined && commit !== "") return commit;
-  }
-  return undefined;
 }
 
 /** The migrations a branch adds since it left the default branch, as committed. */

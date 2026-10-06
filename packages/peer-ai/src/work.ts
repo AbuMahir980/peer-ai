@@ -26,7 +26,19 @@ import {
 } from "peer-ai-workflow";
 import { NEXT_STAGE, assess, gaps, loadConfig } from "./assess.ts";
 import { gateWorkItem } from "./check.ts";
-import { changeSizes, changesFor, commitExists, currentBranch, filesSince, headCommit, ownFiles } from "./commits.ts";
+import {
+  changeSizes,
+  changesFor,
+  commitExists,
+  currentBranch,
+  filesSince,
+  forkPoint,
+  headCommit,
+  isAncestor,
+  mergeBase,
+  ownFiles,
+  tipOf,
+} from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
@@ -659,9 +671,9 @@ export function advanceWorkItem(
       return failed(`${item.id} can't move to ${target} yet:\n${reasons.join("\n")}`);
     }
   }
-  // Build starts the change: the commit it starts from is the item's base, so its required reviews
-  // come from its own commits, not a parent branch's (RFC 0010).
-  const base = target === "build" && item.base === undefined ? headCommit(home) : undefined;
+  // Build starts the change: where it starts from is the item's base, so its required reviews come
+  // from its own commits, not a parent branch's (RFC 0010).
+  const base = target === "build" && item.base === undefined ? startOf(root, home, config, item) : undefined;
   const moved = { ...item, stage: target, ...(base === undefined ? {} : { base }), updatedAt: now.toISOString() };
   // Closed work leaves the tree: one line in the history, and git keeps the rest (RFC 0017).
   if (target === "done" || target === "cancelled")
@@ -675,6 +687,29 @@ export function collisionsFor(root: string, config: PeerAiConfig, item: WorkItem
     .map((located) => located.item)
     .filter((other) => !CLOSED.includes(other.stage));
   return migrationCollisions(locate(root, item.id)?.home ?? root, item, open, config.repo?.defaultBranch);
+}
+
+/**
+ * Where a change starts, for its base: where its branch leaves the default branch, so commits made
+ * on it before it moved to build still count (#205). A branch stacked on another open item's starts
+ * where it leaves that item's branch, so it isn't asked for its parent's reviews (RFC 0010). Off its own
+ * branch, or outside git, it's the commit checked out.
+ */
+function startOf(root: string, home: string, config: PeerAiConfig, item: WorkItem): string | undefined {
+  const head = headCommit(home);
+  if (head === undefined || item.branch === undefined || currentBranch(home) !== item.branch) return head;
+  const fork = forkPoint(home, config.repo?.defaultBranch);
+  if (fork === undefined) return head;
+  const parents = allWorkItems(root).flatMap(({ item: other }) => {
+    if (other.id === item.id || CLOSED.includes(other.stage) || other.branch === undefined) return [];
+    if (other.branch === item.branch) return [];
+    // Where the two branches meet, which stays put when the parent gains commits of its own later.
+    const tip = tipOf(home, other.branch);
+    const met = tip === undefined ? undefined : mergeBase(home, tip, head);
+    return met !== undefined && met !== fork && isAncestor(home, fork, met) ? [met] : [];
+  });
+  // The nearest parent: the one every other parent's commits lead to.
+  return parents.find((met) => parents.every((other) => isAncestor(home, other, met))) ?? fork;
 }
 
 /** Moves a closed item into the history after checking it, and returns it as it closed. */

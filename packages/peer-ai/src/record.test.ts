@@ -94,6 +94,37 @@ describe("the reviews an item needs (RFC 0010)", () => {
   });
 });
 
+describe("where an item's change starts (#205)", { timeout: 20_000 }, () => {
+  it("counts commits made on its branch before it moved to build", () => {
+    const { root, config } = shop();
+    const start = git(root, "rev-parse", "HEAD");
+    git(root, "switch", "-qc", "feature/SHOP-1-react");
+    value(createWorkItem(root, config, { title: "React", kind: "chore", track: "web" }, NOW));
+    writeFileSync(join(root, "apps/web/package.json"), JSON.stringify({ dependencies: { react: "19.1.0" } }));
+    commitAll(root);
+    expect(value(advanceWorkItem(root, config, "SHOP-1", "build", NOW)).base).toBe(start);
+    expect(required(value(advanceWorkItem(root, config, "SHOP-1", "verify", NOW)))).toContain("dependency-review");
+  });
+
+  it("starts a stacked branch where it leaves its parent's, even after the parent moves on", () => {
+    const { root, config } = shop();
+    git(root, "switch", "-qc", "feature/SHOP-1-react");
+    value(createWorkItem(root, config, { title: "React", kind: "chore", track: "web" }, NOW));
+    writeFileSync(join(root, "apps/web/package.json"), JSON.stringify({ dependencies: { react: "19.1.0" } }));
+    const parent = commitAll(root);
+    git(root, "switch", "-qc", "feature/SHOP-2-notes");
+    value(createWorkItem(root, config, { title: "Notes", kind: "chore", track: "web" }, NOW));
+    writeFileSync(join(root, "apps/web/NOTES.md"), "Notes.\n");
+    commitAll(root);
+    // The parent gains a commit after the stacked branch left it.
+    git(root, "switch", "-q", "feature/SHOP-1-react");
+    writeFileSync(join(root, "apps/web/Total.tsx"), SCREEN);
+    commitAll(root);
+    git(root, "switch", "-q", "feature/SHOP-2-notes");
+    expect(value(advanceWorkItem(root, config, "SHOP-2", "build", NOW)).base).toBe(parent);
+  });
+});
+
 describe("the gate on a pull request (RFC 0010)", () => {
   function onBranch(stage: WorkItem["stage"], projectStage = "mvp"): { root: string; config: PeerAiConfig } {
     const { root, config } = shop(projectStage);
