@@ -1,5 +1,28 @@
 # peer-ai-skills
 
+## 1.0.0-next.15
+
+### Minor Changes
+
+- f217df4: Two new rules (RFC 0019, for #202):
+  
+  - **REACT-11: a hook is called by its own name, never passed around as a value.** It's enforced by ESLint's `react-hooks/hooks`, which `peer-ai-eslint-config` turns on for React, React Native and Next.js parts, and catches a hook passed as an argument. `code-review` reads for what the tool can't see: a hook renamed, passed as a prop, or kept in an object. Under the React Compiler, each breaks the component on a later render.
+  - **TEST-12: tests run the code the build ships,** with the same compiler, transforms and flags, such as the React Compiler. Where a test runner can't, an end-to-end check of the built app covers the difference. `test-strategy` checks it for the project, `code-review` for a change to the build or test settings, and `qa-acceptance` for an item that adds a compiler or transform.
+  
+  `code-review` also gains a guide for CODE-16, the framework's own rules: a tool's check counts as evidence only when it runs for the file.
+
+### Patch Changes
+
+- 2a0e5e1: A review says how it checked each automatic rule (RFC 0019, for #202):
+  
+  - **`standards_for_file` says whether each rule's tool enforces it** for the file's part, as `peer-ai doctor` finds it, with `enforced`, and why not in `notEnforced`: no ESLint config, settings that don't use Peer AI's, the report stage or a deferral, and so on.
+  - **A report's coverage line gains `checkedBy`,** `tool` or `reading`, for a pass of an automatic rule. `record_review` refuses `tool` where the tool doesn't enforce the rule in the parts the change touched.
+  - **Every result counts the automatic rules checked by reading only,** such as "pass, 2 automatic rules checked by reading only", in `record_review`, `next_work` and `peer-ai check`, so a pass by eye isn't taken for one a tool enforces.
+- Updated dependencies [2a0e5e1]
+- Updated dependencies [f217df4]
+  - peer-ai-workflow@1.0.0-next.15
+  - peer-ai-standards@1.0.0-next.15
+
 ## 1.0.0-next.14
 
 ### Patch Changes
