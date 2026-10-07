@@ -223,6 +223,10 @@ describe("peer-ai migrate", () => {
     expect(diagnose(root, "24.3.0").checks.filter((check) => check.status === "fail")).toEqual([]);
     expect(out.text()).toContain("✓ Carried over the work in progress: PAN-7.");
     expect(out.text()).toContain(`decisions are left in ${NOTES_FILE}`);
+    // The decisions come before the merge: the gate holds the migration's pull request to its item (#215).
+    expect(out.text()).toContain(
+      "Make them on this branch, before it merges: the work item migrate-v0 brings them up, and Peer AI's gate holds the branch's pull request to it.",
+    );
   });
 
   it("moves a June copy too: no settings to read, and a phase v0 doesn't have is dropped with a note", async () => {

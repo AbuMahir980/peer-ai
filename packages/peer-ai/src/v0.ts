@@ -650,6 +650,12 @@ export function modelName(line: string): string | undefined {
 
 /** A list item that starts by naming an add-on: "- `engineering:architecture` — options". */
 const ADD_ON_ITEM = /^[-*]\s+`(\/[a-z0-9-]+|[a-z0-9-]+:[a-z0-9-]+)`/;
+/** v0's header for a phase's add-ons, which 1.0's `also` replaces (#217). */
+const SKILLS_HEADER = "**Skills to use here.**";
+/** A line that only names an add-on and what it's for, in one clause: `also` holds it already (#217). */
+const ADD_ON_ONLY = /^[-*]\s+`[^`]+`\s*[—–:-]\s*[^.*]*\.?$/;
+/** How a note that says the phase has no skill starts: 1.0 has one for every capability (#217). */
+const NO_SKILL = "**No skill";
 const DORMANT = /\bdormant until\b/i;
 
 /** Which side of the system a line is about, from its own words; undefined when it's unclear. */
@@ -778,8 +784,19 @@ export function convertPhaseConfig(
         result.dormant.push({ ...(dormantSide === undefined ? {} : { side: dormantSide }), line, file: entry.file });
       }
     }
-    // Every line stays as a note, add-ons and all, so nothing the block said is lost.
-    for (const line of joinLists(lines)) {
+    // Every line stays as a note, so nothing the block said is lost, except v0's own wording that
+    // 1.0 says another way: the add-ons' header, and a line that only names an add-on `also` holds.
+    // The whole block stays in the migration notes, as v0 had it (#217).
+    const kept = lines.filter((line) => !line.startsWith(SKILLS_HEADER) && !ADD_ON_ONLY.test(line));
+    for (const line of joinLists(kept)) {
+      if (line.startsWith(NO_SKILL) && phase.skill !== undefined) {
+        // Not true of 1.0, which has a skill for this; the rest of the note is the project's to place.
+        result.unplaced.push({
+          file: entry.file,
+          text: `Says there's no skill here, but 1.0 has peer-ai-${phase.skill}: ${line}`,
+        });
+        continue;
+      }
       const note = `${side}${line}`;
       if (phase.skill !== undefined) {
         const capability = (result.capabilities[phase.skill] ??= {});

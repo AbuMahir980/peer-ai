@@ -124,9 +124,10 @@ In the project's folder:
 2. **Make a branch:** `git switch -c peer-ai-1.0`
 3. **See the plan, changing nothing:** `npx peer-ai migrate --dry-run`
 4. **Migrate:** `npx peer-ai migrate`. It asks the same few questions as `init`, already filled in from what it found. Like `init`, it takes up the profiles and traits `assess` suggests unless you say no, and starts an existing codebase's enforcement at `report`.
-5. **Review the change, commit it, and open a pull request.** To undo it instead: `git stash --include-untracked`.
-6. **In your next session,** your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`. Go through them together, then delete the file.
-7. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
+5. **Review the change, and commit it on the branch.** To undo it instead: `git stash --include-untracked`.
+6. **Make the decisions on the same branch, before it merges.** Your AI tool brings up each decision `migrate` left in `docs/peer-ai-migration.md`, through the work item `migrate-v0`. Go through them together, then delete the file. v0's instructions often held the project's own rules too, such as how work reaches the main branch, so this is where they come back; merged without them, the main branch would lose them.
+7. **Verify `migrate-v0`, run the reviews it needs, and move it to ship,** as for any work item. Then open the pull request: Peer AI's gate, which `render` just added, holds the branch to its work item.
+8. **On GitHub,** make `peer-ai check` a required check, so nothing merges without the gate.
 
 It converts what it can read with certainty:
 
@@ -139,7 +140,7 @@ It converts what it can read with certainty:
 
 Then it deletes the `peer-ai/` folder and the state file, takes v0's text out of `CLAUDE.md`, `AGENTS.md` and the other instruction files, maps the project and sets up the AI tools, as `assess` and `render` do.
 
-Nothing is dropped silently. Whatever needs judgement, it copies word for word into `docs/peer-ai-migration.md`: the files the project edited in `peer-ai/`, the text it took out of the instruction files, the settings it couldn't place, and anything it left alone that still names v0. A work item, `migrate-v0`, points there, so your AI tool brings each decision up in the next session.
+Nothing is dropped silently. Whatever needs judgement, it copies word for word into `docs/peer-ai-migration.md`: the files the project edited in `peer-ai/`, the text it took out of the instruction files, the settings it couldn't place, and anything it left alone that still names v0. A work item, `migrate-v0`, on the migration's branch, points there, so your AI tool brings each decision up before the branch merges.
 
 It tells the files the project changed from v0's own by their fingerprints: a list of every file in every v0 version, which ships with the package.
 

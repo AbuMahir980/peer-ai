@@ -651,7 +651,7 @@ export function notesDocument(plan: Plan, today: string): string {
   const lines = [
     "# Moving to Peer AI 1.0",
     "",
-    `\`peer-ai migrate\` moved this project from its copy of v0 on ${today}. This file lists what it did, and the decisions it left for a person. The work item \`${MIGRATION_ITEM}\` points here: go through it with your AI tool, one decision at a time. When each one is made, delete this file.`,
+    `\`peer-ai migrate\` moved this project from its copy of v0 on ${today}. This file lists what it did, and the decisions it left for a person. The work item \`${MIGRATION_ITEM}\` points here: go through it with your AI tool, one decision at a time, on the migration's branch, before it merges. v0's instructions often held the project's own rules too, so this is where they come back. When each decision is made, delete this file, then verify \`${MIGRATION_ITEM}\`, run the reviews it needs and move it to ship: Peer AI's gate holds the migration's pull request to it, as it does any work item on its branch.`,
   ];
   if (version !== undefined) {
     lines.push(
@@ -930,7 +930,7 @@ export async function runMigrate(
       id: MIGRATION_ITEM,
       title: "Finish the move from v0",
       kind: "migration",
-      next: `Go through ${NOTES_FILE} with the person, one decision at a time.`,
+      next: `Go through ${NOTES_FILE} with the person, one decision at a time, on this branch, before it merges.`,
       acceptance: [
         ...plan.decisions.slice(0, 19).map((decision) => `Decided: ${decision.title}.`.slice(0, 300)),
         `Every decision in ${NOTES_FILE} is made, and the file is deleted.`,
@@ -967,10 +967,10 @@ export async function runMigrate(
   out.log(
     plan.decisions.length === 0
       ? `Nothing needs a decision. ${NOTES_FILE} lists what changed.`
-      : `${String(plan.decisions.length)} ${plan.decisions.length === 1 ? "decision is" : "decisions are"} left in ${NOTES_FILE}. The work item ${MIGRATION_ITEM} brings them up in your next session.`,
+      : `${String(plan.decisions.length)} ${plan.decisions.length === 1 ? "decision is" : "decisions are"} left in ${NOTES_FILE}. Make them on this branch, before it merges: the work item ${MIGRATION_ITEM} brings them up, and Peer AI's gate holds the branch's pull request to it.`,
   );
   out.log(
-    "Review the change, commit it on a branch, and open a pull request. To undo it instead: git stash --include-untracked",
+    "Review the change and commit it on a branch. Open its pull request once the decisions are made. To undo it instead: git stash --include-untracked",
   );
   if (problems.length > 0) {
     out.error("");
