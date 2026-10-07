@@ -68,6 +68,38 @@ describe("a review's scope follows its change (RFC 0016)", { timeout: 20_000 }, 
     expect(rules.length).toBeLessThan(skillRuleIds("security-review").length);
   });
 
+  it("leaves out the rules of a file the change deleted (#216)", () => {
+    const root = project(
+      {
+        "peer-ai.config.json": JSON.stringify({
+          version: 1,
+          project: { name: "Shop", stage: "mvp" },
+          tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active" }],
+          tracker: { kind: "linear", ticketPrefix: "SHOP" },
+        }),
+        "apps/web/package.json": JSON.stringify({ dependencies: { react: "19.0.0" } }),
+        "apps/web/Old.tsx": "export const Old = () => <main>Old</main>;\n",
+      },
+      { git: true },
+    );
+    git(root, "symbolic-ref", "HEAD", "refs/heads/main");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "start");
+    const { config } = loadConfig(root);
+    if (config === undefined) throw new Error("the test config is not valid");
+    git(root, "switch", "-qc", "feature/SHOP-1-tidy");
+    value(createWorkItem(root, config, { title: "Tidy", kind: "chore", track: "web" }, NOW));
+    value(advanceWorkItem(root, config, "SHOP-1", "build", NOW));
+    git(root, "rm", "-q", "apps/web/Old.tsx");
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, "docs/notes.md"), "# Notes\n");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "tidy");
+    const item = value(advanceWorkItem(root, config, "SHOP-1", "verify", NOW));
+    expect(item.requiredReviews?.map((review) => review.skill) ?? []).not.toContain("code-review");
+    expect(reviewRules(root, config, item, "code-review")).toEqual([]);
+  });
+
   it("accepts a report that answers for that scope, and refuses one that leaves part of it out", () => {
     const { root, config, item } = changing({ "apps/web/Cart.tsx": "export const Cart = () => <main>Cart</main>;\n" });
     const rules = reviewRules(root, config, item, "security-review");

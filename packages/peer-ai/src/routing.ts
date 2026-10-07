@@ -32,8 +32,17 @@ export interface RequiredReview {
   depth?: "light" | undefined;
 }
 
-/** The reviews a weak trigger can ask for lightly: never one about routes, data, contracts or the pipeline. */
-const LIGHT_SKILLS: readonly SkillId[] = ["code-review", "security-review", "accessibility-review", "design-review"];
+/**
+ * The reviews that read the code a change leaves: a weak trigger can ask for them lightly (RFC 0016),
+ * and a deleted file, with no code left in it, neither asks for them nor adds to their rules (#216).
+ * Never one about routes, data, contracts or the pipeline, where a deletion matters.
+ */
+export const LIGHT_SKILLS: readonly SkillId[] = [
+  "code-review",
+  "security-review",
+  "accessibility-review",
+  "design-review",
+];
 /** Files whose change is never weak, however small: routes, access, sessions and secrets. */
 const SENSITIVE =
   /(^|[/._-])(routes?|router|controllers?|auth\w*|permissions?|polic(y|ies)|guards?|middleware|sessions?|tokens?|crypto|secrets?)([/._-]|$)/i;
@@ -94,7 +103,8 @@ export function reviewsFor(
   sizes?: ChangeSizes,
 ): RequiredReview[] {
   const tracks = config.tracks.filter((track) => track.status !== "external" && track.status !== "dormant");
-  const code = files.filter((file) => CODE.test(file));
+  const remaining = files.filter((file) => sizes?.deleted?.has(file) !== true);
+  const code = remaining.filter((file) => CODE.test(file));
   const source = code.filter((file) => !TEST_FILE.test(file));
   const found: RequiredReview[] = [];
   const need = (skill: SkillId, reason: string, when: boolean) => {
@@ -103,7 +113,7 @@ export function reviewsFor(
 
   need("code-review", "it changes code", code.length > 0);
   need("security-review", `it changes code, at the ${stage} stage`, source.length > 0 && stage !== "prototype");
-  const screens = files.filter(
+  const screens = remaining.filter(
     (file) => SCREEN.test(file) && tracks.some((track) => UI_KINDS.includes(track.kind) && inTrack(file, track)),
   );
   need("accessibility-review", "it changes a screen", screens.length > 0);

@@ -44,6 +44,22 @@ describe("a weak trigger asks for a light review (RFC 0016)", () => {
   });
 });
 
+describe("a deleted file has no code left to review (#216)", () => {
+  it("doesn't ask for a code-reading review, or count toward a weak trigger's lines", () => {
+    const old = "apps/web/src/Old.tsx";
+    const gone = (lines: Record<string, number>): ChangeSizes => ({
+      lines: new Map(Object.entries(lines)),
+      added: new Set(),
+      deleted: new Set([old]),
+    });
+    expect(depths([old], gone({ [old]: 116 }))).toEqual({});
+    expect(depths([old, "apps/web/src/Cart.tsx"], gone({ [old]: 116, "apps/web/src/Cart.tsx": 2 }))).toMatchObject({
+      "code-review": "light",
+      "security-review": "light",
+    });
+  });
+});
+
 describe("the gate, with light reviews and waivers (RFC 0016)", () => {
   function shipping(stage: string, extra: Partial<WorkItem>): { root: string; config: PeerAiConfig; item: WorkItem } {
     const root = project({ "peer-ai.config.json": JSON.stringify(config(stage)) });
