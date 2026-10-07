@@ -375,6 +375,7 @@ describe("phase-config.json", () => {
       "backend/03-build.md": "# Build\n> **Live since September.**\n",
       "frontend/04-review.md": "# Review\n> **Review against:**\n",
       "shared/05-rules-shared.md": "# Rules\n> The standards already exist.\n",
+      "shared/01-understand.md": "# Understand\n> **No skill for this phase.** The brief is the source.\n",
     };
     const entries = [
       {
@@ -391,22 +392,28 @@ describe("phase-config.json", () => {
       },
       { file: "shared/05-rules-shared.md", model: "Model A", block: ["> The standards already exist."] },
       { file: "shared/00-setup.md", block: ["> The setup round is already answered."] },
+      { file: "shared/01-understand.md", block: ["> **No skill for this phase.** The brief is the source."] },
     ];
     const result = convertPhaseConfig(entries, (file) => phases[file as keyof typeof phases]);
     expect(result.models).toEqual({ policy: "pinned", default: "Model A", byActivity: { build: "Model B" } });
-    // Every line stays as a note; an add-on is also an add-on.
+    // Every line stays as a note, and an add-on is also an add-on, except v0's own wording: the
+    // add-ons' header, and a line that only names an add-on and what it's for (#217).
     expect(result.capabilities).toEqual({
-      architecture: {
-        also: ["engineering:architecture"],
-        notes: ["**Skills to use here.** Inside this phase: `engineering:architecture` — options"],
-      },
+      architecture: { also: ["engineering:architecture"] },
       "implement-ticket": { notes: ["Frontend: Small commits."] },
       "code-review": { also: ["/code-review"], notes: ["Frontend: **Review against:** the standards; `/code-review`"] },
     });
     expect(result.activities).toEqual({ standards: { notes: ["The standards already exist."] } });
     expect(result.conflicts).toEqual([{ file: "backend/03-build.md", block: ["> **Dormant until v3.**"] }]);
     expect(result.dormant).toEqual([]);
-    expect(result.unplaced).toEqual([{ file: "shared/00-setup.md", text: "The setup round is already answered." }]);
+    // A note that says there's no skill, where 1.0 has one, is a decision, not a note (#217).
+    expect(result.unplaced).toEqual([
+      { file: "shared/00-setup.md", text: "The setup round is already answered." },
+      {
+        file: "shared/01-understand.md",
+        text: "Says there's no skill here, but 1.0 has peer-ai-requirements-analysis: **No skill for this phase.** The brief is the source.",
+      },
+    ]);
   });
 
   it("takes an add-on only from a list item that starts with one, and keeps the whole line", () => {
