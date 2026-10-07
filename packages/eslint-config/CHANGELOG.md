@@ -1,5 +1,14 @@
 # peer-ai-eslint-config
 
+## 1.0.0-next.15
+
+### Patch Changes
+
+- Updated dependencies [2a0e5e1]
+- Updated dependencies [f217df4]
+  - peer-ai-workflow@1.0.0-next.15
+  - peer-ai-standards@1.0.0-next.15
+
 ## 1.0.0-next.14
 
 ### Patch Changes

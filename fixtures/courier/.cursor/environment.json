@@ -1,3 +1,3 @@
 {
-  "start": "npx -y peer-ai@1.0.0-next.14 render --skills --quiet"
+  "start": "npx -y peer-ai@1.0.0-next.15 render --skills --quiet"
 }

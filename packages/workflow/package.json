@@ -1,6 +1,6 @@
 {
   "name": "peer-ai-workflow",
-  "version": "1.0.0-next.14",
+  "version": "1.0.0-next.15",
   "description": "Peer AI's workflow vocabulary, and the schemas for peer-ai.config.json and project state",
   "license": "MIT",
   "type": "module",

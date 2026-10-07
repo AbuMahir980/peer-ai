@@ -1,5 +1,26 @@
 # peer-ai
 
+## 1.0.0-next.15
+
+### Minor Changes
+
+- 2a0e5e1: A review says how it checked each automatic rule (RFC 0019, for #202):
+  
+  - **`standards_for_file` says whether each rule's tool enforces it** for the file's part, as `peer-ai doctor` finds it, with `enforced`, and why not in `notEnforced`: no ESLint config, settings that don't use Peer AI's, the report stage or a deferral, and so on.
+  - **A report's coverage line gains `checkedBy`,** `tool` or `reading`, for a pass of an automatic rule. `record_review` refuses `tool` where the tool doesn't enforce the rule in the parts the change touched.
+  - **Every result counts the automatic rules checked by reading only,** such as "pass, 2 automatic rules checked by reading only", in `record_review`, `next_work` and `peer-ai check`, so a pass by eye isn't taken for one a tool enforces.
+
+### Patch Changes
+
+- 6346cbc: A file a change deleted no longer asks for a code, security, accessibility or design review, counts toward a weak trigger's changed lines, or adds its rules to those reviews' scope (#216): there's no code left in it to review. A deleted migration, dependency file or pipeline still asks for its own review, since deleting one matters.
+- 1e838b3: `peer-ai migrate` now says to make its decisions on the migration's branch, before it merges (#215). The gate it adds holds that branch's pull request to the `migrate-v0` work item, and v0's instructions often held the project's own rules, which the decisions bring back. Its closing message, `docs/peer-ai-migration.md`, the work item and the README's steps say the same, and the README adds the step of shipping `migrate-v0` before the pull request.
+- 1e838b3: `peer-ai migrate` no longer copies v0's own wording into the instructions every session reads (#217). A phase's "**Skills to use here.**" header, and a line that only names an add-on and what it's for, are left out, since `also` holds the add-on. A note that says a phase has no skill, where 1.0 has one, becomes a decision in `docs/peer-ai-migration.md` instead of a note. The rest of each note is converted as before, and the whole of `phase-config.json` stays in the migration notes. On a real v0 project, this cut the converted notes from 48 to 22.
+- Updated dependencies [2a0e5e1]
+- Updated dependencies [f217df4]
+  - peer-ai-workflow@1.0.0-next.15
+  - peer-ai-skills@1.0.0-next.15
+  - peer-ai-standards@1.0.0-next.15
+
 ## 1.0.0-next.14
 
 ### Patch Changes
