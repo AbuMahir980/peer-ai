@@ -58,7 +58,7 @@ import {
   type ProjectReview,
 } from "./project-reviews.ts";
 import { diagnose } from "./doctor.ts";
-import { changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
+import { LIGHT_SKILLS, changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
 
@@ -544,8 +544,14 @@ export function recordProjectReview(
  */
 export function reviewRules(home: string, config: PeerAiConfig, item: WorkItem, skill: SkillId): string[] {
   const all = skillRuleIds(skill);
-  const files = changeFiles(home, item);
-  if (files.length === 0) return all;
+  const touched = changeFiles(home, item);
+  if (touched.length === 0) return all;
+  // A review that reads code answers for the files the change leaves, not the ones it deleted (#216).
+  const deleted =
+    LIGHT_SKILLS.includes(skill) && item.base !== undefined && commitExists(home, item.base)
+      ? (changeSizes(home, item.base).deleted ?? new Set<string>())
+      : new Set<string>();
+  const files = touched.filter((file) => !deleted.has(file));
   const applying = new Set(
     files.flatMap((file) => standardsFor(config, home, file)?.peerAiRules.map((rule) => rule.id) ?? []),
   );
