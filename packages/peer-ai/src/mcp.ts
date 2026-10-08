@@ -25,7 +25,8 @@ import { VERSION } from "./package-info.ts";
 import { compareVersions, pinnedVersion } from "./versions.ts";
 import { reviewSizes } from "./review-cost.ts";
 import { standardsFor } from "./standards.ts";
-import { mapChanges, readMap } from "./state.ts";
+import { WORK_DIR, mapChanges, readMap } from "./state.ts";
+import { locate } from "./homes.ts";
 import {
   advanceWorkItem,
   collisionsFor,
@@ -220,7 +221,13 @@ export function createServer(options: ServerOptions): McpServer {
         track: z.string().min(1).optional().describe("The track it changes. Needed when the project has several."),
         gap: MapItemIdSchema.optional().describe("For kind gap: the map item this work fills, such as threat-model."),
         id: z.string().min(1).optional().describe("A tracker key such as PROJ-14, or GH-42 for a GitHub issue."),
-        branch: z.string().min(1).optional().describe("Its git branch. Filled from the repo's naming pattern if set."),
+        branch: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            "Its git branch. Filled from the repo's naming pattern if set. The item is written where that branch is checked out, and the reply says where (writtenTo).",
+          ),
         next: z.string().min(1).max(200).optional().describe("One line: the first action."),
         goal: WorkItemSchema.shape.goal,
         acceptance: WorkItemSchema.shape.acceptance,
@@ -230,9 +237,13 @@ export function createServer(options: ServerOptions): McpServer {
       },
       annotations: WRITES,
     },
-    withProject((root, config, input: Parameters<typeof createWorkItem>[2]) =>
-      fromResult(createWorkItem(root, config, input, now())),
-    ),
+    withProject((root, config, input: Parameters<typeof createWorkItem>[2]) => {
+      const created = createWorkItem(root, config, input, now());
+      if (!created.ok) return refuse(created.error);
+      // An item lives where its branch is checked out, so the reply says where it went (#236).
+      const home = locate(root, created.value.id)?.home ?? root;
+      return reply({ ...created.value, writtenTo: join(home, WORK_DIR, `${created.value.id}.json`) });
+    }),
   );
 
   server.registerTool(

@@ -143,6 +143,19 @@ describe("where an item's change starts (#205)", { timeout: 20_000 }, () => {
   });
 });
 
+describe("a work item's id (#234)", { timeout: 20_000 }, () => {
+  it("is never one another branch holds, even in its history", () => {
+    const { root, config } = shop();
+    git(root, "switch", "-qc", "feature/SHOP-1-duplicate");
+    value(createWorkItem(root, config, { title: "Duplicate", kind: "chore", track: "web" }, NOW));
+    // Cancelled as a duplicate, it moves into that branch's history, which hasn't merged.
+    value(advanceWorkItem(root, config, "SHOP-1", "cancelled", NOW));
+    commitAll(root);
+    git(root, "switch", "-q", "main");
+    expect(value(createWorkItem(root, config, { title: "Notes", kind: "chore", track: "web" }, NOW)).id).toBe("SHOP-2");
+  });
+});
+
 describe("the gate on a pull request (RFC 0010)", () => {
   function onBranch(stage: WorkItem["stage"], projectStage = "mvp"): { root: string; config: PeerAiConfig } {
     const { root, config } = shop(projectStage);

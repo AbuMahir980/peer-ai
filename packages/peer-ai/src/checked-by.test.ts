@@ -1,12 +1,15 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { skillRuleIds } from "peer-ai-skills";
 import { describeResult, type PeerAiConfig } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
 import { standardsFor } from "./standards.ts";
 import { unenforcedRules } from "./enforcers.ts";
 import { cleanUp, project } from "./test-helpers.ts";
-import { checkReport } from "./work.ts";
+import { checkReport, createWorkItem, recordReview } from "./work.ts";
 
 afterEach(cleanUp);
 
@@ -120,5 +123,72 @@ describe("a review says how it checked an automatic rule (RFC 0019)", () => {
     expect(describeResult("pass", { high: 1 }, 2)).toBe("pass, 1 high open, 2 automatic rules checked by reading only");
     expect(describeResult("pass", undefined, 1)).toBe("pass, 1 automatic rule checked by reading only");
     expect(describeResult("fail", { critical: 1, low: 2 })).toBe("fail, 1 critical and 2 low open");
+  });
+
+  it("judges a review by the config of the worktree its branch is in (#236)", () => {
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync(
+        "git",
+        ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", ...args],
+        { cwd, stdio: "ignore" },
+      );
+    const settings = (enforcement: "report" | "enforce") =>
+      JSON.stringify({
+        version: 1,
+        project: { name: "Shop", stage: "mvp" },
+        tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active", stack: ["typescript", "react"] }],
+        tracker: { kind: "linear", ticketPrefix: "SHOP" },
+        standards: { profiles: ["react"], enforcement },
+      });
+    // The main checkout only reports; the item's branch, in its own worktree, enforces.
+    const root = project(
+      { "peer-ai.config.json": settings("report"), "eslint.config.mjs": PEER_AI_ESLINT },
+      { git: true },
+    );
+    git(root, "symbolic-ref", "HEAD", "refs/heads/main");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "start");
+    git(root, "switch", "-qc", "feature/SHOP-1-cart");
+    writeFileSync(join(root, "peer-ai.config.json"), settings("enforce"));
+    git(root, "commit", "-qam", "enforce");
+    git(root, "switch", "-q", "main");
+    const worktree = join(mkdtempSync(join(tmpdir(), "peer-ai-worktree-")), "cart");
+    git(root, "worktree", "add", "-q", worktree, "feature/SHOP-1-cart");
+    const { config } = loadConfig(root);
+    if (config === undefined) throw new Error("the test config is not valid");
+    const created = createWorkItem(
+      root,
+      config,
+      { id: "SHOP-1", title: "Cart", kind: "feature", branch: "feature/SHOP-1-cart" },
+      new Date(NOW),
+    );
+    if (!created.ok) throw new Error(created.error);
+    const path = ".peer-ai/reports/SHOP-1/code-review-20261006T0900Z.json";
+    mkdirSync(join(worktree, ".peer-ai/reports/SHOP-1"), { recursive: true });
+    writeFileSync(
+      join(worktree, path),
+      JSON.stringify({
+        version: 1,
+        skill: "code-review",
+        workItem: "SHOP-1",
+        at: NOW,
+        scope: { tracks: ["web"] },
+        inputs: [],
+        inventory: [{ id: "screen:Booking", kind: "screen" }],
+        coverage: [
+          ...skillRuleIds("code-review").map((rule) => ({
+            rule,
+            status: "not-applicable",
+            reason: "Not in this change.",
+          })),
+          { rule: "REACT-11", status: "pass", evidence: "ESLint's react-hooks/hooks ran clean.", checkedBy: "tool" },
+        ],
+        findings: [],
+        result: "pass",
+        summary: "Pass, with nothing open.",
+      }),
+    );
+    const recorded = recordReview(root, config, "SHOP-1", { skill: "code-review", report: path }, new Date(NOW));
+    expect(recorded.ok ? "" : recorded.error).toBe("");
   });
 });
