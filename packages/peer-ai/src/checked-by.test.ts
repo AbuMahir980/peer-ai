@@ -78,6 +78,24 @@ describe("a review says how it checked an automatic rule (RFC 0019)", () => {
     expect(brief(on.root, on.config)).not.toHaveProperty("notEnforced");
   });
 
+  it("never calls a rule enforced for a file in no part, which Peer AI's settings don't check (#223)", () => {
+    const on = shop({ "eslint.config.mjs": PEER_AI_ESLINT });
+    const rules = standardsFor(
+      on.config,
+      on.root,
+      "eslint.config.mjs",
+      undefined,
+      unenforcedRules(on.root, on.config),
+    )?.peerAiRules.filter((rule) => rule.enforced !== undefined);
+    expect(rules?.length).toBeGreaterThan(0);
+    for (const rule of rules ?? []) {
+      expect(rule).toMatchObject({
+        enforced: false,
+        notEnforced: "This file is in no part of the project, and Peer AI's settings check only the parts' files.",
+      });
+    }
+  });
+
   it("refuses a tool's word for a rule its tool doesn't enforce, and takes it where it does", () => {
     const off = shop();
     const claimed = check(off.root, off.config, report(off.root, [["REACT-11", "tool"]]));
