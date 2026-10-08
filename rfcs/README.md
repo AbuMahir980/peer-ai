@@ -45,7 +45,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0017](0017-tidy-state.md) | Tidy state | Accepted |
 | [0018](0018-seeing-across-the-project.md) | Seeing across the project | Accepted |
 | [0019](0019-checks-that-see-what-ships.md) | Checks that see what ships | Accepted |
-| [0020](0020-records-where-the-work-is.md) | Records where the work is | Draft |
+| [0020](0020-records-where-the-work-is.md) | Records where the work is | Accepted |
 
 ## What carries weight
 
