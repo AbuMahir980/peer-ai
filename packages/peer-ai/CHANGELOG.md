@@ -1,5 +1,30 @@
 # peer-ai
 
+## 1.0.0-next.16
+
+### Patch Changes
+
+- 10a83c0: - **`run_verify` from CI asks about the item's own branch (#231).** Where the item's branch isn't checked out, such as when the working copy moved to a branch stacked on it, CI's result is read for the branch as pushed, not for whatever the working copy holds. When GitHub can't tell the result, the message now says the commit may not be pushed yet, as well as that `gh` may not be signed in.
+  - **`close-merged` and doctor see merges correctly (#230).** An item at prepare is never closed as merged because another item's branch of the same name merged. A branch whose only unmerged commit is Peer AI's own record, such as the one that closed its item after its pull request merged, now counts as merged.
+- 1e0e632: Work items across branches and worktrees:
+  
+  - **An id is never handed out twice (#234).** `create_work_item` gives the next number after every id taken anywhere: open or closed, in every working copy, and on every local and remote branch as committed. So an id an unmerged branch holds, even in its history, isn't reused from another checkout.
+  - **A review is judged by its branch's own config (#236).** When an item's branch is checked out in another worktree, `record_review` checks the report against that worktree's `peer-ai.config.json`, which may enforce what the main checkout's only reports. A change that touches no part, such as one to the root's settings, is judged against the whole project, so a claim that a tool checked a rule can't slip through.
+  - **`create_work_item` says where it wrote the item,** as `writtenTo`, since an item lives where its branch is checked out.
+- a52ea29: The reviews a change needs come from the right files:
+  
+  - **Only the branch's own files count (#229).** After a branch merges the default branch to stay current, the files that merge brought in, which other items changed and reviewed, no longer ask for reviews. A file counts when the branch's own commits, or its uncommitted changes, touched it.
+  - **An AI feature review needs an import of a model's library (#232),** on an import line, not the library's name anywhere in a file. A string naming a provider, or "replicate" in a comment, no longer asks for one.
+  - **A design system asks for design review (#237).** A change to a screen asks for `design-review` when the project map finds a design system, such as design tokens or a design document, even without a `design` section in the config.
+- b04a81e: `standards_for_file` gives the right rules and enforcement for two kinds of file:
+  
+  - **A dependency manifest or lockfile** gets the delivery rules for its dependencies, such as pinned versions, watched vulnerabilities, the expected registry and licences, and no longer the code's TypeScript, React or Python rules (#224). So a change to `package.json` gives `dependency-review` its rules to answer for, rather than none (#227).
+  - **A file in no part of the project,** such as a settings file at the root, is never told a rule is enforced: Peer AI's settings for ESLint, Ruff and the compiler check only the parts' files, so each such rule says `enforced: false`, with that reason (#223).
+- Updated dependencies [2deff7f]
+  - peer-ai-skills@1.0.0-next.16
+  - peer-ai-standards@1.0.0-next.16
+  - peer-ai-workflow@1.0.0-next.16
+
 ## 1.0.0-next.15
 
 ### Minor Changes
