@@ -53,6 +53,8 @@ A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP 
 
 Silence is never an answer: a rule left out of coverage makes the report invalid.
 
+**Reviewing an item whose branch is in a worktree of its own,** give `standards_for_file` its `branch`, so each file is judged by that branch's settings, which may enforce what the main checkout only reports (RFC 0020).
+
 **An automatic rule says how it was checked** (RFC 0019). For a pass of a rule a tool checks, set `checkedBy`:
 
 - `tool` when its tool enforces the rule for the files in scope, and the tool's run is the evidence. `standards_for_file` says so: the rule has `enforced: true`.
