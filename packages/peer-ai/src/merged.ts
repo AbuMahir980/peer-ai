@@ -41,7 +41,7 @@ export const branchTip = (root: string, branch: string): string | undefined =>
   commitOf(root, branch) ?? commitOf(root, `origin/${branch}`);
 
 /** What git alone can tell, with no network: a merge, a fast-forward, or the branch's files all in. */
-export function mergedInGit(root: string, branch: string, defaultBranch?: string): Merge | undefined {
+export function mergedInGit(root: string, branch: string, defaultBranch?: string, base?: string): Merge | undefined {
   const main = defaultBranchRef(root, defaultBranch);
   const tip = branchTip(root, branch);
   if (main === undefined || tip === undefined || [defaultBranch, "main", "master"].includes(branch)) return undefined;
@@ -50,10 +50,24 @@ export function mergedInGit(root: string, branch: string, defaultBranch?: string
     const merge = lines(git(root, ["rev-list", "--ancestry-path", "--merges", "--reverse", `${tip}..${main}`]))[0];
     return { commit: merge ?? tip };
   }
-  const base = git(root, ["merge-base", tip, main])?.trim();
-  if (base === undefined || base === "") return undefined;
-  const files = lines(git(root, ["diff", "--name-only", base, tip, "--", ".", ":(exclude).peer-ai"]));
-  if (files.length === 0) return undefined;
+  const shared = git(root, ["merge-base", tip, main])?.trim();
+  if (shared === undefined || shared === "") return undefined;
+  const files = lines(git(root, ["diff", "--name-only", shared, tip, "--", ".", ":(exclude).peer-ai"]));
+  if (files.length === 0) {
+    // Only Peer AI's own records are left unmerged, such as the commit that closed the item after
+    // its pull request merged (#230): the branch's own work merged when its last commit outside
+    // .peer-ai/, made after the item's base, is in the default branch.
+    const work = git(root, ["rev-list", "-1", tip, "--", ".", ":(exclude).peer-ai"])?.trim();
+    const own =
+      base !== undefined &&
+      work !== undefined &&
+      work !== "" &&
+      work !== base &&
+      git(root, ["merge-base", "--is-ancestor", base, work]) !== undefined;
+    if (!own || git(root, ["merge-base", "--is-ancestor", work, main]) === undefined) return undefined;
+    const merge = lines(git(root, ["rev-list", "--ancestry-path", "--merges", "--reverse", `${work}..${main}`]))[0];
+    return { commit: merge ?? work };
+  }
   // A squash or rebase merge leaves no ancestry, but the default branch holds each file as the branch left it.
   return git(root, ["diff", "--quiet", main, tip, "--", ...files]) === undefined ? undefined : {};
 }
@@ -96,9 +110,11 @@ export const ghIn =
 
 /** Whether an item's branch is merged: git first, then GitHub when a runner for gh is given. */
 export function mergeOf(root: string, item: WorkItem, defaultBranch?: string, run?: Runner): Merge | undefined {
-  if (item.branch === undefined) return undefined;
+  // An item at prepare hasn't started: a merged branch of the same name is another item's (#230).
+  if (item.branch === undefined || item.stage === "prepare") return undefined;
   return (
-    mergedInGit(root, item.branch, defaultBranch) ?? (run === undefined ? undefined : mergedOnGitHub(item.branch, run))
+    mergedInGit(root, item.branch, defaultBranch, item.base) ??
+    (run === undefined ? undefined : mergedOnGitHub(item.branch, run))
   );
 }
 
@@ -113,7 +129,7 @@ export function checkMerged(root: string, config: PeerAiConfig): Check[] {
     ({ home, item }) =>
       !["done", "cancelled"].includes(item.stage) &&
       item.branch !== undefined &&
-      (mergedInGit(home, item.branch, defaultBranch) !== undefined ||
+      (mergeOf(home, item, defaultBranch) !== undefined ||
         // At prepare, its branch may not have been made yet.
         (item.stage !== "prepare" && branchTip(home, item.branch) === undefined)),
   );
