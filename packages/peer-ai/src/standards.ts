@@ -150,7 +150,8 @@ const KINDS: [Exclude<FileKind, "source">, RegExp, DomainId[]][] = [
   [
     "dependencies",
     /(^|\/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|yarn\.lock|bun\.lockb?|requirements[^/]*\.(txt|in)|pyproject\.toml|poetry\.lock|uv\.lock|Pipfile(\.lock)?|setup\.(py|cfg)|go\.(mod|sum)|Cargo\.(toml|lock)|Gemfile(\.lock)?|pubspec\.(yaml|lock)|composer\.(json|lock)|(build|settings)\.gradle(\.kts)?|gradle\.lockfile|pom\.xml|[^/]+\.csproj|packages\.lock\.json|mix\.(exs|lock)|Podfile(\.lock)?)$/,
-    ["security", "code-quality"],
+    // What a manifest and its lockfile hold are dependencies: the delivery rules for them (#224).
+    ["delivery", "security"],
   ],
   [
     "tool-settings",
@@ -234,15 +235,25 @@ export function standardsFor(
   })
     // A profile with no stacks, such as the pipeline's, is about the project as a whole: its rules
     // go with the pipeline's files, whichever part holds them, not with each part's code. Every
-    // other profile's rules go with the files of its language, in the file's domains.
+    // other profile's rules go with the files of its language, in the file's domains. A dependency
+    // manifest gets only a profile's rules about dependencies, not those about its code (#224).
     .filter((rule) =>
       WHOLE_PROJECT.has(rule.profile)
         ? kind === "ci-pipeline"
-        : inLanguage(rule.profile, path) && domains.includes(rule.domain),
+        : inLanguage(rule.profile, path) &&
+          domains.includes(rule.domain) &&
+          (kind !== "dependencies" || rule.domain === "delivery"),
     )
     .map(({ id, title, rule, why, ask, check, severity, carries, value, enforcer }) => {
+      // Peer AI's settings for a part's tools check that part's files only, so a file in no part,
+      // such as a settings file at the root, isn't checked by them (#223). The pipeline's are whole-project.
+      const outside = track === undefined && enforcer !== undefined && enforcer.tool !== "github-actions";
       const notEnforced =
-        unenforced === undefined || enforcer === undefined ? undefined : whyUnenforced(unenforced, id, track?.id);
+        unenforced === undefined || enforcer === undefined
+          ? undefined
+          : outside
+            ? "This file is in no part of the project, and Peer AI's settings check only the parts' files."
+            : whyUnenforced(unenforced, id, track?.id);
       return {
         id,
         title,

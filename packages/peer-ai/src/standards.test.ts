@@ -113,6 +113,14 @@ describe("rules that fit what the file is (RFC 0012)", () => {
     expect(prefixes("services/api/Dockerfile").has("API")).toBe(false);
   });
 
+  it("give a dependency manifest the delivery rules for its dependencies, not the code's (#224)", () => {
+    for (const manifest of ["apps/mobile/package.json", "package.json", "services/api/requirements.txt"]) {
+      const found = ids(trips, manifest);
+      for (const rule of ["DEL-01", "DEL-02", "DEL-03", "DEL-09", "DEL-11"]) expect(found).toContain(rule);
+      expect(found.some((id) => /^(TS|REACT|RN|CODE)-/.test(id))).toBe(false);
+    }
+  });
+
   it("keep each profile to the files of its language, even in a part that names no stack (#113)", () => {
     const screen = prefixes("apps/mobile/src/screens/Trip.tsx");
     expect(screen.has("RN")).toBe(true);
