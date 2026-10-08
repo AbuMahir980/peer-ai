@@ -49,7 +49,7 @@ List from the files and records, with an id, a kind and where it is:
 
 Call the peer-ai MCP tool `standards_for_file` for the files the release changes. It returns the rules that apply at the project's stage.
 
-Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the ones that don't apply here, and the line says why, such as MOB-06 for a product with no phone app. A rule that applies from a later stage is `not-applicable` with that reason; a problem it describes that the release already shows is still a finding, saying when the rule applies in full.
+Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the ones that don't apply here, and the line says why, such as MOB-06 for a product with no phone app. A rule that applies from a later stage is `not-applicable` with that reason; a problem it describes that the release already shows is still a finding: mark that rule's line `fail`, not `not-applicable`, with the finding, and say in the finding when the rule applies in full.
 
 ## 4. Check
 

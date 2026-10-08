@@ -42,6 +42,28 @@ describe("Peer AI's ESLint settings", () => {
     expect(blocks[1]?.rules).toHaveProperty(["peer-ai-typescript/no-floating-promises"], ["error"]);
   });
 
+  it("never let a rule that only reports replace one that enforces the same ESLint rule (#235)", () => {
+    const blocks = configFor(
+      repairs({
+        standards: {
+          profiles: ["react"],
+          deferred: [{ rule: "REACT-03", until: "2026-12-01", reason: "Screens shrink first.", decidedBy: "Ada" }],
+        },
+      }),
+      "/repairs",
+      new Date("2026-10-08T09:00:00Z"),
+    );
+    // The file-size rule's error at 400 still covers .tsx files: the deferred component rule's
+    // warning would have replaced it there.
+    expect(blocks.find((block) => block.name === "peer-ai/web")?.rules).toHaveProperty(
+      ["peer-ai/max-lines"],
+      ["error", { max: 400, skipBlankLines: true, skipComments: true }],
+    );
+    for (const block of blocks.filter((each) => each.name?.includes("*.tsx") === true)) {
+      expect(block.rules).not.toHaveProperty(["peer-ai/max-lines"]);
+    }
+  });
+
   it("keep to the project's stage", () => {
     expect(ruleNames(configFor(repairs({ stage: "prototype" }), "/repairs"))).toEqual([
       "peer-ai-typescript/no-explicit-any",
