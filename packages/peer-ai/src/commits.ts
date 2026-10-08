@@ -52,6 +52,49 @@ export function filesSince(root: string, base: string): string[] {
   return [...changed].sort();
 }
 
+/** The default branch as git knows it here: the remote's, the config's, main or master. */
+export function defaultRef(root: string, defaultBranch?: string): string | undefined {
+  const remote = git(root, ["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"])?.trim();
+  const named = [defaultBranch, "main", "master"].filter((name): name is string => name !== undefined);
+  return [remote, ...named.flatMap((name) => [name, `origin/${name}`])].find(
+    (candidate) =>
+      candidate !== undefined &&
+      candidate !== "" &&
+      git(root, ["rev-parse", "--verify", "-q", candidate]) !== undefined,
+  );
+}
+
+/**
+ * The files a change touched since its base, as filesSince finds them, less those only a merge from
+ * the default branch brought in, which other items changed and reviewed: a file counts when the
+ * branch's own commits, or its uncommitted changes, touched it (#229).
+ */
+export function ownFilesSince(root: string, base: string, defaultBranch?: string): string[] {
+  const all = filesSince(root, base);
+  const main = defaultRef(root, defaultBranch);
+  // On the default branch itself, every commit is its own.
+  if (main === undefined || git(root, ["merge-base", "--is-ancestor", "HEAD", main]) !== undefined) return all;
+  const own = new Set([
+    ...lines(
+      git(root, [
+        "log",
+        "--no-merges",
+        "--format=",
+        "--name-only",
+        "HEAD",
+        `^${base}`,
+        `^${main}`,
+        "--",
+        ".",
+        OWN_FILES,
+      ]),
+    ),
+    ...lines(git(root, ["diff", "--name-only", "HEAD", "--", ".", OWN_FILES])),
+    ...lines(git(root, ["ls-files", "--others", "--exclude-standard", "--", ".", OWN_FILES])),
+  ]);
+  return all.filter((file) => own.has(file));
+}
+
 /** How many commits since a base change anything outside .peer-ai/. */
 export function commitsSince(root: string, base: string): number {
   return Number(git(root, ["rev-list", "--count", `${base}..HEAD`, "--", ".", OWN_FILES])?.trim() ?? "0") || 0;
