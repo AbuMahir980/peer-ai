@@ -42,7 +42,7 @@ Before a whole-project review starts, call the peer-ai MCP tool `project_map`. I
 
 For a review of a work item, every rule `next_work` lists with the review, its `rules`, gets at least one line: those are the rules that can apply to the files the change touched, and the ones this review answers for (RFC 0016). A whole-project review answers for every rule in `rules.md`. A line for a rule outside the set is accepted too. A rule that applies to each item, such as a permission check on each route, gets a line per item, with `item` set to the inventory id.
 
-A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP tool `standards_for_file` didn't return it for any file in scope (its stage is later than the project's, the project lacks its trait, or it's for another kind of part, another kind of file or another language), nothing in scope is of its kind, or the project has set it aside (give the recorded reason and who decided).
+A rule that doesn't apply is `not-applicable`, with the reason: the peer-ai MCP tool `standards_for_file` didn't return it for any file in scope (its stage is later than the project's, the project lacks its trait, or it's for another kind of part, another kind of file or another language), nothing in scope is of its kind, or the project has set it aside (give the recorded reason and who decided). A rule that doesn't apply yet, but whose problem the files already show, is `fail` with its finding, not `not-applicable`: say in the finding when the rule applies in full. Every finding needs a failing line, so Peer AI refuses a finding whose rule is marked `not-applicable`.
 
 | `status` | Needs |
 |----------|-------|

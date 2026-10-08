@@ -50,7 +50,7 @@ List from the files, with an id, a kind and its file and line:
 
 Call the peer-ai MCP tool `standards_for_file` for the infrastructure files in scope. It returns the rules that apply at the project's stage.
 
-Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the ones that don't apply here, and the line says why. A rule that applies from a later stage, such as OPS-03 from production, is `not-applicable` with that reason. Either way, a problem it describes that the files already show is still a finding, saying when the rule applies in full.
+Every rule in [rules.md](references/rules.md) gets at least one coverage line, including the ones that don't apply here, and the line says why. A rule that applies from a later stage, such as OPS-03 from production, is `not-applicable` with that reason. Either way, a problem it describes that the files already show is still a finding: mark that rule's line `fail`, not `not-applicable`, with the finding, and say in the finding when the rule applies in full.
 
 ## 4. Check
 

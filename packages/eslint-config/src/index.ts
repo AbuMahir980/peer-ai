@@ -132,7 +132,32 @@ export function eslintRules(
       : [reports(rule.id) ? "warn" : "error", ...options];
     groups.set(key, group);
   }
-  return [...groups.values()];
+  // ESLint takes the last setting of a rule for a file. A rule that only reports for now never takes
+  // the place of one that enforces the same ESLint rule on the same files, such as a deferred
+  // component-size rule replacing the enforced file-size rule for .tsx files (#235).
+  const ordered = [...groups.values()];
+  for (const [index, group] of ordered.entries()) {
+    for (const [name, setting] of Object.entries(group.rules)) {
+      if (severityOf(setting) !== "warn") continue;
+      const enforced = ordered
+        .slice(0, index)
+        .some((earlier) => severityOf(earlier.rules[name]) === "error" && overlaps(earlier.files, group.files));
+      if (enforced) Reflect.deleteProperty(group.rules, name);
+    }
+  }
+  return ordered.filter((group) => Object.keys(group.rules).length > 0);
+}
+
+const severityOf = (setting: Linter.RuleEntry | undefined): unknown => (Array.isArray(setting) ? setting[0] : setting);
+
+/** Whether two sets of file patterns can match the same file: a shared pattern, or a shared extension. */
+function overlaps(one: readonly string[], other: readonly string[]): boolean {
+  const extensions = (patterns: readonly string[]) =>
+    new Set(patterns.flatMap((pattern) => /^\*\*\/\*(\.[A-Za-z0-9]+)$/.exec(pattern)?.[1] ?? []));
+  const theirs = extensions(other);
+  return (
+    one.some((pattern) => other.includes(pattern)) || [...extensions(one)].some((extension) => theirs.has(extension))
+  );
 }
 
 function pluginsFor(names: readonly string[]): Record<string, ESLint.Plugin> {
