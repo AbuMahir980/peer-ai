@@ -44,7 +44,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { migrationCollisions, type MigrationCollision } from "./migrations.ts";
-import { asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
+import { HISTORY_DIR, asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { standardsFor, trackFor } from "./standards.ts";
 import { readOnlyCount, toolClaimProblem } from "./checked-by.ts";
@@ -119,18 +119,59 @@ export function saveWorkItem(root: string, config: PeerAiConfig, item: WorkItem)
   return result;
 }
 
-/** The next free id: the tracker's ticket prefix, or ITEM, and one more than the highest number. */
+/**
+ * The next free id: the tracker's ticket prefix, or ITEM, and one more than the highest number taken
+ * anywhere: in every working copy, open or closed, and on every local and remote branch as committed,
+ * so an id an unmerged branch holds, even in its history, is never handed out again (#234).
+ */
 export function nextId(root: string, config: PeerAiConfig): string {
   const prefix = (config.tracker?.ticketPrefix ?? DEFAULT_PREFIX).replace(/-+$/, "");
-  const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(\\d+)$`);
-  // Every working copy's items count, so two agents on two branches never take the same id.
-  const numbers = worktrees(root).flatMap((worktree) =>
-    readWorkItems(worktree.path).flatMap(({ path }) => {
-      const match = pattern.exec(path.slice(WORK_DIR.length + 1, -".json".length));
-      return match?.[1] === undefined ? [] : [Number(match[1])];
-    }),
-  );
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^${escaped}-(\\d+)$`);
+  const number = (id: string) => {
+    const match = pattern.exec(id)?.[1];
+    return match === undefined ? [] : [Number(match)];
+  };
+  const numbers = [
+    ...worktrees(root).flatMap((worktree) => [
+      ...readWorkItems(worktree.path).flatMap(({ path }) => number(path.slice(WORK_DIR.length + 1, -".json".length))),
+      ...readHistory(worktree.path).flatMap((line) => number(line.id)),
+    ]),
+    ...idsOnBranches(root, escaped).flatMap(number),
+  ];
   return `${prefix}-${String(Math.max(0, ...numbers) + 1)}`;
+}
+
+/** Every work item id with this prefix that any local or remote branch holds, open or in its history. */
+function idsOnBranches(root: string, escapedPrefix: string): string[] {
+  const run = (args: string[]) => {
+    try {
+      return execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        maxBuffer: 64 * 1024 * 1024,
+      });
+    } catch {
+      return "";
+    }
+  };
+  const refs = run(["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"])
+    .split("\n")
+    .filter((ref) => ref !== "" && !ref.endsWith("/HEAD"));
+  if (refs.length === 0) return [];
+  const found = run([
+    "grep",
+    "-h",
+    "-o",
+    "-E",
+    `"id": ?"${escapedPrefix}-[0-9]+"`,
+    ...refs,
+    "--",
+    WORK_DIR,
+    HISTORY_DIR,
+  ]);
+  return [...found.matchAll(/"id": ?"([^"]+)"/g)].flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
 }
 
 /** A branch name from the repo's naming pattern, when every placeholder in it is known. */
@@ -476,13 +517,16 @@ export function recordReview(
         `${review.report} isn't under ${REPORTS_DIR}/. Save the report there, in the work item's folder, and record it from there.`,
       );
     }
+    // The review is of the item's branch: judge it by that working copy's config, which may enforce
+    // what the main checkout's only reports (#236).
+    const branchConfig = home === root ? config : (loadConfig(home).config ?? config);
     const checked = checkReport(
       home,
-      config,
+      branchConfig,
       { ...review, report: review.report },
       id,
-      reviewRules(home, config, item, review.skill),
-      changeParts(home, config, item),
+      reviewRules(home, branchConfig, item, review.skill),
+      changeParts(home, branchConfig, item),
     );
     if (!checked.ok) return checked;
     entry = { ...checked.value, at };
@@ -568,10 +612,20 @@ function changeFiles(home: string, config: PeerAiConfig, item: WorkItem): string
     : changedFiles(home);
 }
 
-/** The parts a work item's change touched, for the review of it; none known means the whole project. */
-function changeParts(home: string, config: PeerAiConfig, item: WorkItem): (string | undefined)[] | undefined {
-  const files = changeFiles(home, config, item);
-  return files.length === 0 ? undefined : [...new Set(files.map((file) => trackFor(config, file)?.id))];
+/**
+ * The parts a work item's change touched, for the review of it. A change that touches no part, such as
+ * one to the root's settings, is judged against the whole project, so a tool claim can't slip through.
+ */
+function changeParts(home: string, config: PeerAiConfig, item: WorkItem): string[] | undefined {
+  const parts = [
+    ...new Set(
+      changeFiles(home, config, item).flatMap((file) => {
+        const track = trackFor(config, file)?.id;
+        return track === undefined ? [] : [track];
+      }),
+    ),
+  ];
+  return parts.length === 0 ? undefined : parts;
 }
 
 export function recordVerify(
