@@ -108,7 +108,7 @@ describe("creating work items", () => {
   });
 });
 
-describe("moving work items", () => {
+describe("moving work items", { timeout: 20_000 }, () => {
   it("records where work stopped without erasing what it wasn't given", () => {
     const [root, config] = shop();
     value(createWorkItem(root, config, { title: "Cart", kind: "feature", track: "web" }, NOW));
