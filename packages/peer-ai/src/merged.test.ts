@@ -97,6 +97,26 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
     });
   });
 
+  it("sees past Peer AI's own record, committed on the branch after it merged (#230)", () => {
+    const { root, config, branch } = built();
+    git(root, "merge", "-q", "--no-ff", "--no-edit", branch);
+    // The branch gains a commit that changes only Peer AI's records, such as closing its item.
+    git(root, "switch", "-q", branch);
+    writeFileSync(join(root, ".peer-ai/notes.md"), "Closed after the merge.\n");
+    commitAll(root);
+    git(root, "switch", "-q", "main");
+    expect(checkMerged(root, config)[0]?.message).toContain("merged already: SHOP-1.");
+  });
+
+  it("leaves an unstarted item alone, though another item's branch of its name merged (#230)", () => {
+    const { root, config, branch } = built();
+    git(root, "merge", "-q", "--no-ff", "--no-edit", branch);
+    value(createWorkItem(root, config, { id: "SHOP-2", title: "Next", kind: "feature", track: "web", branch }, NOW));
+    const listed = checkMerged(root, config)[0]?.message ?? "";
+    expect(listed).toContain("SHOP-1");
+    expect(listed).not.toContain("SHOP-2");
+  });
+
   it("asks GitHub about a branch git no longer has", () => {
     const { root, config, branch } = built();
     git(root, "merge", "-q", "--squash", branch);

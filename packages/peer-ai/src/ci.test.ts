@@ -60,7 +60,7 @@ describe("CI's verify (RFC 0013)", () => {
     );
     const unknown = ciResult(COMMIT, "check", () => undefined);
     expect(ciProblem(unknown, "check", COMMIT)).toBe(
-      "GitHub couldn't be asked for CI's result: sign in with gh auth login, or verify here instead.",
+      "GitHub couldn't tell CI's result for 0123456: it may not be pushed yet, so push it, or gh may not be signed in, so run gh auth login. Or verify here instead.",
     );
   });
 });
@@ -119,6 +119,18 @@ describe("shipping with CI's verify (RFC 0013)", { timeout: 20_000 }, () => {
       args[1] === `repos/{owner}/{repo}/commits/${head}/check-runs?per_page=100`
         ? JSON.stringify({ check_runs: [run("check", status, conclusion, "2026-10-03T08:50:00Z")] })
         : undefined;
+
+  it("asks CI about the item's branch, though another branch is checked out (#231)", () => {
+    const { root, config, head } = atVerify();
+    // The working copy moves to a branch stacked on it, with a commit CI never saw.
+    git(root, "switch", "-qc", "feature/SHOP-2-total");
+    writeFileSync(join(root, "apps/web/Total.ts"), "export const total = 0;\n");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "total");
+    expect(value(verifyFromCi(root, config, "SHOP-1", NOW, ci(head, "completed", "success"))).lastVerify).toMatchObject(
+      { result: "pass", commit: head },
+    );
+  });
 
   it("moves an item to ship on CI's passing run, recorded with its link", () => {
     const { root, config, head } = atVerify();

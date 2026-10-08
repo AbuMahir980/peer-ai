@@ -53,6 +53,6 @@ export function ciProblem(result: CiResult, check: string, commit: string): stri
     case "missing":
       return `No check named "${check}" ran on ${short}. Push the branch and let CI run it${result.names.length === 0 ? "" : `; the checks that ran are ${result.names.join(", ")}, so check commands.verifyCheck`}.`;
     case "unknown":
-      return "GitHub couldn't be asked for CI's result: sign in with gh auth login, or verify here instead.";
+      return `GitHub couldn't tell CI's result for ${short}: it may not be pushed yet, so push it, or gh may not be signed in, so run gh auth login. Or verify here instead.`;
   }
 }

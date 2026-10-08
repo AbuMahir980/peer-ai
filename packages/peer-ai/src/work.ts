@@ -37,6 +37,7 @@ import {
   isAncestor,
   mergeBase,
   ownFiles,
+  pushedTip,
   tipOf,
 } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
@@ -665,9 +666,18 @@ export function verifyFromCi(
       "There is no CI check to take the verify from. Set commands.verifyCheck in peer-ai.config.json to the check that runs the verify command on every pull request, or verify here.",
     );
   }
-  const commit = headCommit(home);
-  if (commit === undefined) return failed(`${item.id} has no commit for CI to have verified.`);
-  const uncommitted = uncommittedFiles(home);
+  // Where the item's branch isn't checked out, CI's result is for the branch as pushed, not for
+  // whatever this working copy has, which may be another branch's unpushed commit (#231).
+  const elsewhere = item.branch !== undefined && currentBranch(home) !== item.branch;
+  const commit = elsewhere && item.branch !== undefined ? pushedTip(home, item.branch) : headCommit(home);
+  if (commit === undefined) {
+    return failed(
+      elsewhere
+        ? `${item.branch ?? ""} isn't checked out here, and git here doesn't know it. Fetch it, or check it out, then ask again.`
+        : `${item.id} has no commit for CI to have verified.`,
+    );
+  }
+  const uncommitted = elsewhere ? [] : uncommittedFiles(home);
   if (uncommitted.length > 0) {
     return failed(
       `CI verifies commits, and ${uncommitted.slice(0, 3).join(", ")} isn't committed. Commit and push it, then ask again.`,

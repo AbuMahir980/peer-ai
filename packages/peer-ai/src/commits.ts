@@ -146,6 +146,15 @@ export function mergeBase(root: string, one: string, other: string): string | un
   return base === undefined || base === "" ? undefined : base;
 }
 
+/** A branch's tip as pushed, which is what CI ran on: the remote's copy, else the local branch. */
+export function pushedTip(root: string, branch: string): string | undefined {
+  for (const ref of [`refs/remotes/origin/${branch}`, `refs/heads/${branch}`]) {
+    const commit = git(root, ["rev-parse", "--verify", "-q", `${ref}^{commit}`])?.trim();
+    if (commit !== undefined && commit !== "") return commit;
+  }
+  return undefined;
+}
+
 /** Whether one commit is in another's history, or is the same commit. */
 export const isAncestor = (root: string, ancestor: string, commit: string): boolean =>
   git(root, ["merge-base", "--is-ancestor", ancestor, commit]) !== undefined;
