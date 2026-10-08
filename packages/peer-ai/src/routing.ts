@@ -93,6 +93,15 @@ const inTrack = (file: string, track: { path?: string | undefined }) =>
  * The reviews a change needs, from the files it touched. `read` gives a file's text, for the
  * checks that look inside: personal fields in a schema, an AI library in code.
  */
+/**
+ * Whether a file brings in an AI model's library: named on an import line, not anywhere in its
+ * text, where a comment saying "replicate" or a string naming a provider isn't a model call (#232).
+ */
+const IMPORT_LINE =
+  /^\s*(import\b|from\s+\S+\s+import\b|export\b.*\bfrom\b|using\s|use\s|"[^"\s]+"\s*$)|\brequire\s*\(/;
+const callsAiModel = (text: string): boolean =>
+  aiLibraries !== undefined && text.split("\n").some((line) => IMPORT_LINE.test(line) && matches(aiLibraries, line));
+
 export function reviewsFor(
   files: string[],
   config: PeerAiConfig,
@@ -101,6 +110,8 @@ export function reviewsFor(
   available: readonly SkillId[] = availableSkills(),
   item: { acceptance?: string[] | undefined } = {},
   sizes?: ChangeSizes,
+  /** The project map finds a design system, such as tokens or a design document, without a design in the config (#237). */
+  designSystem = false,
 ): RequiredReview[] {
   const tracks = config.tracks.filter((track) => track.status !== "external" && track.status !== "dormant");
   const remaining = files.filter((file) => sizes?.deleted?.has(file) !== true);
@@ -119,8 +130,10 @@ export function reviewsFor(
   need("accessibility-review", "it changes a screen", screens.length > 0);
   need(
     "design-review",
-    "it changes a screen, and the project has a design",
-    screens.length > 0 && config.design !== undefined,
+    config.design === undefined
+      ? "it changes a screen, and the project has a design system"
+      : "it changes a screen, and the project has a design",
+    screens.length > 0 && (config.design !== undefined || designSystem),
   );
   const contracts = (config.apis ?? []).flatMap((api) => api.contract?.location ?? []);
   const providers = (config.apis ?? [])
@@ -153,9 +166,7 @@ export function reviewsFor(
   need(
     "ai-feature-review",
     "it changes code that calls an AI model",
-    (config.project.traits ?? []).includes("ai-features") &&
-      aiLibraries !== undefined &&
-      source.some((file) => matches(aiLibraries, read(file))),
+    (config.project.traits ?? []).includes("ai-features") && source.some((file) => callsAiModel(read(file))),
   );
   need(
     "infrastructure-review",

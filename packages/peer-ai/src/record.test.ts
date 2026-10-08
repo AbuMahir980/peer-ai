@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PeerAiConfig, WorkItem } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
@@ -104,6 +104,24 @@ describe("where an item's change starts (#205)", { timeout: 20_000 }, () => {
     commitAll(root);
     expect(value(advanceWorkItem(root, config, "SHOP-1", "build", NOW)).base).toBe(start);
     expect(required(value(advanceWorkItem(root, config, "SHOP-1", "verify", NOW)))).toContain("dependency-review");
+  });
+
+  it("counts only the branch's own files, not those a merge from the default branch brought in (#229)", () => {
+    const { root, config } = shop();
+    git(root, "switch", "-qc", "feature/SHOP-1-notes");
+    value(createWorkItem(root, config, { title: "Notes", kind: "chore", track: "web" }, NOW));
+    value(advanceWorkItem(root, config, "SHOP-1", "build", NOW));
+    writeFileSync(join(root, "apps/web/NOTES.md"), "Notes.\n");
+    commitAll(root);
+    // Meanwhile the default branch gains a migration, which its own item reviewed.
+    git(root, "switch", "-q", "main");
+    mkdirSync(join(root, "apps/web/migrations"), { recursive: true });
+    writeFileSync(join(root, "apps/web/migrations/0002_notes.sql"), "ALTER TABLE carts ADD note TEXT;\n");
+    commitAll(root);
+    git(root, "switch", "-q", "feature/SHOP-1-notes");
+    git(root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "merge", "-q", "--no-edit", "main");
+    const item = value(advanceWorkItem(root, config, "SHOP-1", "verify", NOW));
+    expect(required(item)).not.toContain("data-migration-review");
   });
 
   it("starts a stacked branch where it leaves its parent's, even after the parent moves on", () => {

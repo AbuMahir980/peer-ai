@@ -31,7 +31,7 @@ import {
   changesFor,
   commitExists,
   currentBranch,
-  filesSince,
+  ownFilesSince,
   forkPoint,
   headCommit,
   isAncestor,
@@ -60,7 +60,7 @@ import {
 import { diagnose } from "./doctor.ts";
 import { LIGHT_SKILLS, changedFiles, gapSkills, reviewsFor, reviewsToDo } from "./routing.ts";
 import type { Output, Stage } from "./init.ts";
-import { WORK_DIR, readWorkItems } from "./state.ts";
+import { WORK_DIR, readMap, readWorkItems } from "./state.ts";
 
 export const WORK_ITEM_SCHEMA_URL =
   "https://raw.githubusercontent.com/AbuMahir980/peer-ai/main/packages/workflow/schemas/work-item.schema.json";
@@ -544,7 +544,7 @@ export function recordProjectReview(
  */
 export function reviewRules(home: string, config: PeerAiConfig, item: WorkItem, skill: SkillId): string[] {
   const all = skillRuleIds(skill);
-  const touched = changeFiles(home, item);
+  const touched = changeFiles(home, config, item);
   if (touched.length === 0) return all;
   // A review that reads code answers for the files the change leaves, not the ones it deleted (#216).
   const deleted =
@@ -558,14 +558,19 @@ export function reviewRules(home: string, config: PeerAiConfig, item: WorkItem, 
   return all.filter((rule) => applying.has(rule));
 }
 
-/** The files a work item's change touched: since its base, or the working copy's changes without one. */
-function changeFiles(home: string, item: WorkItem): string[] {
-  return item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
+/**
+ * The files a work item's change touched: its own, since its base, leaving out what a merge from the
+ * default branch brought in (#229); or the working copy's changes without a base.
+ */
+function changeFiles(home: string, config: PeerAiConfig, item: WorkItem): string[] {
+  return item.base !== undefined && commitExists(home, item.base)
+    ? ownFilesSince(home, item.base, config.repo?.defaultBranch)
+    : changedFiles(home);
 }
 
 /** The parts a work item's change touched, for the review of it; none known means the whole project. */
 function changeParts(home: string, config: PeerAiConfig, item: WorkItem): (string | undefined)[] | undefined {
-  const files = changeFiles(home, item);
+  const files = changeFiles(home, config, item);
   return files.length === 0 ? undefined : [...new Set(files.map((file) => trackFor(config, file)?.id))];
 }
 
@@ -662,11 +667,22 @@ export function advanceWorkItem(
     };
     // From the item's own commits when it knows where it started, so a stacked branch isn't asked
     // for its parents' reviews and a merge can't erase them (RFC 0010).
-    const touched =
-      item.base !== undefined && commitExists(home, item.base) ? filesSince(home, item.base) : changedFiles(home);
+    const touched = changeFiles(home, config, item);
     // How much each file changed decides whether a weak trigger asks only for a light review (RFC 0016).
     const sizes = item.base !== undefined && commitExists(home, item.base) ? changeSizes(home, item.base) : undefined;
-    const requiredReviews = reviewsFor(touched, config, projectStage(config), read, undefined, item, sizes);
+    // A design system on the map, such as tokens or a design document, asks for design review too (#237).
+    const map = readMap(home);
+    const designSystem = map?.ok === true && ["present", "partial"].includes(map.value.items.design?.status ?? "");
+    const requiredReviews = reviewsFor(
+      touched,
+      config,
+      projectStage(config),
+      read,
+      undefined,
+      item,
+      sizes,
+      designSystem,
+    );
     return saveWorkItem(home, config, { ...item, stage: target, requiredReviews, updatedAt: now.toISOString() });
   }
   let fromCi: string | undefined;

@@ -83,6 +83,29 @@ describe("the reviews a change needs", () => {
     ]);
   });
 
+  it("asks for an AI feature review only when a file imports a model's library (#232)", () => {
+    const skills = (text: string) => reviews({ "services/api/app/mail.py": text }).map((review) => review.skill);
+    expect(skills("from openai import OpenAI")).toContain("ai-feature-review");
+    expect(skills('import Anthropic from "@anthropic-ai/sdk";')).toContain("ai-feature-review");
+    expect(skills('const ai = require("openai");')).toContain("ai-feature-review");
+    // Naming a provider in a string, or "replicate" in a comment, isn't a model call.
+    expect(skills('PROVIDERS = {"mail": "smtp", "ai": "openai"}\n# replicate the job on retry')).not.toContain(
+      "ai-feature-review",
+    );
+  });
+
+  it("asks for a design review when the map finds a design system, without a design in the config (#237)", () => {
+    const [, config] = configured({ design: undefined });
+    const screen = ["apps/web/src/menu.tsx"];
+    const skills = (designSystem: boolean) =>
+      reviewsFor(screen, config, "mvp", () => "", SKILL_IDS, {}, undefined, designSystem).map((review) => review.skill);
+    expect(skills(false)).not.toContain("design-review");
+    expect(reviewsFor(screen, config, "mvp", () => "", SKILL_IDS, {}, undefined, true)).toContainEqual({
+      skill: "design-review",
+      reason: "it changes a screen, and the project has a design system",
+    });
+  });
+
   it("asks less of a prototype and more of production, and nothing extra for tests or docs alone", () => {
     const code = { "services/api/app/routes.py": "def menu(): ..." };
     // An API change needs its contract checked at any stage; security review starts at MVP.
