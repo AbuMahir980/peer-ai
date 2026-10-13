@@ -5,7 +5,7 @@
 
 import { execFileSync } from "node:child_process";
 import type { PeerAiConfig, WorkItem } from "peer-ai-workflow";
-import { plural, warn, type Check } from "./checks.ts";
+import { ok, plural, warn, type Check } from "./checks.ts";
 import type { Runner } from "./feedback.ts";
 import { allWorkItems } from "./homes.ts";
 
@@ -128,14 +128,27 @@ export function checkMerged(root: string, config: PeerAiConfig): Check[] {
   const merged = allWorkItems(root).filter(
     ({ home, item }) =>
       !["done", "cancelled"].includes(item.stage) &&
+      item.openAfterMerge === undefined &&
       item.branch !== undefined &&
       (mergeOf(home, item, defaultBranch) !== undefined ||
         // At prepare, its branch may not have been made yet.
         (item.stage !== "prepare" && branchTip(home, item.branch) === undefined)),
   );
-  if (merged.length === 0) return [];
+  // Each item kept open after its merge is listed, with why and who decided, so none is forgotten (RFC 0020).
+  const kept = allWorkItems(root).flatMap(({ item }) =>
+    item.openAfterMerge === undefined || ["done", "cancelled"].includes(item.stage)
+      ? []
+      : [
+          ok(
+            "merged",
+            `${item.id} stays open after its merge: ${item.openAfterMerge.reason} (decided by ${item.openAfterMerge.by})`,
+          ),
+        ],
+  );
+  if (merged.length === 0) return kept;
   const ids = merged.map(({ item }) => item.id);
   return [
+    ...kept,
     warn(
       "merged",
       `${plural(merged.length, "open work item")} ${merged.length === 1 ? "looks" : "look"} merged already: ${ids.join(", ")}. ${merged.length === 1 ? "Its branch is" : "Their branches are"} in the default branch, or gone.`,

@@ -58,7 +58,7 @@ Usage:
                               Move a work item to another track
   peer-ai tidy [--yes]        Move closed work items into the history, and remove reports
                               of items that are gone
-  peer-ai close-merged [--yes]
+  peer-ai close-merged [--yes] [--skip <id>]...
                               Close the open work items whose branches are already merged,
                               recording how, after listing them
   peer-ai mcp                 Start the MCP server that AI tools connect to, over stdio
@@ -291,8 +291,12 @@ function tidyCommand(args: string[], io: Io): Promise<number> {
 }
 
 function closeMerged(args: string[], io: Io): Promise<number> {
-  const { values } = parseArgs({ args, strict: true, options: { yes: { type: "boolean", short: "y" } } });
-  return runCloseMerged({ cwd: io.cwd, yes: values.yes === true }, io.prompter, io.out);
+  const { values } = parseArgs({
+    args,
+    strict: true,
+    options: { yes: { type: "boolean", short: "y" }, skip: { type: "string", multiple: true } },
+  });
+  return runCloseMerged({ cwd: io.cwd, yes: values.yes === true, skip: values.skip ?? [] }, io.prompter, io.out);
 }
 
 async function mcp(args: string[], io: Io): Promise<number> {

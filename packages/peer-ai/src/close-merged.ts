@@ -1,6 +1,7 @@
 // peer-ai close-merged: closes every open work item whose branch is already merged (RFC 0013),
 // recording how, so work that merged before the ship gate, or while it wasn't required, doesn't
-// need its branch checked out and verified again. It lists them and asks first.
+// need its branch checked out and verified again. It lists them and asks first: all, one by one, or
+// none; and it leaves out the items a person kept open after their merge, and any named to skip (RFC 0020).
 
 import { loadConfig } from "./assess.ts";
 import { shortCommit } from "./commits.ts";
@@ -9,11 +10,14 @@ import type { Runner } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { ghIn, type Merge } from "./merged.ts";
 import { Cancelled, type Prompter } from "./prompter.ts";
+import { allWorkItems } from "./homes.ts";
 import { closeByMerge, mergedItems } from "./work.ts";
 
 export interface CloseMergedOptions {
   cwd: string;
   yes: boolean;
+  /** Items to leave open, by id, though their branches merged. */
+  skip?: readonly string[];
   now?: Date;
   /** gh, to ask GitHub about squash merges and branches git no longer has. */
   run?: Runner;
@@ -40,9 +44,17 @@ export async function runCloseMerged(
     );
     return 2;
   }
-  const found = mergedItems(options.cwd, config, options.run ?? ghIn(options.cwd));
+  // Items a person kept open after their merge are listed, with why, and left alone.
+  for (const { item } of allWorkItems(options.cwd)) {
+    if (item.openAfterMerge === undefined || item.stage === "done" || item.stage === "cancelled") continue;
+    out.log(`Kept open: ${item.id}, ${item.openAfterMerge.reason} (decided by ${item.openAfterMerge.by})`);
+  }
+  const skip = new Set(options.skip ?? []);
+  const merged = mergedItems(options.cwd, config, options.run ?? ghIn(options.cwd));
+  for (const { item } of merged.filter(({ item }) => skip.has(item.id))) out.log(`Skipped: ${item.id}, as asked.`);
+  let found = merged.filter(({ item }) => !skip.has(item.id));
   if (found.length === 0) {
-    out.log("No open work item's branch is merged.");
+    out.log("No open work item's branch is merged, apart from any kept open or skipped.");
     return 0;
   }
   out.log("These open work items' branches are already merged:");
@@ -50,16 +62,33 @@ export async function runCloseMerged(
   if (!options.yes) {
     if (prompter === undefined) {
       out.error(
-        "close-merged asks before it closes anything, so it needs a terminal. To close them without asking, pass --yes.",
+        "close-merged asks before it closes anything, so it needs a terminal. To close them without asking, pass --yes, with --skip <id> for any to leave open.",
       );
       return 2;
     }
     try {
-      const sure = await prompter.confirm(
-        `Close ${found.length === 1 ? "it" : `all ${String(found.length)}`}, recording that ${found.length === 1 ? "its branch was" : "their branches were"} merged?`,
-        true,
-      );
-      if (!sure) {
+      const how =
+        found.length === 1
+          ? (await prompter.confirm("Close it, recording that its branch was merged?", true))
+            ? "all"
+            : "none"
+          : await prompter.select(
+              `Close them, recording that their branches were merged?`,
+              [
+                { value: "all", label: `Close all ${String(found.length)}` },
+                { value: "choose", label: "Choose one by one" },
+                { value: "none", label: "Close none" },
+              ],
+              "all",
+            );
+      if (how === "choose") {
+        const chosen: typeof found = [];
+        for (const each of found) {
+          if (await prompter.confirm(`Close ${each.item.id}, ${each.item.title}?`, true)) chosen.push(each);
+        }
+        found = chosen;
+      }
+      if (how === "none" || found.length === 0) {
         out.log("Nothing was closed.");
         return 1;
       }

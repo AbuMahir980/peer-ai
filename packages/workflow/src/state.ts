@@ -177,6 +177,12 @@ export const WorkItemSchema = z
       )
       .optional()
       .describe("Required reviews a person decided this item doesn't need, each with why and who decided (RFC 0016)."),
+    openAfterMerge: z
+      .strictObject({ reason: z.string().min(1), by: z.string().min(1), at: Timestamp })
+      .optional()
+      .describe(
+        "A person's decision that the item stays open after its branch merged, such as with checks still owed, and why. close-merged leaves it alone; moving the item on clears it (RFC 0020).",
+      ),
     requiredReviews: z
       .array(
         z.strictObject({
