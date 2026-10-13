@@ -329,7 +329,7 @@ jobs:
     steps: …
 ```
 
-A job skipped by its `if` reports success, so a required check never waits; a workflow skipped by a `paths` filter leaves it waiting. Render keeps the file in step with the parts while it's as render left it, and never edits your own workflows. A part named `code` or `other` gets no output of its own.
+A job skipped by its `if` reports success, so a required check never waits; a workflow skipped by a `paths` filter leaves it waiting. Render keeps the file in step with the parts while it's as render left it, and never edits your own workflows. A part named `code` or `other` gets no output of its own. `doctor` warns about a part's jobs that run on every pull request, a deployment on pull requests, and runs left going after a newer push; Peer AI's own workflows cancel a pull request's run a newer push replaced.
 
 ### A section for people in the README
 
@@ -454,6 +454,7 @@ npx peer-ai doctor
 | What render writes | Instructions or MCP registrations that no longer match the config, or skills that are missing or out of date |
 | CI | A config that says there is no CI when the repository has a pipeline, which would lead Peer AI to add a second one |
 | The CI gate | A pipeline that doesn't run `peer-ai check`, or a gate workflow that's out of date or no longer runs it. Through `next_work`, the AI tool hears about it in every session. |
+| Where CI runs its checks | In the project's own GitHub Actions workflows, a deployment on pull requests, a workflow on pull requests that doesn't cancel the run a newer push replaced, or, in a project of several parts, a part's jobs on every pull request with no condition on what changed, each named with its workflow and jobs (RFC 0022, DEL-13). doctor reads what a job is for from its environment, steps, folder and name, and can be wrong: a workflow meant that way is listed in `declined`, `{ "workflow": ".github/workflows/deploy.yml", "reason": "…" }`, and isn't warned about again. Warnings only. |
 | The record | The work item of the branch checked out is still at `prepare` while its branch has commits, or its verify or a review looked at an older commit with changes since (RFC 0010). A warning, which reaches the AI tool through `next_work`. |
 | The project map | Missing, not valid, or out of date. It runs a fresh assessment and lists every item whose status has changed since `.peer-ai/map.json` was written. |
 | Work items | A file in `.peer-ai/work/` that isn't valid or isn't named after its id. An open item on a track that's retired or no longer in the config is a warning, with how to move or cancel it: such an item stays valid, so cancelling it never fails (RFC 0017). |

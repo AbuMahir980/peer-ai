@@ -458,11 +458,15 @@ const configShape = {
       z.union([
         z.strictObject({ profile: Slug, reason: Note }),
         z.strictObject({ trait: z.enum(TRAITS), reason: Note }),
+        z.strictObject({
+          workflow: Path.describe("A workflow of the project's own, such as .github/workflows/deploy.yml."),
+          reason: Note,
+        }),
       ]),
     )
     .optional()
     .describe(
-      "Stack profiles and traits peer-ai assess suggests that the project decided not to take up, each with why, so doctor stops suggesting them (RFC 0011).",
+      "Stack profiles and traits peer-ai assess suggests that the project decided not to take up, each with why, so doctor stops suggesting them (RFC 0011). A workflow listed here runs where it does on purpose, so doctor stops warning about it (RFC 0022).",
     ),
 };
 

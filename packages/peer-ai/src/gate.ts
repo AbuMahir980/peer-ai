@@ -11,12 +11,27 @@ import { CHANGES_FILE } from "./changes-workflow.ts";
 import { type Check, ok, skip, warn } from "./checks.ts";
 import { detectDelivery } from "./detect.ts";
 import { VERSION } from "./package-info.ts";
-import { CHECKOUT, SETUP_NODE, WORKFLOW_FILE, sameFile, unchangedSinceRender, withHash } from "./pipeline.ts";
+import {
+  CANCEL_REPLACED,
+  CHECKOUT,
+  SETUP_NODE,
+  WORKFLOW_FILE,
+  sameFile,
+  unchangedSinceRender,
+  withHash,
+} from "./pipeline.ts";
+import { UPDATE_FILE } from "./update-workflow.ts";
 
 export const GATE_FILE = ".github/workflows/peer-ai.yml";
 const WORKFLOWS = ".github/workflows";
 /** Workflows Peer AI writes for itself, which on their own aren't a project's CI. */
-const OWN = [GATE_FILE, WORKFLOW_FILE, CHANGES_FILE, `${WORKFLOWS}/copilot-setup-steps.yml`];
+export const OWN_WORKFLOWS = [
+  GATE_FILE,
+  WORKFLOW_FILE,
+  CHANGES_FILE,
+  UPDATE_FILE,
+  `${WORKFLOWS}/copilot-setup-steps.yml`,
+];
 /** A command that runs the gate: peer-ai check, with or without a version. */
 const GATE_COMMAND = /\bpeer-ai(@\S+)?\s+check\b/;
 
@@ -62,6 +77,7 @@ export function gateWorkflow(config: PeerAiConfig): string {
     "permissions:",
     "  contents: read",
     ...(confirmsCi ? ["  checks: read"] : []),
+    ...CANCEL_REPLACED,
     "jobs:",
     "  peer-ai-check:",
     "    name: peer-ai check",
@@ -103,7 +119,9 @@ export interface Gate {
 
 /** Whether the project's CI is GitHub Actions: workflows of its own, or the gate render wrote. */
 export function onGitHubActions(root: string): boolean {
-  return read(root, GATE_FILE) !== undefined || filesOf(root, `${WORKFLOWS}/`).some((path) => !OWN.includes(path));
+  return (
+    read(root, GATE_FILE) !== undefined || filesOf(root, `${WORKFLOWS}/`).some((path) => !OWN_WORKFLOWS.includes(path))
+  );
 }
 
 /** Where the gate stands, and what render does about it. */
