@@ -1,5 +1,26 @@
 # peer-ai
 
+## 1.0.0-next.17
+
+### Minor Changes
+
+- b111302: CI in view (RFC 0020, for #226). On GitHub, `next_work` reads each open item's pull request checks once, through `gh`, and keeps them for two minutes. The current item gets `pullRequest`, with its checks and any failing ones, and each summary gets `ci`: passing, pending, waiting, or failing with which. A failing check becomes the item's next action, "Fix CI: integration-tests, on 4f2a9c1.", and the instructions say to fix it first and tell the person. Peer AI's own gate being red while the item is short of ship is "waiting", not failing, and the gate's message on a pull request now ends with what it's waiting for: "Waiting for: a passing verify, code-review, the move to ship." Offline, without `gh` or a GitHub remote, nothing changes.
+- 307f896: A merged item's record lands where it counts (RFC 0020, for #233). Moving an item whose branch has merged to `done`, or closing it with `close-merged`, writes its record where the merge is: a working copy that holds the merged work and isn't on the merged branch, the main checkout first. So the record reaches the default branch with the next pull request, rather than staying on a branch that's gone, or needing a pull request of its own. With no such working copy, it says to pull the default branch first. `advance_work_item` says where it wrote the record, and `next_work` lists records waiting to be committed, as `unlanded`.
+- 2440373: Choosing what `close-merged` closes (RFC 0020, for #230):
+  
+  - **An item can stay open after its merge,** such as one merged before ship with device checks still owed. `update_work_item` with `keepOpen`, a reason and who decided, records `openAfterMerge` on the item. `close-merged` and `peer-ai doctor` leave it alone and list it as kept open, with why. Moving the item on clears it.
+  - **`close-merged` asks about each item:** close all, choose one by one, or close none. With `--yes`, it closes all except those named with `--skip <id>`, which can be given more than once.
+- 4291cb9: `standards_for_file` takes an optional `branch` (RFC 0020, for #236). For a branch checked out in a worktree of its own, the file is judged in that working copy: by its config, its parts and its lint settings, which may enforce what the main checkout only reports. The instructions render writes, and the review guides, say to give it the branch.
+
+### Patch Changes
+
+- 38b2897: `run_verify` from CI, and moving to ship, take CI's result from the item's latest commit that changed anything outside `.peer-ai/` (#247). A commit that only records reviews or a verify leaves the code as CI tested it, so a project's CI can skip such commits and the verify still counts. The README shows how to skip them in a workflow without leaving a required check waiting.
+- Updated dependencies [2440373]
+- Updated dependencies [4291cb9]
+  - peer-ai-workflow@1.0.0-next.17
+  - peer-ai-skills@1.0.0-next.17
+  - peer-ai-standards@1.0.0-next.17
+
 ## 1.0.0-next.16
 
 ### Patch Changes
