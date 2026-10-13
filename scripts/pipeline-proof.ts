@@ -11,6 +11,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { PROFILES, type Example } from "peer-ai-standards";
+import { CHANGES_FILE, changesWorkflow } from "../packages/peer-ai/src/changes-workflow.ts";
 import { IMAGES, JOBS, WORKFLOW_FILE, workflowFile } from "../packages/peer-ai/src/pipeline.ts";
 
 const runnerTemp = process.env.RUNNER_TEMP ?? mkdtempSync(join(tmpdir(), "peer-ai-proof-"));
@@ -93,9 +94,25 @@ const own = workflowFile({
   standards: { profiles: ["github-actions"] },
 });
 if (own === undefined) throw new Error("render wrote no workflow for a project listing github-actions");
-const checked = shell(JOBS.workflows.scan, repository(WORKFLOW_FILE, own));
-if (checked.code !== 0) failures.push(`Peer AI's own workflow fails its workflow check:\n${checked.output}`);
-console.log(`${WORKFLOW_FILE}: ${checked.code === 0 ? "passes" : "fails"} its own workflow check`);
+// So must the workflow that says what a change touched, for a project of several parts (RFC 0022).
+const changes = changesWorkflow({
+  version: 1,
+  project: { name: "Repairs" },
+  tracks: [
+    { id: "web", kind: "web", path: "apps/web", status: "active", uses: ["shared"] },
+    { id: "api", kind: "backend", path: "apps/api", status: "active", uses: ["shared"] },
+    { id: "shared", kind: "library", path: "packages/shared", status: "active" },
+  ],
+});
+if (changes === undefined) throw new Error("render wrote no what-changed workflow for a project of three parts");
+for (const [path, content] of [
+  [WORKFLOW_FILE, own],
+  [CHANGES_FILE, changes],
+] as const) {
+  const checked = shell(JOBS.workflows.scan, repository(path, content));
+  if (checked.code !== 0) failures.push(`Peer AI's ${path} fails its workflow check:\n${checked.output}`);
+  console.log(`${path}: ${checked.code === 0 ? "passes" : "fails"} its own workflow check`);
+}
 
 if (failures.length > 0) {
   console.error(`\n${failures.join("\n\n")}`);

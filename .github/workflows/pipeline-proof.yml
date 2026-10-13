@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - packages/peer-ai/src/pipeline.ts
+      - packages/peer-ai/src/changes-workflow.ts
       - packages/standards/src/profiles/github-actions.ts
       - packages/standards/src/profile.ts
       - packages/standards/src/index.ts

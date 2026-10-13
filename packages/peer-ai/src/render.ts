@@ -19,6 +19,7 @@ import { FEEDBACK_DIR, FEEDBACK_REPO } from "./feedback.ts";
 import type { Output } from "./init.ts";
 import { VERSION } from "./package-info.ts";
 import { onGitHubActions, planGate } from "./gate.ts";
+import { CHANGES_FILE, changesWorkflow, reservedParts } from "./changes-workflow.ts";
 import {
   CHECKOUT,
   SETUP_NODE,
@@ -631,6 +632,44 @@ export function planRender(root: string, config: PeerAiConfig): RenderPlan {
   const gate = planGate(root, config);
   if (gate.planned !== undefined) files.push(gate.planned);
   if (gate.manual !== undefined) manual.push(gate.manual);
+
+  // What changed (RFC 0022): on GitHub Actions, for a project of several parts, a workflow its own
+  // workflows call first, so each job runs only for the parts a change touched.
+  const changes = changesWorkflow(config);
+  if (
+    changes !== undefined &&
+    (onGitHubActions(root) || (config.delivery?.pipeline ?? "").startsWith(".github/workflows"))
+  ) {
+    const existing = readText(root, CHANGES_FILE);
+    const reserved = reservedParts(config);
+    const note = [
+      existing === undefined
+        ? "Nothing runs it until a workflow of yours calls it first: its header shows how, so each job runs only for the parts a change touched."
+        : undefined,
+      reserved.length === 0
+        ? undefined
+        : `${reserved.join(" and ")} ${reserved.length === 1 ? "has" : "have"} no output of its own, since every project's outputs use that name: rename the part to give it one.`,
+    ]
+      .filter((line) => line !== undefined)
+      .join(" ");
+    if (existing === undefined) {
+      files.push({ path: CHANGES_FILE, action: "create", content: changes, ...(note === "" ? {} : { note }) });
+    } else if (unchangedSinceRender(existing)) {
+      const same = sameFile(existing, changes);
+      files.push({
+        path: CHANGES_FILE,
+        action: same ? "unchanged" : "update",
+        ...(same ? {} : { content: changes }),
+        ...(same || note === "" ? {} : { note }),
+      });
+    } else {
+      files.push({
+        path: CHANGES_FILE,
+        action: "kept",
+        note: "It was changed by hand, so keeping its parts up to date with the config is yours now. Delete it to have render write Peer AI's again.",
+      });
+    }
+  }
 
   // The update pull request (RFC 0014), on GitHub Actions, for a project that runs Peer AI through npx.
   if (config.updates?.pullRequest === true) {

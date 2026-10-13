@@ -1,4 +1,6 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./assess.ts";
@@ -109,6 +111,49 @@ describe("the CI gate", () => {
       2 * (body.match(/id: changes/g)?.length ?? 0),
     );
   });
+
+  it.skipIf(process.platform === "win32")(
+    "scans unless GitHub lists only Peer AI's records, and all of them (RFC 0021)",
+    () => {
+      const body =
+        workflowBody(
+          loaded(project({ "peer-ai.config.json": config({ standards: { profiles: ["github-actions"] } }) })),
+        ) ?? "";
+      const lines = body.split("\n");
+      const start = lines.indexOf("        run: |", lines.indexOf("        id: changes")) + 1;
+      const end = lines.findIndex((line, i) => i >= start && !line.startsWith("          "));
+      const step = lines
+        .slice(start, end)
+        .map((line) => line.slice(10))
+        .join("\n");
+      /** The step's answer, with gh answering the compare API from these files through the real jq. */
+      const code = (files: { filename: string; previous_filename?: string }[]) => {
+        const dir = mkdtempSync(join(tmpdir(), "peer-ai-records-"));
+        writeFileSync(join(dir, "compare.json"), JSON.stringify({ files }));
+        writeFileSync(join(dir, "gh"), `#!/usr/bin/env bash\njq -r "$4" "${join(dir, "compare.json")}"\n`);
+        chmodSync(join(dir, "gh"), 0o755);
+        writeFileSync(join(dir, "output"), "");
+        spawnSync("bash", ["-e", "-c", step], {
+          env: {
+            ...process.env,
+            PATH: `${dir}:${process.env.PATH ?? ""}`,
+            GITHUB_OUTPUT: join(dir, "output"),
+            GITHUB_REPOSITORY: "example/shop",
+            BEFORE: "a".repeat(40),
+            AFTER: "b".repeat(40),
+          },
+        });
+        return readFileSync(join(dir, "output"), "utf8").trim();
+      };
+      expect(code([{ filename: ".peer-ai/history.jsonl" }])).toBe("code=false");
+      expect(code([{ filename: ".peer-ai/history.jsonl" }, { filename: "src/app.ts" }])).toBe("code=true");
+      expect(code([{ filename: ".peer-ai/notes.md", previous_filename: "src/notes.md" }])).toBe("code=true");
+      // GitHub lists 300 files at most, so at 300 there may be code it didn't list.
+      const records = Array.from({ length: 300 }, (_, i) => ({ filename: `.peer-ai/work/SHOP-${String(i)}.json` }));
+      expect(code(records)).toBe("code=true");
+      expect(code(records.slice(1))).toBe("code=false");
+    },
+  );
 
   it("is never added twice: a workflow that runs it already is enough", () => {
     const root = project({
