@@ -1,5 +1,14 @@
 # peer-ai-skills
 
+## 1.0.0-next.17
+
+### Patch Changes
+
+- 4291cb9: `standards_for_file` takes an optional `branch` (RFC 0020, for #236). For a branch checked out in a worktree of its own, the file is judged in that working copy: by its config, its parts and its lint settings, which may enforce what the main checkout only reports. The instructions render writes, and the review guides, say to give it the branch.
+- Updated dependencies [2440373]
+  - peer-ai-workflow@1.0.0-next.17
+  - peer-ai-standards@1.0.0-next.17
+
 ## 1.0.0-next.16
 
 ### Patch Changes
