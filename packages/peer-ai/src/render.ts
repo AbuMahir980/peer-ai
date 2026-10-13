@@ -116,6 +116,18 @@ export function instructions(config: PeerAiConfig): string {
     "- Before editing a file, call `standards_for_file` and follow what it returns.",
     "- Record progress with `update_work_item`, so the next session resumes where this one stopped.",
     "- Verify with `run_verify`. Never report a verify result yourself. It verifies the item's latest commit, so commit first.",
+    // Records go up in one push once CI has run on the code, since CI's result carries across them (RFC 0021).
+    ...(config.commands?.verifyCheck === undefined
+      ? []
+      : [
+          "- With CI's verify, push the change first. Once CI has run on it, record the reviews, run `run_verify` with `from: \"ci\"`, and commit those records together, in one push: CI's result carries across commits that change only `.peer-ai/`.",
+        ]),
+    // A draft can't merge, so the gate skips it until it's marked ready (RFC 0021).
+    ...(config.repo?.host === "github" && config.gates?.drafts !== "check"
+      ? [
+          "- Open a pull request as a draft while its work item is short of ship, and mark it ready for review when the item reaches ship: Peer AI's gate skips drafts.",
+        ]
+      : []),
     "- Working in a git worktree of your own, give your branch to `next_work` and `standards_for_file`. The tools find each work item on its own branch, wherever it's checked out, and judge each file by that branch's settings.",
     "- Peer AI's skills are named `peer-ai-…`, such as `peer-ai-security-review`. `next_work` names the one to use for a gap, and the reviews a work item needs; follow each skill step by step. If none are installed, run `npx peer-ai render --skills`.",
     "- For every review, write its report in `.peer-ai/reports/`, then record it with `record_review` and the report's path. Record failed and incomplete reviews too.",

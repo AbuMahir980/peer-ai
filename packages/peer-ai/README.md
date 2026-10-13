@@ -266,6 +266,7 @@ npx peer-ai render
 Render sets up `peer-ai check` in the project's CI, so no one has to remember to ([RFC 0009](../../rfcs/0009-the-ci-gate-set-up-by-render.md)):
 
 - **On GitHub Actions,** it writes `.github/workflows/peer-ai.yml`: one job, `peer-ai check`, that checks out the pull request's own commit with its history, installs Node 24 and runs the exact version of Peer AI render ran as, so it works with or without a `package.json`. Its actions are pinned to commits. Render keeps the file up to date while it's as render left it, and leaves it alone once someone changes it by hand; `doctor` then checks it still runs the gate. A version bump updates it.
+- **It skips draft pull requests,** and runs when one is marked ready for review (RFC 0021). A draft can't merge, so nothing gets through, and the gate's red on a pull request always means one that's meant to merge isn't ready. The instructions render writes say to open a pull request as a draft until its item reaches ship. To run the gate on drafts too, set `"gates": { "drafts": "check" }`.
 - **On any other CI,** it prints the step to add.
 - **When a workflow of the project's own already runs `peer-ai check`,** it adds nothing.
 
@@ -303,7 +304,7 @@ It needs GitHub, and `gh` signed in where the AI tool works.
   run: make check
 ```
 
-The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks.
+The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks. The security pipeline render writes does this itself: each scan's job runs on every push, and skips its scan when the push changed only `.peer-ai/` (RFC 0021). With `verifyCheck`, the instructions render writes say to push the change, let CI run, then record the reviews and the verify from CI together, in one push.
 
 ### A section for people in the README
 

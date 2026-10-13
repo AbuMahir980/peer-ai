@@ -844,6 +844,14 @@
             "high",
             "medium"
           ]
+        },
+        "drafts": {
+          "description": "Whether the gate runs on draft pull requests. A draft can't merge, so it's skipped by default, and the gate runs once it's marked ready (RFC 0021).",
+          "type": "string",
+          "enum": [
+            "skip",
+            "check"
+          ]
         }
       },
       "additionalProperties": false

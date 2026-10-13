@@ -48,10 +48,14 @@ export function gateWorkflow(config: PeerAiConfig): string {
   // A verify taken from CI is confirmed with GitHub through gh, which needs the run's token and
   // permission to read checks (RFC 0013).
   const confirmsCi = config.commands?.verifyCheck !== undefined;
+  // A draft can't merge, so the gate waits until it's marked ready, rather than failing on work
+  // that isn't meant to be finished yet (RFC 0021).
+  const skipsDrafts = config.gates?.drafts !== "check";
   const body = [
     "name: Peer AI",
     "on:",
     "  pull_request:",
+    ...(skipsDrafts ? ["    types: [opened, synchronize, reopened, ready_for_review]"] : []),
     // With no default branch in the config, changes are checked in their pull requests.
     ...(branch === undefined ? [] : ["  push:", `    branches: [${branch}]`]),
     "permissions:",
@@ -60,6 +64,7 @@ export function gateWorkflow(config: PeerAiConfig): string {
     "jobs:",
     "  peer-ai-check:",
     "    name: peer-ai check",
+    ...(skipsDrafts ? ["    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false"] : []),
     "    runs-on: ubuntu-latest",
     "    timeout-minutes: 10",
     "    steps:",
