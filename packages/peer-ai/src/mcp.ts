@@ -26,7 +26,7 @@ import { compareVersions, pinnedVersion } from "./versions.ts";
 import { reviewSizes } from "./review-cost.ts";
 import { standardsFor } from "./standards.ts";
 import { WORK_DIR, mapChanges, readMap } from "./state.ts";
-import { locate } from "./homes.ts";
+import { homeOf, locate } from "./homes.ts";
 import {
   advanceWorkItem,
   collisionsFor,
@@ -48,7 +48,7 @@ const INSTRUCTIONS = `Peer AI keeps this project's map, its work items and the g
 Start a session with next_work: it returns the work item for the current git branch and where it stopped, and every other open item in one line. Read another item in full with work_item before working on it.
 Before editing a file, call standards_for_file and follow what it returns; ask it for the full text of the rules your change touches with ruleIds.
 Record progress with update_work_item. Run verification with run_verify rather than reporting a result yourself; it verifies the item's latest commit, so commit first. When the project sets commands.verifyCheck, push and use run_verify with from: ci, so CI's run counts instead of running it again here.
-Working in a git worktree of your own, give your branch to next_work: the tools find each work item on its own branch, wherever it's checked out.
+Working in a git worktree of your own, give your branch to next_work and standards_for_file: the tools find each work item on its own branch, wherever it's checked out, and judge each file by that branch's settings.
 Record each review with record_review, passing the path of its report, including failed and incomplete reviews.
 Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
@@ -200,13 +200,34 @@ export function createServer(options: ServerOptions): McpServer {
           .min(1)
           .optional()
           .describe("Rule ids, such as SEC-12, to return in full instead of every rule in brief."),
+        branch: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            "The branch the work is on, when it's checked out in a worktree of its own: the file is judged by that working copy's config, parts and lint settings (RFC 0020).",
+          ),
       },
       annotations: READ_ONLY,
     },
-    withProject((root, config, { file, ruleIds }: { file: string; ruleIds?: string[] | undefined }) => {
-      const standards = standardsFor(config, root, file, ruleIds, unenforcedRules(root, config, now()));
-      return standards === undefined ? refuse(`${file} is outside the project.`) : reply(standards);
-    }),
+    withProject(
+      (
+        root,
+        config,
+        { file, ruleIds, branch }: { file: string; ruleIds?: string[] | undefined; branch?: string | undefined },
+      ) => {
+        // A branch checked out elsewhere is judged there: its config may enforce what this one only reports.
+        const home = branch === undefined ? root : homeOf(root, branch);
+        if (home === undefined) {
+          return refuse(
+            `${branch ?? ""} isn't checked out in any working copy here. Check it out, or leave out branch.`,
+          );
+        }
+        const settings = home === root ? config : (loadConfig(home).config ?? config);
+        const standards = standardsFor(settings, home, file, ruleIds, unenforcedRules(home, settings, now()));
+        return standards === undefined ? refuse(`${file} is outside the project.`) : reply(standards);
+      },
+    ),
   );
 
   server.registerTool(

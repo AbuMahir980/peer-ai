@@ -1,7 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { skillRuleIds } from "peer-ai-skills";
@@ -89,6 +91,54 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
   const text = first?.text ?? "";
   return { isError: result.isError === true, text, value: () => JSON.parse(text) as Record<string, unknown> };
 }
+
+describe("standards_for_file for a branch in its own worktree (RFC 0020)", () => {
+  it("judges the file by that branch's working copy", async () => {
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync(
+        "git",
+        ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", ...args],
+        { cwd, stdio: "ignore" },
+      );
+    const settings = (enforcement: "report" | "enforce") =>
+      json({
+        version: 1,
+        project: { name: "Shop", stage: "mvp" },
+        tracks: [{ id: "web", kind: "web", path: "apps/web", status: "active", stack: ["typescript", "react"] }],
+        standards: { profiles: ["react"], enforcement },
+      });
+    // The main checkout only reports; the branch, in its own worktree, enforces.
+    const root = project(
+      {
+        "peer-ai.config.json": settings("report"),
+        "eslint.config.mjs": 'import peerAi from "peer-ai-eslint-config";\nexport default [...peerAi()];\n',
+      },
+      { git: true },
+    );
+    git(root, "symbolic-ref", "HEAD", "refs/heads/main");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "start");
+    git(root, "switch", "-qc", "feature/cart");
+    writeFileSync(join(root, "peer-ai.config.json"), settings("enforce"));
+    git(root, "commit", "-qam", "enforce");
+    git(root, "switch", "-q", "main");
+    git(root, "worktree", "add", "-q", join(mkdtempSync(join(tmpdir(), "peer-ai-worktree-")), "cart"), "feature/cart");
+    const client = await connect(root);
+    const enforced = async (args: Record<string, unknown>) =>
+      (
+        (await call(client, "standards_for_file", { file: "apps/web/src/Cart.tsx", ...args })).value().peerAiRules as {
+          id: string;
+          enforced?: boolean;
+        }[]
+      ).find((rule) => rule.id === "REACT-11")?.enforced;
+    expect(await enforced({})).toBe(false);
+    expect(await enforced({ branch: "feature/cart" })).toBe(true);
+    const nowhere = await call(client, "standards_for_file", { file: "apps/web/src/Cart.tsx", branch: "feature/gone" });
+    expect(nowhere.text).toBe(
+      "feature/gone isn't checked out in any working copy here. Check it out, or leave out branch.",
+    );
+  });
+});
 
 describe("the MCP server", () => {
   it("drafts feedback about Peer AI with what it knows, and refuses code, keys and email addresses", async () => {
