@@ -145,3 +145,15 @@ A dependency that runs code when it's installed, is no longer maintained, or has
 | Applies from | Checked by | Severity | Applies when | Source |
 |--------------|------------|----------|--------------|--------|
 | Production | AI review | High | Always | [OWASP ASVS 5.0, 15.1.4, level 3](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md) |
+
+## DEL-13 · Each check runs on the changes it can apply to
+
+A CI job runs its work only when the change can affect what it checks: a part's tests when that part, or what it depends on, changed; deployment checks when deploying, not on every pull request. Every required check still reports on every change: a job that has nothing to check is skipped, and reports success. A workflow cancels a run that a newer push to the same branch has replaced.
+
+**Why:** Checks that run where they can't apply cost money, fail for reasons unrelated to the change, and teach everyone to ignore a red cross.
+
+**Ask:** Does any check in this change's CI run where it can't apply, or keep running after a newer push?
+
+| Applies from | Checked by | Severity | Applies when | Source |
+|--------------|------------|----------|--------------|--------|
+| MVP | AI review | Medium | Always | – |

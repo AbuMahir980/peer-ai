@@ -24,7 +24,7 @@ Every rule has an id, the rule in plain words, why it matters, a question a revi
 | [Security](security.md) | 30 |
 | [Privacy and compliance](privacy-compliance.md) | 6 |
 | [Testing](testing.md) | 12 |
-| [Delivery](delivery.md) | 12 |
+| [Delivery](delivery.md) | 13 |
 | [Infrastructure and operations](operations.md) | 15 |
 | [AI features](ai-features.md) | 8 |
 | [Code quality](code-quality.md) | 16 |

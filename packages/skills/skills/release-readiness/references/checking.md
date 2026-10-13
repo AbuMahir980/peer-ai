@@ -5,7 +5,7 @@ Examples are from a made-up bicycle repair booking service. Pipelines, stores an
 ## Contents
 
 - The items: REQ-05
-- The pipeline: DEL-04, DEL-05, DEL-06
+- The pipeline: DEL-04, DEL-05, DEL-06, DEL-13
 - What ships: DEL-07, DEL-10
 - The way back: OPS-14, DATA-03, API-06, MOB-06
 - Tried first: OPS-04, DEL-08, TEST-10
@@ -15,11 +15,12 @@ Examples are from a made-up bicycle repair booking service. Pipelines, stores an
 
 For each `item`: its last verify passed after its last change, each required review is recorded with a passing result, and each acceptance criterion holds. A review or verify that's missing, failing or older than the item's last change is a finding, and so is an item whose criteria are left open.
 
-## The pipeline: DEL-04, DEL-05, DEL-06
+## The pipeline: DEL-04, DEL-05, DEL-06, DEL-13
 
 - **DEL-04, every required check:** the release passed every required check, and none was skipped or switched off for it.
 - **DEL-05, no check only reports:** each `check` can stop the release. One whose failure is ignored, or that's allowed to fail, only reports.
 - **DEL-06, only through the pipeline:** the release is built and deployed by the pipeline, from reviewed code, after the required checks, and nobody changes production by hand along the way.
+- **DEL-13, each check where it can apply:** the deployment checks run for a release, not on every pull request, and each part the release changes had its own checks run. A required check that was skipped reported success because it had nothing to check, not because a filter left it waiting.
 
 ## What ships: DEL-07, DEL-10
 

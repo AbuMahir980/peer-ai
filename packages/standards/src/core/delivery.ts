@@ -150,4 +150,15 @@ export const delivery = [
     severity: "high",
     sources: [{ name: ASVS, ref: "15.1.4, level 3", url: V15 }],
   },
+  {
+    id: "DEL-13",
+    domain: "delivery",
+    title: "Each check runs on the changes it can apply to",
+    rule: "A CI job runs its work only when the change can affect what it checks: a part's tests when that part, or what it depends on, changed; deployment checks when deploying, not on every pull request. Every required check still reports on every change: a job that has nothing to check is skipped, and reports success. A workflow cancels a run that a newer push to the same branch has replaced.",
+    why: "Checks that run where they can't apply cost money, fail for reasons unrelated to the change, and teach everyone to ignore a red cross.",
+    ask: "Does any check in this change's CI run where it can't apply, or keep running after a newer push?",
+    stage: "mvp",
+    check: "ai-review",
+    severity: "medium",
+  },
 ] satisfies RuleInput[];

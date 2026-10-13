@@ -10,7 +10,7 @@ Examples are from a made-up bicycle repair booking service. Cloud providers, too
 - Traffic: SEC-15, SEC-23
 - Secrets: SEC-10, SEC-26
 - Keeping data safe: OPS-05, OPS-06
-- How changes arrive: DEL-06
+- How changes arrive: DEL-06, DEL-13
 
 ## Environments: OPS-01, OPS-02, OPS-04
 
@@ -47,7 +47,11 @@ List every `exposure` first: each public address, each open port and the network
 - **OPS-05, automatic backups:** each store of data that matters has automatic backups, kept for a set time, and protection against being deleted by mistake.
 - **OPS-06 (production), restores and redundancy:** a restore is tried on a schedule, and the redundancy matches the uptime the product promises. A file rarely shows a restore; ask its owner, and mark it `not-checked` until one is recorded.
 
-## How changes arrive: DEL-06
+## How changes arrive: DEL-06, DEL-13
 
-- **Pass:** every change to production, infrastructure included, goes through the pipeline after review, and nothing else holds the rights to change it.
-- **Fail:** any way for a person to change production from their own machine, or a deploy that skips review or the required checks.
+- **DEL-06, only through the pipeline:**
+  - **Pass:** every change to production, infrastructure included, goes through the pipeline after review, and nothing else holds the rights to change it.
+  - **Fail:** any way for a person to change production from their own machine, or a deploy that skips review or the required checks.
+- **DEL-13, each check where it can apply:** read each `pipeline`'s triggers and each job's conditions against what the job is for.
+  - **Pass:** a part's tests run when that part, or what it depends on, changed, through a condition on what the change touched; deploying runs on a push to the default branch, a tag, or by hand; a pipeline that runs on pull requests cancels a run that a newer push replaced, such as with a concurrency group that cancels in progress.
+  - **Fail:** a deployment job on every pull request; every part's tests on every change, in a project of several parts; a required check left out by a whole-workflow filter on paths, which leaves it waiting and blocks the merge; replaced runs left running.

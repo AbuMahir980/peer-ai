@@ -5,7 +5,7 @@ license: MIT
 compatibility: Needs the peer-ai MCP server, which peer-ai render sets up, and Node 24 or later.
 metadata:
   peer-ai-kind: review
-  peer-ai-rules: OPS-01 OPS-02 OPS-03 OPS-04 OPS-05 OPS-06 DEL-06 SEC-10 SEC-15 SEC-23 SEC-26 SEC-28 SEC-29
+  peer-ai-rules: OPS-01 OPS-02 OPS-03 OPS-04 OPS-05 OPS-06 DEL-06 DEL-13 SEC-10 SEC-15 SEC-23 SEC-26 SEC-28 SEC-29
 ---
 
 # Infrastructure review
@@ -60,7 +60,7 @@ Hold every line to this bar:
 
 - **A pass shows its evidence:** the file and line where the rule holds, such as "infra/db.tf:22 keeps the bookings database on a private network, with no public address".
 - **A failure is a finding:** what could happen and to what, the file and line, and a fix. Its severity is its rule's, from [severity.md](references/severity.md).
-- **Every item, not a sample.** Each `exposure` is checked against SEC-29, each `identity` against SEC-28, each `secret` against SEC-10 and SEC-26, and each store of data against OPS-05.
+- **Every item, not a sample.** Each `exposure` is checked against SEC-29, each `identity` against SEC-28, each `secret` against SEC-10 and SEC-26, each store of data against OPS-05, and each `pipeline` against DEL-06 and DEL-13.
 - **Only what the files show.** What depends on the live environment, such as whether a restore was ever tried, or who holds access today, is `not-checked` with the question to ask its owner, unless a file records it.
 
 ## 5. Report
