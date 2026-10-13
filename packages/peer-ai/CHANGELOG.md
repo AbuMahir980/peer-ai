@@ -1,5 +1,26 @@
 # peer-ai
 
+## 1.0.0-next.19
+
+### Minor Changes
+
+- 5cfbe6f: doctor warns where a project's CI runs checks that can't apply (RFC 0022, for #256). It reads the project's own GitHub Actions workflows and warns, never fails, about a deployment on pull requests, a workflow on pull requests that doesn't cancel the run a newer push replaced, and, in a project of several parts, a part's jobs that run on every pull request with no condition on what changed, pointing to `.github/workflows/peer-ai-changes.yml`. Each warning names the workflow and its jobs. A workflow meant that way goes in `declined`, which now takes `{ "workflow": "<path>", "reason": "…" }`, and isn't warned about again.
+  
+  Peer AI's own gate and security workflows now cancel a pull request's run when a newer push replaces it, and always finish a run on the default branch. After updating, run `npx peer-ai render`.
+- 086f693: Render writes a workflow that says what a change touched (RFC 0022, for #256). On GitHub Actions, a project of two parts or more gets `.github/workflows/peer-ai-changes.yml`, a reusable workflow its own workflows call first, so each job runs only for the parts a change touched. It asks GitHub's compare API, with the run's own read-only token and no checkout, and its outputs say which parts changed, counting a part as changed when one it `uses` did, plus `code` (anything outside `.peer-ai/`) and `other` (anything outside every part). When it can't tell, every output is true. A job skipped by its condition reports success, so a required check never waits. Its header shows how to call it.
+  
+  The security pipeline's records-only step now runs its scans when GitHub lists 300 files, the most it lists, and counts a file moved into `.peer-ai/` as a change where it was.
+  
+  After updating, run `npx peer-ai render`.
+
+### Patch Changes
+
+- Updated dependencies [5cfbe6f]
+- Updated dependencies [d500d0d]
+  - peer-ai-workflow@1.0.0-next.19
+  - peer-ai-standards@1.0.0-next.19
+  - peer-ai-skills@1.0.0-next.19
+
 ## 1.0.0-next.18
 
 ### Minor Changes
