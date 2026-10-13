@@ -57,6 +57,14 @@ describe("the CI gate", () => {
     expect(gateCommand()).toBe(`npx -y peer-ai@${VERSION} check`);
   });
 
+  it("cancels a pull request's run when a newer push replaces it, as the security pipeline does (DEL-13)", () => {
+    const cancels =
+      "concurrency:\n  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\njobs:";
+    const root = project({ "peer-ai.config.json": config({ standards: { profiles: ["github-actions"] } }) });
+    expect(gateWorkflow(loaded(root))).toContain(cancels);
+    expect(workflowBody(loaded(root))).toContain(cancels);
+  });
+
   it("checks pushes to the default branch when the config names one, and keeps up with the config", () => {
     const root = project({
       "peer-ai.config.json": config({ repo: { defaultBranch: "main" } }),

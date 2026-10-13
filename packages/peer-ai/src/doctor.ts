@@ -10,6 +10,7 @@ import { CORE_RULES, PROFILE_RULES, PROFILES, overrideFits } from "peer-ai-stand
 import { DOMAINS, type PeerAiConfig } from "peer-ai-workflow";
 import { LEGACY_MARKERS, MAP_FILE, assess, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, skip, warn, type Check } from "./checks.ts";
+import { checkWorkflowScope } from "./ci-scope.ts";
 import { checkEnforcers, checkProfiles } from "./enforcers.ts";
 import { checkRecord } from "./evidence.ts";
 import { checkMerged } from "./merged.ts";
@@ -412,6 +413,7 @@ export function diagnose(
       : [checkRendered(root, config, options.skills ?? true)]),
     ...(config === undefined ? needsConfig("delivery", "CI") : [checkDelivery(root, config)]),
     ...(config === undefined ? needsConfig("gate", "The CI gate") : checkGate(root, config)),
+    ...(config === undefined ? [] : checkWorkflowScope(root, config)),
     ...(config === undefined ? [] : [checkBlocking(config)]),
     ...(config === undefined ? [] : checkRecord(root)),
     ...(config === undefined ? [] : checkMerged(root, config)),

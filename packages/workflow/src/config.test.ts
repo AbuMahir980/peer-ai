@@ -176,6 +176,14 @@ describe("what peer-ai.config.json rejects", () => {
     ).toBe("");
   });
 
+  it("a declined workflow with no reason, and accepts one with a reason (RFC 0022)", () => {
+    const declined = (entry: Record<string, unknown>) => errorsFor({ ...minimal(), declined: [entry] });
+    expect(declined({ workflow: ".github/workflows/deploy.yml" })).toContain("declined.0");
+    expect(
+      declined({ workflow: ".github/workflows/deploy.yml", reason: "Staging is rebuilt for each pull request." }),
+    ).toBe("");
+  });
+
   it("says where each problem is", () => {
     expect(errorsFor({ ...minimal(), tracks: [{ id: "Web App", kind: "web", status: "active" }] })).toContain(
       "tracks.0.id:",

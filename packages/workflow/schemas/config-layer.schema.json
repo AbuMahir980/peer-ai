@@ -1114,7 +1114,7 @@
       "additionalProperties": false
     },
     "declined": {
-      "description": "Stack profiles and traits peer-ai assess suggests that the project decided not to take up, each with why, so doctor stops suggesting them (RFC 0011).",
+      "description": "Stack profiles and traits peer-ai assess suggests that the project decided not to take up, each with why, so doctor stops suggesting them (RFC 0011). A workflow listed here runs where it does on purpose, so doctor stops warning about it (RFC 0022).",
       "type": "array",
       "items": {
         "anyOf": [
@@ -1158,6 +1158,25 @@
             },
             "required": [
               "trait",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "workflow": {
+                "type": "string",
+                "minLength": 1,
+                "description": "A workflow of the project's own, such as .github/workflows/deploy.yml."
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "workflow",
               "reason"
             ],
             "additionalProperties": false
