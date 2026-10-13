@@ -10,6 +10,7 @@ import {
   loadSkill,
   parseSkillMd,
   rulesReference,
+  skillRuleIds,
   validateSkill,
   type SkillFiles,
 } from "./index.ts";
@@ -366,5 +367,11 @@ describe("the skills", () => {
       descriptions.push(parsed.ok ? String(parsed.value.frontmatter.description) : "");
     }
     expect(checkDescriptionBudget(descriptions)).toEqual([]);
+  });
+
+  it("has a skill that answers for every rule checked by AI review", () => {
+    const answered = new Set(availableSkills().flatMap((id) => skillRuleIds(id)));
+    const unanswered = CORE_RULES.filter((rule) => rule.check === "ai-review" && !answered.has(rule.id));
+    expect(unanswered.map((rule) => rule.id)).toEqual([]);
   });
 });
