@@ -146,6 +146,15 @@ export function mergeBase(root: string, one: string, other: string): string | un
   return base === undefined || base === "" ? undefined : base;
 }
 
+/**
+ * The latest commit, at or before this one, that changed anything outside .peer-ai/: the code a run
+ * of CI on any later records-only commit would test again, unchanged (#247).
+ */
+export function lastCodeCommit(root: string, commit: string): string | undefined {
+  const found = git(root, ["rev-list", "-1", commit, "--", ".", OWN_FILES])?.trim();
+  return found === undefined || found === "" ? undefined : found;
+}
+
 /** A branch's tip as pushed, which is what CI ran on: the remote's copy, else the local branch. */
 export function pushedTip(root: string, branch: string): string | undefined {
   for (const ref of [`refs/remotes/origin/${branch}`, `refs/heads/${branch}`]) {

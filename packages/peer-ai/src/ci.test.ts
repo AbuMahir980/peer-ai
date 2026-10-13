@@ -120,6 +120,17 @@ describe("shipping with CI's verify (RFC 0013)", { timeout: 20_000 }, () => {
         ? JSON.stringify({ check_runs: [run("check", status, conclusion, "2026-10-03T08:50:00Z")] })
         : undefined;
 
+  it("takes CI's result on the code, across commits that change only Peer AI's records (#247)", () => {
+    const { root, config, head } = atVerify();
+    // Recording reviews is a commit of its own, which a project can leave CI to skip.
+    writeFileSync(join(root, ".peer-ai/notes.md"), "Reviews recorded.\n");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "record the reviews");
+    expect(value(verifyFromCi(root, config, "SHOP-1", NOW, ci(head, "completed", "success"))).lastVerify).toMatchObject(
+      { result: "pass", commit: head },
+    );
+  });
+
   it("asks CI about the item's branch, though another branch is checked out (#231)", () => {
     const { root, config, head } = atVerify();
     // The working copy moves to a branch stacked on it, with a commit CI never saw.

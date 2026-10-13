@@ -281,11 +281,29 @@ A project whose CI already runs its verify command on every pull request can say
 
 `verifyCheck` is the check's name as GitHub shows it on a pull request. With it set:
 
-- **`run_verify` with `from: "ci"`** reads that check's result on the item's latest commit, pushed, and records it with a link to the run.
+- **`run_verify` with `from: "ci"`** reads that check's result on the item's latest commit that changed anything outside `.peer-ai/`, pushed, and records it with a link to the run. A commit that only records reviews or a verify leaves the code as CI tested it, so its result carries across.
 - **Moving an item to ship,** with `advance_work_item` or `peer-ai ship`, takes CI's result itself when the item's verify is missing or older than its latest commit, and says what's still missing: a review to run, or the check still running.
 - **`peer-ai check` confirms it with GitHub,** so a record claiming a CI run that didn't pass fails the gate. Render gives the gate's workflow `checks: read` and the run's token for that.
 
 It needs GitHub, and `gh` signed in where the AI tool works.
+
+**Your CI can skip Peer AI's records.** Since CI's result carries across commits that change only `.peer-ai/` (#247), your own CI needn't run again for them. Keep the job running, so a required check still reports, and skip its work when the push changed nothing else:
+
+```yaml
+- id: changes
+  run: |
+    before="${{ github.event.before }}"
+    if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] \
+      && git diff --quiet "$before" HEAD -- . ':(exclude).peer-ai'; then
+      echo "code=false" >> "$GITHUB_OUTPUT"
+    else
+      echo "code=true" >> "$GITHUB_OUTPUT"
+    fi
+- if: steps.changes.outputs.code == 'true'
+  run: make check
+```
+
+The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks.
 
 ### A section for people in the README
 
