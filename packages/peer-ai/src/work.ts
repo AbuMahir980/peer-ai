@@ -46,6 +46,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { migrationCollisions, type MigrationCollision } from "./migrations.ts";
+import { onGitHub, openPullRequests, pullRequestState, type PullRequestState } from "./pull-requests.ts";
 import { HISTORY_DIR, asWorkItem, closeIntoHistory, closedItems, readHistory, unlandedRecords } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { standardsFor, trackFor } from "./standards.ts";
@@ -1003,6 +1004,8 @@ export interface WorkSummary {
   next: string;
   /** The items it depends on that haven't shipped, so it can't ship before them (RFC 0005). */
   waitingFor?: string[];
+  /** Its pull request's checks: passing, pending, waiting for the item to ship, or failing, with which (RFC 0020). */
+  ci?: string;
 }
 
 /** The most open items next_work lists, so its reply fits what an AI tool can take in (RFC 0012). */
@@ -1041,6 +1044,11 @@ export interface NextWork {
    */
   unlanded?: { id: string; stage: "done" | "cancelled" }[];
   /**
+   * The current item's pull request and its checks: a failing check, other than Peer AI's own gate
+   * while the item is short of ship, is the next thing to do (RFC 0020).
+   */
+  pullRequest?: PullRequestState;
+  /**
    * When nothing is open: what the project's stage still needs, to start as gap work items, and
    * the skill to use for each gap that has one.
    */
@@ -1068,7 +1076,7 @@ export function setupProblems(root: string, nodeVersion?: string, today?: Date):
   );
 }
 
-export function nextWork(root: string, config: PeerAiConfig, onBranch?: string): NextWork {
+export function nextWork(root: string, config: PeerAiConfig, onBranch?: string, run?: Runner): NextWork {
   const problems = setupProblems(root);
   // An agent in a worktree of its own names its branch; otherwise it's the one checked out here.
   const branch = onBranch ?? currentBranch(root);
@@ -1087,18 +1095,34 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
   const collisions = current === undefined ? [] : migrationCollisions(home, current, open, config.repo?.defaultBranch);
   const unlanded = unlandedRecords(root);
   const shipped = new Set(items.flatMap((item) => (item.stage === "ship" || item.stage === "done" ? [item.id] : [])));
+  // Each open item's pull request checks, read once, so a failing one is the next thing to do (RFC 0020).
+  const pulls = run === undefined || !onGitHub(root) ? undefined : openPullRequests(root, run);
+  const pullFor = (item: WorkItem) => {
+    const pull = item.branch === undefined ? undefined : pulls?.find((each) => each.branch === item.branch);
+    return pull === undefined ? undefined : pullRequestState(item, pull);
+  };
   const summary = (item: WorkItem): WorkSummary => {
     const waitingFor = (item.dependsOn ?? []).filter((id) => !shipped.has(id));
+    const pull = pullFor(item);
     return {
       id: item.id,
       title: item.title,
       stage: item.stage,
       ...(item.branch === undefined ? {} : { branch: item.branch }),
       ...(item.track === undefined ? {} : { track: item.track }),
-      next: item.next,
+      next: pull?.next ?? item.next,
       ...(waitingFor.length === 0 ? {} : { waitingFor }),
+      ...(pull === undefined
+        ? {}
+        : {
+            ci:
+              pull.checks === "failing"
+                ? `failing: ${(pull.failing ?? []).map((check) => check.name).join(", ")}`
+                : pull.checks,
+          }),
     };
   };
+  const currentPull = current === undefined ? undefined : pullFor(current);
   const changed = whatChangedSince(root);
   const findings = projectFindings(readProjectReviews(root), items);
   const result: NextWork = {
@@ -1110,6 +1134,7 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
     ...(reviews.length > 0 ? { reviews } : {}),
     ...(collisions.length > 0 ? { migrationCollisions: collisions } : {}),
     ...(unlanded.length > 0 ? { unlanded } : {}),
+    ...(currentPull === undefined ? {} : { pullRequest: currentPull }),
     open: open.slice(0, LISTED).map(summary),
     ...(open.length > LISTED ? { more: open.length - LISTED } : {}),
   };

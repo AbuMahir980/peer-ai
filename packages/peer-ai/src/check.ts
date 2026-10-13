@@ -16,6 +16,7 @@ import {
 } from "peer-ai-workflow";
 import { MAP_FILE, assess, gaps, loadConfig, type Assessment } from "./assess.ts";
 import { count, fail, formatChecks, ok, plural, warn, type Check } from "./checks.ts";
+import { reviewsToDo } from "./routing.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { changesFor, currentBranch, ownFiles } from "./commits.ts";
 import { latestReviews, staleEvidence, type GateContext } from "./evidence.ts";
@@ -394,7 +395,15 @@ function checkPullRequest(items: WorkItem[], branch: string, stage: Stage): Chec
   const item = items.find((candidate) => candidate.branch === branch && candidate.stage !== "cancelled");
   if (item === undefined) return ok("pull-request", `No work item is on ${branch}, so there's no record to hold it to`);
   if (CLAIMS_VERIFIED.includes(item.stage)) return ok("pull-request", `${item.id}, on ${branch}, is at ${item.stage}`);
-  const message = `${item.id} is at ${item.stage}, so the change on ${branch} isn't verified and reviewed yet.`;
+  // Say what it's waiting for, so a gate holding unfinished work reads as waiting, not broken (RFC 0020).
+  const reviews = item.stage === "verify" ? reviewsToDo(item).filter((review) => !review.done) : [];
+  const waiting = [
+    ...(item.stage !== "verify" ? [`${item.id} at verify`] : []),
+    ...(item.lastVerify?.result === "pass" ? [] : ["a passing verify"]),
+    ...reviews.map((review) => review.skill),
+    "the move to ship",
+  ];
+  const message = `${item.id} is at ${item.stage}, so the change on ${branch} isn't verified and reviewed yet. Waiting for: ${waiting.join(", ")}.`;
   const fix = `Move ${item.id} to ship before this merges: verify it, record the reviews it needs, then advance it.`;
   return stage === "prototype" ? warn("pull-request", message, fix) : fail("pull-request", message, fix);
 }

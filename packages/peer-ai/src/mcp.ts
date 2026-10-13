@@ -21,6 +21,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import { checkDocumentOn } from "./document.ts";
 import { unenforcedRules } from "./enforcers.ts";
 import { draftFeedback } from "./feedback.ts";
+import { ghIn } from "./merged.ts";
 import { VERSION } from "./package-info.ts";
 import { compareVersions, pinnedVersion } from "./versions.ts";
 import { reviewSizes } from "./review-cost.ts";
@@ -55,6 +56,7 @@ Check each document a Peer AI skill writes with check_document, and fix what it 
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
 Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.
 When next_work gives unlanded, those closed items' records aren't committed yet: commit them with your next pull request, so they reach the default branch.
+When next_work shows a pull request's checks failing, fixing them comes first: tell the person which check failed, on which commit. A gate that's only waiting for the item to reach ship isn't a failure.
 When next_work or advance_work_item gives migrationCollisions, tell the person: whichever branch merges second needs its migration re-parented and reviewed again, and the order of merging is theirs to choose.
 When next_work gives whatChanged, tell the person in a few plain words what changed in Peer AI since they last worked here, then carry on.
 When next_work reports setup problems, fix what you can, such as running npx peer-ai render, before other work, and tell the person in plain words about anything only they can decide.
@@ -171,7 +173,9 @@ export function createServer(options: ServerOptions): McpServer {
       },
       annotations: READ_ONLY,
     },
-    withProject((root, config, { branch }: { branch?: string | undefined }) => reply(nextWork(root, config, branch))),
+    withProject((root, config, { branch }: { branch?: string | undefined }) =>
+      reply(nextWork(root, config, branch, ghIn(root))),
+    ),
   );
 
   server.registerTool(
