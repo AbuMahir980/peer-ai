@@ -5,7 +5,8 @@ import { loadConfig } from "./assess.ts";
 import { diagnose } from "./doctor.ts";
 import { GATE_FILE, checkGate, gateCommand, gateWorkflow, planGate } from "./gate.ts";
 import { VERSION } from "./package-info.ts";
-import { planRender, runRender } from "./render.ts";
+import { workflowBody } from "./pipeline.ts";
+import { instructions, planRender, runRender } from "./render.ts";
 import { capture, cleanUp, project } from "./test-helpers.ts";
 
 afterEach(cleanUp);
@@ -66,6 +67,47 @@ describe("the CI gate", () => {
     expect(gateChecks(root)[0]).toMatchObject({ status: "warn", message: `${GATE_FILE} is out of date.` });
     runRender({ cwd: root, check: false }, capture());
     expect(read(root, GATE_FILE)).toContain("branches: [trunk]");
+  });
+
+  it("skips draft pull requests, and runs when one is marked ready, unless the config asks for drafts (RFC 0021)", () => {
+    const skips = gateWorkflow(loaded(project({ "peer-ai.config.json": config({ repo: { defaultBranch: "main" } }) })));
+    expect(skips).toContain("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]");
+    expect(skips).toContain("    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
+    expect(skips).toContain("  push:\n    branches: [main]");
+    const checks = gateWorkflow(loaded(project({ "peer-ai.config.json": config({ gates: { drafts: "check" } }) })));
+    expect(checks).not.toContain("types:");
+    expect(checks).not.toContain("draft == false");
+  });
+
+  it("tells the AI tool to open drafts, and to push its records once after CI (RFC 0021)", () => {
+    const told = instructions(
+      loaded(
+        project({
+          "peer-ai.config.json": config({
+            repo: { host: "github" },
+            commands: { verify: "make check", verifyCheck: "ci / check" },
+          }),
+        }),
+      ),
+    );
+    expect(told).toContain("Open a pull request as a draft while its work item is short of ship");
+    expect(told).toContain("commit those records together, in one push");
+    const plain = instructions(loaded(project({ "peer-ai.config.json": config() })));
+    expect(plain).not.toContain("as a draft");
+    expect(plain).not.toContain("in one push");
+  });
+
+  it("has the security pipeline skip a push that changes only Peer AI's records (RFC 0021)", () => {
+    const body =
+      workflowBody(
+        loaded(project({ "peer-ai.config.json": config({ standards: { profiles: ["github-actions"] } }) })),
+      ) ?? "";
+    expect(body).toContain("      - name: Skip a push that changes only Peer AI's records\n        id: changes");
+    expect(body).toContain("          GH_TOKEN: ${{ github.token }}\n          BEFORE: ${{ github.event.before }}");
+    // Each scan's install and check wait on it; the job itself always runs, so a required check never waits.
+    expect(body.match(/ {8}if: steps\.changes\.outputs\.code == 'true'/g)?.length).toBe(
+      2 * (body.match(/id: changes/g)?.length ?? 0),
+    );
   });
 
   it("is never added twice: a workflow that runs it already is enough", () => {

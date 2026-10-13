@@ -380,6 +380,12 @@ const Gates = z.strictObject({
     .enum(["critical", "high", "medium"])
     .optional()
     .describe("The lowest open finding severity that blocks a merge. Defaults to critical."),
+  drafts: z
+    .enum(["skip", "check"])
+    .optional()
+    .describe(
+      "Whether the gate runs on draft pull requests. A draft can't merge, so it's skipped by default, and the gate runs once it's marked ready (RFC 0021).",
+    ),
 });
 
 const Docs = z.strictObject({

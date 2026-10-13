@@ -62,6 +62,8 @@ Write the tests before the code, and watch them fail. [tests.md](references/test
 
 Call the peer-ai MCP tool `run_verify`. It runs the project's own checks and records the result; never report a result yourself. Fix what fails and run it again, until it passes.
 
+When the project takes its verify from CI (`commands.verifyCheck`), push the change instead, and let CI run on it. Then record the reviews (step 6), call `run_verify` with `from: "ci"` once CI has finished, and commit those records together, in one push. CI's result carries across commits that change only `.peer-ai/`, so your records don't need CI to run again (RFC 0021).
+
 ## 6. Review
 
 Move the item to verify with `advance_work_item`: Peer AI works out the reviews the change needs from what it touched. `next_work` then lists them. For each, use its skill, such as `peer-ai-code-review`, and record the review with the peer-ai MCP tool `record_review`. Fix every finding at or above the project's blocking level, verify again, and review again, until each passes.

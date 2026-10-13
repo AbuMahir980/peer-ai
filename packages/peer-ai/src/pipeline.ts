@@ -232,6 +232,29 @@ function reportStep(name: string, rules: readonly string[], stepIds: readonly st
   ];
 }
 
+/**
+ * A push that changes only Peer AI's records leaves the code as the last scan saw it, so the scan is
+ * skipped, while the job still runs and reports, so a required check never waits (RFC 0021). GitHub's
+ * compare API says what the push changed, with the run's own read-only token. When it can't be asked,
+ * or on a schedule, the scan runs.
+ */
+const RECORDS_ONLY = [
+  "      - name: Skip a push that changes only Peer AI's records",
+  "        id: changes",
+  "        env:",
+  "          GH_TOKEN: ${{ github.token }}",
+  "          BEFORE: ${{ github.event.before }}",
+  "          AFTER: ${{ github.event.pull_request.head.sha || github.sha }}",
+  "        run: |",
+  "          code=true",
+  '          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then',
+  "            files=$(gh api \"repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER\" --jq '.files[].filename') &&",
+  "              ! grep -qv '^\\.peer-ai/' <<< \"$files\" && code=false",
+  "          fi",
+  '          echo "code=$code" >> "$GITHUB_OUTPUT"',
+];
+const WHEN_CODE = "        if: steps.changes.outputs.code == 'true'";
+
 /** One job: check out the repository, install the tool, run it. */
 function job(id: string, script: JobScript, rules: readonly string[], reports: boolean): string[] {
   return [
@@ -245,11 +268,14 @@ function job(id: string, script: JobScript, rules: readonly string[], reports: b
     "        with:",
     ...(script.history === true ? ["          fetch-depth: 0"] : []),
     "          persist-credentials: false",
+    ...RECORDS_ONLY,
     `      - name: Install ${script.tool}`,
+    WHEN_CODE,
     "        run: |",
     ...indent(['mkdir -p "$RUNNER_TEMP/peer-ai-tools"', 'echo "$RUNNER_TEMP/peer-ai-tools" >> "$GITHUB_PATH"'], 10),
     ...indent(script.install, 10),
     `      - name: Check ${rules.join(", ")}`,
+    WHEN_CODE,
     ...checkStep("check", reports),
     ...(script.env === undefined
       ? []
