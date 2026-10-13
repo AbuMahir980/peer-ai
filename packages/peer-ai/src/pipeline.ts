@@ -58,7 +58,7 @@ export const IMAGES = {
   zap: {
     name: "ghcr.io/zaproxy/zaproxy",
     tag: "2.17.0",
-    digest: "sha256:781a2bdaea47324e7bab583e2263f21d257b0aee61ed51521a5be45f5f5081ef",
+    digest: "sha256:7aaa659b0d43078febd82e29bad112285c370727e86ab8340444220e17d9f0d2",
   },
 } satisfies Record<string, Image>;
 

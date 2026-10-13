@@ -11,3 +11,5 @@ CI that costs only what it must (RFC 0021, for #247):
 - **The security pipeline skips records-only pushes.** Each scan's job still runs and reports, so a required check never waits, but skips its scan when GitHub's compare API says the push changed only `.peer-ai/`.
 
 After updating, run `npx peer-ai render` to write the new workflows.
+
+The OWASP ZAP image the pipeline runs is pinned to the digest its `2.17.0` tag now has, since the ZAP project published the tag again.
