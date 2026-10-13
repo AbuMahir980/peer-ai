@@ -1,5 +1,16 @@
 # peer-ai-standards
 
+## 1.0.0-next.19
+
+### Minor Changes
+
+- d500d0d: A new delivery rule, DEL-13, each check runs on the changes it can apply to (RFC 0022, for #256): a CI job runs its work only when the change can affect what it checks, deployment checks run when deploying rather than on every pull request, a skipped job still reports success, and a workflow cancels a run that a newer push replaced. It applies from MVP, is checked by AI review at medium severity, and `infrastructure-review` and `release-readiness` answer for it.
+
+### Patch Changes
+
+- Updated dependencies [5cfbe6f]
+  - peer-ai-workflow@1.0.0-next.19
+
 ## 1.0.0-next.18
 
 ### Patch Changes
