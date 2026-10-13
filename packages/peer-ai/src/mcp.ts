@@ -308,6 +308,12 @@ export function createServer(options: ServerOptions): McpServer {
           .describe(
             "A person's decision that this item doesn't need a review it was asked for, with why. Only when they decide it; at production, only a light review can be waived.",
           ),
+        keepOpen: z
+          .strictObject({ reason: z.string().min(1), by: z.string().min(1).describe("The person who decided.") })
+          .optional()
+          .describe(
+            "A person's decision that this item stays open after its branch merged, such as with checks still owed, and why. close-merged and doctor leave it alone; moving the item on clears it (RFC 0020).",
+          ),
       },
       annotations: { ...WRITES, idempotentHint: true },
     },

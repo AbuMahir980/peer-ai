@@ -10,7 +10,7 @@ import type { Runner } from "./feedback.ts";
 import { readHistory } from "./history.ts";
 import { checkMerged } from "./merged.ts";
 import { capture, cleanUp, project, scripted } from "./test-helpers.ts";
-import { advanceWorkItem, createWorkItem } from "./work.ts";
+import { advanceWorkItem, createWorkItem, updateWorkItem } from "./work.ts";
 
 afterEach(cleanUp);
 
@@ -141,6 +141,45 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
     expect(moved.ok ? "" : moved.error).toContain("SHOP-1 can't move to done yet");
   });
 
+  it("leaves an item kept open after its merge, closes one by one, and skips what it's told (RFC 0020)", async () => {
+    const { root, config, branch } = built();
+    const others = [
+      addItem(root, config, "SHOP-2", "apps/web/Total.tsx"),
+      addItem(root, config, "SHOP-3", "apps/web/Notes.tsx"),
+      addItem(root, config, "SHOP-4", "apps/web/Device.tsx"),
+    ];
+    for (const each of [branch, ...others]) git(root, "merge", "-q", "--no-ff", "--no-edit", each);
+    const kept = { reason: "Device checks are still owed.", by: "Ada Obi" };
+    value(updateWorkItem(root, config, "SHOP-4", { keepOpen: kept }, NOW));
+    expect(checkMerged(root, config)).toEqual([
+      expect.objectContaining({
+        status: "ok",
+        message: "SHOP-4 stays open after its merge: Device checks are still owed. (decided by Ada Obi)",
+      }),
+      expect.objectContaining({
+        status: "warn",
+        message: expect.stringContaining("SHOP-1, SHOP-2, SHOP-3.") as string,
+      }),
+    ]);
+
+    // Chosen one by one: SHOP-1 stays, SHOP-2 and SHOP-3 close.
+    const chosen = capture();
+    const answers = scripted(["choose", false, true, true]);
+    expect(await runCloseMerged({ cwd: root, yes: false, now: NOW, run: noGitHub }, answers, chosen)).toBe(0);
+    expect(chosen.text()).toContain("Kept open: SHOP-4, Device checks are still owed. (decided by Ada Obi)");
+    expect(readHistory(root).map((line) => line.id)).toEqual(["SHOP-2", "SHOP-3"]);
+
+    // With --yes, --skip leaves SHOP-1 open too.
+    const skipped = capture();
+    expect(await runCloseMerged({ cwd: root, yes: true, skip: ["SHOP-1"], run: noGitHub }, undefined, skipped)).toBe(0);
+    expect(skipped.text()).toContain("Skipped: SHOP-1, as asked.");
+    expect(readHistory(root).map((line) => line.id)).toEqual(["SHOP-2", "SHOP-3"]);
+    // Moving the item on ends the decision to keep it open.
+    expect(value(advanceWorkItem(root, config, "SHOP-4", "verify", NOW, noGitHub))).not.toHaveProperty(
+      "openAfterMerge",
+    );
+  });
+
   it("closes every merged item at once, after listing them, and the gate accepts them", async () => {
     const { root, config, branch } = built();
     const second = addItem(root, config, "SHOP-2", "apps/web/Total.tsx");
@@ -158,7 +197,7 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
     ]);
 
     const declined = capture();
-    expect(await runCloseMerged({ cwd: root, yes: false, run: noGitHub }, scripted([false]), declined)).toBe(1);
+    expect(await runCloseMerged({ cwd: root, yes: false, run: noGitHub }, scripted(["none"]), declined)).toBe(1);
     expect(declined.text()).toContain("  SHOP-1 (build): Work, in ");
     expect(declined.text()).toContain("Nothing was closed.");
     expect(await runCloseMerged({ cwd: root, yes: false, run: noGitHub }, undefined, capture())).toBe(2);

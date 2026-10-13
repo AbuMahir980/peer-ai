@@ -255,6 +255,8 @@ export interface WorkItemChanges {
   track?: string | undefined;
   /** A person's decision that the item doesn't need a review it was asked for, with why (RFC 0016). */
   waive?: { skill: SkillId; reason: string; by: string } | undefined;
+  /** A person's decision that the item stays open after its branch merged, with why (RFC 0020). */
+  keepOpen?: { reason: string; by: string } | undefined;
   /** Why the acceptance criteria change, needed after a tester's check found one not met (RFC 0015). */
   reason?: string | undefined;
   /** Who decided it: whoever agreed the criteria. */
@@ -277,7 +279,7 @@ export function updateWorkItem(
   const located = locateItem(root, id);
   if (!located.ok) return located;
   const { home, item } = located.value;
-  const { reason, by, waive, ...fields } = changes;
+  const { reason, by, waive, keepOpen, ...fields } = changes;
   // A waiver is a person's decision, recorded with why and by whom. At production, only a light
   // review can be waived: a full one there needs doing (RFC 0016).
   let waived = item.waived;
@@ -312,6 +314,7 @@ export function updateWorkItem(
     ...defined(fields),
     ...recorded,
     ...(waived === undefined ? {} : { waived }),
+    ...(keepOpen === undefined ? {} : { openAfterMerge: { ...keepOpen, at: now.toISOString() } }),
     updatedAt: now.toISOString(),
   });
 }
@@ -723,6 +726,12 @@ export function advanceWorkItem(
   }
   const target = to ?? ORDER[ORDER.indexOf(item.stage) + 1];
   if (target === undefined) return failed(`${item.id} has no stage after ${item.stage}.`);
+  // Moving the item on ends a decision to keep it open after its merge (RFC 0020).
+  if (item.openAfterMerge !== undefined) {
+    const moving = { ...item };
+    delete moving.openAfterMerge;
+    item = moving;
+  }
   if (target === "verify") {
     // The reviews it needs are worked out once, from what the change touched, and kept on the item
     // so CI can hold it to them without the branch's history.
@@ -851,7 +860,8 @@ export function closeByMerge(
 /** Every open item whose branch is merged, with how, and its home: what close-merged closes. */
 export function mergedItems(root: string, config: PeerAiConfig, run?: Runner): (Located & { merge: Merge })[] {
   return allWorkItems(root).flatMap((located) => {
-    if (CLOSED.includes(located.item.stage)) return [];
+    // An item a person kept open after its merge stays open (RFC 0020).
+    if (CLOSED.includes(located.item.stage) || located.item.openAfterMerge !== undefined) return [];
     const merge = mergeOf(located.home, located.item, config.repo?.defaultBranch, run);
     return merge === undefined ? [] : [{ ...located, merge }];
   });
