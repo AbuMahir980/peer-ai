@@ -46,7 +46,7 @@ import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
 import { migrationCollisions, type MigrationCollision } from "./migrations.ts";
-import { HISTORY_DIR, asWorkItem, closeIntoHistory, closedItems, readHistory } from "./history.ts";
+import { HISTORY_DIR, asWorkItem, closeIntoHistory, closedItems, readHistory, unlandedRecords } from "./history.ts";
 import { ciProblem, ciResult } from "./ci.ts";
 import { standardsFor, trackFor } from "./standards.ts";
 import { readOnlyCount, toolClaimProblem } from "./checked-by.ts";
@@ -769,6 +769,15 @@ export function advanceWorkItem(
     if (verified.ok) item = verified.value;
     else fromCi = verified.error;
   }
+  // A merged branch is gone, or soon will be: its item's record goes where the merge is, so it
+  // reaches the default branch with the next pull request (RFC 0020).
+  const merge = target === "done" ? mergeOf(home, item, config.repo?.defaultBranch, run ?? ghIn(home)) : undefined;
+  const landing = merge === undefined ? home : landingFor(root, item);
+  if (landing === undefined) {
+    return failed(
+      `${item.id}'s branch has merged, but no working copy here holds the merge yet, so its record would land on a branch that's gone. Pull the default branch, or check out a branch made from it since the merge, then move ${item.id} to done there.`,
+    );
+  }
   if (target === "ship" || target === "done") {
     const moved = { ...item, stage: target };
     const stage = projectStage(config);
@@ -782,8 +791,7 @@ export function advanceWorkItem(
     }).filter((check) => check.status === "fail");
     if (failures.length > 0) {
       // Work whose branch is already merged closes saying so, rather than being verified again (RFC 0013).
-      const merge = target === "done" ? mergeOf(home, item, config.repo?.defaultBranch, run ?? ghIn(home)) : undefined;
-      if (merge !== undefined) return closeByMerge(home, config, item, merge, now);
+      if (merge !== undefined) return closeByMerge(landing, config, item, merge, now);
       const reasons = [
         ...failures.map((check) => `- ${check.message} ${check.fix ?? ""}`.trimEnd()),
         ...(fromCi === undefined ? [] : [`- ${fromCi}`]),
@@ -797,7 +805,7 @@ export function advanceWorkItem(
   const moved = { ...item, stage: target, ...(base === undefined ? {} : { base }), updatedAt: now.toISOString() };
   // Closed work leaves the tree: one line in the history, and git keeps the rest (RFC 0017).
   if (target === "done" || target === "cancelled")
-    return closeItem(home, moved, target === "done" ? "ship" : "cancel", now);
+    return closeItem(target === "done" ? landing : home, moved, target === "done" ? "ship" : "cancel", now);
   return saveWorkItem(home, config, moved);
 }
 
@@ -838,6 +846,16 @@ function closeItem(home: string, item: WorkItem, by: "ship" | "merge" | "cancel"
   if (!valid.ok) return failed(`The work item would not be valid: ${valid.errors.join("; ")}`);
   closeIntoHistory(home, valid.value, by, now);
   return valid;
+}
+
+/**
+ * Where a merged item's record will reach the default branch: a working copy that holds the merged
+ * work, with the item's file, and isn't on the merged branch itself; the main checkout first (RFC 0020).
+ */
+export function landingFor(root: string, item: WorkItem): string | undefined {
+  return worktrees(root).find(
+    (copy) => copy.branch !== item.branch && existsSync(join(copy.path, WORK_DIR, `${item.id}.json`)),
+  )?.path;
 }
 
 /** Closes an item whose branch is already merged, saying how, without the ship gate (RFC 0013). */
@@ -1018,6 +1036,11 @@ export interface NextWork {
    */
   migrationCollisions?: MigrationCollision[];
   /**
+   * Closed items whose records this working copy holds but hasn't committed: commit them with the next
+   * pull request, so they reach the default branch (RFC 0020).
+   */
+  unlanded?: { id: string; stage: "done" | "cancelled" }[];
+  /**
    * When nothing is open: what the project's stage still needs, to start as gap work items, and
    * the skill to use for each gap that has one.
    */
@@ -1062,6 +1085,7 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
       ? []
       : reviewsToDo(current).map((review) => ({ ...review, rules: reviewRules(home, config, current, review.skill) }));
   const collisions = current === undefined ? [] : migrationCollisions(home, current, open, config.repo?.defaultBranch);
+  const unlanded = unlandedRecords(root);
   const shipped = new Set(items.flatMap((item) => (item.stage === "ship" || item.stage === "done" ? [item.id] : [])));
   const summary = (item: WorkItem): WorkSummary => {
     const waitingFor = (item.dependsOn ?? []).filter((id) => !shipped.has(id));
@@ -1085,6 +1109,7 @@ export function nextWork(root: string, config: PeerAiConfig, onBranch?: string):
     ...(current ? { current } : {}),
     ...(reviews.length > 0 ? { reviews } : {}),
     ...(collisions.length > 0 ? { migrationCollisions: collisions } : {}),
+    ...(unlanded.length > 0 ? { unlanded } : {}),
     open: open.slice(0, LISTED).map(summary),
     ...(open.length > LISTED ? { more: open.length - LISTED } : {}),
   };
