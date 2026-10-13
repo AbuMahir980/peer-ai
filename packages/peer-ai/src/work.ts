@@ -37,6 +37,7 @@ import {
   isAncestor,
   mergeBase,
   ownFiles,
+  lastCodeCommit,
   pushedTip,
   tipOf,
 } from "./commits.ts";
@@ -669,8 +670,8 @@ export function verifyFromCi(
   // Where the item's branch isn't checked out, CI's result is for the branch as pushed, not for
   // whatever this working copy has, which may be another branch's unpushed commit (#231).
   const elsewhere = item.branch !== undefined && currentBranch(home) !== item.branch;
-  const commit = elsewhere && item.branch !== undefined ? pushedTip(home, item.branch) : headCommit(home);
-  if (commit === undefined) {
+  const tip = elsewhere && item.branch !== undefined ? pushedTip(home, item.branch) : headCommit(home);
+  if (tip === undefined) {
     return failed(
       elsewhere
         ? `${item.branch ?? ""} isn't checked out here, and git here doesn't know it. Fetch it, or check it out, then ask again.`
@@ -683,10 +684,13 @@ export function verifyFromCi(
       `CI verifies commits, and ${uncommitted.slice(0, 3).join(", ")} isn't committed. Commit and push it, then ask again.`,
     );
   }
-  const result = ciResult(commit, check, run ?? ghIn(home));
-  if (result.status !== "pass" && result.status !== "fail") return failed(ciProblem(result, check, commit) ?? "");
+  // A commit that changes only Peer AI's records leaves the code as CI last tested it, so CI's result
+  // on the latest commit outside .peer-ai/ is the verify: a project can skip CI for records (#247).
+  const code = lastCodeCommit(home, tip) ?? tip;
+  const result = ciResult(code, check, run ?? ghIn(home));
+  if (result.status !== "pass" && result.status !== "fail") return failed(ciProblem(result, check, code) ?? "");
   const at = now.toISOString();
-  const lastVerify = { result: result.status, at, commit, ci: { check, url: result.url } };
+  const lastVerify = { result: result.status, at, commit: code, ci: { check, url: result.url } };
   return saveWorkItem(home, config, { ...item, lastVerify, updatedAt: at });
 }
 
