@@ -26,7 +26,8 @@ import { compareVersions, pinnedVersion } from "./versions.ts";
 import { reviewSizes } from "./review-cost.ts";
 import { standardsFor } from "./standards.ts";
 import { WORK_DIR, mapChanges, readMap } from "./state.ts";
-import { homeOf, locate } from "./homes.ts";
+import { homeOf, locate, worktrees } from "./homes.ts";
+import { unlandedRecords } from "./history.ts";
 import {
   advanceWorkItem,
   collisionsFor,
@@ -53,6 +54,7 @@ Record each review with record_review, passing the path of its report, including
 Check each document a Peer AI skill writes with check_document, and fix what it names.
 Move work with advance_work_item: build before changing code, verify once the change is complete, ship when it is verified, reviewed and ready to merge, done once merged or released.
 Moving to ship or done passes the same gates as CI; when it refuses, fix what it lists.
+When next_work gives unlanded, those closed items' records aren't committed yet: commit them with your next pull request, so they reach the default branch.
 When next_work or advance_work_item gives migrationCollisions, tell the person: whichever branch merges second needs its migration re-parented and reviewed again, and the order of merging is theirs to choose.
 When next_work gives whatChanged, tell the person in a few plain words what changed in Peer AI since they last worked here, then carry on.
 When next_work reports setup problems, fix what you can, such as running npx peer-ai render, before other work, and tell the person in plain words about anything only they can decide.
@@ -456,7 +458,19 @@ export function createServer(options: ServerOptions): McpServer {
       if (!moved.ok) return refuse(moved.error);
       // Moving to verify or ship repeats a migration collision, as a warning, never a refusal (RFC 0018).
       const collisions = ["verify", "ship"].includes(moved.value.stage) ? collisionsFor(root, config, moved.value) : [];
-      return reply(collisions.length === 0 ? moved.value : { ...moved.value, migrationCollisions: collisions });
+      // A closed item's record waits to be committed, where it can reach the default branch (RFC 0020).
+      const where = ["done", "cancelled"].includes(moved.value.stage)
+        ? worktrees(root).find((copy) => unlandedRecords(copy.path).some((record) => record.id === id))?.path
+        : undefined;
+      return reply({
+        ...moved.value,
+        ...(collisions.length === 0 ? {} : { migrationCollisions: collisions }),
+        ...(where === undefined
+          ? {}
+          : {
+              recorded: `${id} is ${moved.value.stage}, recorded in ${where}. Commit the record with your next pull request.`,
+            }),
+      });
     }),
   );
 

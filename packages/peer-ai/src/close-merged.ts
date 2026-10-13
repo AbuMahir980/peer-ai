@@ -11,7 +11,7 @@ import type { Output } from "./init.ts";
 import { ghIn, type Merge } from "./merged.ts";
 import { Cancelled, type Prompter } from "./prompter.ts";
 import { allWorkItems } from "./homes.ts";
-import { closeByMerge, mergedItems } from "./work.ts";
+import { closeByMerge, landingFor, mergedItems } from "./work.ts";
 
 export interface CloseMergedOptions {
   cwd: string;
@@ -101,13 +101,23 @@ export async function runCloseMerged(
     }
   }
   const now = options.now ?? new Date();
-  const problems = found.flatMap(({ home, item, merge }) => {
-    const closed = closeByMerge(home, config, item, merge, now);
+  // Each record goes where the merge is, so it reaches the default branch with the next pull request (RFC 0020).
+  const landed = new Set<string>();
+  const problems = found.flatMap(({ item, merge }) => {
+    const landing = landingFor(options.cwd, item);
+    if (landing === undefined) {
+      return [
+        `${item.id}: no working copy here holds its merge yet. Pull the default branch, or check out a branch made from it since the merge, and run close-merged there.`,
+      ];
+    }
+    const closed = closeByMerge(landing, config, item, merge, now);
+    if (closed.ok) landed.add(landing);
     return closed.ok ? [] : [`${item.id}: ${closed.error}`];
   });
   const closed = found.length - problems.length;
+  const where = [...landed].map((path) => (path === options.cwd ? "here" : `in ${path}`)).join(" and ");
   out.log(
-    `Closed ${String(closed)} ${closed === 1 ? "item" : "items"}, each recording how. Commit the change on a branch and open a pull request.`,
+    `Closed ${String(closed)} ${closed === 1 ? "item" : "items"}, each recording how${where === "" ? "" : `, ${where}`}. Commit the records with your next pull request.`,
   );
   for (const problem of problems) out.error(`  ${problem}`);
   return problems.length === 0 ? 0 : 1;

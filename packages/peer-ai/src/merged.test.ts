@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
 import { afterEach, describe, expect, it } from "vitest";
@@ -10,7 +11,7 @@ import type { Runner } from "./feedback.ts";
 import { readHistory } from "./history.ts";
 import { checkMerged } from "./merged.ts";
 import { capture, cleanUp, project, scripted } from "./test-helpers.ts";
-import { advanceWorkItem, createWorkItem, updateWorkItem } from "./work.ts";
+import { advanceWorkItem, createWorkItem, nextWork, updateWorkItem } from "./work.ts";
 
 afterEach(cleanUp);
 
@@ -117,6 +118,37 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
     expect(listed).not.toContain("SHOP-2");
   });
 
+  it("records done where the merge is, to land with the next pull request (RFC 0020)", () => {
+    const { root, config, branch } = built();
+    git(root, "merge", "-q", "--no-ff", "--no-edit", branch);
+    // The merged branch is still checked out in its own worktree.
+    const worktree = join(mkdtempSync(join(tmpdir(), "peer-ai-worktree-")), "work");
+    git(root, "worktree", "add", "-q", worktree, branch);
+    expect(value(advanceWorkItem(root, config, "SHOP-1", "done", NOW, noGitHub)).stage).toBe("done");
+    expect(readHistory(root).map((line) => line.id)).toEqual(["SHOP-1"]);
+    expect(readHistory(worktree)).toEqual([]);
+    expect(nextWork(root, config).unlanded).toEqual([{ id: "SHOP-1", stage: "done" }]);
+    commitAll(root);
+    expect(nextWork(root, config).unlanded).toBeUndefined();
+  });
+
+  it("won't record done on a branch that's gone, when no working copy holds the merge yet", () => {
+    const { root, config, branch } = built();
+    // GitHub merged it, but this checkout's default branch hasn't been pulled since.
+    git(root, "switch", "-q", branch);
+    const refused = advanceWorkItem(
+      root,
+      config,
+      "SHOP-1",
+      "done",
+      NOW,
+      gitHubSays(branch, [{ number: 7, mergeCommit: { oid: "b".repeat(40) } }]),
+    );
+    expect(refused.ok ? "" : refused.error).toContain(
+      "SHOP-1's branch has merged, but no working copy here holds the merge yet",
+    );
+  });
+
   it("asks GitHub about a branch git no longer has", () => {
     const { root, config, branch } = built();
     git(root, "merge", "-q", "--squash", branch);
@@ -204,7 +236,9 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
 
     const out = capture();
     expect(await runCloseMerged({ cwd: root, yes: true, now: NOW, run: noGitHub }, undefined, out)).toBe(0);
-    expect(out.text()).toContain("Closed 2 items, each recording how.");
+    expect(out.text()).toContain(
+      "Closed 2 items, each recording how, here. Commit the records with your next pull request.",
+    );
     expect(out.text()).not.toContain("SHOP-3");
     expect(checkMerged(root, config)).toEqual([]);
     expect(evaluate(root, config).checks.filter((check) => check.status === "fail")).toEqual([]);

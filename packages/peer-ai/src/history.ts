@@ -21,6 +21,32 @@ function git(root: string, args: string[]): string | undefined {
 }
 
 /** Every closed item, newest line last; a later line for the same id replaces an earlier one. */
+/**
+ * Closed items whose records this working copy holds but hasn't committed: they reach the default
+ * branch only with the next commit, so next_work lists them until then (RFC 0020).
+ */
+export function unlandedRecords(root: string): { id: string; stage: HistoryLine["stage"] }[] {
+  const dir = join(root, HISTORY_DIR);
+  if (!existsSync(dir) || git(root, ["rev-parse", "--verify", "-q", "HEAD"]) === undefined) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".jsonl"))
+    .sort()
+    .flatMap((name) => {
+      const committed = new Set((git(root, ["show", `HEAD:${HISTORY_DIR}/${name}`]) ?? "").split("\n"));
+      return readFileSync(join(dir, name), "utf8")
+        .split("\n")
+        .filter((text) => text.trim() !== "" && !committed.has(text))
+        .flatMap((text) => {
+          try {
+            const line = validateHistoryLine(JSON.parse(text));
+            return line.ok ? [{ id: line.value.id, stage: line.value.stage }] : [];
+          } catch {
+            return [];
+          }
+        });
+    });
+}
+
 export function readHistory(root: string): HistoryLine[] {
   const dir = join(root, HISTORY_DIR);
   if (!existsSync(dir)) return [];
