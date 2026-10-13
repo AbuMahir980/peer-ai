@@ -173,7 +173,8 @@ describe("the gate on a pull request (RFC 0010)", () => {
     expect(prCheck(root, config, "feature/SHOP-1-cart")).toEqual({
       id: "pull-request",
       status: "fail",
-      message: "SHOP-1 is at verify, so the change on feature/SHOP-1-cart isn't verified and reviewed yet.",
+      message:
+        "SHOP-1 is at verify, so the change on feature/SHOP-1-cart isn't verified and reviewed yet. Waiting for: a passing verify, the move to ship.",
       fix: "Move SHOP-1 to ship before this merges: verify it, record the reviews it needs, then advance it.",
     });
     expect(await main(["check", "--branch", "feature/SHOP-1-cart"], { cwd: root, out: capture() })).toBe(1);
