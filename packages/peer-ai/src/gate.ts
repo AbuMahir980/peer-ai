@@ -7,6 +7,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
+import { CHANGES_FILE } from "./changes-workflow.ts";
 import { type Check, ok, skip, warn } from "./checks.ts";
 import { detectDelivery } from "./detect.ts";
 import { VERSION } from "./package-info.ts";
@@ -15,7 +16,7 @@ import { CHECKOUT, SETUP_NODE, WORKFLOW_FILE, sameFile, unchangedSinceRender, wi
 export const GATE_FILE = ".github/workflows/peer-ai.yml";
 const WORKFLOWS = ".github/workflows";
 /** Workflows Peer AI writes for itself, which on their own aren't a project's CI. */
-const OWN = [GATE_FILE, WORKFLOW_FILE, `${WORKFLOWS}/copilot-setup-steps.yml`];
+const OWN = [GATE_FILE, WORKFLOW_FILE, CHANGES_FILE, `${WORKFLOWS}/copilot-setup-steps.yml`];
 /** A command that runs the gate: peer-ai check, with or without a version. */
 const GATE_COMMAND = /\bpeer-ai(@\S+)?\s+check\b/;
 

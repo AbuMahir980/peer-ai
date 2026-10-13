@@ -304,7 +304,32 @@ It needs GitHub, and `gh` signed in where the AI tool works.
   run: make check
 ```
 
-The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks. The security pipeline render writes does this itself: each scan's job runs on every push, and skips its scan when the push changed only `.peer-ai/` (RFC 0021). With `verifyCheck`, the instructions render writes say to push the change, let CI run, then record the reviews and the verify from CI together, in one push.
+On a project of several parts, the `code` output of the workflow below says the same without a checkout. The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks. The security pipeline render writes does this itself: each scan's job runs on every push, and skips its scan when the push changed only `.peer-ai/` (RFC 0021). With `verifyCheck`, the instructions render writes say to push the change, let CI run, then record the reviews and the verify from CI together, in one push.
+
+#### Running each check only for what changed
+
+On GitHub Actions, a project of two parts or more gets `.github/workflows/peer-ai-changes.yml` ([RFC 0022](../../rfcs/0022-ci-scoped-to-what-changed.md)): a workflow your own workflows call first, so each job runs only for the changes it can apply to (DEL-13). It asks GitHub's compare API what the pull request or push changed, with the run's own read-only token and no checkout. Its outputs say:
+
+- **One for each part,** named by the part's id: true when a file in its folder changed, or in a part it `uses`. A file belongs to the part whose folder holds it most closely, as everywhere in Peer AI.
+- **`code`:** true when anything outside `.peer-ai/` changed.
+- **`other`:** true when anything outside every part changed, such as the root's settings.
+
+When it can't tell, on a schedule, a branch's first push, or when GitHub can't be asked, every output is true, so everything runs.
+
+```yaml
+permissions:
+  contents: read
+jobs:
+  changes:
+    uses: ./.github/workflows/peer-ai-changes.yml
+  api-tests:
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.other == 'true'
+    runs-on: ubuntu-latest
+    steps: …
+```
+
+A job skipped by its `if` reports success, so a required check never waits; a workflow skipped by a `paths` filter leaves it waiting. Render keeps the file in step with the parts while it's as render left it, and never edits your own workflows. A part named `code` or `other` gets no output of its own.
 
 ### A section for people in the README
 

@@ -248,7 +248,8 @@ const RECORDS_ONLY = [
   "        run: |",
   "          code=true",
   '          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then',
-  "            files=$(gh api \"repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER\" --jq '.files[].filename') &&",
+  // GitHub lists 300 files at most, so at 300 there may be code it didn't list. A moved file counts where it was too.
+  '            files=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER" --jq \'if (.files == null) or ((.files | length) >= 300) then "unknown" else (.files[] | .filename, (.previous_filename // empty)) end\') &&',
   "              ! grep -qv '^\\.peer-ai/' <<< \"$files\" && code=false",
   "          fi",
   '          echo "code=$code" >> "$GITHUB_OUTPUT"',

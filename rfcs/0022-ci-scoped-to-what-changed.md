@@ -95,3 +95,4 @@ Minor:
 ## Open questions
 
 - Whether the "what changed" workflow should also follow dependencies between parts, such as an app's tests running when the shared library it uses changed. The config doesn't say how parts depend on each other yet, so this RFC leaves it to each job's condition.
+  - **Resolved in the implementation:** a part's `uses` in the config already says it, so a part's output is true when a part it uses changed, through each other.
