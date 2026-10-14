@@ -21,3 +21,7 @@ updates:
     target-branch: main
     schedule:
       interval: weekly
+    groups:
+      # CodeQL's steps must all run the same version, or the workflow fails.
+      codeql:
+        patterns: ["github/codeql-action*"]
