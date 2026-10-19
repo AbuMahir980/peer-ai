@@ -34,11 +34,11 @@
     }
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "16.4.0",
+    "@next/eslint-plugin-next": "16.4.2",
     "eslint-plugin-jsx-a11y-x": "0.2.0",
-    "eslint-plugin-react-dom": "5.25.0",
+    "eslint-plugin-react-dom": "5.28.0",
     "eslint-plugin-react-hooks": "7.1.1",
-    "typescript-eslint": "8.71.1"
+    "typescript-eslint": "8.71.2"
   },
   "engines": {
     "node": ">=24"
