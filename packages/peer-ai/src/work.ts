@@ -17,6 +17,7 @@ import {
   validateReport,
   validateWorkItem,
   type ActivityId,
+  type HistoryLine,
   type KnownMapItemId,
   type PeerAiConfig,
   type ReviewReport,
@@ -41,7 +42,7 @@ import {
   pushedTip,
   tipOf,
 } from "./commits.ts";
-import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
+import { allClosings, allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Runner } from "./feedback.ts";
 import { ghIn, mergeOf, type Merge } from "./merged.ts";
@@ -96,13 +97,18 @@ function trackProblem(config: PeerAiConfig, track: string | undefined): string |
 export function loadWorkItem(root: string, id: string): Result<WorkItem> {
   const located = locate(root, id);
   if (located !== undefined) return { ok: true, value: located.item };
+  // A closed item is read from the history (RFC 0017): any working copy's, or the default branch's,
+  // so an older copy of its record on another branch never passes for it (#278).
+  const closed = closedRecord(root, id);
+  if (closed !== undefined) return { ok: true, value: asWorkItem(closed) };
   const file = readWorkItems(root).find(({ path }) => path === `${WORK_DIR}/${id}.json`);
-  if (file === undefined) {
-    // A closed item is read from the history (RFC 0017).
-    const closed = readHistory(root).find((line) => line.id === id);
-    return closed === undefined ? failed(`There is no work item "${id}".`) : { ok: true, value: asWorkItem(closed) };
-  }
+  if (file === undefined) return failed(`There is no work item "${id}".`);
   return file.item.ok ? file.item : failed(`${file.path} ${file.item.error}`);
+}
+
+/** A closed item's history line, when no open record of it stands: one written since it closed. */
+export function closedRecord(root: string, id: string): HistoryLine | undefined {
+  return locate(root, id) === undefined ? allClosings(root).get(id) : undefined;
 }
 
 /** A work item and its home, the working copy where its branch is checked out (RFC 0010). */
