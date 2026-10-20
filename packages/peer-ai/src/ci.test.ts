@@ -131,6 +131,36 @@ describe("shipping with CI's verify (RFC 0013)", { timeout: 20_000 }, () => {
     );
   });
 
+  it("takes CI's run on a later commit, when records were pushed with the code at once, and the gate confirms it (#277)", () => {
+    const { root, config } = atVerify();
+    // Two commits of records, pushed with the code in one push: CI ran on the newest only.
+    for (const note of ["Reviews recorded.", "Verify recorded."]) {
+      writeFileSync(join(root, ".peer-ai/notes.md"), `${note}\n`);
+      git(root, "add", "-A");
+      git(root, "commit", "-qm", note);
+    }
+    const tip = git(root, "rev-parse", "HEAD");
+    // GitHub answers for every pushed commit: with no runs, for those CI didn't run on.
+    const onTip: Runner = (command, args) =>
+      ci(tip, "completed", "success")(command, args) ?? JSON.stringify({ check_runs: [] });
+    expect(value(verifyFromCi(root, config, "SHOP-1", NOW, onTip)).lastVerify).toMatchObject({
+      result: "pass",
+      commit: tip,
+      ci: { check: "ci / check", url: URL },
+    });
+    const gates = evaluate(root, config, { pullRequest: "feature/SHOP-1-cart", run: onTip }).checks.filter(
+      (check) => check.id === "gates",
+    );
+    expect(gates.filter((check) => check.status === "fail")).toEqual([]);
+
+    // A later commit that changes code isn't the same code, so its run doesn't count for it.
+    writeFileSync(join(root, "apps/web/Cart.ts"), "export const cart = [1];\n");
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "more cart");
+    const missing = verifyFromCi(root, config, "SHOP-1", NOW, onTip);
+    expect(missing.ok ? "" : missing.error).toContain(`No check named "ci / check" ran on`);
+  });
+
   it("asks CI about the item's branch, though another branch is checked out (#231)", () => {
     const { root, config, head } = atVerify();
     // The working copy moves to a branch stacked on it, with a commit CI never saw.

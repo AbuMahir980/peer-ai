@@ -155,6 +155,18 @@ export function lastCodeCommit(root: string, commit: string): string | undefined
   return found === undefined || found === "" ? undefined : found;
 }
 
+/** Whether two commits hold the same files outside Peer AI's records: CI testing one tested the other. */
+export const sameCode = (root: string, a: string, b: string): boolean =>
+  git(root, ["diff", "--quiet", a, b, "--", ".", OWN_FILES]) !== undefined;
+
+/** The commits after one, up to another, newest first, at most `limit`. */
+export function commitsBetween(root: string, after: string, upTo: string, limit = 20): string[] {
+  return (git(root, ["rev-list", `--max-count=${String(limit)}`, `${after}..${upTo}`]) ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
 /** A branch's tip as pushed, which is what CI ran on: the remote's copy, else the local branch. */
 export function pushedTip(root: string, branch: string): string | undefined {
   for (const ref of [`refs/remotes/origin/${branch}`, `refs/heads/${branch}`]) {
