@@ -1,5 +1,30 @@
 # peer-ai
 
+## 1.0.0-next.20
+
+### Patch Changes
+
+- c6901a8: `run_verify` from CI takes the run on a later commit when the code and records went up in one push (#277). GitHub runs CI once per push, on its newest commit, so a code commit followed by records commits in the same push had no run of its own, and `run_verify` refused: "No check named … ran on …". Now, when the last code commit has no run, it looks at the commits after it, up to the branch's tip, and takes the run on one whose files outside `.peer-ai/` are exactly the same. The verify names the commit CI ran on, so the gate confirms the same run with GitHub.
+- 8ec7cc0: Dependencies updated: `@modelcontextprotocol/sdk` 1.32.1 and `smol-toml` 1.9.1 in `peer-ai`; `@next/eslint-plugin-next` 16.4.0, `eslint-plugin-react-dom` 5.25.0 and `typescript-eslint` 8.71.1 in `peer-ai-eslint-config`. The rules the ESLint config switches on are the same.
+- f1eb5c8: Dependencies updated: `zod` 4.6.7 in `peer-ai`, `peer-ai-workflow` and `peer-ai-standards`; `@next/eslint-plugin-next` 16.4.2, `eslint-plugin-react-dom` 5.28.0 and `typescript-eslint` 8.71.2 in `peer-ai-eslint-config`. The rules the ESLint config switches on are the same.
+- 5699fa4: The gate asks GitHub whether a pull request is a draft as it runs (#271). It read the draft flag from the event's own copy, stored when the run was queued, so a push a second before "ready for review" left a skipped run as the newest result for the commit: `gh pr checks` showed the gate as skipping, a pre-merge script refused it, and re-running replayed the same copy. GitHub also counts a skipped required check as passing, so such a run could stand over a gate that failed. Now the job starts on every pull request event, its first step asks GitHub for the pull request's state, and on a draft the rest is skipped and the job passes. When GitHub can't be asked, the gate runs. The workflow asks for `pull-requests: read` for it.
+  
+  After updating, run `npx peer-ai render`.
+- 514973a: Fixes in the workflows render writes:
+  
+  - **The "what changed" workflow passes actionlint (#273).** Its script read each part's variable through `${!name}`, which shellcheck can't follow, so it reported them as unused (SC2034). It now passes the values, and a part with no output of its own gets no variable.
+  - **A retired part gets no output** from it, and the lint settings in `.peer-ai/enforce/` count as code, not records, in it and in the security pipeline (#275, #276).
+  - **The security pipeline's records-only skip works on pull requests (#270).** It compared with `github.event.before`, which a pull request's first run doesn't have, and the workflow has no push trigger without a default branch in the config, so every scan ran on every pull request. It now compares with the pull request's base on its first run. And it skips only when the same check passed on the commit it compares with, so a records-only push never stands over a scan that failed. The jobs ask for `checks: read` for it.
+  - **Every security job has a time limit,** 20 minutes for each scan, so a stuck one doesn't run for GitHub's default six hours (#275).
+  - **The OWASP ZAP image is pinned** to the digest its `2.17.0` tag now has, since the ZAP project published it again.
+  
+  After updating, run `npx peer-ai render`.
+- 0c0f888: A closed item is no longer taken for open from an older copy of its record (#278). A branch made before an item closed still holds that copy, and when it was checked out in another worktree, `next_work` listed the item as open at its old stage, `work_item` returned the old record, and `advance_work_item` wrote into that other worktree. Now each working copy's history, and the default branch's, decide: a record older than the item's closing is ignored, `work_item` says how the item closed and where it merged, and nothing is written into the older copy. Moving a closed item back to an earlier stage still reopens it, in the working copy asking, and the reply says it was closed and reopened.
+- Updated dependencies [f1eb5c8]
+  - peer-ai-workflow@1.0.0-next.20
+  - peer-ai-standards@1.0.0-next.20
+  - peer-ai-skills@1.0.0-next.20
+
 ## 1.0.0-next.19
 
 ### Minor Changes
