@@ -1,5 +1,15 @@
 # peer-ai-eslint-config
 
+## 1.0.0-next.20
+
+### Patch Changes
+
+- 8ec7cc0: Dependencies updated: `@modelcontextprotocol/sdk` 1.32.1 and `smol-toml` 1.9.1 in `peer-ai`; `@next/eslint-plugin-next` 16.4.0, `eslint-plugin-react-dom` 5.25.0 and `typescript-eslint` 8.71.1 in `peer-ai-eslint-config`. The rules the ESLint config switches on are the same.
+- f1eb5c8: Dependencies updated: `zod` 4.6.7 in `peer-ai`, `peer-ai-workflow` and `peer-ai-standards`; `@next/eslint-plugin-next` 16.4.2, `eslint-plugin-react-dom` 5.28.0 and `typescript-eslint` 8.71.2 in `peer-ai-eslint-config`. The rules the ESLint config switches on are the same.
+- Updated dependencies [f1eb5c8]
+  - peer-ai-workflow@1.0.0-next.20
+  - peer-ai-standards@1.0.0-next.20
+
 ## 1.0.0-next.19
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # peer-ai-standards
 
+## 1.0.0-next.20
+
+### Patch Changes
+
+- f1eb5c8: Dependencies updated: `zod` 4.6.7 in `peer-ai`, `peer-ai-workflow` and `peer-ai-standards`; `@next/eslint-plugin-next` 16.4.2, `eslint-plugin-react-dom` 5.28.0 and `typescript-eslint` 8.71.2 in `peer-ai-eslint-config`. The rules the ESLint config switches on are the same.
+- Updated dependencies [f1eb5c8]
+  - peer-ai-workflow@1.0.0-next.20
+
 ## 1.0.0-next.19
 
 ### Minor Changes
