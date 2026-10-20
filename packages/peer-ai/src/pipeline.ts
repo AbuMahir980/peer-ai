@@ -68,7 +68,7 @@ export const IMAGES = {
   zap: {
     name: "ghcr.io/zaproxy/zaproxy",
     tag: "2.17.0",
-    digest: "sha256:7aaa659b0d43078febd82e29bad112285c370727e86ab8340444220e17d9f0d2",
+    digest: "sha256:5ccfff9a411743ab2615136a2edd7416bec9ce41572fa94e935df38c14adb2b6",
   },
 } satisfies Record<string, Image>;
 
@@ -245,25 +245,34 @@ function reportStep(name: string, rules: readonly string[], stepIds: readonly st
 /**
  * A push that changes only Peer AI's records leaves the code as the last scan saw it, so the scan is
  * skipped, while the job still runs and reports, so a required check never waits (RFC 0021). GitHub's
- * compare API says what the push changed, with the run's own read-only token. When it can't be asked,
- * or on a schedule, the scan runs.
+ * compare API says what the push changed, with the run's own read-only token: against the commit
+ * before it, or on a pull request's first run, its base (#270). Lint settings in .peer-ai/enforce/
+ * aren't records. The skip holds only when the same check passed on the commit compared with, so a
+ * records-only push never stands over a scan that failed. When GitHub can't be asked, or on a
+ * schedule, the scan runs.
  */
-const RECORDS_ONLY = [
-  "      - name: Skip a push that changes only Peer AI's records",
-  "        id: changes",
-  "        env:",
-  "          GH_TOKEN: ${{ github.token }}",
-  "          BEFORE: ${{ github.event.before }}",
-  "          AFTER: ${{ github.event.pull_request.head.sha || github.sha }}",
-  "        run: |",
-  "          code=true",
-  '          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then',
-  // GitHub lists 300 files at most, so at 300 there may be code it didn't list. A moved file counts where it was too.
-  '            files=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER" --jq \'if (.files == null) or ((.files | length) >= 300) then "unknown" else (.files[] | .filename, (.previous_filename // empty)) end\') &&',
-  "              ! grep -qv '^\\.peer-ai/' <<< \"$files\" && code=false",
-  "          fi",
-  '          echo "code=$code" >> "$GITHUB_OUTPUT"',
-];
+function recordsOnly(check: string): string[] {
+  return [
+    "      - name: Skip a push that changes only Peer AI's records",
+    "        id: changes",
+    "        env:",
+    "          GH_TOKEN: ${{ github.token }}",
+    "          BEFORE: ${{ github.event.before || github.event.pull_request.base.sha }}",
+    "          AFTER: ${{ github.event.pull_request.head.sha || github.sha }}",
+    `          CHECK: ${check}`,
+    "        run: |",
+    "          code=true",
+    '          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then',
+    // GitHub lists 300 files at most, so at 300 there may be code it didn't list. A moved file counts where it was too.
+    '            if files=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$AFTER" --jq \'if (.files == null) or ((.files | length) >= 300) then "unknown" else (.files[] | .filename, (.previous_filename // empty)) end\') &&',
+    "              ! grep -v '^\\.peer-ai/' <<< \"$files\" | grep -q . && ! grep -q '^\\.peer-ai/enforce/' <<< \"$files\"; then",
+    '              passed=$(gh api -X GET "repos/$GITHUB_REPOSITORY/commits/$BEFORE/check-runs" -f check_name="$CHECK" --jq \'[.check_runs[] | select(.conclusion == "success")] | length\') || passed=0',
+    '              if [ "${passed:-0}" -gt 0 ]; then code=false; fi',
+    "            fi",
+    "          fi",
+    '          echo "code=$code" >> "$GITHUB_OUTPUT"',
+  ];
+}
 const WHEN_CODE = "        if: steps.changes.outputs.code == 'true'";
 
 /** One job: check out the repository, install the tool, run it. */
@@ -272,14 +281,17 @@ function job(id: string, script: JobScript, rules: readonly string[], reports: b
     `  ${id}:`,
     `    name: ${script.name}`,
     "    runs-on: ubuntu-latest",
+    // A stuck scan stops, rather than running for GitHub's default six hours (#275).
+    "    timeout-minutes: 20",
     "    permissions:",
     "      contents: read",
+    "      checks: read",
     "    steps:",
     `      - uses: ${CHECKOUT}`,
     "        with:",
     ...(script.history === true ? ["          fetch-depth: 0"] : []),
     "          persist-credentials: false",
-    ...RECORDS_ONLY,
+    ...recordsOnly(script.name),
     `      - name: Install ${script.tool}`,
     WHEN_CODE,
     "        run: |",
@@ -325,6 +337,7 @@ function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): strin
       "  tls:",
       "    name: peer-ai / tls",
       "    runs-on: ubuntu-latest",
+      "    timeout-minutes: 10",
       SCHEDULED,
       "    permissions: {}",
       "    steps:",
@@ -341,6 +354,7 @@ function jobs(config: PeerAiConfig, enforcement: Enforcement = ENFORCING): strin
       "  running-app:",
       "    name: peer-ai / running-app",
       "    runs-on: ubuntu-latest",
+      "    timeout-minutes: 30",
       SCHEDULED,
       "    permissions:",
       "      contents: read",

@@ -304,14 +304,14 @@ It needs GitHub, and `gh` signed in where the AI tool works.
   run: make check
 ```
 
-On a project of several parts, the `code` output of the workflow below says the same without a checkout. The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks. The security pipeline render writes does this itself: each scan's job runs on every push, and skips its scan when the push changed only `.peer-ai/` (RFC 0021). With `verifyCheck`, the instructions render writes say to push the change, let CI run, then record the reviews and the verify from CI together, in one push.
+On a project of several parts, the `code` output of the workflow below says the same without a checkout. The checkout needs `fetch-depth: 0`, or enough history to reach the previous push. Avoid `paths-ignore` for this on a required check: GitHub leaves a check it skipped that way waiting, which blocks the merge. Leave Peer AI's own gate running on every push: the records are what it checks. The security pipeline render writes does this itself: each scan's job runs on every push, and skips its scan when the push changed only Peer AI's records, compared with the commit before it, or on a pull request's first run, its base (RFC 0021, #270). The skip holds only when the same check passed on that commit, so records never stand over a scan that failed. Each scan has a time limit of 20 minutes. With `verifyCheck`, the instructions render writes say to push the change, let CI run, then record the reviews and the verify from CI together, in one push.
 
 #### Running each check only for what changed
 
 On GitHub Actions, a project of two parts or more gets `.github/workflows/peer-ai-changes.yml` ([RFC 0022](../../rfcs/0022-ci-scoped-to-what-changed.md)): a workflow your own workflows call first, so each job runs only for the changes it can apply to (DEL-13). It asks GitHub's compare API what the pull request or push changed, with the run's own read-only token and no checkout. Its outputs say:
 
 - **One for each part,** named by the part's id: true when a file in its folder changed, or in a part it `uses`. A file belongs to the part whose folder holds it most closely, as everywhere in Peer AI.
-- **`code`:** true when anything outside `.peer-ai/` changed.
+- **`code`:** true when anything outside Peer AI's records changed. The lint settings in `.peer-ai/enforce/` count as code, and as `other`.
 - **`other`:** true when anything outside every part changed, such as the root's settings.
 
 When it can't tell, on a schedule, a branch's first push, or when GitHub can't be asked, every output is true, so everything runs.
@@ -329,7 +329,7 @@ jobs:
     steps: …
 ```
 
-A job skipped by its `if` reports success, so a required check never waits; a workflow skipped by a `paths` filter leaves it waiting. Render keeps the file in step with the parts while it's as render left it, and never edits your own workflows. A part named `code` or `other` gets no output of its own. `doctor` warns about a part's jobs that run on every pull request, a deployment on pull requests, and runs left going after a newer push; Peer AI's own workflows cancel a pull request's run a newer push replaced.
+A job skipped by its `if` reports success, so a required check never waits; a workflow skipped by a `paths` filter leaves it waiting. Render keeps the file in step with the parts while it's as render left it, and never edits your own workflows. A part named `code` or `other` gets no output of its own, and a retired part gets none. The step passes shellcheck, which actionlint runs. `doctor` warns about a part's jobs that run on every pull request, a deployment on pull requests, and runs left going after a newer push; Peer AI's own workflows cancel a pull request's run a newer push replaced.
 
 ### A section for people in the README
 
