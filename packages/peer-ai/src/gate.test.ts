@@ -82,12 +82,59 @@ describe("the CI gate", () => {
   it("skips draft pull requests, and runs when one is marked ready, unless the config asks for drafts (RFC 0021)", () => {
     const skips = gateWorkflow(loaded(project({ "peer-ai.config.json": config({ repo: { defaultBranch: "main" } }) })));
     expect(skips).toContain("  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]");
-    expect(skips).toContain("    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
     expect(skips).toContain("  push:\n    branches: [main]");
+    // Asked as the job runs, never from the event's own copy (#271), so each later step waits on it.
+    expect(skips).toContain("  pull-requests: read\n");
+    expect(skips).not.toContain("github.event.pull_request.draft");
+    expect(skips.match(/ {8}if: steps\.draft\.outputs\.draft != 'true'/g)).toHaveLength(3);
     const checks = gateWorkflow(loaded(project({ "peer-ai.config.json": config({ gates: { drafts: "check" } }) })));
     expect(checks).not.toContain("types:");
-    expect(checks).not.toContain("draft == false");
+    expect(checks).not.toContain("draft");
   });
+
+  it.skipIf(process.platform === "win32")(
+    "asks GitHub whether the pull request is a draft as it runs, and runs the gate when it can't tell (#271)",
+    () => {
+      const workflow = gateWorkflow(loaded(project({ "peer-ai.config.json": config() })));
+      const lines = workflow.split("\n");
+      const start = lines.indexOf("        run: |", lines.indexOf("        id: draft")) + 1;
+      const end = lines.findIndex((line, i) => i >= start && !line.startsWith("          "));
+      const step = lines
+        .slice(start, end)
+        .map((line) => line.slice(10))
+        .join("\n");
+      /** The step's answer, with gh answering for the pull request, or failing. */
+      const draft = (answer: string | undefined) => {
+        const dir = mkdtempSync(join(tmpdir(), "peer-ai-draft-"));
+        const calls = join(dir, "calls");
+        writeFileSync(
+          join(dir, "gh"),
+          `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >> "${calls}"\n${answer === undefined ? "exit 1" : `echo ${answer}`}\n`,
+        );
+        chmodSync(join(dir, "gh"), 0o755);
+        writeFileSync(join(dir, "output"), "");
+        const result = spawnSync("bash", ["--noprofile", "--norc", "-eo", "pipefail", "-c", step], {
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            PATH: `${dir}:${process.env.PATH ?? ""}`,
+            GITHUB_OUTPUT: join(dir, "output"),
+            GITHUB_REPOSITORY: "example/shop",
+            PULL: "150",
+          },
+        });
+        expect(result.status).toBe(0);
+        expect(readFileSync(calls, "utf8")).toBe("api repos/example/shop/pulls/150 --jq .draft\n");
+        return { output: readFileSync(join(dir, "output"), "utf8").trim(), said: result.stdout };
+      };
+      expect(draft("true")).toEqual({
+        output: "draft=true",
+        said: "A draft: the gate runs when it's marked ready for review.\n",
+      });
+      expect(draft("false").output).toBe("draft=false");
+      expect(draft(undefined).output).toBe("draft=false");
+    },
+  );
 
   it("tells the AI tool to open drafts, and to push its records once after CI (RFC 0021)", () => {
     const told = instructions(
