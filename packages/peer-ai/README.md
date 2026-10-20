@@ -282,7 +282,7 @@ A project whose CI already runs its verify command on every pull request can say
 
 `verifyCheck` is the check's name as GitHub shows it on a pull request. With it set:
 
-- **`run_verify` with `from: "ci"`** reads that check's result on the item's latest commit that changed anything outside `.peer-ai/`, pushed, and records it with a link to the run. A commit that only records reviews or a verify leaves the code as CI tested it, so its result carries across.
+- **`run_verify` with `from: "ci"`** reads that check's result on the item's latest commit that changed anything outside `.peer-ai/`, pushed, and records it with a link to the run. A commit that only records reviews or a verify leaves the code as CI tested it, so its result carries across. When the code and later records went up in one push, CI ran only on the newest commit; its run counts for the code, since the code is the same, and the verify names that commit (#277).
 - **Moving an item to ship,** with `advance_work_item` or `peer-ai ship`, takes CI's result itself when the item's verify is missing or older than its latest commit, and says what's still missing: a review to run, or the check still running.
 - **`peer-ai check` confirms it with GitHub,** so a record claiming a CI run that didn't pass fails the gate. Render gives the gate's workflow `checks: read` and the run's token for that.
 

@@ -37,8 +37,10 @@ import {
   isAncestor,
   mergeBase,
   ownFiles,
+  commitsBetween,
   lastCodeCommit,
   pushedTip,
+  sameCode,
   tipOf,
 } from "./commits.ts";
 import { allWorkItems, homeOf, locate, worktrees, type Located } from "./homes.ts";
@@ -691,11 +693,33 @@ export function verifyFromCi(
   // A commit that changes only Peer AI's records leaves the code as CI last tested it, so CI's result
   // on the latest commit outside .peer-ai/ is the verify: a project can skip CI for records (#247).
   const code = lastCodeCommit(home, tip) ?? tip;
-  const result = ciResult(code, check, run ?? ghIn(home));
-  if (result.status !== "pass" && result.status !== "fail") return failed(ciProblem(result, check, code) ?? "");
+  const { commit, result } = ciRunFor(home, code, tip, check, run ?? ghIn(home));
+  if (result.status !== "pass" && result.status !== "fail") return failed(ciProblem(result, check, commit) ?? "");
   const at = now.toISOString();
-  const lastVerify = { result: result.status, at, commit: code, ci: { check, url: result.url } };
+  const lastVerify = { result: result.status, at, commit, ci: { check, url: result.url } };
   return saveWorkItem(home, config, { ...item, lastVerify, updatedAt: at });
+}
+
+/**
+ * CI's result for the code at a commit: its own run, or, since CI runs on each push's newest commit,
+ * the run on a later commit with the same code, when records were pushed after it at once (#277).
+ * The commit returned is the one CI ran on, so the gate confirms the same run with GitHub.
+ */
+function ciRunFor(
+  home: string,
+  code: string,
+  tip: string,
+  check: string,
+  gh: Runner,
+): { commit: string; result: ReturnType<typeof ciResult> } {
+  const own = ciResult(code, check, gh);
+  if (own.status !== "missing" || code === tip) return { commit: code, result: own };
+  for (const later of commitsBetween(home, code, tip)) {
+    if (!sameCode(home, code, later)) continue;
+    const found = ciResult(later, check, gh);
+    if (found.status !== "missing") return { commit: later, result: found };
+  }
+  return { commit: code, result: own };
 }
 
 /**
