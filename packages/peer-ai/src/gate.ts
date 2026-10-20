@@ -65,8 +65,24 @@ export function gateWorkflow(config: PeerAiConfig): string {
   // permission to read checks (RFC 0013).
   const confirmsCi = config.commands?.verifyCheck !== undefined;
   // A draft can't merge, so the gate waits until it's marked ready, rather than failing on work
-  // that isn't meant to be finished yet (RFC 0021).
+  // that isn't meant to be finished yet (RFC 0021). Whether it's a draft is asked as the job runs:
+  // the event's own copy can be older than the pull request, and a run skipped on it would stand
+  // as the latest result, over one that ran (#271).
   const skipsDrafts = config.gates?.drafts !== "check";
+  const unlessDraft = skipsDrafts ? ["        if: steps.draft.outputs.draft != 'true'"] : [];
+  const draftStep = [
+    "      - name: Wait while the pull request is a draft",
+    "        id: draft",
+    "        if: github.event_name == 'pull_request'",
+    "        env:",
+    "          GH_TOKEN: ${{ github.token }}",
+    "          PULL: ${{ github.event.pull_request.number }}",
+    "        run: |",
+    // When GitHub can't be asked, the gate runs.
+    '          draft=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PULL" --jq .draft) || draft=false',
+    '          echo "draft=$draft" >> "$GITHUB_OUTPUT"',
+    '          if [ "$draft" = true ]; then echo "A draft: the gate runs when it\'s marked ready for review."; fi',
+  ];
   const body = [
     "name: Peer AI",
     "on:",
@@ -77,24 +93,28 @@ export function gateWorkflow(config: PeerAiConfig): string {
     "permissions:",
     "  contents: read",
     ...(confirmsCi ? ["  checks: read"] : []),
+    ...(skipsDrafts ? ["  pull-requests: read"] : []),
     ...CANCEL_REPLACED,
     "jobs:",
     "  peer-ai-check:",
     "    name: peer-ai check",
-    ...(skipsDrafts ? ["    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false"] : []),
     "    runs-on: ubuntu-latest",
     "    timeout-minutes: 10",
     "    steps:",
+    ...(skipsDrafts ? draftStep : []),
     `      - uses: ${CHECKOUT}`,
+    ...unlessDraft,
     "        with:",
     // The pull request's own commit, with its history, so the commits each record names are there.
     "          ref: ${{ github.event.pull_request.head.sha || github.sha }}",
     "          fetch-depth: 0",
     "          persist-credentials: false",
     `      - uses: ${SETUP_NODE}`,
+    ...unlessDraft,
     "        with:",
     "          node-version: 24",
     `      - run: ${gateCommand()}`,
+    ...unlessDraft,
     ...(confirmsCi ? ["        env:", "          GH_TOKEN: ${{ github.token }}"] : []),
     "",
   ].join("\n");
