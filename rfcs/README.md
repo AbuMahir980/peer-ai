@@ -48,6 +48,7 @@ Bug fixes, new stack profiles, docs and wording changes that keep the meaning do
 | [0020](0020-records-where-the-work-is.md) | Records where the work is | Accepted |
 | [0021](0021-ci-that-costs-only-what-it-must.md) | CI that costs only what it must | Accepted |
 | [0022](0022-ci-scoped-to-what-changed.md) | CI scoped to what changed | Accepted |
+| [0023](0023-ci-that-runs-only-what-a-change-needs.md) | CI that runs only what a change needs | Draft |
 
 ## What carries weight
 
