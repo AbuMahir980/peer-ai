@@ -20,7 +20,6 @@ function git(root: string, args: string[]): string | undefined {
   }
 }
 
-/** Every closed item, newest line last; a later line for the same id replaces an earlier one. */
 /**
  * Closed items whose records this working copy holds but hasn't committed: they reach the default
  * branch only with the next commit, so next_work lists them until then (RFC 0020).
@@ -47,24 +46,40 @@ export function unlandedRecords(root: string): { id: string; stage: HistoryLine[
     });
 }
 
-export function readHistory(root: string): HistoryLine[] {
-  const dir = join(root, HISTORY_DIR);
-  if (!existsSync(dir)) return [];
+/** The history's lines, from each file's text in order; a later line for the same id replaces an earlier one. */
+function parseHistory(files: string[]): HistoryLine[] {
   const byId = new Map<string, HistoryLine>();
-  for (const file of readdirSync(dir)
-    .filter((name) => name.endsWith(".jsonl"))
-    .sort()) {
-    for (const text of readFileSync(join(dir, file), "utf8").split("\n")) {
-      if (text.trim() === "") continue;
-      try {
-        const line = validateHistoryLine(JSON.parse(text));
-        if (line.ok) byId.set(line.value.id, line.value);
-      } catch {
-        // A line that isn't JSON is skipped; doctor's own checks are on live files.
-      }
+  for (const text of files.flatMap((file) => file.split("\n"))) {
+    if (text.trim() === "") continue;
+    try {
+      const line = validateHistoryLine(JSON.parse(text));
+      if (line.ok) byId.set(line.value.id, line.value);
+    } catch {
+      // A line that isn't JSON is skipped; doctor's own checks are on live files.
     }
   }
   return [...byId.values()];
+}
+
+/** Every closed item in this working copy's history; a later line for the same id replaces an earlier one. */
+export function readHistory(root: string): HistoryLine[] {
+  const dir = join(root, HISTORY_DIR);
+  if (!existsSync(dir)) return [];
+  return parseHistory(
+    readdirSync(dir)
+      .filter((name) => name.endsWith(".jsonl"))
+      .sort()
+      .map((name) => readFileSync(join(dir, name), "utf8")),
+  );
+}
+
+/** The history as a commit holds it, such as the default branch's, whichever branch is checked out. */
+export function committedHistory(root: string, ref: string): HistoryLine[] {
+  const names = (git(root, ["ls-tree", "--name-only", ref, `${HISTORY_DIR}/`]) ?? "")
+    .split("\n")
+    .filter((name) => name.endsWith(".jsonl"))
+    .sort();
+  return parseHistory(names.map((name) => git(root, ["show", `${ref}:${name}`]) ?? ""));
 }
 
 /** A closed item as a work item, for what reads items: dependencies, fixes, and work_item. */
@@ -78,9 +93,20 @@ export function asWorkItem(line: HistoryLine): WorkItem {
     ...(line.track === undefined ? {} : { track: line.track }),
     ...(line.dependsOn === undefined ? {} : { dependsOn: line.dependsOn }),
     ...(line.fixes === undefined ? {} : { fixes: line.fixes }),
-    next: line.stage === "done" ? "Closed: done." : "Closed: cancelled.",
+    next: `Closed: ${closedSummary(line)}`,
     updatedAt: line.at,
   };
+}
+
+/** How and when an item closed, and where it merged: "done on 2026-10-13, merged in pull request #12 (4f2a9c1)." */
+export function closedSummary(line: HistoryLine): string {
+  const pull = line.merge?.pullRequest === undefined ? undefined : `pull request #${String(line.merge.pullRequest)}`;
+  const commit = line.merge?.commit?.slice(0, 7);
+  const merged =
+    pull === undefined && commit === undefined
+      ? ""
+      : `, merged in ${[pull, commit === undefined ? undefined : pull === undefined ? commit : `(${commit})`].filter((part) => part !== undefined).join(" ")}`;
+  return `${line.stage} on ${line.at.slice(0, 10)}${merged}.`;
 }
 
 /** The closed items, as work items. */

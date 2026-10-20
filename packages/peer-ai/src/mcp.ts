@@ -28,11 +28,12 @@ import { reviewSizes } from "./review-cost.ts";
 import { standardsFor } from "./standards.ts";
 import { WORK_DIR, mapChanges, readMap } from "./state.ts";
 import { homeOf, locate, worktrees } from "./homes.ts";
-import { unlandedRecords } from "./history.ts";
+import { closedSummary, unlandedRecords } from "./history.ts";
 import {
   advanceWorkItem,
   collisionsFor,
   recordProjectReview,
+  closedRecord,
   createWorkItem,
   loadWorkItem,
   nextWork,
@@ -458,6 +459,8 @@ export function createServer(options: ServerOptions): McpServer {
       annotations: WRITES,
     },
     withProject((root, config, { id, to }: { id: string; to?: Parameters<typeof advanceWorkItem>[3] }) => {
+      // An item the history closes, with no record written since, is closed work: moving it back reopens it (#278).
+      const closed = closedRecord(root, id);
       const moved = advanceWorkItem(root, config, id, to, now());
       if (!moved.ok) return refuse(moved.error);
       // Moving to verify or ship repeats a migration collision, as a warning, never a refusal (RFC 0018).
@@ -468,6 +471,11 @@ export function createServer(options: ServerOptions): McpServer {
         : undefined;
       return reply({
         ...moved.value,
+        ...(closed === undefined || ["done", "cancelled"].includes(moved.value.stage)
+          ? {}
+          : {
+              reopened: `${id} was ${closedSummary(closed)} Moving it to ${moved.value.stage} reopened it, here: make sure the work isn't already merged.`,
+            }),
         ...(collisions.length === 0 ? {} : { migrationCollisions: collisions }),
         ...(where === undefined
           ? {}

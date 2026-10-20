@@ -6,8 +6,8 @@ import { SKILL_IDS, type SkillId } from "peer-ai-workflow";
 import { loadConfig } from "./assess.ts";
 import { CONFIG_FILE } from "./detect.ts";
 import type { Output } from "./init.ts";
-import { lastFullFile, readHistory } from "./history.ts";
-import { loadWorkItem, updateWorkItem } from "./work.ts";
+import { lastFullFile } from "./history.ts";
+import { closedRecord, loadWorkItem, updateWorkItem } from "./work.ts";
 
 export interface WorkOptions {
   cwd: string;
@@ -54,7 +54,8 @@ function show(options: WorkOptions, usage: string, out: Output): number {
     out.error(usage);
     return 2;
   }
-  const closed = readHistory(options.cwd).find((line) => line.id === id);
+  // Any working copy's history, or the default branch's, unless a record was written since (#278).
+  const closed = closedRecord(options.cwd, id);
   if (closed !== undefined) {
     if (options.full !== true) {
       out.log(JSON.stringify(closed, null, 2));

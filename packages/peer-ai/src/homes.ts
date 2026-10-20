@@ -6,7 +6,9 @@
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkItem } from "peer-ai-workflow";
+import type { HistoryLine, WorkItem } from "peer-ai-workflow";
+import { defaultRef } from "./commits.ts";
+import { committedHistory, readHistory } from "./history.ts";
 import { WORK_DIR, readWorkItems } from "./state.ts";
 
 export interface Worktree {
@@ -60,15 +62,53 @@ export interface Located {
 }
 
 /**
- * Every work item in every working copy, once each: the copy in its own branch's home when that
- * is checked out, otherwise the one in the root, otherwise the first found. Items that aren't valid
- * are left out; doctor reports them.
+ * Every closed item the repository knows of, by id: each working copy's history, and the default
+ * branch's as committed, so a closing counts wherever it was recorded. The latest closing wins.
+ */
+export function allClosings(root: string): Map<string, HistoryLine> {
+  const closings = new Map<string, HistoryLine>();
+  const main = defaultRef(root);
+  const lines = [
+    ...worktrees(root).flatMap((worktree) => readHistory(worktree.path)),
+    ...(main === undefined ? [] : committedHistory(root, main)),
+  ];
+  for (const line of lines) {
+    const known = closings.get(line.id);
+    if (known === undefined || Date.parse(known.at) <= Date.parse(line.at)) closings.set(line.id, line);
+  }
+  return closings;
+}
+
+/**
+ * Whether a record is older than its item's closing: a copy left on a branch made before the item
+ * closed, which says nothing about it now (#278). A record written after the closing is a new item
+ * under the same id, and stands.
+ */
+export const staleAgainst = (closing: HistoryLine | undefined, item: WorkItem): boolean =>
+  closing !== undefined && Date.parse(item.updatedAt) <= Date.parse(closing.at);
+
+/** The working copies holding a record of an item older than its closing, which the tools leave alone. */
+export function staleCopies(root: string, id: string, closing: HistoryLine): string[] {
+  return worktrees(root).flatMap((worktree) =>
+    readWorkItems(worktree.path).some(
+      ({ item }) => item.ok && item.value.id === id && staleAgainst(closing, item.value),
+    )
+      ? [worktree.path]
+      : [],
+  );
+}
+
+/**
+ * Every open work item in every working copy, once each: the copy in its own branch's home when
+ * that is checked out, otherwise the one in the root, otherwise the first found. Items that aren't
+ * valid are left out; doctor reports them. So is a record older than its item's closing (#278).
  */
 export function allWorkItems(root: string): Located[] {
+  const closings = allClosings(root);
   const copies = new Map<string, { home: string; item: WorkItem; branch?: string }[]>();
   for (const worktree of worktrees(root)) {
     for (const { item } of readWorkItems(worktree.path)) {
-      if (!item.ok) continue;
+      if (!item.ok || staleAgainst(closings.get(item.value.id), item.value)) continue;
       const list = copies.get(item.value.id) ?? [];
       list.push({
         home: worktree.path,

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PeerAiConfig } from "peer-ai-workflow";
@@ -11,7 +11,7 @@ import type { Runner } from "./feedback.ts";
 import { readHistory } from "./history.ts";
 import { checkMerged } from "./merged.ts";
 import { capture, cleanUp, project, scripted } from "./test-helpers.ts";
-import { advanceWorkItem, createWorkItem, nextWork, updateWorkItem } from "./work.ts";
+import { advanceWorkItem, closedRecord, createWorkItem, loadWorkItem, nextWork, updateWorkItem } from "./work.ts";
 
 afterEach(cleanUp);
 
@@ -132,6 +132,37 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
     expect(nextWork(root, config).unlanded).toBeUndefined();
   });
 
+  it("leaves out an older record of a closed item in another worktree, and never writes into it (#278)", () => {
+    const { root, config, branch } = built();
+    git(root, "merge", "-q", "--no-ff", "--no-edit", branch);
+    const merge = git(root, "rev-parse", "HEAD");
+    // The merged branch stays checked out in another agent's worktree, its record still at build.
+    const worktree = join(mkdtempSync(join(tmpdir(), "peer-ai-worktree-")), "work");
+    git(root, "worktree", "add", "-q", worktree, branch);
+    const stale = readFileSync(join(worktree, ".peer-ai/work/SHOP-1.json"), "utf8");
+    value(advanceWorkItem(root, config, "SHOP-1", "done", NOW, noGitHub));
+    commitAll(root);
+
+    // From either working copy, the item is done, and says where it merged.
+    for (const here of [root, worktree]) {
+      expect(nextWork(here, config).open.map((item) => item.id)).not.toContain("SHOP-1");
+      expect(value(loadWorkItem(here, "SHOP-1"))).toMatchObject({
+        stage: "done",
+        next: `Closed: done on 2026-10-03, merged in ${merge.slice(0, 7)}.`,
+      });
+    }
+    expect(closedRecord(worktree, "SHOP-1")?.merge).toEqual({ commit: merge });
+
+    // Moving it back reopens it here, in the caller's own working copy, and leaves the other alone.
+    const later = new Date("2026-10-04T09:00:00Z");
+    expect(value(advanceWorkItem(root, config, "SHOP-1", "build", later, noGitHub)).stage).toBe("build");
+    expect(readFileSync(join(worktree, ".peer-ai/work/SHOP-1.json"), "utf8")).toBe(stale);
+    expect(existsSync(join(root, ".peer-ai/work/SHOP-1.json"))).toBe(true);
+    // A record written since it closed stands: the item is open again, from here.
+    expect(closedRecord(worktree, "SHOP-1")).toBeUndefined();
+    expect(nextWork(worktree, config).open.map((item) => item.id)).toContain("SHOP-1");
+  });
+
   it("won't record done on a branch that's gone, when no working copy holds the merge yet", () => {
     const { root, config, branch } = built();
     // GitHub merged it, but this checkout's default branch hasn't been pulled since.
@@ -164,6 +195,9 @@ describe("closing work whose branch is already merged (RFC 0013)", { timeout: 20
       pullRequest: 214,
       at: NOW.toISOString(),
     });
+    expect(value(loadWorkItem(root, "SHOP-1")).next).toBe(
+      `Closed: done on 2026-10-03, merged in pull request #214 (${oid.slice(0, 7)}).`,
+    );
   });
 
   it("still holds an unmerged item to the gate", () => {
