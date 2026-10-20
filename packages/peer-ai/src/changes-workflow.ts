@@ -29,7 +29,8 @@ const quoted = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
 
 /** The parts in this repository, each with the parts whose changes count as its own. */
 function partsOf(config: PeerAiConfig): Part[] {
-  const here = config.tracks.filter((track) => track.status !== "external");
+  // A retired part is no longer part of the product, so nothing waits on it (#275).
+  const here = config.tracks.filter((track) => track.status !== "external" && track.status !== "retired");
   const ids = new Set(here.map((track) => track.id));
   const uses = new Map(here.map((track) => [track.id, (track.uses ?? []).filter((id) => ids.has(id))]));
   return here.map((track) => {
@@ -55,6 +56,12 @@ function script(parts: Part[]): string[] {
   // The closest folder first, as Peer AI matches a file to its part, and a part at the root last.
   const byFolder = [...parts].sort((a, b) => b.path.length - a.path.length);
   const atRoot = byFolder.some((part) => part.path === "");
+  // Only a part some output reads gets a variable, so shellcheck finds none set and never used (#273);
+  // another part's folder still keeps its files out of "other".
+  const outputs = parts.filter((part) => !RESERVED.includes(part.id));
+  const read = new Set(outputs.flatMap((part) => part.counts));
+  const tracked = parts.filter((part) => read.has(part.id));
+  const mark = (part: Part) => (read.has(part.id) ? ` ${variable(part.id)}=true` : "");
   const listing = `if (.files == null) or ((.files | length) >= ${String(MOST_FILES)}) then "unknown" else "known", (.files[] | .filename, (.previous_filename // empty)) end`;
   return [
     "known=false",
@@ -64,19 +71,21 @@ function script(parts: Part[]): string[] {
     "  fi",
     "fi",
     // Everything counts as changed until GitHub's list says otherwise.
-    `code=true other=true ${parts.map((part) => `${variable(part.id)}=true`).join(" ")}`,
+    ["code=true other=true", ...tracked.map((part) => `${variable(part.id)}=true`)].join(" "),
     'if [ "$known" = true ]; then',
-    `  code=false other=false ${parts.map((part) => `${variable(part.id)}=false`).join(" ")}`,
+    ["  code=false other=false", ...tracked.map((part) => `${variable(part.id)}=false`)].join(" "),
     "  while IFS= read -r file; do",
     '    case "$file" in',
+    // Lint settings Peer AI writes in .peer-ai/enforce/ are code; the rest of .peer-ai/ is records (#276).
+    "      .peer-ai/enforce/*) ;;",
     '      ""|.peer-ai/*) continue ;;',
     "    esac",
     "    code=true",
     '    case "$file" in',
     ...byFolder.map((part) =>
       part.path === ""
-        ? `      *) ${variable(part.id)}=true ;;`
-        : `      ${quoted(part.path)}|${quoted(`${part.path}/`)}*) ${variable(part.id)}=true ;;`,
+        ? `      *)${mark(part)} ;;`
+        : `      ${quoted(part.path)}|${quoted(`${part.path}/`)}*)${mark(part)} ;;`,
     ),
     ...(atRoot ? [] : ["      *) other=true ;;"]),
     "    esac",
@@ -84,18 +93,17 @@ function script(parts: Part[]): string[] {
     "else",
     '  echo "Can\'t tell what changed, so every part counts as changed."',
     "fi",
+    // Given values, not names, so shellcheck sees each part's variable used (#273).
     "any() {",
-    '  for name in "$@"; do',
-    '    if [ "${!name}" = true ]; then echo true; return; fi',
+    '  for value in "$@"; do',
+    '    if [ "$value" = true ]; then echo true; return; fi',
     "  done",
     "  echo false",
     "}",
     "{",
     '  echo "code=$code"',
     '  echo "other=$other"',
-    ...parts
-      .filter((part) => !RESERVED.includes(part.id))
-      .map((part) => `  echo "${part.id}=$(any ${part.counts.map(variable).join(" ")})"`),
+    ...outputs.map((part) => `  echo "${part.id}=$(any ${part.counts.map((id) => `"$${variable(id)}"`).join(" ")})"`),
     '} | tee -a "$GITHUB_OUTPUT"',
   ];
 }

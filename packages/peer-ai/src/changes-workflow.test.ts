@@ -19,6 +19,7 @@ const SHOP = shop([
   { id: "shared", kind: "library", path: "packages/shared", status: "active" },
   { id: "infra", kind: "infrastructure", path: "infra", status: "active" },
   { id: "billing", kind: "backend", status: "external", repo: "example/billing" },
+  { id: "kiosk", kind: "web", path: "apps/kiosk", status: "retired" },
 ]);
 
 /** The step's shell script, as the run block holds it. */
@@ -79,6 +80,8 @@ function run(
 }
 
 const changed = (...names: string[]) => names.map((filename) => ({ filename }));
+/** Whether shellcheck is installed, as it is on GitHub's Ubuntu runners. */
+const shellcheck = spawnSync("shellcheck", ["--version"]).status === 0;
 const on = (outputs: Record<string, string>) =>
   Object.entries(outputs)
     .filter(([, value]) => value === "true")
@@ -99,6 +102,29 @@ describe.skipIf(process.platform === "win32")("what changed (RFC 0022)", () => {
     expect(calls).toContain(`api repos/example/shop/compare/${"a".repeat(40)}...${"b".repeat(40)} --jq`);
     expect(on(run(SHOP, changed("packages/shared/money.ts")).outputs)).toEqual(["api", "code", "shared", "web"]);
     expect(on(run(SHOP, changed("infra/main.tf", "README.md")).outputs)).toEqual(["code", "infra", "other"]);
+  });
+
+  it("counts Peer AI's lint settings as code, and gives a retired part no output (#275, #276)", () => {
+    const { outputs } = run(SHOP, changed(".peer-ai/enforce/ruff.toml"));
+    expect(on(outputs)).toEqual(["code", "other"]);
+    expect(outputs).not.toHaveProperty("kiosk");
+    // A file still in a retired part's folder belongs to no part.
+    expect(on(run(SHOP, changed("apps/kiosk/index.html")).outputs)).toEqual(["code", "other"]);
+  });
+
+  it.runIf(shellcheck)("passes shellcheck, as actionlint runs it (#273)", () => {
+    // A part named like an output every project has gets no output of its own, nor a variable.
+    const named = shop([
+      { id: "web", kind: "web", path: "apps/web", status: "active" },
+      { id: "other", kind: "other", path: "tools", status: "active" },
+    ]);
+    for (const config of [SHOP, named]) {
+      const dir = mkdtempSync(join(tmpdir(), "peer-ai-shellcheck-"));
+      writeFileSync(join(dir, "step.sh"), `#!/usr/bin/env bash\n${script(changesWorkflow(config) ?? "")}\n`);
+      const result = spawnSync("shellcheck", ["--shell=bash", join(dir, "step.sh")], { encoding: "utf8" });
+      expect(result.stdout).toBe("");
+      expect(result.status).toBe(0);
+    }
   });
 
   it("counts a file moved between parts for both, and nothing for Peer AI's own records", () => {

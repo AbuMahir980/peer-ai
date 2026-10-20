@@ -160,7 +160,12 @@ describe("the CI gate", () => {
         loaded(project({ "peer-ai.config.json": config({ standards: { profiles: ["github-actions"] } }) })),
       ) ?? "";
     expect(body).toContain("      - name: Skip a push that changes only Peer AI's records\n        id: changes");
-    expect(body).toContain("          GH_TOKEN: ${{ github.token }}\n          BEFORE: ${{ github.event.before }}");
+    // Against the commit before the push, or on a pull request's first run, its base (#270).
+    expect(body).toContain("          BEFORE: ${{ github.event.before || github.event.pull_request.base.sha }}\n");
+    expect(body).toContain("          CHECK: peer-ai / secrets\n");
+    // It asks whether the same check passed there, and no scan runs past its time limit (#275).
+    expect(body.match(/ {6}checks: read/g)?.length).toBe(body.match(/id: changes/g)?.length);
+    expect(body.match(/ {4}timeout-minutes: /g)?.length).toBe(body.match(/ {4}runs-on: /g)?.length);
     // Each scan's install and check wait on it; the job itself always runs, so a required check never waits.
     expect(body.match(/ {8}if: steps\.changes\.outputs\.code == 'true'/g)?.length).toBe(
       2 * (body.match(/id: changes/g)?.length ?? 0),
@@ -181,11 +186,27 @@ describe("the CI gate", () => {
         .slice(start, end)
         .map((line) => line.slice(10))
         .join("\n");
-      /** The step's answer, with gh answering the compare API from these files through the real jq. */
-      const code = (files: { filename: string; previous_filename?: string }[]) => {
+      /**
+       * The step's answer, with gh answering the compare API from these files, and the check runs on
+       * the commit before with the check passing there or not, each through the real jq.
+       */
+      const code = (files: { filename: string; previous_filename?: string }[], passedBefore = true) => {
         const dir = mkdtempSync(join(tmpdir(), "peer-ai-records-"));
         writeFileSync(join(dir, "compare.json"), JSON.stringify({ files }));
-        writeFileSync(join(dir, "gh"), `#!/usr/bin/env bash\njq -r "$4" "${join(dir, "compare.json")}"\n`);
+        writeFileSync(
+          join(dir, "runs.json"),
+          JSON.stringify({
+            check_runs: [{ name: "peer-ai / secrets", conclusion: passedBefore ? "success" : "failure" }],
+          }),
+        );
+        writeFileSync(
+          join(dir, "gh"),
+          [
+            "#!/usr/bin/env bash",
+            `if [ "$2" = "-X" ]; then jq -r "\${@: -1}" "${join(dir, "runs.json")}"; else jq -r "$4" "${join(dir, "compare.json")}"; fi`,
+            "",
+          ].join("\n"),
+        );
         chmodSync(join(dir, "gh"), 0o755);
         writeFileSync(join(dir, "output"), "");
         spawnSync("bash", ["-e", "-c", step], {
@@ -196,6 +217,7 @@ describe("the CI gate", () => {
             GITHUB_REPOSITORY: "example/shop",
             BEFORE: "a".repeat(40),
             AFTER: "b".repeat(40),
+            CHECK: "peer-ai / secrets",
           },
         });
         return readFileSync(join(dir, "output"), "utf8").trim();
@@ -207,6 +229,10 @@ describe("the CI gate", () => {
       const records = Array.from({ length: 300 }, (_, i) => ({ filename: `.peer-ai/work/SHOP-${String(i)}.json` }));
       expect(code(records)).toBe("code=true");
       expect(code(records.slice(1))).toBe("code=false");
+      // Lint settings in .peer-ai/enforce/ aren't records (#276).
+      expect(code([{ filename: ".peer-ai/enforce/ruff.toml" }])).toBe("code=true");
+      // Records after a scan that failed run the scan again, rather than standing over the failure.
+      expect(code([{ filename: ".peer-ai/history.jsonl" }], false)).toBe("code=true");
     },
   );
 
